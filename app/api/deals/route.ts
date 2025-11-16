@@ -163,13 +163,33 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Проверяем, что сделка принадлежит пользователю
+    // Проверяем, что сделка принадлежит пользователю или компании (для админа)
     const existingDeal = await prisma.deal.findUnique({
-      where: { id: data.id }
+      where: { id: data.id },
+      include: {
+        user: {
+          select: {
+            companyId: true
+          }
+        }
+      }
     });
 
-    if (!existingDeal || existingDeal.userId !== userId) {
-      return NextResponse.json({ error: "Deal not found or access denied" }, { status: 404 });
+    if (!existingDeal) {
+      return NextResponse.json({ error: "Deal not found" }, { status: 404 });
+    }
+
+    // Для админа проверяем компанию, для обычного пользователя - userId
+    if (user.role === 'admin') {
+      const userCompanyId = parseInt(user.companyId);
+      const dealCompanyId = existingDeal.user.companyId;
+      if (dealCompanyId !== userCompanyId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+    } else {
+      if (existingDeal.userId !== userId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
     }
 
     const deal = await prisma.deal.update({

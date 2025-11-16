@@ -139,8 +139,10 @@ export default function DealsPage() {
           const dealsToUpdate: Promise<void>[] = []
           
           dealsData.forEach((deal: Deal) => {
+            // Проверяем, что этап не существует в текущих этапах воронки
             if (!validStages.includes(deal.stage)) {
               // Этап не существует, перемещаем в "Неразобранные"
+              console.log(`Moving deal ${deal.id} from stage "${deal.stage}" to "${UNASSIGNED_STAGE}"`)
               dealsToUpdate.push(
                 fetch('/api/deals', {
                   method: 'PUT',
@@ -155,8 +157,16 @@ export default function DealsPage() {
                     expectedCloseDate: deal.expectedCloseDate,
                     pipelineId: deal.pipeline?.id || defaultPipeline.id,
                   }),
-                }).then(() => {
-                  deal.stage = UNASSIGNED_STAGE
+                }).then((res) => {
+                  if (res.ok) {
+                    console.log(`Successfully moved deal ${deal.id} to unassigned`)
+                    deal.stage = UNASSIGNED_STAGE
+                  } else {
+                    console.error(`Failed to move deal ${deal.id}:`, res.status, res.statusText)
+                    return res.json().then(err => {
+                      console.error('Error details:', err)
+                    })
+                  }
                 }).catch(err => {
                   console.error('Error moving deal to unassigned:', err)
                 })
