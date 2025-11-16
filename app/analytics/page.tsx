@@ -102,13 +102,39 @@ export default function AnalyticsPage() {
     return <div className="flex justify-center p-8">Ошибка загрузки данных</div>
   }
 
-  // Подготовка данных для графика
-  const maxValue = data.chartData.length > 0
-    ? Math.max(
-        ...data.chartData.map(d => d.contacts + d.tasks + d.deals + d.events),
-        1
-      )
-    : 1
+  // Подготовка данных для графика (линейный)
+  const chartHeight = 200
+  const chartPadding = { top: 20, right: 20, bottom: 40, left: 40 }
+  const chartWidth = Math.max(600, data.chartData.length * 30)
+  
+  // Находим максимальное значение для каждой категории отдельно
+  const maxContacts = Math.max(...data.chartData.map(d => d.contacts), 1)
+  const maxTasks = Math.max(...data.chartData.map(d => d.tasks), 1)
+  const maxDeals = Math.max(...data.chartData.map(d => d.deals), 1)
+  const maxEvents = Math.max(...data.chartData.map(d => d.events), 1)
+  const maxValue = Math.max(maxContacts, maxTasks, maxDeals, maxEvents, 1)
+  
+  // Функция для преобразования значения в Y координату
+  const getY = (value: number) => {
+    return chartHeight - chartPadding.bottom - ((value / maxValue) * (chartHeight - chartPadding.top - chartPadding.bottom))
+  }
+  
+  // Функция для получения X координаты по индексу
+  const getX = (index: number) => {
+    const availableWidth = chartWidth - chartPadding.left - chartPadding.right
+    return chartPadding.left + (index / (data.chartData.length - 1 || 1)) * availableWidth
+  }
+  
+  // Генерация path для линии
+  const generateLinePath = (values: number[]) => {
+    if (values.length === 0) return ''
+    const points = values.map((value, index) => {
+      const x = getX(index)
+      const y = getY(value)
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+    })
+    return points.join(' ')
+  }
 
   return (
     <div className="space-y-6">
@@ -192,82 +218,201 @@ export default function AnalyticsPage() {
       {/* График динамики */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-xl font-semibold mb-4">Динамика за период</h2>
-        <div className="h-64 flex items-end space-x-1 overflow-x-auto pb-8">
-          {data.chartData.length > 0 ? (
-            data.chartData.map((day, index) => {
-              const date = new Date(day.date)
-              const isToday = date.toDateString() === new Date().toDateString()
-              const total = day.contacts + day.tasks + day.deals + day.events
+        {data.chartData.length > 0 ? (
+          <div className="overflow-x-auto">
+            <svg width={chartWidth} height={chartHeight + 60} className="w-full">
+              {/* Сетка и оси */}
+              <defs>
+                <linearGradient id="contactsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="tasksGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="dealsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#a855f7" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="eventsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                </linearGradient>
+              </defs>
               
-              return (
-                <div key={index} className="flex-1 min-w-[40px] flex flex-col items-center justify-end">
-                  <div className="w-full flex flex-col justify-end h-48 space-y-0.5 relative group">
-                    {total > 0 ? (
-                      <>
-                        {day.contacts > 0 && (
-                          <div
-                            className="bg-blue-500 rounded-t hover:bg-blue-600 transition-colors cursor-pointer"
-                            style={{ 
-                              height: `${maxValue > 0 ? Math.max((day.contacts / maxValue) * 100, 5) : 5}%`,
-                              minHeight: '4px'
-                            }}
-                            title={`Контакты: ${day.contacts}`}
-                          />
-                        )}
-                        {day.tasks > 0 && (
-                          <div
-                            className="bg-orange-500 rounded-t hover:bg-orange-600 transition-colors cursor-pointer"
-                            style={{ 
-                              height: `${maxValue > 0 ? Math.max((day.tasks / maxValue) * 100, 5) : 5}%`,
-                              minHeight: '4px'
-                            }}
-                            title={`Задачи: ${day.tasks}`}
-                          />
-                        )}
-                        {day.deals > 0 && (
-                          <div
-                            className="bg-purple-500 rounded-t hover:bg-purple-600 transition-colors cursor-pointer"
-                            style={{ 
-                              height: `${maxValue > 0 ? Math.max((day.deals / maxValue) * 100, 5) : 5}%`,
-                              minHeight: '4px'
-                            }}
-                            title={`Сделки: ${day.deals}`}
-                          />
-                        )}
-                        {day.events > 0 && (
-                          <div
-                            className="bg-green-500 rounded-t hover:bg-green-600 transition-colors cursor-pointer"
-                            style={{ 
-                              height: `${maxValue > 0 ? Math.max((day.events / maxValue) * 100, 5) : 5}%`,
-                              minHeight: '4px'
-                            }}
-                            title={`События: ${day.events}`}
-                          />
-                        )}
-                      </>
-                    ) : (
-                      <div className="h-full flex items-center justify-center">
-                        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                      </div>
+              {/* Горизонтальные линии сетки */}
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                const y = chartPadding.top + (chartHeight - chartPadding.top - chartPadding.bottom) * (1 - ratio)
+                return (
+                  <g key={ratio}>
+                    <line
+                      x1={chartPadding.left}
+                      y1={y}
+                      x2={chartWidth - chartPadding.right}
+                      y2={y}
+                      stroke="#e5e7eb"
+                      strokeWidth="1"
+                      strokeDasharray="4,4"
+                    />
+                    <text
+                      x={chartPadding.left - 10}
+                      y={y + 4}
+                      textAnchor="end"
+                      fontSize="10"
+                      fill="#6b7280"
+                    >
+                      {Math.round(maxValue * ratio)}
+                    </text>
+                  </g>
+                )
+              })}
+              
+              {/* Линия Контакты */}
+              <path
+                d={generateLinePath(data.chartData.map(d => d.contacts))}
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Область под линией Контакты */}
+              <path
+                d={`${generateLinePath(data.chartData.map(d => d.contacts))} L ${getX(data.chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                fill="url(#contactsGradient)"
+              />
+              
+              {/* Линия Задачи */}
+              <path
+                d={generateLinePath(data.chartData.map(d => d.tasks))}
+                fill="none"
+                stroke="#f97316"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Область под линией Задачи */}
+              <path
+                d={`${generateLinePath(data.chartData.map(d => d.tasks))} L ${getX(data.chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                fill="url(#tasksGradient)"
+              />
+              
+              {/* Линия Сделки */}
+              <path
+                d={generateLinePath(data.chartData.map(d => d.deals))}
+                fill="none"
+                stroke="#a855f7"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Область под линией Сделки */}
+              <path
+                d={`${generateLinePath(data.chartData.map(d => d.deals))} L ${getX(data.chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                fill="url(#dealsGradient)"
+              />
+              
+              {/* Линия События */}
+              <path
+                d={generateLinePath(data.chartData.map(d => d.events))}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Область под линией События */}
+              <path
+                d={`${generateLinePath(data.chartData.map(d => d.events))} L ${getX(data.chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                fill="url(#eventsGradient)"
+              />
+              
+              {/* Точки на линиях */}
+              {data.chartData.map((day, index) => {
+                const date = new Date(day.date)
+                const isToday = date.toDateString() === new Date().toDateString()
+                const x = getX(index)
+                
+                return (
+                  <g key={index}>
+                    {/* Точка Контакты */}
+                    {day.contacts > 0 && (
+                      <circle
+                        cx={x}
+                        cy={getY(day.contacts)}
+                        r="4"
+                        fill="#3b82f6"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="hover:r-6 transition-all cursor-pointer"
+                      >
+                        <title>Контакты: {day.contacts}</title>
+                      </circle>
                     )}
-                    {total > 0 && (
-                      <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                        Всего: {total}
-                      </div>
+                    {/* Точка Задачи */}
+                    {day.tasks > 0 && (
+                      <circle
+                        cx={x}
+                        cy={getY(day.tasks)}
+                        r="4"
+                        fill="#f97316"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="hover:r-6 transition-all cursor-pointer"
+                      >
+                        <title>Задачи: {day.tasks}</title>
+                      </circle>
                     )}
-                  </div>
-                  <div className={`text-xs mt-2 whitespace-nowrap ${isToday ? 'font-bold text-blue-600' : 'text-gray-500'}`}>
-                    {date.getDate()}/{date.getMonth() + 1}
-                  </div>
-                </div>
-              )
-            })
-          ) : (
-            <div className="w-full h-48 flex items-center justify-center text-gray-400">
-              Нет данных за выбранный период
-            </div>
-          )}
-        </div>
+                    {/* Точка Сделки */}
+                    {day.deals > 0 && (
+                      <circle
+                        cx={x}
+                        cy={getY(day.deals)}
+                        r="4"
+                        fill="#a855f7"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="hover:r-6 transition-all cursor-pointer"
+                      >
+                        <title>Сделки: {day.deals}</title>
+                      </circle>
+                    )}
+                    {/* Точка События */}
+                    {day.events > 0 && (
+                      <circle
+                        cx={x}
+                        cy={getY(day.events)}
+                        r="4"
+                        fill="#10b981"
+                        stroke="white"
+                        strokeWidth="2"
+                        className="hover:r-6 transition-all cursor-pointer"
+                      >
+                        <title>События: {day.events}</title>
+                      </circle>
+                    )}
+                    {/* Подпись даты */}
+                    <text
+                      x={x}
+                      y={chartHeight + 20}
+                      textAnchor="middle"
+                      fontSize="10"
+                      fill={isToday ? "#3b82f6" : "#6b7280"}
+                      fontWeight={isToday ? "bold" : "normal"}
+                    >
+                      {date.getDate()}/{date.getMonth() + 1}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
+          </div>
+        ) : (
+          <div className="w-full h-64 flex items-center justify-center text-gray-400">
+            Нет данных за выбранный период
+          </div>
+        )}
         <div className="flex justify-center space-x-4 mt-4 text-sm">
           <div className="flex items-center">
             <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
