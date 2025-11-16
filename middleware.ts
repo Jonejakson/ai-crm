@@ -1,20 +1,6 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Импортируем auth напрямую, но не используем Prisma в Edge Runtime
-// NextAuth v5 auth() работает в Edge Runtime без Prisma
-let auth: any
-
-// Динамический импорт auth только когда нужно (не в Edge Runtime при инициализации модуля)
-async function getAuth() {
-  if (!auth) {
-    // Импортируем auth только когда он действительно нужен
-    const authModule = await import("@/lib/auth")
-    auth = authModule.auth
-  }
-  return auth
-}
-
 export async function middleware(request: NextRequest) {
   // Разрешаем доступ к публичным маршрутам
   const publicPaths = ['/login', '/api/auth']
@@ -24,19 +10,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
   
-  try {
-    const authFn = await getAuth()
-    const session = await authFn()
-    
-    // Если нет сессии, перенаправляем на страницу входа
-    if (!session) {
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
-      return NextResponse.redirect(loginUrl)
-    }
-  } catch (error) {
-    // Если ошибка аутентификации, разрешаем доступ (чтобы не блокировать приложение)
-    console.error('Auth error in middleware:', error)
+  // Проверяем наличие сессионной cookie (NextAuth создает authjs.session-token)
+  // Это легковесная проверка без импорта тяжелых зависимостей
+  const sessionToken = request.cookies.get('authjs.session-token') || 
+                       request.cookies.get('__Secure-authjs.session-token')
+  
+  // Если нет сессионной cookie, перенаправляем на страницу входа
+  if (!sessionToken) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+    return NextResponse.redirect(loginUrl)
   }
   
   return NextResponse.next()
