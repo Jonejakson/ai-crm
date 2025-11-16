@@ -710,7 +710,7 @@ export default function DealsPage() {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Выберите этап</option>
-                    {stages.map(stage => (
+                    {stages.filter(s => s !== UNASSIGNED_STAGE).map(stage => (
                       <option key={stage} value={stage}>{stage}</option>
                     ))}
                   </select>
