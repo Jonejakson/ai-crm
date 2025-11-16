@@ -56,6 +56,8 @@ interface Contact {
   id: number
   name: string
   email: string
+  phone?: string | null
+  company?: string | null
 }
 
 // Новые дефолтные этапы
