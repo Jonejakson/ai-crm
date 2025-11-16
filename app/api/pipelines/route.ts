@@ -68,3 +68,58 @@ export async function POST(req: Request) {
   }
 }
 
+// Обновить воронку
+export async function PUT(req: Request) {
+  try {
+    const user = await getCurrentUser();
+    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const data = await req.json();
+    
+    if (!data.id) {
+      return NextResponse.json({ error: "Pipeline ID is required" }, { status: 400 });
+    }
+
+    const companyId = parseInt(user.companyId);
+
+    // Проверяем, что воронка принадлежит компании пользователя
+    const existingPipeline = await prisma.pipeline.findFirst({
+      where: {
+        id: data.id,
+        companyId,
+      }
+    });
+
+    if (!existingPipeline) {
+      return NextResponse.json({ error: "Pipeline not found or access denied" }, { status: 404 });
+    }
+
+    const updateData: any = {};
+    
+    if (data.name) {
+      updateData.name = data.name;
+    }
+    
+    if (data.stages) {
+      updateData.stages = typeof data.stages === 'string' ? data.stages : JSON.stringify(data.stages);
+    }
+    
+    if (data.isDefault !== undefined) {
+      updateData.isDefault = data.isDefault;
+    }
+
+    const pipeline = await prisma.pipeline.update({
+      where: { id: data.id },
+      data: updateData,
+    });
+    
+    return NextResponse.json(pipeline);
+  } catch (error: any) {
+    console.error('Error updating pipeline:', error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+

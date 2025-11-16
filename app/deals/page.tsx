@@ -2,6 +2,23 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import PipelineStagesEditor from '@/components/PipelineStagesEditor'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  useDroppable,
+  useDraggable,
+} from '@dnd-kit/core'
+import {
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 interface Deal {
   id: number
@@ -41,7 +58,16 @@ interface Contact {
   email: string
 }
 
-const DEFAULT_STAGES = ['lead', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost']
+// Новые дефолтные этапы
+const DEFAULT_STAGES = [
+  'Первичный контакт',
+  'Коммерческое предложение',
+  'Согласование',
+  'Передача в производство',
+  'Скомплектовано на Складе',
+  'Закрыто и реализованное',
+  'Закрыто пропала потребность'
+]
 
 export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([])
@@ -49,18 +75,31 @@ export default function DealsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isStagesEditorOpen, setIsStagesEditorOpen] = useState(false)
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
     currency: 'RUB',
     contactId: '',
-    stage: 'lead',
+    stage: '',
     probability: '0',
     expectedCloseDate: '',
     pipelineId: ''
   })
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
   useEffect(() => {
     fetchData()
@@ -94,6 +133,10 @@ export default function DealsPage() {
         const defaultPipeline = pipelinesData.find((p: Pipeline) => p.isDefault) || pipelinesData[0]
         if (defaultPipeline) {
           setSelectedPipeline(defaultPipeline.id)
+          const stages = getStagesFromPipeline(defaultPipeline)
+          if (stages.length > 0 && !formData.stage) {
+            setFormData(prev => ({ ...prev, stage: stages[0] }))
+          }
         }
       }
     } catch (error) {
@@ -109,7 +152,7 @@ export default function DealsPage() {
   // Создаем дефолтную воронку при первом запуске
   useEffect(() => {
     const createDefaultPipeline = async () => {
-      if (pipelines.length === 0) {
+      if (pipelines.length === 0 && !loading) {
         try {
           const response = await fetch('/api/pipelines', {
             method: 'POST',
@@ -129,10 +172,26 @@ export default function DealsPage() {
       }
     }
     
-    if (!loading && pipelines.length === 0) {
-      createDefaultPipeline()
-    }
+    createDefaultPipeline()
   }, [loading, pipelines.length])
+
+  const getStagesFromPipeline = (pipeline: Pipeline): string[] => {
+    try {
+      return JSON.parse(pipeline.stages)
+    } catch {
+      return DEFAULT_STAGES
+    }
+  }
+
+  const getStages = (): string[] => {
+    if (selectedPipeline) {
+      const pipeline = pipelines.find(p => p.id === selectedPipeline)
+      if (pipeline) {
+        return getStagesFromPipeline(pipeline)
+      }
+    }
+    return DEFAULT_STAGES
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -152,12 +211,13 @@ export default function DealsPage() {
       if (response.ok) {
         await fetchData()
         setIsModalOpen(false)
+        const stages = getStages()
         setFormData({
           title: '',
           amount: '',
           currency: 'RUB',
           contactId: '',
-          stage: 'lead',
+          stage: stages[0] || '',
           probability: '0',
           expectedCloseDate: '',
           pipelineId: ''
@@ -168,11 +228,31 @@ export default function DealsPage() {
     }
   }
 
-  const handleStageChange = async (dealId: number, newStage: string) => {
-    try {
-      const deal = deals.find(d => d.id === dealId)
-      if (!deal) return
+  const handleDealDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
 
+    if (!over) {
+      setActiveDeal(null)
+      return
+    }
+
+    const dealId = parseInt(active.id as string)
+    const newStage = over.id as string
+
+    // Проверяем, что это действительно смена этапа
+    const deal = deals.find(d => d.id === dealId)
+    if (!deal || deal.stage === newStage) {
+      setActiveDeal(null)
+      return
+    }
+
+    // Проверяем, что новый этап существует в списке этапов
+    if (!stages.includes(newStage)) {
+      setActiveDeal(null)
+      return
+    }
+
+    try {
       const response = await fetch('/api/deals', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -193,6 +273,30 @@ export default function DealsPage() {
       }
     } catch (error) {
       console.error('Error updating deal:', error)
+    } finally {
+      setActiveDeal(null)
+    }
+  }
+
+  const handleStagesUpdate = async (newStages: string[]) => {
+    if (!selectedPipeline) return
+
+    try {
+      const response = await fetch('/api/pipelines', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedPipeline,
+          stages: newStages,
+        }),
+      })
+
+      if (response.ok) {
+        await fetchData()
+        setIsStagesEditorOpen(false)
+      }
+    } catch (error) {
+      console.error('Error updating pipeline stages:', error)
     }
   }
 
@@ -212,42 +316,17 @@ export default function DealsPage() {
     }
   }
 
-  const getStages = (): string[] => {
-    if (selectedPipeline) {
-      const pipeline = pipelines.find(p => p.id === selectedPipeline)
-      if (pipeline) {
-        try {
-          return JSON.parse(pipeline.stages)
-        } catch {
-          return DEFAULT_STAGES
-        }
-      }
-    }
-    return DEFAULT_STAGES
-  }
-
-  const getStageName = (stage: string): string => {
-    const names: Record<string, string> = {
-      lead: 'Лид',
-      qualification: 'Квалификация',
-      proposal: 'Предложение',
-      negotiation: 'Переговоры',
-      closed_won: 'Закрыта (Успех)',
-      closed_lost: 'Закрыта (Провал)',
-    }
-    return names[stage] || stage
-  }
-
-  const getStageColor = (stage: string): string => {
-    const colors: Record<string, string> = {
-      lead: 'bg-blue-100 border-blue-300',
-      qualification: 'bg-yellow-100 border-yellow-300',
-      proposal: 'bg-purple-100 border-purple-300',
-      negotiation: 'bg-orange-100 border-orange-300',
-      closed_won: 'bg-green-100 border-green-300',
-      closed_lost: 'bg-red-100 border-red-300',
-    }
-    return colors[stage] || 'bg-gray-100 border-gray-300'
+  const getStageColor = (index: number): string => {
+    const colors = [
+      'bg-blue-100 border-blue-300',
+      'bg-purple-100 border-purple-300',
+      'bg-yellow-100 border-yellow-300',
+      'bg-orange-100 border-orange-300',
+      'bg-indigo-100 border-indigo-300',
+      'bg-green-100 border-green-300',
+      'bg-red-100 border-red-300',
+    ]
+    return colors[index % colors.length]
   }
 
   const stages = getStages()
@@ -257,7 +336,7 @@ export default function DealsPage() {
   }, {} as Record<string, Deal[]>)
 
   const totalAmount = deals.reduce((sum, deal) => sum + deal.amount, 0)
-  const wonDeals = deals.filter(d => d.stage === 'closed_won')
+  const wonDeals = deals.filter(d => d.stage === 'Закрыто и реализованное')
   const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
 
   if (loading) {
@@ -323,76 +402,70 @@ export default function DealsPage() {
 
       {/* Канбан-доска */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="mb-4">
-          <label className="text-sm font-medium text-gray-700 mr-2">Воронка:</label>
-          <select
-            value={selectedPipeline || ''}
-            onChange={(e) => setSelectedPipeline(Number(e.target.value))}
-            className="px-3 py-1 border border-gray-300 rounded-lg"
+        <div className="mb-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Воронка:</label>
+            <select
+              value={selectedPipeline || ''}
+              onChange={(e) => {
+                const pipelineId = Number(e.target.value)
+                setSelectedPipeline(pipelineId)
+                const pipeline = pipelines.find(p => p.id === pipelineId)
+                if (pipeline) {
+                  const stages = getStagesFromPipeline(pipeline)
+                  setFormData(prev => ({ ...prev, stage: stages[0] || '' }))
+                }
+              }}
+              className="px-3 py-1 border border-gray-300 rounded-lg"
+            >
+              {pipelines.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => setIsStagesEditorOpen(true)}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
           >
-            {pipelines.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+            ⚙️ Управление этапами
+          </button>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="flex space-x-4 min-w-max">
-            {stages.map((stage) => (
-              <div
-                key={stage}
-                className={`flex-shrink-0 w-64 ${getStageColor(stage)} rounded-lg p-3 border-2`}
-              >
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  {getStageName(stage)} ({dealsByStage[stage]?.length || 0})
-                </h3>
-                <div className="space-y-2">
-                  {dealsByStage[stage]?.map((deal) => (
-                    <div
-                      key={deal.id}
-                      className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900 text-sm">{deal.title}</h4>
-                        <button
-                          onClick={() => handleDelete(deal.id)}
-                          className="text-red-500 hover:text-red-700 text-xs"
-                        >
-                          ×
-                        </button>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        <a
-                          href={`/contacts/${deal.contact.id}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {deal.contact.name}
-                        </a>
-                      </div>
-                      <div className="text-sm font-semibold text-gray-900 mb-2">
-                        {deal.amount.toLocaleString('ru-RU')} {deal.currency}
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">
-                          Вероятность: {deal.probability}%
-                        </span>
-                        <select
-                          value={deal.stage}
-                          onChange={(e) => handleStageChange(deal.id, e.target.value)}
-                          className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
-                        >
-                          {stages.map(s => (
-                            <option key={s} value={s}>{getStageName(s)}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDealDragEnd}
+          onDragStart={(event) => {
+            const deal = deals.find(d => d.id === parseInt(event.active.id as string))
+            setActiveDeal(deal || null)
+          }}
+          onDragCancel={() => setActiveDeal(null)}
+        >
+          <div className="overflow-x-auto">
+            <div className="flex space-x-4 min-w-max pb-4">
+              {stages.map((stage, index) => (
+                <DealColumn
+                  key={stage}
+                  stage={stage}
+                  deals={dealsByStage[stage] || []}
+                  onDelete={handleDelete}
+                  color={getStageColor(index)}
+                />
+              ))}
+            </div>
+          </div>
+          <DragOverlay>
+            {activeDeal ? (
+              <div className="bg-white rounded-lg p-3 shadow-lg border border-gray-200 w-64">
+                <h4 className="font-medium text-gray-900 text-sm">{activeDeal.title}</h4>
+                <div className="text-xs text-gray-600 mt-1">{activeDeal.contact.name}</div>
+                <div className="text-sm font-semibold text-gray-900 mt-1">
+                  {activeDeal.amount.toLocaleString('ru-RU')} {activeDeal.currency}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </div>
 
       {/* Модальное окно создания сделки */}
@@ -496,10 +569,12 @@ export default function DealsPage() {
                   <select
                     value={formData.stage}
                     onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                    required
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="">Выберите этап</option>
                     {stages.map(stage => (
-                      <option key={stage} value={stage}>{getStageName(stage)}</option>
+                      <option key={stage} value={stage}>{stage}</option>
                     ))}
                   </select>
                 </div>
@@ -536,7 +611,109 @@ export default function DealsPage() {
           </div>
         </div>
       )}
+
+      {/* Редактор этапов */}
+      {isStagesEditorOpen && selectedPipeline && (
+        <PipelineStagesEditor
+          stages={stages}
+          onStagesChange={handleStagesUpdate}
+          onClose={() => setIsStagesEditorOpen(false)}
+        />
+      )}
     </div>
   )
 }
 
+// Компонент колонки с drag & drop для сделок
+function DealColumn({ 
+  stage, 
+  deals, 
+  onDelete,
+  color 
+}: { 
+  stage: string
+  deals: Deal[]
+  onDelete: (id: number) => void
+  color: string
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: stage,
+  })
+
+  return (
+    <div 
+      ref={setNodeRef}
+      className={`flex-shrink-0 w-64 ${color} rounded-lg p-3 border-2 ${isOver ? 'ring-2 ring-blue-500' : ''}`}
+    >
+      <h3 className="font-semibold text-gray-900 mb-3">
+        {stage} ({deals.length})
+      </h3>
+      <div className="space-y-2 min-h-[100px]">
+        {deals.map((deal) => (
+          <DealCard key={deal.id} deal={deal} onDelete={onDelete} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Компонент карточки сделки с drag & drop
+function DealCard({ deal, onDelete }: { deal: Deal; onDelete: (id: number) => void }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging,
+  } = useDraggable({
+    id: deal.id.toString(),
+  })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex justify-between items-start mb-2">
+        <h4 className="font-medium text-gray-900 text-sm flex-1">{deal.title}</h4>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete(deal.id)
+          }}
+          className="text-red-500 hover:text-red-700 text-xs ml-2"
+        >
+          ×
+        </button>
+      </div>
+      <div className="text-xs text-gray-600 mb-2">
+        <a
+          href={`/contacts/${deal.contact.id}`}
+          className="text-blue-600 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {deal.contact.name}
+        </a>
+      </div>
+      <div className="text-sm font-semibold text-gray-900 mb-2">
+        {deal.amount.toLocaleString('ru-RU')} {deal.currency}
+      </div>
+      <div className="text-xs text-gray-500">
+        Вероятность: {deal.probability}%
+      </div>
+      {deal.user && (
+        <div className="text-xs text-gray-400 mt-1">
+          {deal.user.name}
+        </div>
+      )}
+    </div>
+  )
+}
