@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { getActiveSection } from '@/lib/utils'
 
 interface SidebarProps {
@@ -13,9 +14,11 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   const [aiMessage, setAiMessage] = useState('')
   const [aiResponse, setAiResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const { data: session } = useSession()
   
   const pathname = usePathname()
   const activeSection = getActiveSection(pathname)
+  const isAdmin = session?.user?.role === 'admin'
 
 const handleAISubmit = async (e: React.FormEvent) => {
   e.preventDefault()
@@ -62,6 +65,8 @@ const handleAISubmit = async (e: React.FormEvent) => {
     { id: 'calendar', name: 'Календарь', href: '/calendar', icon: '📅' },
     { id: 'analytics', name: 'Аналитика', href: '/analytics', icon: '📈' },
     { id: 'dialogs', name: 'Диалоги', href: '/dialogs', icon: '💬' },
+    // Показываем "Компания" только для админов
+    ...(isAdmin ? [{ id: 'company', name: 'Компания', href: '/company', icon: '🏢' }] : []),
   ]
 
   const quickQuestions = [
