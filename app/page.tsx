@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import UserFilter from '@/components/UserFilter'
 
 interface Contact {
   id: number
@@ -32,12 +33,13 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchData()
     // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
     checkNotifications()
-  }, [])
+  }, [selectedUserId])
 
   const checkNotifications = async () => {
     try {
@@ -49,10 +51,20 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      const contactsUrl = selectedUserId 
+        ? `/api/contacts?userId=${selectedUserId}` 
+        : '/api/contacts'
+      const tasksUrl = selectedUserId 
+        ? `/api/tasks?userId=${selectedUserId}` 
+        : '/api/tasks'
+      const dealsUrl = selectedUserId 
+        ? `/api/deals?userId=${selectedUserId}` 
+        : '/api/deals'
+      
       const [contactsRes, tasksRes, dealsRes] = await Promise.all([
-        fetch('/api/contacts'),
-        fetch('/api/tasks'),
-        fetch('/api/deals')
+        fetch(contactsUrl),
+        fetch(tasksUrl),
+        fetch(dealsUrl)
       ])
       
       // Проверяем статус ответов
@@ -106,6 +118,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter 
+        selectedUserId={selectedUserId} 
+        onUserChange={setSelectedUserId} 
+      />
+      
       {/* Статистика */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-blue-200 group">

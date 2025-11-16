@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getDirectWhereCondition } from "@/lib/access-control";
 
-// Получить аналитику для дашборда
+// Получить аналитику для дашборда (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     
-    const userId = getUserId(user);
-    
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'month'; // week, month, year
+    const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
 
     // Вычисляем даты для периода
     const now = new Date();
@@ -32,10 +32,22 @@ export async function GET(req: Request) {
         break;
     }
 
+    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    let whereCondition: any;
+    
+    if (user.role === 'admin' && filterUserId) {
+      // Админ может фильтровать по конкретному пользователю
+      const targetUserId = parseInt(filterUserId);
+      whereCondition = { userId: targetUserId };
+    } else {
+      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
+      whereCondition = await getDirectWhereCondition();
+    }
+
     // Получаем данные
     const [contacts, tasks, deals, events] = await Promise.all([
       prisma.contact.findMany({
-        where: { userId: userId },
+        where: whereCondition,
         select: {
           id: true,
           createdAt: true,
@@ -49,7 +61,7 @@ export async function GET(req: Request) {
         }
       }),
       prisma.task.findMany({
-        where: { userId: userId },
+        where: whereCondition,
         select: {
           id: true,
           status: true,
@@ -58,7 +70,7 @@ export async function GET(req: Request) {
         }
       }),
       prisma.deal.findMany({
-        where: { userId: userId },
+        where: whereCondition,
         select: {
           id: true,
           amount: true,
@@ -69,7 +81,7 @@ export async function GET(req: Request) {
         }
       }),
       prisma.event.findMany({
-        where: { userId: userId },
+        where: whereCondition,
         select: {
           id: true,
           type: true,

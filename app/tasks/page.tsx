@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import UserFilter from '@/components/UserFilter'
 
 interface Task {
   id: number
@@ -29,6 +30,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filter, setFilter] = useState('all')
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -49,7 +51,7 @@ export default function TasksPage() {
     fetchData()
     // Проверяем просроченные задачи и предстоящие события
     checkNotifications()
-  }, [])
+  }, [selectedUserId])
 
   const checkNotifications = async () => {
     try {
@@ -61,9 +63,16 @@ export default function TasksPage() {
 
   const fetchData = async () => {
     try {
+      const tasksUrl = selectedUserId 
+        ? `/api/tasks?userId=${selectedUserId}` 
+        : '/api/tasks'
+      const contactsUrl = selectedUserId 
+        ? `/api/contacts?userId=${selectedUserId}` 
+        : '/api/contacts'
+      
       const [tasksRes, contactsRes] = await Promise.all([
-        fetch('/api/tasks').then(res => res.json()),
-        fetch('/api/contacts').then(res => res.json())
+        fetch(tasksUrl).then(res => res.json()),
+        fetch(contactsUrl).then(res => res.json())
       ])
       setTasks(tasksRes)
       setContacts(contactsRes)
@@ -231,6 +240,15 @@ export default function TasksPage() {
       {/* Заголовок и фильтры */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Задачи</h1>
+      </div>
+      
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter 
+        selectedUserId={selectedUserId} 
+        onUserChange={setSelectedUserId} 
+      />
+      
+      <div className="flex justify-end">
         <div className="flex space-x-2">
           <button 
             onClick={() => {

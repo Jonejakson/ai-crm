@@ -1,37 +1,45 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getDirectWhereCondition } from "@/lib/access-control";
 
-// Получить все сделки текущего пользователя
+// Получить все сделки (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     
-    const userId = getUserId(user);
-    
-    if (!userId) {
-      console.error('No user or invalid user.id in GET /api/deals');
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
+    const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
     const pipelineId = searchParams.get('pipelineId');
     const stage = searchParams.get('stage');
 
-    const where: any = {
-      userId: userId
-    };
+    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    let whereCondition: any;
+    
+    if (user.role === 'admin' && filterUserId) {
+      // Админ может фильтровать по конкретному пользователю
+      const targetUserId = parseInt(filterUserId);
+      whereCondition = { userId: targetUserId };
+    } else {
+      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
+      whereCondition = await getDirectWhereCondition();
+    }
 
+    // Добавляем дополнительные фильтры
     if (pipelineId) {
-      where.pipelineId = parseInt(pipelineId);
+      whereCondition.pipelineId = parseInt(pipelineId);
     }
 
     if (stage) {
-      where.stage = stage;
+      whereCondition.stage = stage;
     }
 
     const deals = await prisma.deal.findMany({
-      where,
+      where: whereCondition,
       include: {
         contact: {
           select: {
@@ -42,6 +50,13 @@ export async function GET(req: Request) {
           }
         },
         pipeline: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
       },
       orderBy: { updatedAt: 'desc' },
     });

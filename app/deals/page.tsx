@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import UserFilter from '@/components/UserFilter'
 
 interface Deal {
   id: number
@@ -44,6 +45,7 @@ export default function DealsPage() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -57,14 +59,21 @@ export default function DealsPage() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [selectedUserId])
 
   const fetchData = async () => {
     try {
+      const dealsUrl = selectedUserId 
+        ? `/api/deals?userId=${selectedUserId}` 
+        : '/api/deals'
+      const contactsUrl = selectedUserId 
+        ? `/api/contacts?userId=${selectedUserId}` 
+        : '/api/contacts'
+      
       const [dealsRes, pipelinesRes, contactsRes] = await Promise.all([
-        fetch('/api/deals').then(res => res.ok ? res.json() : []),
+        fetch(dealsUrl).then(res => res.ok ? res.json() : []),
         fetch('/api/pipelines').then(res => res.ok ? res.json() : []),
-        fetch('/api/contacts').then(res => res.ok ? res.json() : [])
+        fetch(contactsUrl).then(res => res.ok ? res.json() : [])
       ])
       
       const dealsData = Array.isArray(dealsRes) ? dealsRes : []
@@ -255,6 +264,15 @@ export default function DealsPage() {
       {/* Заголовок и статистика */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Сделки</h1>
+      </div>
+      
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter 
+        selectedUserId={selectedUserId} 
+        onUserChange={setSelectedUserId} 
+      />
+      
+      <div className="flex justify-end">
         <div className="flex space-x-2">
           <button 
             onClick={() => {

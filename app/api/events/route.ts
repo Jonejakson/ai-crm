@@ -1,41 +1,50 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getDirectWhereCondition } from "@/lib/access-control";
 import { createNotification } from "@/lib/notifications";
 
-// Получить все события текущего пользователя
+// Получить все события (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     
-    const userId = getUserId(user);
-    
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
+    const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const contactId = searchParams.get('contactId');
 
-    const where: any = {
-      userId: userId
-    };
+    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    let whereCondition: any;
+    
+    if (user.role === 'admin' && filterUserId) {
+      // Админ может фильтровать по конкретному пользователю
+      const targetUserId = parseInt(filterUserId);
+      whereCondition = { userId: targetUserId };
+    } else {
+      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
+      whereCondition = await getDirectWhereCondition();
+    }
 
+    // Добавляем дополнительные фильтры
     if (startDate && endDate) {
-      where.startDate = {
+      whereCondition.startDate = {
         gte: new Date(startDate),
         lte: new Date(endDate)
       };
     }
 
     if (contactId) {
-      where.contactId = parseInt(contactId);
+      whereCondition.contactId = parseInt(contactId);
     }
 
     const events = await prisma.event.findMany({
-      where,
+      where: whereCondition,
       include: {
         contact: {
           select: {
@@ -43,6 +52,13 @@ export async function GET(req: Request) {
             name: true,
             email: true,
             phone: true,
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           }
         }
       },

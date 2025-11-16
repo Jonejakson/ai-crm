@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import UserFilter from '@/components/UserFilter'
 
 interface AnalyticsData {
   period: string
@@ -47,15 +48,19 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month')
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
 
   useEffect(() => {
     fetchAnalytics()
-  }, [period])
+  }, [period, selectedUserId])
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/analytics?period=${period}`)
+      const url = selectedUserId 
+        ? `/api/analytics?period=${period}&userId=${selectedUserId}` 
+        : `/api/analytics?period=${period}`
+      const response = await fetch(url)
       if (response.ok) {
         const analyticsData = await response.json()
         setData(analyticsData)
@@ -110,6 +115,15 @@ export default function AnalyticsPage() {
       {/* Заголовок и фильтр периода */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Аналитика и отчеты</h1>
+      </div>
+      
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter 
+        selectedUserId={selectedUserId} 
+        onUserChange={setSelectedUserId} 
+      />
+      
+      <div className="flex justify-between items-center">
         <div className="flex space-x-2">
           <button
             onClick={() => setPeriod('week')}

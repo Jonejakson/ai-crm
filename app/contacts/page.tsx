@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import UserFilter from '@/components/UserFilter'
 
 interface Contact {
   id: number
@@ -16,6 +17,7 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,11 +34,14 @@ const [editFormData, setEditFormData] = useState({
 
   useEffect(() => {
     fetchContacts()
-  }, [])
+  }, [selectedUserId])
 
   const fetchContacts = async () => {
     try {
-      const response = await fetch('/api/contacts')
+      const url = selectedUserId 
+        ? `/api/contacts?userId=${selectedUserId}` 
+        : '/api/contacts'
+      const response = await fetch(url)
       const data = await response.json()
       setContacts(data)
     } catch (error) {
@@ -143,6 +148,15 @@ const handleDelete = async (contactId: number) => {
       {/* Заголовок и кнопка */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Клиенты</h1>
+      </div>
+      
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter 
+        selectedUserId={selectedUserId} 
+        onUserChange={setSelectedUserId} 
+      />
+      
+      <div className="flex justify-end">
         <div className="flex space-x-2">
           <button 
             onClick={() => {

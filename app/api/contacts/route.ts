@@ -3,8 +3,8 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 
-// ❶ Получить все контакты (с учетом роли: админ видит всю компанию, менеджер - только свои)
-export async function GET() {
+// ❶ Получить все контакты (с учетом роли и фильтра по пользователю для админа)
+export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     
@@ -12,8 +12,20 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Получаем фильтр доступа (админ видит всю компанию, менеджер - только свои)
-    const whereCondition = await getDirectWhereCondition();
+    const { searchParams } = new URL(req.url);
+    const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
+
+    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    let whereCondition: any;
+    
+    if (user.role === 'admin' && filterUserId) {
+      // Админ может фильтровать по конкретному пользователю
+      const targetUserId = parseInt(filterUserId);
+      whereCondition = { userId: targetUserId };
+    } else {
+      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
+      whereCondition = await getDirectWhereCondition();
+    }
 
     const contacts = await prisma.contact.findMany({
       where: whereCondition,

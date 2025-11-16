@@ -1,25 +1,45 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getDirectWhereCondition } from "@/lib/access-control";
 import { createNotification, checkOverdueTasks } from "@/lib/notifications";
 
-// 🔹 Получить все задачи текущего пользователя
-export async function GET() {
+// 🔹 Получить все задачи (с учетом роли и фильтра по пользователю для админа)
+export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     
-    const userId = getUserId(user);
-    
-    if (!userId) {
-      console.error('No user or invalid user.id in GET /api/tasks');
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { searchParams } = new URL(req.url);
+    const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
+
+    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    let whereCondition: any;
+    
+    if (user.role === 'admin' && filterUserId) {
+      // Админ может фильтровать по конкретному пользователю
+      const targetUserId = parseInt(filterUserId);
+      whereCondition = { userId: targetUserId };
+    } else {
+      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
+      whereCondition = await getDirectWhereCondition();
+    }
+
     const tasks = await prisma.task.findMany({
-      where: {
-        userId: userId
+      where: whereCondition,
+      include: { 
+        contact: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
       },
-      include: { contact: true },
       orderBy: { id: "desc" },
     });
     return NextResponse.json(tasks);

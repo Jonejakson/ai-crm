@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import UserFilter from '@/components/UserFilter'
 
 interface Event {
   id: number
@@ -31,6 +32,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'week' | 'day'>('month')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [formData, setFormData] = useState({
     title: '',
@@ -48,7 +50,7 @@ export default function CalendarPage() {
     fetchData()
     // Проверяем предстоящие события при загрузке календаря
     checkNotifications()
-  }, [currentDate, view])
+  }, [currentDate, view, selectedUserId])
 
   const checkNotifications = async () => {
     try {
@@ -73,10 +75,16 @@ export default function CalendarPage() {
         endDate.setDate(startDate.getDate() + 6)
       }
 
+      const eventsUrl = selectedUserId 
+        ? `/api/events?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}&userId=${selectedUserId}`
+        : `/api/events?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+      const contactsUrl = selectedUserId 
+        ? `/api/contacts?userId=${selectedUserId}` 
+        : '/api/contacts'
+      
       const [eventsRes, contactsRes] = await Promise.all([
-        fetch(`/api/events?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`)
-          .then(res => res.ok ? res.json() : []),
-        fetch('/api/contacts').then(res => res.ok ? res.json() : [])
+        fetch(eventsUrl).then(res => res.ok ? res.json() : []),
+        fetch(contactsUrl).then(res => res.ok ? res.json() : [])
       ])
 
       setEvents(Array.isArray(eventsRes) ? eventsRes : [])
@@ -241,6 +249,17 @@ export default function CalendarPage() {
           <h1 className="text-2xl font-bold text-gray-900">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h1>
+        </div>
+      </div>
+      
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter 
+        selectedUserId={selectedUserId} 
+        onUserChange={setSelectedUserId} 
+      />
+      
+      <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-4">
           <div className="flex space-x-2">
             <button
               onClick={() => {
