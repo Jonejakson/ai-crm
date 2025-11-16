@@ -892,6 +892,126 @@ export default function DealsPage() {
           unassignedStage={UNASSIGNED_STAGE}
         />
       )}
+
+      {/* Модальное окно создания нового клиента */}
+      {isNewContactModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Новый клиент</h3>
+              <button
+                onClick={() => {
+                  setIsNewContactModalOpen(false)
+                  setNewContactData({ name: '', email: '', phone: '', company: '' })
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                try {
+                  const response = await fetch('/api/contacts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newContactData),
+                  })
+
+                  if (response.ok) {
+                    const newContact = await response.json()
+                    // Обновляем список контактов
+                    await fetchData()
+                    // Выбираем нового клиента в форме сделки
+                    setFormData({...formData, contactId: newContact.id.toString()})
+                    setContactSearch(`${newContact.name} (${newContact.email})`)
+                    setIsNewContactModalOpen(false)
+                    setNewContactData({ name: '', email: '', phone: '', company: '' })
+                  } else {
+                    const error = await response.json()
+                    alert(error.error || 'Ошибка при создании клиента')
+                  }
+                } catch (error) {
+                  console.error('Error creating contact:', error)
+                  alert('Ошибка при создании клиента')
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Имя *
+                </label>
+                <input
+                  type="text"
+                  value={newContactData.name}
+                  onChange={(e) => setNewContactData({...newContactData, name: e.target.value})}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={newContactData.email}
+                  onChange={(e) => setNewContactData({...newContactData, email: e.target.value})}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Телефон
+                </label>
+                <input
+                  type="tel"
+                  value={newContactData.phone}
+                  onChange={(e) => setNewContactData({...newContactData, phone: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Компания
+                </label>
+                <input
+                  type="text"
+                  value={newContactData.company}
+                  onChange={(e) => setNewContactData({...newContactData, company: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewContactModalOpen(false)
+                    setNewContactData({ name: '', email: '', phone: '', company: '' })
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Создать клиента
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
