@@ -1,24 +1,32 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getDirectWhereCondition } from "@/lib/access-control";
 
-// ❶ Получить все контакты текущего пользователя
+// ❶ Получить все контакты (с учетом роли: админ видит всю компанию, менеджер - только свои)
 export async function GET() {
   try {
     const user = await getCurrentUser();
     
-    const userId = getUserId(user);
-    
-    if (!userId) {
-      console.error('No user or invalid user.id in GET /api/contacts');
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Получаем фильтр доступа (админ видит всю компанию, менеджер - только свои)
+    const whereCondition = await getDirectWhereCondition();
+
     const contacts = await prisma.contact.findMany({
-      where: {
-        userId: userId
-      },
+      where: whereCondition,
       orderBy: { id: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          }
+        }
+      }
     });
     return NextResponse.json(contacts);
   } catch (error: any) {
@@ -116,12 +124,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Проверяем, что контакт принадлежит пользователю
-    const contact = await prisma.contact.findUnique({
-      where: { id: data.id }
+    // Проверяем доступ к контакту (с учетом роли)
+    const whereCondition = await getDirectWhereCondition();
+    const contact = await prisma.contact.findFirst({
+      where: {
+        id: data.id,
+        ...whereCondition,
+      }
     });
 
-    if (!contact || contact.userId !== userId) {
+    if (!contact) {
       return NextResponse.json({ error: "Contact not found or access denied" }, { status: 404 });
     }
 
@@ -167,19 +179,18 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
-    // Проверяем, что контакт принадлежит пользователю
-          const userId = getUserId(user);
-          if (!userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-          }
+    // Проверяем доступ к контакту (с учетом роли)
+    const whereCondition = await getDirectWhereCondition();
+    const contact = await prisma.contact.findFirst({
+      where: {
+        id: Number(id),
+        ...whereCondition,
+      }
+    });
 
-          const contact = await prisma.contact.findUnique({
-            where: { id: Number(id) }
-          });
-
-          if (!contact || contact.userId !== userId) {
-            return NextResponse.json({ error: "Contact not found or access denied" }, { status: 404 });
-          }
+    if (!contact) {
+      return NextResponse.json({ error: "Contact not found or access denied" }, { status: 404 });
+    }
 
     await prisma.contact.delete({
       where: { id: Number(id) }

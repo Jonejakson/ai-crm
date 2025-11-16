@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { email, password, name } = await req.json()
+    const { email, password, name, companyId } = await req.json()
 
     // Валидация
     if (!email || !password || !name) {
@@ -56,18 +56,34 @@ export async function POST(req: Request) {
     // Хеширование пароля
     const hashedPassword = await bcrypt.hash(password, 10)
 
+    // Создаем компанию для нового пользователя (или используем существующую, если передан companyId)
+    let finalCompanyId = companyId;
+    
+    if (!finalCompanyId) {
+      // Создаем новую компанию
+      const company = await prisma.company.create({
+        data: {
+          name: `${name}'s Company`,
+        },
+      });
+      finalCompanyId = company.id;
+    }
+
     // Создание пользователя
     const user = await prisma.user.create({
       data: {
         email,
         name,
         password: hashedPassword,
+        companyId: finalCompanyId,
+        role: 'user', // По умолчанию обычный пользователь
       },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
+        companyId: true,
       }
     })
 

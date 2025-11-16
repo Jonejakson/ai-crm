@@ -44,6 +44,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email
+            },
+            include: {
+              company: true
             }
           })
 
@@ -65,6 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             email: user.email,
             name: user.name,
             role: user.role,
+            companyId: user.companyId.toString(),
           }
         } catch (error: any) {
           console.error('Ошибка авторизации:', error)
@@ -84,6 +88,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id
         token.role = (user as any).role
+        token.companyId = (user as any).companyId
       }
       return token
     },
@@ -91,6 +96,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.companyId = token.companyId as string
       }
       return session
     },

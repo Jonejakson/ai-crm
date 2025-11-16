@@ -7,12 +7,23 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+model Company {
+    id        Int       @id @default(autoincrement())
+    name      String
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    users     User[]
+    pipelines Pipeline[]
+}
+
 model User {
     id            Int            @id @default(autoincrement())
     email         String         @unique
     name          String
     password      String
-    role          String         @default("user") // user, admin
+    role          String         @default("user") // user, manager, admin
+    company       Company        @relation(fields: [companyId], references: [id])
+    companyId     Int
     createdAt     DateTime       @default(now())
     updatedAt     DateTime       @updatedAt
     tasks         Task[]
@@ -66,6 +77,8 @@ model Pipeline {
     name      String
     stages    String   // JSON массив этапов
     isDefault Boolean  @default(false)
+    company   Company  @relation(fields: [companyId], references: [id])
+    companyId Int
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     deals     Deal[]
