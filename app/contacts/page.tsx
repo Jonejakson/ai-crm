@@ -10,6 +10,11 @@ interface Contact {
   phone: string | null
   company: string | null
   createdAt: string
+  user?: {
+    id: number
+    name: string
+    email: string
+  }
 }
 
 export default function ContactsPage() {

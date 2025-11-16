@@ -16,6 +16,11 @@ interface Task {
     name: string
     email: string
   }
+  user?: {
+    id: number
+    name: string
+    email: string
+  }
 }
 
 interface Contact {

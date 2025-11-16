@@ -17,6 +17,11 @@ interface Event {
     email: string
     phone: string | null
   } | null
+  user?: {
+    id: number
+    name: string
+    email: string
+  }
 }
 
 interface Contact {

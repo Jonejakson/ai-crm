@@ -21,6 +21,11 @@ interface Deal {
     id: number
     name: string
   } | null
+  user?: {
+    id: number
+    name: string
+    email: string
+  }
 }
 
 interface Pipeline {
