@@ -728,7 +728,7 @@ export default function DealsPage() {
                           if (formData.contactId) {
                             const selected = contacts.find(c => c.id.toString() === formData.contactId)
                             if (selected) {
-                              setContactSearch(`${selected.name} (${selected.email})`)
+                              setContactSearch(selected.email ? `${selected.name} (${selected.email})` : selected.name)
                             }
                           }
                         }}
@@ -740,7 +740,7 @@ export default function DealsPage() {
                           {contacts
                             .filter(contact => 
                               contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
-                              contact.email.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                              (contact.email && contact.email.toLowerCase().includes(contactSearch.toLowerCase())) ||
                               (contact.company && contact.company.toLowerCase().includes(contactSearch.toLowerCase()))
                             )
                             .slice(0, 10)
@@ -749,12 +749,14 @@ export default function DealsPage() {
                                 key={contact.id}
                                 onClick={() => {
                                   setFormData({...formData, contactId: contact.id.toString()})
-                                  setContactSearch(`${contact.name} (${contact.email})`)
+                                  setContactSearch(contact.email ? `${contact.name} (${contact.email})` : contact.name)
                                 }}
                                 className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                               >
                                 <div className="font-medium text-gray-900">{contact.name}</div>
-                                <div className="text-sm text-gray-600">{contact.email}</div>
+                                {contact.email && (
+                                  <div className="text-sm text-gray-600">{contact.email}</div>
+                                )}
                                 {contact.company && (
                                   <div className="text-xs text-gray-500">{contact.company}</div>
                                 )}
@@ -762,7 +764,7 @@ export default function DealsPage() {
                             ))}
                           {contacts.filter(contact => 
                             contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
-                            contact.email.toLowerCase().includes(contactSearch.toLowerCase())
+                            (contact.email && contact.email.toLowerCase().includes(contactSearch.toLowerCase()))
                           ).length === 0 && (
                             <div className="p-2 text-gray-500 text-sm">
                               Клиент не найден
@@ -928,7 +930,7 @@ export default function DealsPage() {
                     await fetchData()
                     // Выбираем нового клиента в форме сделки
                     setFormData({...formData, contactId: newContact.id.toString()})
-                    setContactSearch(`${newContact.name} (${newContact.email})`)
+                    setContactSearch(newContact.email ? `${newContact.name} (${newContact.email})` : newContact.name)
                     setIsNewContactModalOpen(false)
                     setNewContactData({ name: '', email: '', phone: '', company: '' })
                   } else {
