@@ -50,6 +50,11 @@ export default function ContactDetailPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('info')
   const [newMessage, setNewMessage] = useState('')
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [taskFormData, setTaskFormData] = useState({
+    title: '',
+    dueDate: ''
+  })
 
   useEffect(() => {
     if (contactId) {
@@ -116,9 +121,9 @@ export default function ContactDetailPage() {
     }
   }
 
-  const handleCreateTask = async () => {
-    const title = prompt('Введите название задачи:')
-    if (!title) return
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!taskFormData.title.trim()) return
 
     try {
       const response = await fetch('/api/tasks', {
@@ -127,13 +132,16 @@ export default function ContactDetailPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          title,
+          title: taskFormData.title,
           contactId: Number(contactId),
+          dueDate: taskFormData.dueDate || null,
           status: 'pending'
         }),
       })
 
       if (response.ok) {
+        setIsTaskModalOpen(false)
+        setTaskFormData({ title: '', dueDate: '' })
         fetchContactData() // Обновляем задачи
       }
     } catch (error) {
@@ -169,7 +177,7 @@ export default function ContactDetailPage() {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={handleCreateTask}
+            onClick={() => setIsTaskModalOpen(true)}
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
           >
             + Добавить задачу
