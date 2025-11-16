@@ -23,9 +23,10 @@ interface PipelineStagesEditorProps {
   stages: string[]
   onStagesChange: (stages: string[]) => void
   onClose: () => void
+  unassignedStage?: string // Этап, который нельзя удалить
 }
 
-function SortableStageItem({ stage, index, onDelete }: { stage: string; index: number; onDelete: () => void }) {
+function SortableStageItem({ stage, index, onDelete, isUnremovable }: { stage: string; index: number; onDelete: () => void; isUnremovable?: boolean }) {
   const {
     attributes,
     listeners,
@@ -54,18 +55,23 @@ function SortableStageItem({ stage, index, onDelete }: { stage: string; index: n
       >
         ☰
       </div>
-      <span className="flex-1 font-medium">{stage}</span>
-      <button
-        onClick={onDelete}
-        className="text-red-500 hover:text-red-700 text-sm"
-      >
-        Удалить
-      </button>
+      <span className="flex-1 font-medium">
+        {stage}
+        {isUnremovable && <span className="ml-2 text-xs text-gray-500">(не удаляется)</span>}
+      </span>
+      {!isUnremovable && (
+        <button
+          onClick={onDelete}
+          className="text-red-500 hover:text-red-700 text-sm"
+        >
+          Удалить
+        </button>
+      )}
     </div>
   )
 }
 
-export default function PipelineStagesEditor({ stages, onStagesChange, onClose }: PipelineStagesEditorProps) {
+export default function PipelineStagesEditor({ stages, onStagesChange, onClose, unassignedStage }: PipelineStagesEditorProps) {
   const [localStages, setLocalStages] = useState<string[]>(stages)
   const [newStageName, setNewStageName] = useState('')
 
@@ -159,6 +165,7 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose }
                     stage={stage}
                     index={index}
                     onDelete={() => handleDeleteStage(stage)}
+                    isUnremovable={unassignedStage === stage}
                   />
                 ))}
               </div>

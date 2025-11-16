@@ -69,6 +69,9 @@ const DEFAULT_STAGES = [
   'Закрыто пропала потребность'
 ]
 
+// Колонка для неразобранных сделок (всегда существует, не удаляется)
+const UNASSIGNED_STAGE = 'Неразобранные'
+
 export default function DealsPage() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
@@ -120,25 +123,65 @@ export default function DealsPage() {
         fetch(contactsUrl).then(res => res.ok ? res.json() : [])
       ])
       
-      const dealsData = Array.isArray(dealsRes) ? dealsRes : []
+      let dealsData = Array.isArray(dealsRes) ? dealsRes : []
       const pipelinesData = Array.isArray(pipelinesRes) ? pipelinesRes : []
       const contactsData = Array.isArray(contactsRes) ? contactsRes : []
-      
-      setDeals(dealsData)
-      setPipelines(pipelinesData)
-      setContacts(contactsData)
       
       // Устанавливаем дефолтную воронку
       if (pipelinesData.length > 0) {
         const defaultPipeline = pipelinesData.find((p: Pipeline) => p.isDefault) || pipelinesData[0]
         if (defaultPipeline) {
           setSelectedPipeline(defaultPipeline.id)
-          const stages = getStagesFromPipeline(defaultPipeline)
+          const pipelineStages = getStagesFromPipeline(defaultPipeline)
+          
+          // Перемещаем сделки с несуществующими этапами в "Неразобранные"
+          const validStages = [...pipelineStages, UNASSIGNED_STAGE]
+          const dealsToUpdate: Promise<void>[] = []
+          
+          dealsData.forEach((deal: Deal) => {
+            if (!validStages.includes(deal.stage)) {
+              // Этап не существует, перемещаем в "Неразобранные"
+              dealsToUpdate.push(
+                fetch('/api/deals', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    id: deal.id,
+                    title: deal.title,
+                    amount: deal.amount,
+                    currency: deal.currency,
+                    stage: UNASSIGNED_STAGE,
+                    probability: deal.probability,
+                    expectedCloseDate: deal.expectedCloseDate,
+                    pipelineId: deal.pipeline?.id || defaultPipeline.id,
+                  }),
+                }).then(() => {
+                  deal.stage = UNASSIGNED_STAGE
+                }).catch(err => {
+                  console.error('Error moving deal to unassigned:', err)
+                })
+              )
+            }
+          })
+          
+          // Ждем обновления всех сделок
+          if (dealsToUpdate.length > 0) {
+            await Promise.all(dealsToUpdate)
+            // Перезагружаем данные после обновления
+            const updatedDealsRes = await fetch(dealsUrl).then(res => res.ok ? res.json() : [])
+            dealsData = Array.isArray(updatedDealsRes) ? updatedDealsRes : []
+          }
+          
+          const stages = [...pipelineStages, UNASSIGNED_STAGE]
           if (stages.length > 0 && !formData.stage) {
             setFormData(prev => ({ ...prev, stage: stages[0] }))
           }
         }
       }
+      
+      setDeals(dealsData)
+      setPipelines(pipelinesData)
+      setContacts(contactsData)
     } catch (error) {
       console.error('Error fetching data:', error)
       setDeals([])
@@ -214,13 +257,24 @@ export default function DealsPage() {
   }
 
   const getStages = (): string[] => {
+    let stages: string[] = []
     if (selectedPipeline) {
       const pipeline = pipelines.find(p => p.id === selectedPipeline)
       if (pipeline) {
-        return getStagesFromPipeline(pipeline)
+        stages = getStagesFromPipeline(pipeline)
+      } else {
+        stages = DEFAULT_STAGES
       }
+    } else {
+      stages = DEFAULT_STAGES
     }
-    return DEFAULT_STAGES
+    
+    // Всегда добавляем "Неразобранные" в конец, если его еще нет
+    if (!stages.includes(UNASSIGNED_STAGE)) {
+      stages.push(UNASSIGNED_STAGE)
+    }
+    
+    return stages
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -329,13 +383,43 @@ export default function DealsPage() {
   const handleStagesUpdate = async (newStages: string[]) => {
     if (!selectedPipeline) return
 
+    // Убираем "Неразобранные" из списка перед сохранением (они всегда есть)
+    const stagesToSave = newStages.filter(s => s !== UNASSIGNED_STAGE)
+    
+    // Находим удаленные этапы
+    const oldStages = getStages().filter(s => s !== UNASSIGNED_STAGE)
+    const removedStages = oldStages.filter(s => !stagesToSave.includes(s))
+    
+    // Перемещаем сделки из удаленных этапов в "Неразобранные"
+    if (removedStages.length > 0) {
+      const dealsToMove = deals.filter(d => removedStages.includes(d.stage))
+      const updatePromises = dealsToMove.map(deal =>
+        fetch('/api/deals', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: deal.id,
+            title: deal.title,
+            amount: deal.amount,
+            currency: deal.currency,
+            stage: UNASSIGNED_STAGE,
+            probability: deal.probability,
+            expectedCloseDate: deal.expectedCloseDate,
+            pipelineId: deal.pipeline?.id || selectedPipeline,
+          }),
+        })
+      )
+      
+      await Promise.all(updatePromises)
+    }
+
     try {
       const response = await fetch('/api/pipelines', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedPipeline,
-          stages: newStages,
+          stages: stagesToSave,
         }),
       })
 
@@ -364,7 +448,12 @@ export default function DealsPage() {
     }
   }
 
-  const getStageColor = (index: number): string => {
+  const getStageColor = (stage: string, index: number): string => {
+    // Специальный цвет для "Неразобранные"
+    if (stage === UNASSIGNED_STAGE) {
+      return 'bg-gray-200 border-gray-400'
+    }
+    
     const colors = [
       'bg-blue-100 border-blue-300',
       'bg-purple-100 border-purple-300',
@@ -497,7 +586,7 @@ export default function DealsPage() {
                   stage={stage}
                   deals={dealsByStage[stage] || []}
                   onDelete={handleDelete}
-                  color={getStageColor(index)}
+                  color={getStageColor(stage, index)}
                 />
               ))}
             </div>
@@ -666,6 +755,7 @@ export default function DealsPage() {
           stages={stages}
           onStagesChange={handleStagesUpdate}
           onClose={() => setIsStagesEditorOpen(false)}
+          unassignedStage={UNASSIGNED_STAGE}
         />
       )}
     </div>
