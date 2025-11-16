@@ -399,6 +399,73 @@ export default function ContactDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Модальное окно создания задачи */}
+      {isTaskModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Новая задача</h3>
+              <button
+                onClick={() => {
+                  setIsTaskModalOpen(false)
+                  setTaskFormData({ title: '', dueDate: '' })
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTask} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Название задачи *
+                </label>
+                <input
+                  type="text"
+                  value={taskFormData.title}
+                  onChange={(e) => setTaskFormData({...taskFormData, title: e.target.value})}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Введите название задачи"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Когда должна быть исполнена
+                </label>
+                <input
+                  type="date"
+                  value={taskFormData.dueDate}
+                  onChange={(e) => setTaskFormData({...taskFormData, dueDate: e.target.value})}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTaskModalOpen(false)
+                    setTaskFormData({ title: '', dueDate: '' })
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                  Создать задачу
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
