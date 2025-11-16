@@ -1,0 +1,119 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    id            Int            @id @default(autoincrement())
+    email         String         @unique
+    name          String
+    password      String
+    role          String         @default("user") // user, admin
+    createdAt     DateTime       @default(now())
+    updatedAt     DateTime       @updatedAt
+    tasks         Task[]
+    contacts      Contact[]
+    deals         Deal[]
+    events        Event[]
+    notifications Notification[]
+}
+
+model Contact {
+    id        Int      @id @default(autoincrement())
+    name      String
+    email     String
+    phone     String?
+    company   String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    user      User?    @relation(fields: [userId], references: [id])
+    userId    Int?
+    tasks     Task[]
+    dialogs   Dialog[]
+    deals     Deal[]
+    events    Event[]
+}
+
+model Task {
+    id          Int      @id @default(autoincrement())
+    title       String
+    description String?
+    status      String   @default("pending")
+    dueDate     DateTime?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    contact     Contact? @relation(fields: [contactId], references: [id])
+    contactId   Int?
+    user        User?    @relation(fields: [userId], references: [id])
+    userId      Int?
+}
+
+model Dialog {
+    id        Int      @id @default(autoincrement())
+    message   String
+    sender    String   @default("user")
+    createdAt DateTime @default(now())
+    contact   Contact? @relation(fields: [contactId], references: [id])
+    contactId Int?
+}
+
+model Pipeline {
+    id        Int      @id @default(autoincrement())
+    name      String
+    stages    String   // JSON массив этапов
+    isDefault Boolean  @default(false)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    deals     Deal[]
+}
+
+model Deal {
+    id              Int       @id @default(autoincrement())
+    title           String
+    amount          Float     @default(0)
+    currency        String    @default("RUB")
+    stage           String    // этап воронки
+    probability     Int       @default(0) // 0-100%
+    expectedCloseDate DateTime?
+    contact         Contact   @relation(fields: [contactId], references: [id])
+    contactId       Int
+    user            User      @relation(fields: [userId], references: [id])
+    userId          Int
+    pipeline        Pipeline? @relation(fields: [pipelineId], references: [id])
+    pipelineId      Int?
+    createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
+}
+
+model Event {
+    id          Int       @id @default(autoincrement())
+    title       String
+    description String?
+    startDate   DateTime
+    endDate     DateTime?
+    location    String?
+    type        String    @default("meeting") // meeting, call, task, other
+    contact     Contact?  @relation(fields: [contactId], references: [id])
+    contactId   Int?
+    user        User      @relation(fields: [userId], references: [id])
+    userId      Int
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+}
+
+model Notification {
+    id        Int       @id @default(autoincrement())
+    title     String
+    message   String
+    type      String    @default("info") // info, warning, success, error
+    entityType String?  // task, deal, event, contact
+    entityId   Int?
+    isRead    Boolean   @default(false)
+    user      User      @relation(fields: [userId], references: [id])
+    userId    Int
+    createdAt DateTime  @default(now())
+}
