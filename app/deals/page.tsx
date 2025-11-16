@@ -570,12 +570,61 @@ export default function DealsPage() {
               ))}
             </select>
           </div>
-          <button
-            onClick={() => setIsStagesEditorOpen(true)}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
-          >
-            ⚙️ Управление этапами
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                // Ручной запуск миграции сделок в "Неразобранные"
+                if (!selectedPipeline) return
+                const pipeline = pipelines.find(p => p.id === selectedPipeline)
+                if (!pipeline) return
+                
+                const pipelineStages = getStagesFromPipeline(pipeline)
+                const validStages = [...pipelineStages, UNASSIGNED_STAGE]
+                
+                const dealsToUpdate = deals.filter(deal => !validStages.includes(deal.stage))
+                
+                if (dealsToUpdate.length === 0) {
+                  alert('Все сделки уже в правильных этапах')
+                  return
+                }
+                
+                if (!confirm(`Переместить ${dealsToUpdate.length} сделок в "Неразобранные"?`)) {
+                  return
+                }
+                
+                const updatePromises = dealsToUpdate.map(deal =>
+                  fetch('/api/deals', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      id: deal.id,
+                      title: deal.title,
+                      amount: deal.amount,
+                      currency: deal.currency,
+                      stage: UNASSIGNED_STAGE,
+                      probability: deal.probability,
+                      expectedCloseDate: deal.expectedCloseDate,
+                      pipelineId: deal.pipeline?.id || selectedPipeline,
+                    }),
+                  })
+                )
+                
+                await Promise.all(updatePromises)
+                await fetchData()
+                alert('Сделки перемещены в "Неразобранные"')
+              }}
+              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+              title="Переместить сделки с несуществующими этапами в 'Неразобранные'"
+            >
+              🔄 Найти потерянные сделки
+            </button>
+            <button
+              onClick={() => setIsStagesEditorOpen(true)}
+              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+            >
+              ⚙️ Управление этапами
+            </button>
+          </div>
         </div>
 
         <DndContext
