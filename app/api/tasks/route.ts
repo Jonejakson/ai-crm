@@ -139,13 +139,33 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Проверяем, что задача принадлежит пользователю
+    // Проверяем, что задача принадлежит пользователю или компании (для админа)
     const existingTask = await prisma.task.findUnique({
-      where: { id: data.id }
+      where: { id: data.id },
+      include: {
+        user: {
+          select: {
+            companyId: true
+          }
+        }
+      }
     });
 
-    if (!existingTask || existingTask.userId !== userId) {
-      return NextResponse.json({ error: "Task not found or access denied" }, { status: 404 });
+    if (!existingTask) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Для админа проверяем компанию, для обычного пользователя - userId
+    if (user.role === 'admin') {
+      const userCompanyId = parseInt(user.companyId);
+      const taskCompanyId = existingTask.user.companyId;
+      if (taskCompanyId !== userCompanyId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+    } else {
+      if (existingTask.userId !== userId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
     }
 
     const task = await prisma.task.update({
@@ -197,13 +217,33 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Проверяем, что задача принадлежит пользователю
+    // Проверяем, что задача принадлежит пользователю или компании (для админа)
     const task = await prisma.task.findUnique({
-      where: { id: Number(id) }
+      where: { id: Number(id) },
+      include: {
+        user: {
+          select: {
+            companyId: true
+          }
+        }
+      }
     });
 
-    if (!task || task.userId !== userId) {
-      return NextResponse.json({ error: "Task not found or access denied" }, { status: 404 });
+    if (!task) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Для админа проверяем компанию, для обычного пользователя - userId
+    if (user.role === 'admin') {
+      const userCompanyId = parseInt(user.companyId);
+      const taskCompanyId = task.user.companyId;
+      if (taskCompanyId !== userCompanyId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
+    } else {
+      if (task.userId !== userId) {
+        return NextResponse.json({ error: "Access denied" }, { status: 403 });
+      }
     }
 
     await prisma.task.delete({
