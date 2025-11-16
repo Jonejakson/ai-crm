@@ -5,7 +5,7 @@ import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -149,10 +149,11 @@ export default function DealsPage() {
     }
   }
 
-  // Создаем дефолтную воронку при первом запуске
+  // Создаем дефолтную воронку при первом запуске или обновляем существующую
   useEffect(() => {
-    const createDefaultPipeline = async () => {
+    const setupPipeline = async () => {
       if (pipelines.length === 0 && !loading) {
+        // Создаем новую воронку
         try {
           const response = await fetch('/api/pipelines', {
             method: 'POST',
@@ -169,11 +170,40 @@ export default function DealsPage() {
         } catch (error) {
           console.error('Error creating default pipeline:', error)
         }
+      } else if (pipelines.length > 0 && !loading && selectedPipeline) {
+        // Обновляем существующую воронку, если в ней старые этапы на английском
+        const pipeline = pipelines.find(p => p.id === selectedPipeline)
+        if (pipeline) {
+          const currentStages = getStagesFromPipeline(pipeline)
+          const oldEnglishStages = ['lead', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost']
+          const hasOldStages = currentStages.some(stage => oldEnglishStages.includes(stage))
+          
+          if (hasOldStages) {
+            // Обновляем этапы на русские
+            try {
+              const response = await fetch('/api/pipelines', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: selectedPipeline,
+                  stages: DEFAULT_STAGES,
+                })
+              })
+              if (response.ok) {
+                await fetchData()
+              }
+            } catch (error) {
+              console.error('Error updating pipeline stages:', error)
+            }
+          }
+        }
       }
     }
     
-    createDefaultPipeline()
-  }, [loading, pipelines.length])
+    if (!loading) {
+      setupPipeline()
+    }
+  }, [loading, pipelines.length, selectedPipeline])
 
   const getStagesFromPipeline = (pipeline: Pipeline): string[] => {
     try {
@@ -231,8 +261,9 @@ export default function DealsPage() {
   const handleDealDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
 
+    setActiveDeal(null)
+
     if (!over) {
-      setActiveDeal(null)
       return
     }
 
@@ -241,16 +272,28 @@ export default function DealsPage() {
 
     // Проверяем, что это действительно смена этапа
     const deal = deals.find(d => d.id === dealId)
-    if (!deal || deal.stage === newStage) {
-      setActiveDeal(null)
+    if (!deal) {
+      console.error('Deal not found:', dealId)
+      return
+    }
+
+    if (deal.stage === newStage) {
+      // Сделка уже в этом этапе, ничего не делаем
       return
     }
 
     // Проверяем, что новый этап существует в списке этапов
     if (!stages.includes(newStage)) {
-      setActiveDeal(null)
+      console.error('Stage not found:', newStage, 'Available stages:', stages)
       return
     }
+
+    // Оптимистично обновляем UI
+    setDeals(prevDeals => 
+      prevDeals.map(d => 
+        d.id === dealId ? { ...d, stage: newStage } : d
+      )
+    )
 
     try {
       const response = await fetch('/api/deals', {
@@ -268,13 +311,18 @@ export default function DealsPage() {
         }),
       })
 
-      if (response.ok) {
+      if (!response.ok) {
+        // Если ошибка, возвращаем обратно
         await fetchData()
+        throw new Error('Failed to update deal')
       }
+      
+      // Обновляем данные с сервера для синхронизации
+      await fetchData()
     } catch (error) {
       console.error('Error updating deal:', error)
-    } finally {
-      setActiveDeal(null)
+      // В случае ошибки возвращаем данные с сервера
+      await fetchData()
     }
   }
 
@@ -433,7 +481,7 @@ export default function DealsPage() {
 
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={closestCorners}
           onDragEnd={handleDealDragEnd}
           onDragStart={(event) => {
             const deal = deals.find(d => d.id === parseInt(event.active.id as string))
@@ -670,7 +718,7 @@ function DealCard({ deal, onDelete }: { deal: Deal; onDelete: (id: number) => vo
   })
 
   const style = {
-    transform: CSS.Translate.toString(transform),
+    transform: CSS.Transform.toString(transform),
     opacity: isDragging ? 0.5 : 1,
   }
 
