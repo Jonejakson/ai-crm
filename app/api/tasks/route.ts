@@ -157,6 +157,9 @@ export async function PUT(req: Request) {
 
     // Для админа проверяем компанию, для обычного пользователя - userId
     if (user.role === 'admin') {
+      if (!existingTask.user) {
+        return NextResponse.json({ error: "Task has no user" }, { status: 404 });
+      }
       const userCompanyId = parseInt(user.companyId);
       const taskCompanyId = existingTask.user.companyId;
       if (taskCompanyId !== userCompanyId) {
@@ -235,6 +238,9 @@ export async function DELETE(req: Request) {
 
     // Для админа проверяем компанию, для обычного пользователя - userId
     if (user.role === 'admin') {
+      if (!task.user) {
+        return NextResponse.json({ error: "Task has no user" }, { status: 404 });
+      }
       const userCompanyId = parseInt(user.companyId);
       const taskCompanyId = task.user.companyId;
       if (taskCompanyId !== userCompanyId) {
