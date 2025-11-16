@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
+import { isAdmin } from "@/lib/access-control";
 
-// Получить список всех пользователей (только для авторизованных)
+// Получить список всех пользователей компании (только для админа)
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
@@ -11,8 +12,18 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Получаем всех пользователей
+    // Только админ может видеть список пользователей
+    if (!await isAdmin()) {
+      return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+
+    // Получаем всех пользователей компании
     const users = await prisma.user.findMany({
+      where: {
+        companyId: companyId
+      },
       select: {
         id: true,
         email: true,
@@ -33,14 +44,10 @@ export async function GET(req: Request) {
       },
     });
 
-    // Общая статистика
-    const totalUsers = await prisma.user.count();
-    const adminUsers = await prisma.user.count({
-      where: { role: 'admin' }
-    });
-    const regularUsers = await prisma.user.count({
-      where: { role: 'user' }
-    });
+    // Статистика по компании
+    const totalUsers = users.length;
+    const adminUsers = users.filter(u => u.role === 'admin').length;
+    const regularUsers = users.filter(u => u.role === 'user' || u.role === 'manager').length;
 
     return NextResponse.json({
       total: totalUsers,

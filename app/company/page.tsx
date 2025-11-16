@@ -35,6 +35,27 @@ export default function CompanyPage() {
     role: 'manager' as 'user' | 'manager' | 'admin'
   })
 
+  // Модальные окна
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [updating, setUpdating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  // Форма редактирования
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    email: '',
+    role: 'manager' as 'user' | 'manager' | 'admin'
+  })
+
+  // Форма смены пароля
+  const [passwordFormData, setPasswordFormData] = useState({
+    password: '',
+    confirmPassword: ''
+  })
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
@@ -107,6 +128,150 @@ export default function CompanyPage() {
       setError(error.message || 'Ошибка создания пользователя')
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleEditClick = (user: User) => {
+    setSelectedUser(user)
+    setEditFormData({
+      name: user.name,
+      email: user.email,
+      role: user.role as 'user' | 'manager' | 'admin'
+    })
+    setEditModalOpen(true)
+    setError('')
+    setSuccess('')
+  }
+
+  const handlePasswordClick = (user: User) => {
+    setSelectedUser(user)
+    setPasswordFormData({
+      password: '',
+      confirmPassword: ''
+    })
+    setPasswordModalOpen(true)
+    setError('')
+    setSuccess('')
+  }
+
+  const handleDeleteClick = (user: User) => {
+    setSelectedUser(user)
+    setDeleteConfirmOpen(true)
+    setError('')
+    setSuccess('')
+  }
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedUser) return
+
+    setError('')
+    setSuccess('')
+    setUpdating(true)
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editFormData),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка обновления пользователя')
+      }
+
+      setSuccess(`Пользователь ${data.user.name} успешно обновлен!`)
+      setEditModalOpen(false)
+      setSelectedUser(null)
+      
+      // Обновляем список пользователей
+      await fetchUsers()
+    } catch (error: any) {
+      console.error('Error updating user:', error)
+      setError(error.message || 'Ошибка обновления пользователя')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedUser) return
+
+    if (passwordFormData.password !== passwordFormData.confirmPassword) {
+      setError('Пароли не совпадают')
+      return
+    }
+
+    if (passwordFormData.password.length < 6) {
+      setError('Пароль должен быть не менее 6 символов')
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setUpdating(true)
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: passwordFormData.password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка смены пароля')
+      }
+
+      setSuccess(`Пароль для ${selectedUser.name} успешно изменен!`)
+      setPasswordModalOpen(false)
+      setSelectedUser(null)
+      setPasswordFormData({ password: '', confirmPassword: '' })
+    } catch (error: any) {
+      console.error('Error changing password:', error)
+      setError(error.message || 'Ошибка смены пароля')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return
+
+    setError('')
+    setSuccess('')
+    setDeleting(true)
+
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ошибка удаления пользователя')
+      }
+
+      setSuccess(`Пользователь ${selectedUser.name} успешно удален!`)
+      setDeleteConfirmOpen(false)
+      setSelectedUser(null)
+      
+      // Обновляем список пользователей
+      await fetchUsers()
+    } catch (error: any) {
+      console.error('Error deleting user:', error)
+      setError(error.message || 'Ошибка удаления пользователя')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -267,6 +432,31 @@ export default function CompanyPage() {
                         Создан: {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
+                    <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handleEditClick(user)}
+                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                        title="Редактировать"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handlePasswordClick(user)}
+                        className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                        title="Изменить пароль"
+                      >
+                        🔑
+                      </button>
+                      {user.id !== parseInt(session?.user?.id || '0') && (
+                        <button
+                          onClick={() => handleDeleteClick(user)}
+                          className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                          title="Удалить"
+                        >
+                          🗑️
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Статистика пользователя */}
@@ -294,6 +484,212 @@ export default function CompanyPage() {
           )}
         </div>
       </div>
+
+      {/* Модальное окно редактирования пользователя */}
+      {editModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Редактировать пользователя</h2>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+                {success}
+              </div>
+            )}
+
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Имя
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Иван Иванов"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email (логин)
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Роль
+                </label>
+                <select
+                  value={editFormData.role}
+                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'user' | 'manager' | 'admin' })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="user">Пользователь</option>
+                  <option value="manager">Менеджер</option>
+                  <option value="admin">Администратор</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditModalOpen(false)
+                    setSelectedUser(null)
+                    setError('')
+                    setSuccess('')
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {updating ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно смены пароля */}
+      {passwordModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Изменить пароль</h2>
+            <p className="text-sm text-gray-600 mb-4">Пользователь: {selectedUser.name}</p>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+                {success}
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Новый пароль
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwordFormData.password}
+                  onChange={(e) => setPasswordFormData({ ...passwordFormData, password: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Минимум 6 символов"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Подтвердите пароль
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={passwordFormData.confirmPassword}
+                  onChange={(e) => setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Повторите пароль"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPasswordModalOpen(false)
+                    setSelectedUser(null)
+                    setError('')
+                    setSuccess('')
+                    setPasswordFormData({ password: '', confirmPassword: '' })
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {updating ? 'Изменение...' : 'Изменить пароль'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно подтверждения удаления */}
+      {deleteConfirmOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Подтвердите удаление</h2>
+            <p className="text-gray-600 mb-4">
+              Вы уверены, что хотите удалить пользователя <strong>{selectedUser.name}</strong>?
+              <br />
+              <span className="text-sm text-red-600">Это действие нельзя отменить.</span>
+            </p>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteConfirmOpen(false)
+                  setSelectedUser(null)
+                  setError('')
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={deleting}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleting ? 'Удаление...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
