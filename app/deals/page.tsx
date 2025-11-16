@@ -79,9 +79,17 @@ export default function DealsPage() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isStagesEditorOpen, setIsStagesEditorOpen] = useState(false)
+  const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false)
+  const [contactSearch, setContactSearch] = useState('')
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
+  const [newContactData, setNewContactData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    company: ''
+  })
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -316,6 +324,7 @@ export default function DealsPage() {
           expectedCloseDate: '',
           pipelineId: ''
         })
+        setContactSearch('')
       }
     } catch (error) {
       console.error('Error creating deal:', error)
@@ -697,19 +706,85 @@ export default function DealsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Клиент *
                   </label>
-                  <select
-                    value={formData.contactId}
-                    onChange={(e) => setFormData({...formData, contactId: e.target.value})}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Выберите клиента</option>
-                    {contacts.map(contact => (
-                      <option key={contact.id} value={contact.id}>
-                        {contact.name} ({contact.email})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={contactSearch}
+                        onChange={(e) => {
+                          setContactSearch(e.target.value)
+                          // Автоматически выбираем клиента если введен точный email или ID
+                          const found = contacts.find(c => 
+                            c.email.toLowerCase() === e.target.value.toLowerCase() ||
+                            c.name.toLowerCase().includes(e.target.value.toLowerCase())
+                          )
+                          if (found) {
+                            setFormData({...formData, contactId: found.id.toString()})
+                          }
+                        }}
+                        onFocus={() => {
+                          if (formData.contactId) {
+                            const selected = contacts.find(c => c.id.toString() === formData.contactId)
+                            if (selected) {
+                              setContactSearch(`${selected.name} (${selected.email})`)
+                            }
+                          }
+                        }}
+                        placeholder="Введите имя или email для поиска..."
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                      {contactSearch && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {contacts
+                            .filter(contact => 
+                              contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                              contact.email.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                              (contact.company && contact.company.toLowerCase().includes(contactSearch.toLowerCase()))
+                            )
+                            .slice(0, 10)
+                            .map(contact => (
+                              <div
+                                key={contact.id}
+                                onClick={() => {
+                                  setFormData({...formData, contactId: contact.id.toString()})
+                                  setContactSearch(`${contact.name} (${contact.email})`)
+                                }}
+                                className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="font-medium text-gray-900">{contact.name}</div>
+                                <div className="text-sm text-gray-600">{contact.email}</div>
+                                {contact.company && (
+                                  <div className="text-xs text-gray-500">{contact.company}</div>
+                                )}
+                              </div>
+                            ))}
+                          {contacts.filter(contact => 
+                            contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                            contact.email.toLowerCase().includes(contactSearch.toLowerCase())
+                          ).length === 0 && (
+                            <div className="p-2 text-gray-500 text-sm">
+                              Клиент не найден
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="hidden"
+                      value={formData.contactId}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNewContactModalOpen(true)
+                        setContactSearch('')
+                      }}
+                      className="w-full px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      + Создать нового клиента
+                    </button>
+                  </div>
                 </div>
               </div>
 
