@@ -9,7 +9,7 @@ import { isAdmin } from "@/lib/access-control";
  */
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -23,7 +23,8 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
 
-    const userId = parseInt(params.id);
+    const { id } = await params;
+    const userId = parseInt(id);
     const { name, email, role, password } = await req.json();
     const adminCompanyId = parseInt(user.companyId);
 
@@ -112,7 +113,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -126,7 +127,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
 
-    const userId = parseInt(params.id);
+    const { id } = await params;
+    const userId = parseInt(id);
     const adminCompanyId = parseInt(user.companyId);
 
     // Проверяем, что пользователь существует и принадлежит той же компании
