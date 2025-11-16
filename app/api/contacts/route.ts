@@ -68,14 +68,16 @@ export async function POST(req: Request) {
     const data = await req.json();
     
     // Валидация
-    if (!data.name || !data.email) {
-      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
+    if (!data.name) {
+      return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    // Проверка формата email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+    // Проверка формата email (если указан)
+    if (data.email && data.email.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(data.email)) {
+        return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+      }
     }
 
         const userId = getUserId(user);
@@ -86,7 +88,7 @@ export async function POST(req: Request) {
         const newContact = await prisma.contact.create({
           data: {
             name: data.name,
-            email: data.email,
+            email: data.email || null,
             phone: data.phone || null,
             company: data.company || null,
             userId: userId,
