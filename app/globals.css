@@ -120,7 +120,7 @@ body {
 }
 
 .btn-secondary {
-  @apply bg-white text-[var(--muted)] px-5 py-2.5 rounded-xl border border-[var(--border-soft)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition-all duration-200;
+  @apply bg-white text-[var(--muted)] px-5 py-2.5 rounded-xl border border-[var(--border-soft)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all duration-200;
 }
 
 .btn-success {
