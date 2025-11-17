@@ -166,85 +166,112 @@ export default function ContactDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Заголовок и навигация */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <a href="/contacts" className="text-blue-600 hover:text-blue-800">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-4">
+          <a href="/contacts" className="text-[var(--primary)] hover:underline">
             ← Назад к контактам
           </a>
-          <h1 className="text-2xl font-bold text-gray-900">{contact.name}</h1>
+          <h1 className="text-3xl font-semibold text-slate-900">{contact.name}</h1>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex gap-3">
           <button
             onClick={() => setIsTaskModalOpen(true)}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            className="btn-primary"
           >
             + Добавить задачу
           </button>
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <div className="glass-panel rounded-3xl p-6 xl:col-span-2">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Профиль</p>
+          <h2 className="text-2xl font-semibold text-slate-900 mt-1 mb-6">Контактная информация</h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {[
+              { label: 'Email', value: contact.email },
+              { label: 'Телефон', value: contact.phone || 'Не указан' },
+              { label: 'Компания', value: contact.company || 'Не указана' },
+              { label: 'Дата добавления', value: new Date(contact.createdAt).toLocaleDateString('ru-RU') },
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                <p className="mt-2 text-sm font-semibold text-slate-900">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Основная информация */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="glass-panel rounded-3xl p-6 space-y-6">
           <div>
-            <h3 className="text-lg font-semibold mb-4">Контактная информация</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
-                <p className="text-gray-900">{contact.email}</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Статистика</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Сводка по активности</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { label: 'Всего задач', value: tasks.length },
+              { label: 'Активные задачи', value: tasks.filter(t => t.status === 'pending').length, accent: 'text-orange-500' },
+              { label: 'Завершенные задачи', value: tasks.filter(t => t.status === 'completed').length, accent: 'text-emerald-500' },
+              { label: 'Сообщений', value: dialogs.length },
+              { label: 'Сделок', value: deals.length },
+              { label: 'Сумма сделок', value: `${deals.reduce((sum, d) => sum + d.amount, 0).toLocaleString('ru-RU')} ₽`, accent: 'text-emerald-600' },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
+                <p className="text-[11px] uppercase tracking-[0.35em] text-slate-400">{stat.label}</p>
+                <p className={`mt-2 text-lg font-semibold ${stat.accent || 'text-slate-900'}`}>{stat.value}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Телефон</label>
-                <p className="text-gray-900">{contact.phone || 'Не указан'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Компания</label>
-                <p className="text-gray-900">{contact.company || 'Не указана'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Дата добавления</label>
-                <p className="text-gray-900">
-                  {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Статистика</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Всего задач:</span>
-                <span className="font-semibold">{tasks.length}</span>
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сделки</p>
+              <div className="mt-3 space-y-3">
+                {deals.length === 0 ? (
+                  <p className="text-sm text-slate-500">Нет сделок</p>
+                ) : (
+                  deals.map((deal) => (
+                    <div key={deal.id} className="rounded-2xl border border-white/60 bg-white/90 p-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{deal.title}</p>
+                          <p className="text-xs text-slate-500">
+                            {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
+                          </p>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {deal.expectedCloseDate ? new Date(deal.expectedCloseDate).toLocaleDateString('ru-RU') : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Активные задачи:</span>
-                <span className="font-semibold text-orange-600">
-                  {tasks.filter(t => t.status === 'pending').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Завершенные задачи:</span>
-                <span className="font-semibold text-green-600">
-                  {tasks.filter(t => t.status === 'completed').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Сообщений в диалоге:</span>
-                <span className="font-semibold">{dialogs.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Сделок:</span>
-                <span className="font-semibold">{deals.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Сумма сделок:</span>
-                <span className="font-semibold text-green-600">
-                  {deals.reduce((sum, d) => sum + d.amount, 0).toLocaleString('ru-RU')} ₽
-                </span>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-[0.35ем] text-slate-400">Задачи</p>
+              <div className="mt-3 space-y-3">
+                {tasks.length === 0 ? (
+                  <p className="text-sm text-slate-500">Нет задач</p>
+                ) : (
+                  tasks.map((task) => (
+                    <div key={task.id} className="rounded-2xl border border-white/60 bg-white/90 p-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{task.title}</p>
+                          <p className="text-xs text-slate-500">
+                            Статус: {task.status}{task.dueDate ? ` • до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : ''}
+                          </p>
+                        </div>
+                        <span className="text-xs text-slate-400">
+                          {new Date(task.createdAt).toLocaleDateString('ru-RU')}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -252,8 +279,8 @@ export default function ContactDetailPage() {
       </div>
 
       {/* Табы */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="border-b border-gray-200">
+      <div className="glass-panel rounded-3xl">
+        <div className="border-b border-white/40">
           <nav className="flex space-x-8 px-6">
             {[
               { id: 'info', name: 'Информация' },
@@ -281,10 +308,10 @@ export default function ContactDetailPage() {
           {activeTab === 'deals' && (
             <div className="space-y-4">
               {deals.length === 0 ? (
-                <p className="text-gray-500">Нет сделок для этого контакта</p>
+                <p className="text-slate-500">Нет сделок для этого контакта</p>
               ) : (
                 deals.map((deal) => (
-                  <div key={deal.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={deal.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold">{deal.title}</h4>
@@ -301,7 +328,7 @@ export default function ContactDetailPage() {
                       </div>
                       <a
                         href="/deals"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
+                    className="text-[var(--primary)] hover:underline text-sm"
                       >
                         Перейти →
                       </a>
@@ -316,10 +343,10 @@ export default function ContactDetailPage() {
           {activeTab === 'tasks' && (
             <div className="space-y-4">
               {tasks.length === 0 ? (
-                <p className="text-gray-500">Нет задач для этого контакта</p>
+                <p className="text-slate-500">Нет задач для этого контакта</p>
               ) : (
                 tasks.map((task) => (
-                  <div key={task.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={task.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold">{task.title}</h4>
@@ -351,15 +378,15 @@ export default function ContactDetailPage() {
               {/* История сообщений */}
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {dialogs.length === 0 ? (
-                  <p className="text-gray-500">Нет сообщений</p>
+                  <p className="text-slate-500">Нет сообщений</p>
                 ) : (
                   dialogs.map((dialog) => (
                     <div
                       key={dialog.id}
                       className={`p-3 rounded-lg ${
                         dialog.sender === 'user'
-                          ? 'bg-blue-100 ml-8'
-                          : 'bg-gray-100 mr-8'
+                          ? 'bg-[var(--primary-soft)]/70 ml-8'
+                          : 'bg-white/80 mr-8'
                       }`}
                     >
                       <div className="flex justify-between items-start">
@@ -386,11 +413,11 @@ export default function ContactDetailPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Введите сообщение..."
-                  className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                 />
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+                  className="btn-primary text-sm"
                 >
                   Отправить
                 </button>
@@ -402,8 +429,8 @@ export default function ContactDetailPage() {
 
       {/* Модальное окно создания задачи */}
       {isTaskModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Новая задача</h3>
               <button
@@ -427,7 +454,7 @@ export default function ContactDetailPage() {
                   value={taskFormData.title}
                   onChange={(e) => setTaskFormData({...taskFormData, title: e.target.value})}
                   required
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                   placeholder="Введите название задачи"
                 />
               </div>
@@ -440,24 +467,24 @@ export default function ContactDetailPage() {
                   type="date"
                   value={taskFormData.dueDate}
                   onChange={(e) => setTaskFormData({...taskFormData, dueDate: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                 />
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setIsTaskModalOpen(false)
                     setTaskFormData({ title: '', dueDate: '' })
                   }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="btn-secondary text-sm"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="btn-primary text-sm"
                 >
                   Создать задачу
                 </button>
