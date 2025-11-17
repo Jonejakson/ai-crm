@@ -117,108 +117,80 @@ export default function Dashboard() {
   const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Фильтр по менеджеру (только для админа) */}
-      <UserFilter 
-        selectedUserId={selectedUserId} 
-        onUserChange={setSelectedUserId} 
-      />
+    <div className="space-y-8">
+      <div className="glass-panel px-6 py-5 rounded-3xl">
+        <UserFilter 
+          selectedUserId={selectedUserId} 
+          onUserChange={setSelectedUserId} 
+        />
+      </div>
       
-      {/* Статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-blue-200 group">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Всего клиентов</h3>
-              <p className="text-3xl font-bold text-blue-600 mt-2 group-hover:scale-105 transition-transform duration-200">
-                {contacts.length}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-              <span className="text-2xl">👥</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-orange-200 group">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Активные задачи</h3>
-              <p className="text-3xl font-bold text-orange-600 mt-2 group-hover:scale-105 transition-transform duration-200">
-                {pendingTasks}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
-              <span className="text-2xl">✅</span>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Всего клиентов', value: contacts.length, icon: '👥', accent: 'text-blue-600' },
+          { label: 'Активные задачи', value: pendingTasks, icon: '✅', accent: 'text-orange-500' },
+          { label: 'Активные сделки', value: activeDeals, icon: '💰', accent: 'text-purple-500' },
+          { label: 'Сумма сделок', value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, icon: '💵', accent: 'text-emerald-500' },
+        ].map((card) => (
+          <div key={card.label} className="card relative overflow-hidden">
+            <div className="absolute inset-x-6 top-4 h-1 rounded-full bg-[var(--primary-soft)]/60" />
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-slate-400">{card.label}</p>
+                <p className={`mt-3 text-4xl font-semibold ${card.accent}`}>{card.value}</p>
+              </div>
+              <div className="rounded-2xl bg-white/70 px-4 py-3 text-2xl shadow-inner">
+                {card.icon}
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-purple-200 group">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Активные сделки</h3>
-              <p className="text-3xl font-bold text-purple-600 mt-2 group-hover:scale-105 transition-transform duration-200">
-                {activeDeals}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-              <span className="text-2xl">💰</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-green-200 group">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Сумма сделок</h3>
-              <p className="text-3xl font-bold text-green-600 mt-2 group-hover:scale-105 transition-transform duration-200">
-                {totalDealsAmount.toLocaleString('ru-RU')} ₽
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-              <span className="text-2xl">💵</span>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Статистика по сделкам */}
       {deals.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h2 className="text-xl font-semibold mb-4">Статистика по сделкам</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="glass-panel p-6 rounded-3xl">
+          <div className="mb-5 flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Всего сделок</p>
-              <p className="text-2xl font-bold text-gray-900">{deals.length}</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сделки</p>
+              <h2 className="text-2xl font-semibold text-slate-900">Динамика по воронке</h2>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Выиграно</p>
-              <p className="text-2xl font-bold text-green-600">{wonDeals.length}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Сумма выигрышей</p>
-              <p className="text-2xl font-bold text-green-600">
-                {wonAmount.toLocaleString('ru-RU')} ₽
-              </p>
-            </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {[
+              { label: 'Всего сделок', value: deals.length },
+              { label: 'Выиграно', value: wonDeals.length },
+              { label: 'Сумма выигрышей', value: `${wonAmount.toLocaleString('ru-RU')} ₽` },
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-white/60 bg-white/70 p-5 shadow-sm">
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{item.label}</p>
+                <p className="mt-3 text-3xl font-semibold text-slate-900">{item.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Последние клиенты */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold">Последние клиенты</h2>
+      <div className="glass-panel rounded-3xl">
+        <div className="flex items-center justify-between border-b border-white/40 px-6 py-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Клиенты</p>
+            <h2 className="text-xl font-semibold text-slate-900">Последние контакты</h2>
+          </div>
+          <span className="text-sm text-slate-500">{recentContacts.length} записей</span>
         </div>
-        <div className="p-6">
+        <div className="divide-y divide-white/40">
+          {recentContacts.length === 0 && (
+            <div className="px-6 py-8 text-center text-sm text-slate-500">
+              Пока нет клиентов — импортируйте контакты или добавьте вручную.
+            </div>
+          )}
           {recentContacts.map((contact) => (
-            <div key={contact.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
+            <div key={contact.id} className="flex items-center justify-between px-6 py-4">
               <div>
-                <h4 className="font-medium text-gray-900">{contact.name}</h4>
-                <p className="text-sm text-gray-500">{contact.email}</p>
+                <p className="text-sm font-medium text-slate-900">{contact.name}</p>
+                <p className="text-xs text-slate-500">{contact.email}</p>
               </div>
-              <span className="text-sm text-gray-500">
+              <span className="text-xs text-slate-400">
                 {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
               </span>
             </div>
