@@ -47,12 +47,12 @@ interface Contact {
 
 // Определяем категории задач по датам
 const TASK_CATEGORIES = [
-  { id: 'overdue', name: 'Просроченные', color: 'bg-red-100 border-red-300' },
-  { id: 'today', name: 'Сегодня', color: 'bg-orange-100 border-orange-300' },
-  { id: 'tomorrow', name: 'Завтра', color: 'bg-yellow-100 border-yellow-300' },
-  { id: 'next_week', name: 'Следующая неделя', color: 'bg-blue-100 border-blue-300' },
-  { id: 'next_month', name: 'Следующий месяц', color: 'bg-purple-100 border-purple-300' },
-  { id: 'no_date', name: 'Без даты', color: 'bg-gray-100 border-gray-300' },
+  { id: 'overdue', name: 'Просроченные', color: 'from-[#ffe7e7] via-[#fff1f1] to-white shadow-[0_25px_35px_-25px_rgba(239,68,68,0.45)]' },
+  { id: 'today', name: 'Сегодня', color: 'from-[#fff0da] via-[#fff8ec] to-white shadow-[0_25px_35px_-25px_rgba(234,179,8,0.45)]' },
+  { id: 'tomorrow', name: 'Завтра', color: 'from-[#fff4e5] via-[#fff9f1] to-white shadow-[0_25px_35px_-25px_rgba(249,115,22,0.45)]' },
+  { id: 'next_week', name: 'Следующая неделя', color: 'from-[#e6f2ff] via-[#eff6ff] to-white shadow-[0_25px_35px_-25px_rgba(59,130,246,0.35)]' },
+  { id: 'next_month', name: 'Следующий месяц', color: 'from-[#f0ecff] via-[#f6f2ff] to-white shadow-[0_25px_35px_-25px_rgba(129,140,248,0.35)]' },
+  { id: 'no_date', name: 'Без даты', color: 'from-[#edf2f7] via-[#f5f7fb] to-white shadow-[0_25px_35px_-25px_rgba(148,163,184,0.35)]' },
 ]
 
 // Функция для определения категории задачи по дате
@@ -313,40 +313,39 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Заголовок и фильтры */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Задачи</h1>
-      </div>
-      
-      {/* Фильтр по менеджеру (только для админа) */}
-      <UserFilter 
-        selectedUserId={selectedUserId} 
-        onUserChange={setSelectedUserId} 
-      />
-      
-      <div className="flex justify-end">
-        <div className="flex space-x-2">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Задачи</p>
+          <h1 className="text-3xl font-semibold text-slate-900">Лента задач</h1>
+          <p className="text-sm text-slate-500">Следите за сроками, перетаскивайте карточки между категориями и изменяйте статус.</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
               window.location.href = '/api/export/tasks?format=excel'
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            className="btn-secondary flex items-center gap-2"
           >
-            <span>📥</span>
-            <span>Экспорт CSV</span>
+            📥 Экспорт CSV
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-primary"
           >
             + Новая задача
           </button>
         </div>
       </div>
+      
+      <div className="glass-panel px-6 py-5 rounded-3xl">
+        <UserFilter 
+          selectedUserId={selectedUserId} 
+          onUserChange={setSelectedUserId} 
+        />
+      </div>
 
-      {/* Канбан-доска */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
+      <div className="glass-panel p-6 rounded-3xl">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -390,21 +389,24 @@ export default function TasksPage() {
 
       {/* Модальное окно создания задачи */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Новая задача</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-3xl rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-white/40 pb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Новая задача</p>
+                <h3 className="text-xl font-semibold text-slate-900">Создать карточку</h3>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-slate-400 hover:text-slate-600"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   Название задачи *
                 </label>
                 <input
@@ -413,26 +415,26 @@ export default function TasksPage() {
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   Описание
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  rows={3}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                     Срок выполнения
                   </label>
                   <input
@@ -440,19 +442,19 @@ export default function TasksPage() {
                     name="dueDate"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                     Связать с клиентом
                   </label>
                   <select
                     name="contactId"
                     value={formData.contactId}
                     onChange={(e) => setFormData({...formData, contactId: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
                   >
                     <option value="">Без клиента</option>
                     {contacts.map(contact => (
@@ -464,17 +466,17 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="btn-secondary text-sm"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="btn-primary text-sm"
                 >
                   Создать задачу
                 </button>
@@ -506,12 +508,16 @@ function TaskColumn({
   return (
     <div 
       ref={setNodeRef}
-      className={`flex-shrink-0 w-64 ${category.color} rounded-lg p-3 border-2 ${isOver ? 'ring-2 ring-blue-500' : ''}`}
+      className={`kanban-column flex-shrink-0 w-72 bg-gradient-to-b ${category.color} ${isOver ? 'ring-2 ring-[var(--primary)]/40' : ''}`}
     >
-      <h3 className="font-semibold text-gray-900 mb-3">
-        {category.name} ({tasks.length})
-      </h3>
-      <div className="space-y-2 min-h-[100px]">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Категория</p>
+          <h3 className="text-lg font-semibold text-slate-900">{category.name}</h3>
+        </div>
+        <span className="text-sm font-semibold text-slate-500">{tasks.length}</span>
+      </div>
+      <div className="space-y-3 min-h-[120px]">
         {tasks.map((task) => (
           <TaskCard 
             key={task.id} 
@@ -566,16 +572,17 @@ function TaskCard({ task, onDelete, onStatusChange }: { task: Task; onDelete: (i
       style={style}
       {...listeners}
       {...attributes}
-      className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+      className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur cursor-grab active:cursor-grabbing transition-all hover:shadow-2xl"
     >
+      <div className="absolute inset-x-4 top-2 h-1 rounded-full bg-[var(--primary-soft)]/70 group-hover:bg-[var(--primary)]/30 transition-colors" />
       <div className="flex justify-between items-start mb-2">
-        <h4 className="font-medium text-gray-900 text-sm flex-1">{task.title}</h4>
+        <h4 className="font-medium text-gray-900 text-sm flex-1 pr-2">{task.title}</h4>
         <button
           onClick={(e) => {
             e.stopPropagation()
             onDelete(task.id)
           }}
-          className="text-red-500 hover:text-red-700 text-xs ml-2"
+          className="text-red-500 hover:text-red-700 text-xs"
         >
           ×
         </button>
