@@ -17,6 +17,9 @@ import {
 } from '@dnd-kit/core'
 import {
   sortableKeyboardCoordinates,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
@@ -314,6 +317,15 @@ export default function DealsPage() {
     setEditingDeal(null)
   }
 
+  const findLastIndex = <T,>(array: T[], predicate: (value: T, index: number) => boolean) => {
+    for (let i = array.length - 1; i >= 0; i--) {
+      if (predicate(array[i], i)) {
+        return i
+      }
+    }
+    return -1
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (editingDeal) {
@@ -411,32 +423,61 @@ export default function DealsPage() {
     }
 
     const dealId = parseInt(active.id as string)
-    const newStage = over.id as string
-
-    // Проверяем, что это действительно смена этапа
-    const deal = deals.find(d => d.id === dealId)
-    if (!deal) {
+    const activeDeal = deals.find(d => d.id === dealId)
+    if (!activeDeal) {
       console.error('Deal not found:', dealId)
       return
     }
 
-    if (deal.stage === newStage) {
-      // Сделка уже в этом этапе, ничего не делаем
-      return
+    const overData = over.data?.current as {
+      type?: 'deal' | 'stage'
+      stage?: string
+      dealId?: number
+    } | undefined
+
+    let targetStage = activeDeal.stage
+
+    if (overData?.type === 'deal') {
+      targetStage = overData.stage || activeDeal.stage
+    } else if (overData?.type === 'stage') {
+      targetStage = overData.stage || activeDeal.stage
+    } else if (typeof over.id === 'string' && stages.includes(over.id)) {
+      targetStage = over.id
     }
 
-    // Проверяем, что новый этап существует в списке этапов
-    if (!stages.includes(newStage)) {
-      console.error('Stage not found:', newStage, 'Available stages:', stages)
+    const overDealId =
+      overData?.type === 'deal' && overData.dealId ? overData.dealId : null
+
+    setDeals((prevDeals) => {
+      const withoutActive = prevDeals.filter((d) => d.id !== dealId)
+      const updatedDeal = { ...activeDeal, stage: targetStage }
+
+      if (overDealId && overDealId !== dealId) {
+        const insertIndex = withoutActive.findIndex((d) => d.id === overDealId)
+        if (insertIndex >= 0) {
+          withoutActive.splice(insertIndex, 0, updatedDeal)
+          return [...withoutActive]
+        }
+      }
+
+      if (overData?.type === 'stage') {
+        const lastIndex = findLastIndex(
+          withoutActive,
+          (deal) => deal.stage === overData.stage
+        )
+        if (lastIndex >= 0) {
+          withoutActive.splice(lastIndex + 1, 0, updatedDeal)
+          return [...withoutActive]
+        }
+      }
+
+      return [...withoutActive, updatedDeal]
+    })
+
+    if (targetStage === activeDeal.stage) {
+      // Перетаскивание внутри одного этапа — обновили только порядок
       return
     }
-
-    // Оптимистично обновляем UI
-    setDeals(prevDeals => 
-      prevDeals.map(d => 
-        d.id === dealId ? { ...d, stage: newStage } : d
-      )
-    )
 
     try {
       const response = await fetch('/api/deals', {
@@ -444,27 +485,24 @@ export default function DealsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: dealId,
-          title: deal.title,
-          amount: deal.amount,
-          currency: deal.currency,
-          stage: newStage,
-          probability: deal.probability,
-          expectedCloseDate: deal.expectedCloseDate,
-          pipelineId: deal.pipeline?.id || selectedPipeline,
+          title: activeDeal.title,
+          amount: activeDeal.amount,
+          currency: activeDeal.currency,
+          stage: targetStage,
+          probability: activeDeal.probability,
+          expectedCloseDate: activeDeal.expectedCloseDate,
+          pipelineId: activeDeal.pipeline?.id || selectedPipeline,
         }),
       })
 
       if (!response.ok) {
-        // Если ошибка, возвращаем обратно
         await fetchData()
         throw new Error('Failed to update deal')
       }
-      
-      // Обновляем данные с сервера для синхронизации
+
       await fetchData()
     } catch (error) {
       console.error('Error updating deal:', error)
-      // В случае ошибки возвращаем данные с сервера
       await fetchData()
     }
   }
@@ -1095,13 +1133,13 @@ export default function DealsPage() {
 }
 
 // Компонент колонки с drag & drop для сделок
-function DealColumn({ 
-  stage, 
-  deals, 
+function DealColumn({
+  stage,
+  deals,
   onDelete,
   onEdit,
-  color 
-}: { 
+  color,
+}: {
   stage: string
   deals: Deal[]
   onDelete: (id: number) => void
@@ -1110,39 +1148,69 @@ function DealColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage,
+    data: {
+      type: 'stage',
+      stage,
+    },
   })
 
+  const items = deals.map((deal) => deal.id.toString())
+
   return (
-    <div 
+    <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-64 ${color} rounded-lg p-3 border-2 ${isOver ? 'ring-2 ring-blue-500' : ''}`}
+      className={`flex-shrink-0 w-64 ${color} rounded-lg p-3 border-2 ${
+        isOver ? 'ring-2 ring-blue-500' : ''
+      }`}
     >
       <h3 className="font-semibold text-gray-900 mb-3">
         {stage} ({deals.length})
       </h3>
-      <div className="space-y-2 min-h-[100px]">
-        {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} onDelete={onDelete} onEdit={onEdit} />
-        ))}
-      </div>
+      <SortableContext items={items} strategy={verticalListSortingStrategy}>
+        <div className="space-y-2 min-h-[100px]">
+          {deals.map((deal) => (
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              onDelete={onDelete}
+              onEdit={onEdit}
+            />
+          ))}
+        </div>
+      </SortableContext>
     </div>
   )
 }
 
 // Компонент карточки сделки с drag & drop
-function DealCard({ deal, onDelete, onEdit }: { deal: Deal; onDelete: (id: number) => void; onEdit: (deal: Deal) => void }) {
+function DealCard({
+  deal,
+  onDelete,
+  onEdit,
+}: {
+  deal: Deal
+  onDelete: (id: number) => void
+  onEdit: (deal: Deal) => void
+}) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
+    transition,
     isDragging,
-  } = useDraggable({
+  } = useSortable({
     id: deal.id.toString(),
+    data: {
+      type: 'deal',
+      dealId: deal.id,
+      stage: deal.stage,
+    },
   })
 
   const style = {
     transform: CSS.Transform.toString(transform),
+    transition,
     opacity: isDragging ? 0.5 : 1,
   }
 
