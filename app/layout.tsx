@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description: 'Customer Relationship Management',
 }
 
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+
 export default function RootLayout({
   children,
 }: {

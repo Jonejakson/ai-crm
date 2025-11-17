@@ -86,6 +86,7 @@ export default function DealsPage() {
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
+  const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
   const [newContactData, setNewContactData] = useState({
     name: '',
     email: '',
@@ -297,8 +298,32 @@ export default function DealsPage() {
     return stages
   }
 
+  const resetFormState = () => {
+    const stages = getStages()
+    setFormData({
+      title: '',
+      amount: '',
+      currency: 'RUB',
+      contactId: '',
+      stage: stages[0] || '',
+      probability: '0',
+      expectedCloseDate: '',
+      pipelineId: ''
+    })
+    setContactSearch('')
+    setEditingDeal(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (editingDeal) {
+      await updateDeal(editingDeal.id)
+    } else {
+      await createDeal()
+    }
+  }
+
+  const createDeal = async () => {
     try {
       const response = await fetch('/api/deals', {
         method: 'POST',
@@ -315,22 +340,65 @@ export default function DealsPage() {
       if (response.ok) {
         await fetchData()
         setIsModalOpen(false)
-        const stages = getStages()
-        setFormData({
-          title: '',
-          amount: '',
-          currency: 'RUB',
-          contactId: '',
-          stage: stages[0] || '',
-          probability: '0',
-          expectedCloseDate: '',
-          pipelineId: ''
-        })
-        setContactSearch('')
+        resetFormState()
       }
     } catch (error) {
       console.error('Error creating deal:', error)
     }
+  }
+
+  const updateDeal = async (dealId: number) => {
+    try {
+      const response = await fetch('/api/deals', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: dealId,
+          title: formData.title,
+          amount: parseFloat(formData.amount) || 0,
+          currency: formData.currency,
+          stage: formData.stage,
+          probability: parseInt(formData.probability) || 0,
+          expectedCloseDate: formData.expectedCloseDate || null,
+          pipelineId: formData.pipelineId ? Number(formData.pipelineId) : selectedPipeline,
+        }),
+      })
+
+      if (response.ok) {
+        await fetchData()
+        setIsModalOpen(false)
+        resetFormState()
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Не удалось обновить сделку')
+      }
+    } catch (error) {
+      console.error('Error updating deal:', error)
+      alert('Ошибка при обновлении сделки')
+    }
+  }
+
+  const openEditModal = (deal: Deal) => {
+    setEditingDeal(deal)
+    const expectedDate =
+      deal.expectedCloseDate && deal.expectedCloseDate.includes('T')
+        ? deal.expectedCloseDate.slice(0, 10)
+        : deal.expectedCloseDate || ''
+
+    setFormData({
+      title: deal.title,
+      amount: deal.amount ? deal.amount.toString() : '',
+      currency: deal.currency || 'RUB',
+      contactId: deal.contact.id.toString(),
+      stage: deal.stage,
+      probability: deal.probability !== undefined ? deal.probability.toString() : '0',
+      expectedCloseDate: expectedDate,
+      pipelineId: deal.pipeline?.id ? deal.pipeline.id.toString() : ''
+    })
+    setContactSearch(
+      deal.contact.email ? `${deal.contact.name} (${deal.contact.email})` : deal.contact.name
+    )
+    setIsModalOpen(true)
   }
 
   const handleDealDragEnd = async (event: DragEndEvent) => {
@@ -656,6 +724,7 @@ export default function DealsPage() {
                   stage={stage}
                   deals={dealsByStage[stage] || []}
                   onDelete={handleDelete}
+                  onEdit={openEditModal}
                   color={getStageColor(stage, index)}
                 />
               ))}
@@ -682,7 +751,10 @@ export default function DealsPage() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Новая сделка</h3>
               <button
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => {
+                  setIsModalOpen(false)
+                  resetFormState()
+                }}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
@@ -870,7 +942,10 @@ export default function DealsPage() {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => {
+                    setIsModalOpen(false)
+                    resetFormState()
+                  }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 >
                   Отмена
@@ -1024,11 +1099,13 @@ function DealColumn({
   stage, 
   deals, 
   onDelete,
+  onEdit,
   color 
 }: { 
   stage: string
   deals: Deal[]
   onDelete: (id: number) => void
+  onEdit: (deal: Deal) => void
   color: string
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -1045,7 +1122,7 @@ function DealColumn({
       </h3>
       <div className="space-y-2 min-h-[100px]">
         {deals.map((deal) => (
-          <DealCard key={deal.id} deal={deal} onDelete={onDelete} />
+          <DealCard key={deal.id} deal={deal} onDelete={onDelete} onEdit={onEdit} />
         ))}
       </div>
     </div>
@@ -1053,7 +1130,7 @@ function DealColumn({
 }
 
 // Компонент карточки сделки с drag & drop
-function DealCard({ deal, onDelete }: { deal: Deal; onDelete: (id: number) => void }) {
+function DealCard({ deal, onDelete, onEdit }: { deal: Deal; onDelete: (id: number) => void; onEdit: (deal: Deal) => void }) {
   const {
     attributes,
     listeners,
@@ -1079,15 +1156,28 @@ function DealCard({ deal, onDelete }: { deal: Deal; onDelete: (id: number) => vo
     >
       <div className="flex justify-between items-start mb-2">
         <h4 className="font-medium text-gray-900 text-sm flex-1">{deal.title}</h4>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete(deal.id)
-          }}
-          className="text-red-500 hover:text-red-700 text-xs ml-2"
-        >
-          ×
-        </button>
+        <div className="flex items-center space-x-1 ml-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(deal)
+            }}
+            className="text-blue-500 hover:text-blue-700 text-xs"
+            title="Редактировать сделку"
+          >
+            ✎
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete(deal.id)
+            }}
+            className="text-red-500 hover:text-red-700 text-xs"
+            title="Удалить сделку"
+          >
+            ×
+          </button>
+        </div>
       </div>
       <div className="text-xs text-gray-600 mb-2">
         <a
