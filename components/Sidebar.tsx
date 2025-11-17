@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { getActiveSection } from '@/lib/utils'
@@ -11,10 +10,12 @@ interface SidebarProps {
 
 export default function Sidebar({ currentContactId }: SidebarProps) {
   const { data: session } = useSession()
-  
+
   const pathname = usePathname()
   const activeSection = getActiveSection(pathname)
   const isAdmin = session?.user?.role === 'admin'
+  const userName = session?.user?.name || 'Пользователь'
+  const userEmail = session?.user?.email || 'email@company.com'
 
   const menuItems = [
     { id: 'dashboard', name: 'Дашборд', href: '/', icon: '📊' },
@@ -30,53 +31,80 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
 
 
   return (
-    <>
-      {/* Сайдбар */}
-      <div className="hidden md:flex w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white min-h-screen p-4 flex-col shadow-xl border-r border-gray-700">
+    <div className="hidden md:flex w-72 min-h-screen bg-gradient-to-b from-[#0b1730] via-[#0f1c3f] to-[#101623] text-white px-5 py-7 border-r border-white/10 shadow-2xl">
+      <div className="flex flex-col flex-1 space-y-8">
         {/* Логотип */}
-        <div className="mb-8 p-4 animate-fadeIn">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            CRM System
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            {currentContactId ? 'Режим клиента' : 'Управление клиентами'}
-          </p>
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs uppercase tracking-[0.2em]">
+            <span className="text-[var(--secondary)]">Pulse</span>
+            <span className="text-white/70">CRM</span>
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-1">
+              Управление воронкой
+            </p>
+            <h1 className="text-2xl font-semibold">
+              Умная CRM
+            </h1>
+          </div>
+          {currentContactId && (
+            <div className="mt-3 px-4 py-2 rounded-2xl bg-white/10 border border-white/10 text-sm text-white/80">
+              👁️ Просмотр клиента #{currentContactId}
+            </div>
+          )}
         </div>
 
         {/* Навигация */}
-        <nav className="space-y-1.5 flex-1">
-          {menuItems.map((item, index) => {
+        <nav className="space-y-1 flex-1">
+          {menuItems.map((item) => {
             const isActive = activeSection === item.id
             return (
               <a
                 key={item.id}
                 href={item.href}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-500/30' 
-                    : 'hover:bg-gray-800/50 hover:translate-x-1'
+                className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 border border-transparent ${
+                  isActive
+                    ? 'bg-white/15 border-white/20 shadow-lg shadow-blue-600/30'
+                    : 'hover:bg-white/5 hover:border-white/10'
                 }`}
-                style={{ animationDelay: `${index * 50}ms` }}
               >
-                <span className="text-lg">{item.icon}</span>
-                <span className="font-medium">{item.name}</span>
+                <span
+                  className={`text-xl ${
+                    isActive ? 'scale-110' : 'text-white/70'
+                  }`}
+                >
+                  {item.icon}
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium tracking-wide">
+                    {item.name}
+                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.25em] text-white/40">
+                    {isActive ? 'Активно' : 'Раздел'}
+                  </span>
+                </div>
                 {isActive && (
-                  <span className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse-slow"></span>
+                  <span className="ml-auto w-2 h-2 rounded-full bg-[var(--secondary)] shadow-[0_0_12px_rgba(0,198,174,0.8)]" />
                 )}
               </a>
             )
           })}
         </nav>
 
-        {/* Информация о текущем клиенте */}
-        {currentContactId && (
-          <div className="mt-4 p-3 bg-gray-800 rounded-lg">
-            <p className="text-sm text-gray-300">
-              👁️ Режим просмотра клиента
-            </p>
-          </div>
-        )}
+        {/* Пользователь */}
+        <div className="glass-panel border-white/10 bg-white/10 px-4 py-5 rounded-3xl text-sm shadow-xl">
+          <p className="text-white/60 text-xs uppercase tracking-[0.4em] mb-2">
+            Профиль
+          </p>
+          <p className="text-base font-semibold">{userName}</p>
+          <p className="text-white/60 text-xs">{userEmail}</p>
+          {isAdmin && (
+            <span className="mt-3 inline-flex items-center text-[10px] uppercase tracking-[0.35em] text-green-200 bg-white/10 px-3 py-1 rounded-full">
+              Admin
+            </span>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   )
 }

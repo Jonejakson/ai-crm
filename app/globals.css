@@ -3,15 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --secondary: #64748b;
+  --background: #f4f6fb;
+  --background-soft: #eef2fb;
+  --surface: #ffffff;
+  --foreground: #111c3a;
+  --muted: #6b7a99;
+  --primary: #2f6fed;
+  --primary-hover: #2157c2;
+  --primary-soft: #c7d8ff;
+  --secondary: #00c6ae;
   --accent: #8b5cf6;
   --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
+  --border-soft: #e4e7f1;
+  --shadow-primary: 0 20px 45px -25px rgba(47, 111, 237, 0.65);
 }
 
 @theme inline {
@@ -26,11 +32,18 @@
 }
 
 body {
-  background: var(--background);
+  background: radial-gradient(circle at top, #fefefe 0%, var(--background) 55%, #eef0f8 100%);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.app-shell {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 25px 45px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
 }
 
 /* Плавные анимации */
@@ -103,11 +116,11 @@ body {
 
 /* Улучшенные кнопки */
 .btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 shadow-sm hover:shadow-md font-medium;
+  @apply bg-[var(--primary)] text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:bg-[var(--primary-hover)] hover:shadow-lg transition-all duration-200;
 }
 
 .btn-secondary {
-  @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-all duration-200 font-medium;
+  @apply bg-white text-[var(--muted)] px-5 py-2.5 rounded-xl border border-[var(--border-soft)] hover:border-[var(--primary)]/30 hover:text-[var(--primary)] transition-all duration-200;
 }
 
 .btn-success {
@@ -116,9 +129,17 @@ body {
 
 /* Улучшенные карточки */
 .card {
-  @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all duration-200 hover:shadow-md;
+  @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-[var(--border-soft)] p-6 transition-all duration-200 hover:shadow-lg;
 }
 
 .card-hover {
   @apply card hover:border-blue-200 hover:shadow-lg;
+}
+
+.glass-panel {
+  @apply bg-white/90 border border-white/40 backdrop-blur-xl shadow-lg rounded-3xl;
+}
+
+.kanban-column {
+  @apply glass-panel min-w-[280px] p-4 border border-white/50;
 }

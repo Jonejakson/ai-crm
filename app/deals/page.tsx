@@ -576,21 +576,19 @@ export default function DealsPage() {
   }
 
   const getStageColor = (stage: string, index: number): string => {
-    // Специальный цвет для "Неразобранные"
     if (stage === UNASSIGNED_STAGE) {
-      return 'bg-gray-200 border-gray-400'
+      return 'bg-gradient-to-b from-[#f6f7fb] to-white border-white/60'
     }
-    
-    const colors = [
-      'bg-blue-100 border-blue-300',
-      'bg-purple-100 border-purple-300',
-      'bg-yellow-100 border-yellow-300',
-      'bg-orange-100 border-orange-300',
-      'bg-indigo-100 border-indigo-300',
-      'bg-green-100 border-green-300',
-      'bg-red-100 border-red-300',
+
+    const gradients = [
+      'bg-gradient-to-b from-[#e6f0ff] via-[#edf4ff] to-[#f8fbff] shadow-[0_25px_35px_-25px_rgba(47,111,237,0.55)]',
+      'bg-gradient-to-b from-[#f7ecff] via-[#fbf3ff] to-white shadow-[0_25px_35px_-25px_rgba(139,92,246,0.45)]',
+      'bg-gradient-to-b from-[#fff3e6] via-[#fff9f1] to-white shadow-[0_25px_35px_-25px_rgba(255,179,71,0.45)]',
+      'bg-gradient-to-b from-[#e7fff7] via-[#f4fffb] to-white shadow-[0_25px_30px_-25px_rgba(16,185,129,0.45)]',
+      'bg-gradient-to-b from-[#e9f5ff] via-[#f3f9ff] to-white shadow-[0_25px_35px_-25px_rgba(59,130,246,0.35)]',
+      'bg-gradient-to-b from-[#fff0f2] via-[#fff7f8] to-white shadow-[0_25px_35px_-25px_rgba(239,68,68,0.35)]',
     ]
-    return colors[index % colors.length]
+    return `${gradients[index % gradients.length]} border-white/70`
   }
 
   const stages = getStages()
@@ -608,67 +606,78 @@ export default function DealsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Заголовок и статистика */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Сделки</h1>
-      </div>
-      
-      {/* Фильтр по менеджеру (только для админа) */}
-      <UserFilter 
-        selectedUserId={selectedUserId} 
-        onUserChange={setSelectedUserId} 
-      />
-      
-      <div className="flex justify-end">
-        <div className="flex space-x-2">
-          <button 
+    <div className="space-y-8 relative">
+      {/* Заголовок */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+            Управление воронкой
+          </p>
+          <h1 className="text-3xl font-semibold text-slate-900">Сделки</h1>
+          <p className="text-slate-500">
+            Отслеживайте динамику процессов, перетаскивайте карточки и контролируйте этапы.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button
             onClick={() => {
               window.location.href = '/api/export/deals?format=excel'
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            className="btn-secondary flex items-center gap-2"
           >
-            <span>📥</span>
-            <span>Экспорт CSV</span>
+            <span className="text-lg">⬇️</span>
+            Экспорт CSV
           </button>
-          <button 
+          <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-primary"
           >
             + Новая сделка
           </button>
         </div>
       </div>
 
+      {/* Фильтр по менеджеру (только для админа) */}
+      <UserFilter
+        selectedUserId={selectedUserId}
+        onUserChange={setSelectedUserId}
+      />
+
       {/* Статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Всего сделок</h3>
-          <p className="text-2xl font-bold text-gray-900 mt-1">{deals.length}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="card">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Всего сделок</p>
+          <p className="text-4xl font-semibold mt-3">{deals.length}</p>
+          <p className="text-xs text-slate-400 mt-2">Активные + архивные</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Общая сумма</h3>
-          <p className="text-2xl font-bold text-blue-600 mt-1">
+        <div className="card">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Общая сумма</p>
+          <p className="text-4xl font-semibold text-blue-600 mt-3">
             {totalAmount.toLocaleString('ru-RU')} ₽
           </p>
+          <p className="text-xs text-slate-400 mt-2">Все стадии</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Выиграно</h3>
-          <p className="text-2xl font-bold text-green-600 mt-1">{wonDeals.length}</p>
+        <div className="card">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Выиграно</p>
+          <p className="text-4xl font-semibold text-emerald-500 mt-3">{wonDeals.length}</p>
+          <p className="text-xs text-slate-400 mt-2">Количество сделок</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Сумма выигрышей</h3>
-          <p className="text-2xl font-bold text-green-600 mt-1">
+        <div className="card">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сумма выигрышей</p>
+          <p className="text-4xl font-semibold text-emerald-500 mt-3">
             {wonAmount.toLocaleString('ru-RU')} ₽
           </p>
+          <p className="text-xs text-slate-400 mt-2">Закрыто успешно</p>
         </div>
       </div>
 
       {/* Канбан-доска */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="mb-4 flex justify-between items-center">
+      <div className="glass-panel p-6 rounded-3xl shadow-xl">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Воронка:</label>
+            <span className="text-xs uppercase tracking-[0.35em] text-slate-400">
+              Воронка
+            </span>
             <select
               value={selectedPipeline || ''}
               onChange={(e) => {
@@ -680,17 +689,16 @@ export default function DealsPage() {
                   setFormData(prev => ({ ...prev, stage: stages[0] || '' }))
                 }
               }}
-              className="px-3 py-1 border border-gray-300 rounded-lg"
+              className="px-4 py-2 rounded-xl border border-[var(--border-soft)] bg-white/80 focus:border-[var(--primary)] focus:ring-0 text-sm"
             >
               {pipelines.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={async () => {
-                // Ручной запуск миграции сделок в "Неразобранные"
                 if (!selectedPipeline) return
                 const pipeline = pipelines.find(p => p.id === selectedPipeline)
                 if (!pipeline) return
@@ -730,14 +738,14 @@ export default function DealsPage() {
                 await fetchData()
                 alert('Сделки перемещены в "Неразобранные"')
               }}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+              className="btn-secondary text-sm"
               title="Переместить сделки с несуществующими этапами в 'Неразобранные'"
             >
               🔄 Найти потерянные сделки
             </button>
             <button
               onClick={() => setIsStagesEditorOpen(true)}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
+              className="btn-primary text-sm"
             >
               ⚙️ Управление этапами
             </button>
@@ -1159,15 +1167,25 @@ function DealColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex-shrink-0 w-64 ${color} rounded-lg p-3 border-2 ${
-        isOver ? 'ring-2 ring-blue-500' : ''
+      className={`kanban-column flex-shrink-0 w-72 ${color} ${
+        isOver ? 'ring-2 ring-[var(--primary)]/40' : 'ring-0'
       }`}
     >
-      <h3 className="font-semibold text-gray-900 mb-3">
-        {stage} ({deals.length})
-      </h3>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+            Этап
+          </p>
+          <h3 className="font-semibold text-slate-800 text-lg">
+            {stage}
+          </h3>
+        </div>
+        <span className="text-sm font-semibold text-slate-500">
+          {deals.length}
+        </span>
+      </div>
       <SortableContext items={items} strategy={verticalListSortingStrategy}>
-        <div className="space-y-2 min-h-[100px]">
+        <div className="space-y-3 min-h-[120px]">
           {deals.map((deal) => (
             <DealCard
               key={deal.id}
@@ -1220,17 +1238,18 @@ function DealCard({
       style={style}
       {...listeners}
       {...attributes}
-      className="bg-white rounded-lg p-3 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing"
+      className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur cursor-grab active:cursor-grabbing transition-all hover:shadow-2xl"
     >
+      <div className="absolute inset-x-4 top-2 h-1 rounded-full bg-[var(--primary-soft)] group-hover:bg-[var(--primary)]/30 transition-colors" />
       <div className="flex justify-between items-start mb-2">
-        <h4 className="font-medium text-gray-900 text-sm flex-1">{deal.title}</h4>
-        <div className="flex items-center space-x-1 ml-2">
+        <h4 className="font-medium text-gray-900 text-sm flex-1 pr-2">{deal.title}</h4>
+        <div className="flex items-center space-x-1 ml-2 text-xs">
           <button
             onClick={(e) => {
               e.stopPropagation()
               onEdit(deal)
             }}
-            className="text-blue-500 hover:text-blue-700 text-xs"
+            className="text-blue-500 hover:text-blue-700"
             title="Редактировать сделку"
           >
             ✎
@@ -1240,7 +1259,7 @@ function DealCard({
               e.stopPropagation()
               onDelete(deal.id)
             }}
-            className="text-red-500 hover:text-red-700 text-xs"
+            className="text-red-500 hover:text-red-700"
             title="Удалить сделку"
           >
             ×
@@ -1256,17 +1275,15 @@ function DealCard({
           {deal.contact.name}
         </a>
       </div>
-      <div className="text-sm font-semibold text-gray-900 mb-2">
+      <div className="text-lg font-semibold text-gray-900 mb-2">
         {deal.amount.toLocaleString('ru-RU')} {deal.currency}
       </div>
-      <div className="text-xs text-gray-500">
-        Вероятность: {deal.probability}%
+      <div className="flex items-center justify-between text-xs text-gray-500">
+        <span>Вероятность: {deal.probability}%</span>
+        {deal.user && (
+          <span className="text-gray-400">{deal.user.name}</span>
+        )}
       </div>
-      {deal.user && (
-        <div className="text-xs text-gray-400 mt-1">
-          {deal.user.name}
-        </div>
-      )}
     </div>
   )
 }
