@@ -31,10 +31,10 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
 
 
   return (
-    <div className="hidden md:flex w-72 min-h-screen bg-gradient-to-b from-[#0b1730] via-[#0f1c3f] to-[#101623] text-white px-5 py-7 border-r border-white/10 shadow-2xl">
-      <div className="flex flex-col flex-1 space-y-8">
+    <div className="hidden md:flex w-72 h-screen bg-gradient-to-b from-[#0b1730] via-[#0f1c3f] to-[#101623] text-white px-5 py-7 border-r border-white/10 shadow-2xl">
+      <div className="flex flex-1 flex-col">
         {/* Логотип */}
-        <div className="space-y-2">
+        <div className="space-y-2 pb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs uppercase tracking-[0.2em]">
             <span className="text-[var(--secondary)]">Pulse</span>
             <span className="text-white/70">CRM</span>
@@ -55,7 +55,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </div>
 
         {/* Навигация */}
-        <nav className="space-y-1 flex-1">
+        <nav className="space-y-1 flex-1 overflow-y-auto pr-1">
           {menuItems.map((item) => {
             const isActive = activeSection === item.id
             return (
@@ -92,7 +92,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </nav>
 
         {/* Пользователь */}
-        <div className="glass-panel border-white/10 bg-white/10 px-4 py-5 rounded-3xl text-sm shadow-xl">
+        <div className="mt-auto glass-panel border-white/10 bg-white/10 px-4 py-5 rounded-3xl text-sm shadow-xl">
           <p className="text-white/60 text-xs uppercase tracking-[0.4em] mb-2">
             Профиль
           </p>
