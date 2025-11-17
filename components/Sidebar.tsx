@@ -55,7 +55,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </div>
 
         {/* Навигация */}
-        <nav className="space-y-1 flex-1 overflow-y-auto pr-1">
+        <nav className="sidebar-nav space-y-1 flex-1 overflow-y-auto pr-1">
           {menuItems.map((item) => {
             const isActive = activeSection === item.id
             return (
@@ -92,7 +92,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </nav>
 
         {/* Пользователь */}
-        <div className="mt-auto glass-panel border-white/10 bg-white/10 px-4 py-5 rounded-3xl text-sm shadow-xl">
+        <div className="mt-auto rounded-3xl border border-white/15 bg-white/5 px-4 py-5 text-sm shadow-xl backdrop-blur-2xl">
           <p className="text-white/60 text-xs uppercase tracking-[0.4em] mb-2">
             Профиль
           </p>

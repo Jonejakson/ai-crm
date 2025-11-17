@@ -143,3 +143,13 @@ body {
 .kanban-column {
   @apply glass-panel min-w-[280px] p-4 border border-white/50;
 }
+
+.sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
