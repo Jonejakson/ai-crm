@@ -23,14 +23,14 @@ export default function LayoutClient({
 
   return (
     <SessionProvider>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex h-screen bg-[var(--background)]">
         <Sidebar currentContactId={currentContactId} />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />
-          <div className="border-b bg-white px-4 sm:px-6 py-4">
+          <div className="px-6 py-4 bg-transparent border-b border-white/40 backdrop-blur-xl">
             <SearchBar />
           </div>
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <main className="flex-1 overflow-y-auto px-6 py-8 bg-transparent">
             {children}
           </main>
         </div>

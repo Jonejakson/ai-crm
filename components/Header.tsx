@@ -5,46 +5,43 @@ import Notifications from './Notifications'
 
 export default function Header() {
   const { data: session } = useSession()
+  const currentDate = new Date().toLocaleDateString('ru-RU', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40 backdrop-blur-sm bg-white/95">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="animate-fadeIn">
-          <h1 className="text-xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Панель управления
+    <header className="sticky top-0 z-40 border-b border-white/40 bg-white/70 backdrop-blur-2xl shadow-[0_10px_35px_rgba(15,23,42,0.08)]">
+      <div className="flex flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Панель управления</p>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {session?.user ? `Добро пожаловать, ${session.user.name}` : 'Добро пожаловать в Pulse CRM'}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {session?.user ? `Добро пожаловать, ${session.user.name}` : 'Добро пожаловать в вашу CRM'}
-          </p>
+          <p className="text-sm text-slate-500">{currentDate}</p>
         </div>
         
-        <div className="flex items-center space-x-4">
-          <div className="hidden md:block text-sm text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-            {new Date().toLocaleDateString('ru-RU', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+        {session?.user && (
+          <div className="flex items-center gap-4">
+            <Notifications />
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-semibold text-slate-900">{session.user.name}</p>
+              <p className="text-xs text-slate-500">{session.user.email}</p>
+            </div>
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="btn-secondary text-sm"
+            >
+              Выйти
+            </button>
           </div>
-          
-          {session?.user && (
-            <>
-              <Notifications />
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:block text-right">
-                  <div className="text-sm font-semibold text-gray-900">{session.user.name}</div>
-                  <div className="text-xs text-gray-500">{session.user.email}</div>
-                </div>
-                <button
-                  onClick={() => signOut({ callbackUrl: '/login' })}
-                  className="px-4 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 font-medium active:scale-95"
-                >
-                  Выйти
-                </button>
-              </div>
-            </>
-          )}
+        )}
+        {!session?.user && (
+          <div className="text-sm text-slate-500">
+            Войдите, чтобы увидеть персонализированные данные
+          </div>
         </div>
       </div>
     </header>

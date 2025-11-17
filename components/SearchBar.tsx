@@ -146,31 +146,29 @@ export default function SearchBar() {
             }
           }}
           placeholder="Поиск по контактам, задачам, сделкам, событиям..."
-          className="w-full px-4 py-2 pl-10 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full rounded-2xl border border-white/40 bg-white/80 px-12 py-3 text-sm text-slate-700 shadow-[0_20px_45px_rgba(15,23,42,0.06)] placeholder:text-slate-400 focus:border-[var(--primary)] focus:ring-0"
         />
-        <div className="absolute left-3 top-2.5 text-gray-400">
-          🔍
-        </div>
+        <div className="pointer-events-none absolute left-4 top-3 text-lg">🔍</div>
         {loading && (
-          <div className="absolute right-3 top-2.5">
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <div className="absolute right-3 top-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
           </div>
         )}
       </div>
 
       {isOpen && results && getTotalResults() > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-50 mt-3 max-h-96 w-full overflow-y-auto rounded-2xl border border-white/50 bg-white/90 shadow-2xl backdrop-blur-xl">
           {/* Контакты */}
           {results.contacts.length > 0 && (
-            <div className="p-2">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+            <div className="p-3">
+              <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
                 Контакты ({results.contacts.length})
               </div>
               {results.contacts.map(contact => (
                 <div
                   key={contact.id}
                   onClick={() => handleResultClick('contact', contact.id)}
-                  className="px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                  className="rounded-xl px-3 py-2 hover:bg-white"
                 >
                   <div className="font-medium text-gray-900">{contact.name}</div>
                   <div className="text-sm text-gray-500">{contact.email}</div>
@@ -184,15 +182,15 @@ export default function SearchBar() {
 
           {/* Задачи */}
           {results.tasks.length > 0 && (
-            <div className="p-2 border-t">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+            <div className="border-t border-white/60 p-3">
+              <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
                 Задачи ({results.tasks.length})
               </div>
               {results.tasks.map(task => (
                 <div
                   key={task.id}
                   onClick={() => handleResultClick('task', task.id)}
-                  className="px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                  className="rounded-xl px-3 py-2 hover:bg-white"
                 >
                   <div className="font-medium text-gray-900">{task.title}</div>
                   <div className="text-sm text-gray-500">
@@ -206,15 +204,15 @@ export default function SearchBar() {
 
           {/* Сделки */}
           {results.deals.length > 0 && (
-            <div className="p-2 border-t">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+            <div className="border-t border-white/60 p-3">
+              <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
                 Сделки ({results.deals.length})
               </div>
               {results.deals.map(deal => (
                 <div
                   key={deal.id}
                   onClick={() => handleResultClick('deal', deal.id)}
-                  className="px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                  className="rounded-xl px-3 py-2 hover:bg-white"
                 >
                   <div className="font-medium text-gray-900">{deal.title}</div>
                   <div className="text-sm text-gray-500">
@@ -228,8 +226,8 @@ export default function SearchBar() {
 
           {/* События */}
           {results.events.length > 0 && (
-            <div className="p-2 border-t">
-              <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase">
+            <div className="border-t border-white/60 p-3">
+              <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
                 События ({results.events.length})
               </div>
               {results.events.map(event => {
@@ -238,7 +236,7 @@ export default function SearchBar() {
                   <div
                     key={event.id}
                     onClick={() => handleResultClick('event', event.id)}
-                    className="px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                    className="rounded-xl px-3 py-2 hover:bg-white"
                   >
                     <div className="font-medium text-gray-900">{event.title}</div>
                     <div className="text-sm text-gray-500">
@@ -259,7 +257,7 @@ export default function SearchBar() {
       )}
 
       {isOpen && results && getTotalResults() === 0 && query.trim().length >= 2 && (
-        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+        <div className="absolute z-50 mt-3 w-full rounded-2xl border border-white/50 bg-white/90 p-4 text-center text-slate-500 shadow-2xl backdrop-blur-xl">
           Ничего не найдено
         </div>
       )}
