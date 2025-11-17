@@ -23,7 +23,7 @@ export default function Header() {
           <p className="text-sm text-slate-500">{currentDate}</p>
         </div>
         
-        {session?.user && (
+        {session?.user ? (
           <div className="flex items-center gap-4">
             <Notifications />
             <div className="hidden text-right sm:block">
@@ -37,12 +37,11 @@ export default function Header() {
               Выйти
             </button>
           </div>
-        )}
-        {!session?.user && (
+        ) : (
           <div className="text-sm text-slate-500">
             Войдите, чтобы увидеть персонализированные данные
           </div>
-        </div>
+        )}
       </div>
     </header>
   )
