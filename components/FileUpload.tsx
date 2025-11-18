@@ -100,18 +100,18 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
     if (!confirm('Удалить этот файл?')) return
 
     try {
-      const response = await fetch(`/api/files?id=${fileId}`, {
+      const deleteResponse = await fetch(`/api/files?id=${fileId}`, {
         method: 'DELETE',
       })
 
-      if (!response.ok) {
+      if (!deleteResponse.ok) {
         throw new Error('Ошибка удаления файла')
       }
 
       // Перезагружаем файлы
-      const response = await fetch(`/api/files?entityType=${entityType}&entityId=${entityId}`)
-      if (response.ok) {
-        const data = await response.json()
+      const loadResponse = await fetch(`/api/files?entityType=${entityType}&entityId=${entityId}`)
+      if (loadResponse.ok) {
+        const data = await loadResponse.json()
         setFiles(data.files || [])
       }
     } catch (error: any) {
