@@ -32,7 +32,7 @@ export async function GET(req: Request) {
         },
       })
 
-      if (!deal || deal.user.companyId !== currentUser.companyId) {
+      if (!deal || deal.user.companyId !== Number(currentUser.companyId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 })
       }
     } else if (entityType === 'task') {
@@ -45,7 +45,7 @@ export async function GET(req: Request) {
         },
       })
 
-      if (!task || (task.user && task.user.companyId !== currentUser.companyId)) {
+      if (!task || (task.user && task.user.companyId !== Number(currentUser.companyId))) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 })
       }
     } else {
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
         },
       })
 
-      if (!deal || deal.user.companyId !== currentUser.companyId) {
+      if (!deal || deal.user.companyId !== Number(currentUser.companyId)) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 })
       }
     } else if (entityType === 'task') {
@@ -126,7 +126,7 @@ export async function POST(req: Request) {
         },
       })
 
-      if (!task || (task.user && task.user.companyId !== currentUser.companyId)) {
+      if (!task || (task.user && task.user.companyId !== Number(currentUser.companyId))) {
         return NextResponse.json({ error: 'Not found' }, { status: 404 })
       }
     } else {
