@@ -220,9 +220,9 @@ export default function ContactsPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Клиенты</p>
-          <h1 className="text-3xl font-semibold text-slate-900">Контакты компании</h1>
-          <p className="text-sm text-slate-500">Управляйте клиентской базой, фильтруйте по менеджерам, добавляйте новых.</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold">Клиенты</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Контакты компании</h1>
+          <p className="text-sm text-[var(--muted)]">Управляйте клиентской базой, фильтруйте по менеджерам, добавляйте новых.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button 
@@ -331,15 +331,15 @@ export default function ContactsPage() {
       {/* Модальное окно добавления контакта */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl">
-            <div className="flex items-center justify-between border-b border-white/40 pb-4">
+          <div className="w-full max-w-lg rounded-3xl border border-[var(--border)] bg-white p-8 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-5 mb-6">
               <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Новый контакт</p>
-                <h3 className="text-xl font-semibold text-slate-900">Добавить клиента</h3>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Новый контакт</p>
+                <h3 className="text-2xl font-bold text-[var(--foreground)]">Добавить клиента</h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
               >
                 ✕
               </button>
@@ -348,7 +348,7 @@ export default function ContactsPage() {
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               {['name', 'email', 'phone'].map((field) => (
                 <div key={field}>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     {field === 'name' ? 'Имя *' :
                      field === 'email' ? 'Email *' :
                      'Телефон'}
@@ -359,7 +359,7 @@ export default function ContactsPage() {
                     value={(formData as any)[field]}
                     onChange={handleChange}
                     required={field === 'name' || field === 'email'}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                 </div>
               ))}
@@ -377,7 +377,7 @@ export default function ContactsPage() {
                     onChange={handleInnChange}
                     placeholder="Введите ИНН (10 или 12 цифр)"
                     maxLength={12}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                   {innLoading && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -444,7 +444,7 @@ export default function ContactsPage() {
             <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
               {['name', 'email', 'phone', 'company'].map((field) => (
                 <div key={field}>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     {field === 'name' ? 'Имя *' :
                      field === 'email' ? 'Email *' :
                      field === 'phone' ? 'Телефон' : 'Компания'}
@@ -455,7 +455,7 @@ export default function ContactsPage() {
                     value={(editFormData as any)[field]}
                     onChange={(e) => setEditFormData({ ...editFormData, [field]: e.target.value })}
                     required={field === 'name' || field === 'email'}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                 </div>
               ))}
