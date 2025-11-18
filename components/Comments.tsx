@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { format } from 'date-fns'
-import { ru } from 'date-fns/locale'
 
 interface Comment {
   id: number
@@ -199,8 +197,12 @@ export default function Comments({ entityType, entityId, currentUserId }: Commen
                     {comment.user.name}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {format(new Date(comment.createdAt), 'd MMM yyyy, HH:mm', {
-                      locale: ru,
+                    {new Date(comment.createdAt).toLocaleString('ru-RU', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
                     })}
                     {comment.updatedAt !== comment.createdAt && ' (изменено)'}
                   </div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 
 // DELETE /api/comments/[id]
