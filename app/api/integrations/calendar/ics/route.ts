@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
-import { createEvents } from 'ics'
+import { createEvents, type EventAttributes } from 'ics'
 
 function toIcsDate(date: Date) {
   return [
@@ -32,18 +32,19 @@ export async function GET() {
     return NextResponse.json({ error: 'Нет событий для экспорта' }, { status: 404 })
   }
 
-  const mapped = events.map((event) => {
-    const start = toIcsDate(new Date(event.startDate))
-    const end = event.endDate ? toIcsDate(new Date(event.endDate)) : undefined
+  const mapped: EventAttributes[] = events.map((event) => {
+    const startDate = new Date(event.startDate)
+    const endDate = event.endDate ? new Date(event.endDate) : new Date(startDate.getTime() + 60 * 60 * 1000)
+
     return {
       title: event.title,
       description: event.description || undefined,
       location: event.location || undefined,
-      start,
-      end,
-      status: 'CONFIRMED' as const,
-      busyStatus: 'BUSY' as const,
-      categories: [event.type],
+      start: toIcsDate(startDate),
+      end: toIcsDate(endDate),
+      status: 'CONFIRMED',
+      busyStatus: 'BUSY',
+      categories: event.type ? [event.type] : undefined,
     }
   })
 
