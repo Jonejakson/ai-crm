@@ -150,6 +150,32 @@ export default function AnalyticsPage() {
       {/* Заголовок и фильтр периода */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Аналитика и отчеты</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              window.open(`/api/analytics/export?type=deals&period=${period}`, '_blank')
+            }}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+          >
+            📊 Экспорт сделок
+          </button>
+          <button
+            onClick={() => {
+              window.open(`/api/analytics/export?type=tasks&period=${period}`, '_blank')
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            📋 Экспорт задач
+          </button>
+          <button
+            onClick={() => {
+              window.open(`/api/analytics/export?type=contacts&period=${period}`, '_blank')
+            }}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+          >
+            👥 Экспорт контактов
+          </button>
+        </div>
       </div>
       
       {/* Фильтр по менеджеру (только для админа) */}
