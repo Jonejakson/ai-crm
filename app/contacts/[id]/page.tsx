@@ -603,6 +603,17 @@ export default function ContactDetailPage() {
               )}
             </div>
           )}
+
+          {/* Вкладка Файлы */}
+          {activeTab === 'files' && contact && (
+            <div className="space-y-4">
+              <FileUpload
+                entityType="contact"
+                entityId={contact.id}
+                onUploadComplete={fetchContactData}
+              />
+            </div>
+          )}
         </div>
       </div>
 
