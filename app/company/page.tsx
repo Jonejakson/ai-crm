@@ -453,6 +453,28 @@ export default function CompanyPage() {
         </div>
       )}
 
+      {/* Ссылка на управление кастомными полями */}
+      <section className="mb-6">
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Кастомные поля
+              </h3>
+              <p className="text-sm text-gray-600">
+                Создавайте дополнительные поля для контактов, сделок и задач
+              </p>
+            </div>
+            <a
+              href="/company/custom-fields"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Управление полями →
+            </a>
+          </div>
+        </div>
+      </section>
+
       <section className="space-y-4 mb-8">
         <div className="glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
