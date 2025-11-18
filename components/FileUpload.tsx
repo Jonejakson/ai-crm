@@ -29,27 +29,26 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const loadFiles = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const response = await fetch(`/api/files?entityType=${entityType}&entityId=${entityId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setFiles(data.files || [])
-      } else {
-        setError('Ошибка загрузки файлов')
-      }
-    } catch (error) {
-      console.error('Error loading files:', error)
-      setError('Ошибка загрузки файлов')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   // Загружаем файлы при монтировании
   useEffect(() => {
+    const loadFiles = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const response = await fetch(`/api/files?entityType=${entityType}&entityId=${entityId}`)
+        if (response.ok) {
+          const data = await response.json()
+          setFiles(data.files || [])
+        } else {
+          setError('Ошибка загрузки файлов')
+        }
+      } catch (error) {
+        console.error('Error loading files:', error)
+        setError('Ошибка загрузки файлов')
+      } finally {
+        setLoading(false)
+      }
+    }
     loadFiles()
   }, [entityType, entityId])
 
@@ -78,7 +77,12 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
         }
       }
 
-      await loadFiles()
+      // Перезагружаем файлы
+      const response = await fetch(`/api/files?entityType=${entityType}&entityId=${entityId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setFiles(data.files || [])
+      }
       if (onUploadComplete) {
         onUploadComplete()
       }
@@ -104,7 +108,12 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
         throw new Error('Ошибка удаления файла')
       }
 
-      await loadFiles()
+      // Перезагружаем файлы
+      const response = await fetch(`/api/files?entityType=${entityType}&entityId=${entityId}`)
+      if (response.ok) {
+        const data = await response.json()
+        setFiles(data.files || [])
+      }
     } catch (error: any) {
       setError(error.message || 'Ошибка удаления файла')
     }
