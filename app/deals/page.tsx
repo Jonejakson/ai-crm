@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import Comments from '@/components/Comments'
+import TagsManager from '@/components/TagsManager'
 import {
   DndContext,
   closestCorners,
@@ -92,7 +93,7 @@ export default function DealsPage() {
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null)
-  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments'>('info')
+  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags'>('info')
   const [newContactData, setNewContactData] = useState({
     name: '',
     email: '',
@@ -1181,6 +1182,16 @@ export default function DealsPage() {
               >
                 Комментарии
               </button>
+              <button
+                onClick={() => setDealViewTab('tags')}
+                className={`px-6 py-3 font-medium ${
+                  dealViewTab === 'tags'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Теги
+              </button>
             </div>
 
             {/* Содержимое вкладок */}
@@ -1245,6 +1256,13 @@ export default function DealsPage() {
 
               {dealViewTab === 'comments' && viewingDeal && (
                 <Comments
+                  entityType="deal"
+                  entityId={viewingDeal.id}
+                />
+              )}
+
+              {dealViewTab === 'tags' && viewingDeal && (
+                <TagsManager
                   entityType="deal"
                   entityId={viewingDeal.id}
                 />

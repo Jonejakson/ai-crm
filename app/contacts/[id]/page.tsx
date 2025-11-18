@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import FileUpload from '@/components/FileUpload'
+import TagsManager from '@/components/TagsManager'
 
 interface Contact {
   id: number
@@ -377,7 +378,8 @@ export default function ContactDetailPage() {
               { id: 'tasks', name: `Задачи (${tasks.length})` },
               { id: 'dialogs', name: `Диалог (${dialogs.length})` },
               { id: 'emails', name: `Письма (${emailLogs.length})` },
-              { id: 'files', name: 'Файлы' }
+              { id: 'files', name: 'Файлы' },
+              { id: 'tags', name: 'Теги' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -611,6 +613,17 @@ export default function ContactDetailPage() {
                 entityType="contact"
                 entityId={contact.id}
                 onUploadComplete={fetchContactData}
+              />
+            </div>
+          )}
+
+          {/* Вкладка Теги */}
+          {activeTab === 'tags' && contact && (
+            <div className="space-y-4">
+              <TagsManager
+                entityType="contact"
+                entityId={contact.id}
+                onTagsChange={fetchContactData}
               />
             </div>
           )}
