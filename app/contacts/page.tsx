@@ -128,7 +128,8 @@ export default function ContactsPage() {
       if (response.ok) {
         await fetchContacts() // Обновляем список
         setIsModalOpen(false)
-        setFormData({ name: '', email: '', phone: '', company: '' })
+        setFormData({ name: '', email: '', phone: '', company: '', inn: '' })
+        setInnError('')
       }
     } catch (error) {
       console.error('Error creating contact:', error)
@@ -140,6 +141,56 @@ export default function ContactsPage() {
       ...formData,
       [e.target.name]: e.target.value
     })
+  }
+
+  // Функция поиска компании по ИНН
+  const handleInnSearch = async (inn: string) => {
+    const cleanInn = inn.replace(/\D/g, '')
+    
+    // Если ИНН меньше 10 цифр, не делаем запрос
+    if (cleanInn.length < 10) {
+      setInnError('')
+      return
+    }
+
+    setInnLoading(true)
+    setInnError('')
+
+    try {
+      const response = await fetch(`/api/company/by-inn?inn=${cleanInn}`)
+      const data = await response.json()
+
+      if (response.ok && data.name) {
+        setFormData({
+          ...formData,
+          company: data.name,
+          inn: cleanInn
+        })
+      } else {
+        setInnError(data.error || 'Компания не найдена')
+      }
+    } catch (error) {
+      console.error('Error searching company by INN:', error)
+      setInnError('Ошибка при поиске компании')
+    } finally {
+      setInnLoading(false)
+    }
+  }
+
+  const handleInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setFormData({
+      ...formData,
+      inn: value
+    })
+    
+    // Делаем запрос когда ИНН полностью введен (10 или 12 цифр)
+    const cleanInn = value.replace(/\D/g, '')
+    if (cleanInn.length === 10 || cleanInn.length === 12) {
+      handleInnSearch(cleanInn)
+    } else {
+      setInnError('')
+    }
   }
 
   const filteredContacts = contacts.filter(contact =>
