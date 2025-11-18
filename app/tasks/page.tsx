@@ -489,6 +489,129 @@ export default function TasksPage() {
           </div>
         </div>
       )}
+
+      {/* Модальное окно просмотра деталей задачи */}
+      {viewingTask && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h3 className="text-xl font-semibold">{viewingTask.title}</h3>
+              <button
+                onClick={() => {
+                  setViewingTask(null)
+                  setTaskViewTab('info')
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Вкладки */}
+            <div className="flex border-b">
+              <button
+                onClick={() => setTaskViewTab('info')}
+                className={`px-6 py-3 font-medium ${
+                  taskViewTab === 'info'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Информация
+              </button>
+              <button
+                onClick={() => setTaskViewTab('comments')}
+                className={`px-6 py-3 font-medium ${
+                  taskViewTab === 'comments'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Комментарии
+              </button>
+            </div>
+
+            {/* Содержимое вкладок */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {taskViewTab === 'info' && (
+                <div className="space-y-4">
+                  {viewingTask.description && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Описание
+                      </label>
+                      <p className="text-gray-900 whitespace-pre-wrap">{viewingTask.description}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Статус
+                      </label>
+                      <p className="text-gray-900">
+                        {viewingTask.status === 'completed' ? 'Завершена' : 
+                         viewingTask.status === 'in_progress' ? 'В работе' : 'Ожидает'}
+                      </p>
+                    </div>
+                    {viewingTask.dueDate && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Срок выполнения
+                        </label>
+                        <p className="text-gray-900">
+                          {new Date(viewingTask.dueDate).toLocaleDateString('ru-RU')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {viewingTask.contact && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Клиент
+                      </label>
+                      <p className="text-gray-900">
+                        <a
+                          href={`/contacts/${viewingTask.contact.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {viewingTask.contact.name}
+                        </a>
+                      </p>
+                    </div>
+                  )}
+                  {viewingTask.user && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ответственный
+                      </label>
+                      <p className="text-gray-900">{viewingTask.user.name}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {taskViewTab === 'comments' && viewingTask && (
+                <Comments
+                  entityType="task"
+                  entityId={viewingTask.id}
+                />
+              )}
+            </div>
+
+            <div className="p-6 border-t flex justify-end">
+              <button
+                onClick={() => {
+                  setViewingTask(null)
+                  setTaskViewTab('info')
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Закрыть
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
