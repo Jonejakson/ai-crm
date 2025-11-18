@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import Comments from '@/components/Comments'
-import { SkeletonKanban } from '@/components/Skeleton'
+import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
   closestCorners,

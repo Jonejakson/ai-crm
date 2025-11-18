@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
-import { SkeletonTable } from '@/components/Skeleton'
+import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 
 interface Contact {
   id: number
