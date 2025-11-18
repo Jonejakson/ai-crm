@@ -129,6 +129,16 @@ export async function PUT(request: Request) {
         )
       }
 
+      // Подготовка значения
+      let processedValue: string | null = null
+      if (value !== null && value !== undefined && value !== '') {
+        if (field.type === 'MULTISELECT' && Array.isArray(value)) {
+          processedValue = JSON.stringify(value)
+        } else {
+          processedValue = value.toString()
+        }
+      }
+
       // Валидация уникальности
       if (field.isUnique && processedValue) {
         const existing = await prisma.customFieldValue.findFirst({
@@ -147,16 +157,6 @@ export async function PUT(request: Request) {
             { error: `Field "${field.name}" must be unique` },
             { status: 400 }
           )
-        }
-      }
-
-      // Подготовка значения
-      let processedValue: string | null = null
-      if (value !== null && value !== undefined && value !== '') {
-        if (field.type === 'MULTISELECT' && Array.isArray(value)) {
-          processedValue = JSON.stringify(value)
-        } else {
-          processedValue = value.toString()
         }
       }
 
