@@ -169,21 +169,36 @@ export default function CompanyPage() {
     setBillingMessage('')
     setBillingLoading(true)
     try {
-      const response = await fetch('/api/billing/subscription', {
+      // Сначала создаем платеж
+      const paymentResponse = await fetch('/api/billing/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ planId }),
+        body: JSON.stringify({ planId, billingInterval: 'MONTHLY' }),
       })
 
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || 'Не удалось обновить тариф')
+      const paymentData = await paymentResponse.json()
+      if (!paymentResponse.ok) {
+        throw new Error(paymentData.error || 'Не удалось создать платеж')
       }
 
-      setSubscription(data.subscription)
-      setBillingMessage(`План «${data.subscription?.plan?.name ?? ''}» активирован`)
+      // Если план бесплатный, подписка уже активирована
+      if (paymentData.subscription) {
+        setSubscription(paymentData.subscription)
+        setBillingMessage(`План «${paymentData.subscription?.plan?.name ?? ''}» активирован`)
+        return
+      }
+
+      // Если есть URL для оплаты, перенаправляем пользователя
+      if (paymentData.paymentUrl) {
+        window.location.href = paymentData.paymentUrl
+        return
+      }
+
+      // Если платеж создан, но URL нет, обновляем подписку
+      await fetchBilling()
+      setBillingMessage('Платеж создан. Ожидаем подтверждения...')
     } catch (error: any) {
       console.error('Error updating plan:', error)
       setBillingError(error.message || 'Не удалось обновить тариф')
