@@ -130,17 +130,14 @@ export async function PUT(request: Request) {
       }
 
       // Валидация уникальности
-      if (field.isUnique && value) {
+      if (field.isUnique && processedValue) {
         const existing = await prisma.customFieldValue.findFirst({
           where: {
             customFieldId: fieldId,
             entityType,
-            value: value.toString(),
+            value: processedValue,
             NOT: {
-              AND: [
-                { entityType },
-                { entityId: parseInt(entityId) },
-              ],
+              entityId: parseInt(entityId),
             },
           },
         })
