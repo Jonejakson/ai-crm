@@ -346,7 +346,7 @@ export default function ContactsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              {['name', 'email', 'phone', 'company'].map((field) => (
+              {['name', 'email', 'phone'].map((field) => (
                 <div key={field}>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                     {field === 'name' ? 'Имя *' :
