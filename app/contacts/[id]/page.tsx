@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import FileUpload from '@/components/FileUpload'
 
 interface Contact {
   id: number
@@ -375,7 +376,8 @@ export default function ContactDetailPage() {
               { id: 'deals', name: `Сделки (${deals.length})` },
               { id: 'tasks', name: `Задачи (${tasks.length})` },
               { id: 'dialogs', name: `Диалог (${dialogs.length})` },
-              { id: 'emails', name: `Письма (${emailLogs.length})` }
+              { id: 'emails', name: `Письма (${emailLogs.length})` },
+              { id: 'files', name: 'Файлы' }
             ].map((tab) => (
               <button
                 key={tab.id}
