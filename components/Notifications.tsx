@@ -23,8 +23,8 @@ export default function Notifications() {
 
   useEffect(() => {
     fetchNotifications()
-    // Обновляем уведомления каждые 30 секунд
-    const interval = setInterval(fetchNotifications, 30000)
+    // Обновляем уведомления каждые 10 секунд для более быстрого отклика
+    const interval = setInterval(fetchNotifications, 10000)
     return () => clearInterval(interval)
   }, [])
 
@@ -127,6 +127,9 @@ export default function Notifications() {
     }
     return colors[type] || colors.info
   }
+
+  // Toast уведомления для новых уведомлений
+  const activeToasts = newNotifications.slice(0, 3) // Максимум 3 toast одновременно
 
   const getTypeIcon = (type: string) => {
     const icons: Record<string, string> = {
