@@ -128,8 +128,44 @@ export async function POST(req: Request) {
           }
         },
         pipeline: true,
+        user: {
+          select: {
+            companyId: true,
+          },
+        },
       }
     });
+
+    // Логируем активность
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'deal',
+          entityId: deal.id,
+          action: 'created',
+          description: `Создана сделка: ${deal.title}`,
+          userId: userId,
+          companyId: deal.user.companyId,
+        },
+      })
+    } catch (logError) {
+      console.error('[deals] Activity log error:', logError)
+    }
+
+    // Обрабатываем автоматизации
+    try {
+      const { processAutomations } = await import('@/lib/automations')
+      await processAutomations('DEAL_CREATED', {
+        dealId: deal.id,
+        contactId: deal.contactId,
+        userId: deal.userId,
+        companyId: deal.user.companyId,
+        newStage: deal.stage,
+        newAmount: deal.amount,
+      })
+    } catch (autoError) {
+      console.error('[deals] Automation error:', autoError)
+    }
     
     return NextResponse.json(deal);
   } catch (error: any) {
@@ -192,13 +228,19 @@ export async function PUT(req: Request) {
       }
     }
 
+    // Проверяем изменения для автоматизаций
+    const oldStage = existingDeal.stage
+    const newStage = data.stage
+    const oldAmount = existingDeal.amount
+    const newAmount = data.amount !== undefined ? parseFloat(data.amount) : undefined
+
     const deal = await prisma.deal.update({
       where: { id: data.id },
       data: {
         title: data.title,
-        amount: data.amount !== undefined ? parseFloat(data.amount) : undefined,
+        amount: newAmount !== undefined ? newAmount : undefined,
         currency: data.currency,
-        stage: data.stage,
+        stage: newStage,
         probability: data.probability !== undefined ? parseInt(data.probability) : undefined,
         expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
         pipelineId: data.pipelineId ? Number(data.pipelineId) : null,
@@ -213,8 +255,70 @@ export async function PUT(req: Request) {
           }
         },
         pipeline: true,
+        user: {
+          select: {
+            companyId: true,
+          },
+        },
       }
     });
+
+    // Логируем активность
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'deal',
+          entityId: deal.id,
+          action: oldStage !== newStage ? 'stage_changed' : 'updated',
+          description: oldStage !== newStage 
+            ? `Этап изменён: ${oldStage} → ${newStage}`
+            : 'Сделка обновлена',
+          metadata: {
+            oldStage,
+            newStage,
+            oldAmount,
+            newAmount,
+          },
+          userId: userId,
+          companyId: deal.user.companyId,
+        },
+      })
+    } catch (logError) {
+      console.error('[deals] Activity log error:', logError)
+    }
+
+    // Обрабатываем автоматизации
+    if (oldStage !== newStage) {
+      try {
+        const { processAutomations } = await import('@/lib/automations')
+        await processAutomations('DEAL_STAGE_CHANGED', {
+          dealId: deal.id,
+          contactId: deal.contactId,
+          userId: deal.userId,
+          companyId: deal.user.companyId,
+          oldStage,
+          newStage,
+        })
+      } catch (autoError) {
+        console.error('[deals] Automation error:', autoError)
+      }
+    }
+
+    if (oldAmount !== newAmount && newAmount !== undefined) {
+      try {
+        const { processAutomations } = await import('@/lib/automations')
+        await processAutomations('DEAL_AMOUNT_CHANGED', {
+          dealId: deal.id,
+          contactId: deal.contactId,
+          userId: deal.userId,
+          companyId: deal.user.companyId,
+          oldAmount,
+          newAmount,
+        })
+      } catch (autoError) {
+        console.error('[deals] Automation error:', autoError)
+      }
+    }
     
     return NextResponse.json(deal);
   } catch (error: any) {

@@ -31,6 +31,25 @@ enum InvoiceStatus {
     FAILED
 }
 
+enum AutomationTriggerType {
+    DEAL_STAGE_CHANGED
+    DEAL_CREATED
+    DEAL_AMOUNT_CHANGED
+    TASK_CREATED
+    TASK_COMPLETED
+    CONTACT_CREATED
+    EVENT_CREATED
+}
+
+enum AutomationActionType {
+    CREATE_TASK
+    SEND_EMAIL
+    CHANGE_PROBABILITY
+    ASSIGN_USER
+    CREATE_NOTIFICATION
+    UPDATE_DEAL_STAGE
+}
+
 model Company {
     id        Int       @id @default(autoincrement())
     name      String
@@ -40,6 +59,8 @@ model Company {
     pipelines Pipeline[]
     trialEndsAt DateTime?
     subscriptions Subscription[]
+    automations Automation[]
+    activityLogs ActivityLog[]
 }
 
 model User {
@@ -58,6 +79,7 @@ model User {
     events        Event[]
     notifications Notification[]
     emailMessages EmailMessage[]
+    activityLogs  ActivityLog[]
 }
 
 model Contact {
@@ -103,7 +125,7 @@ model Dialog {
 model Pipeline {
     id        Int      @id @default(autoincrement())
     name      String
-    stages    String   // JSON массив этапов
+    stages    String   // JSON массив этапов с цветами
     isDefault Boolean  @default(false)
     company   Company  @relation(fields: [companyId], references: [id])
     companyId Int
@@ -218,4 +240,32 @@ model Invoice {
     paidAt         DateTime?
     externalId     String?
     createdAt      DateTime       @default(now())
+}
+
+model Automation {
+    id          Int                  @id @default(autoincrement())
+    name        String
+    description String?
+    isActive    Boolean              @default(true)
+    triggerType AutomationTriggerType
+    triggerConfig Json?              // условия триггера (например, stage name, amount threshold)
+    actions     Json                 // массив действий
+    company     Company              @relation(fields: [companyId], references: [id])
+    companyId   Int
+    createdAt   DateTime             @default(now())
+    updatedAt   DateTime             @updatedAt
+}
+
+model ActivityLog {
+    id          Int      @id @default(autoincrement())
+    entityType  String   // deal, contact, task, event
+    entityId    Int
+    action      String   // created, updated, deleted, stage_changed, etc.
+    description String?
+    metadata    Json?    // дополнительные данные
+    user        User?    @relation(fields: [userId], references: [id])
+    userId      Int?
+    company     Company  @relation(fields: [companyId], references: [id])
+    companyId   Int
+    createdAt   DateTime @default(now())
 }
