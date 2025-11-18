@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import Comments from '@/components/Comments'
+import { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
   closestCorners,
@@ -312,7 +313,21 @@ export default function TasksPage() {
   }, {} as Record<string, Task[]>)
 
   if (loading) {
-    return <div className="flex justify-center p-8">Загрузка...</div>
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <Skeleton variant="text" width={200} height={32} />
+            <Skeleton variant="text" width={400} height={16} />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton variant="rectangular" width={120} height={40} />
+            <Skeleton variant="rectangular" width={150} height={40} />
+          </div>
+        </div>
+        <SkeletonKanban />
+      </div>
+    )
   }
 
   return (

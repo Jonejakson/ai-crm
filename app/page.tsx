@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 
 interface Contact {
   id: number
@@ -103,8 +104,17 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Загрузка...</div>
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card">
+              <Skeleton variant="text" width="60%" height={12} className="mb-3" />
+              <Skeleton variant="text" width="100%" height={32} className="mb-2" />
+              <Skeleton variant="text" width="80%" height={12} />
+            </div>
+          ))}
+        </div>
+        <SkeletonKanban />
       </div>
     )
   }

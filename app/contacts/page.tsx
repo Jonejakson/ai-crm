@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import { SkeletonTable } from '@/components/Skeleton'
 
 interface Contact {
   id: number
@@ -145,7 +146,20 @@ export default function ContactsPage() {
   )
 
   if (loading) {
-    return <div className="flex justify-center p-8">Загрузка...</div>
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-1">
+            <Skeleton variant="text" width={200} height={24} />
+            <Skeleton variant="text" width={300} height={16} />
+          </div>
+          <Skeleton variant="rectangular" width={150} height={40} />
+        </div>
+        <div className="glass-panel p-6 rounded-3xl">
+          <SkeletonTable />
+        </div>
+      </div>
+    )
   }
 
   return (

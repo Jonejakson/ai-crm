@@ -5,6 +5,7 @@ import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
+import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
   closestCorners,
@@ -606,7 +607,31 @@ export default function DealsPage() {
   const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
 
   if (loading) {
-    return <div className="flex justify-center p-8">Загрузка...</div>
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <Skeleton variant="text" width={150} height={12} />
+            <Skeleton variant="text" width={200} height={32} />
+            <Skeleton variant="text" width={400} height={16} />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton variant="rectangular" width={120} height={40} />
+            <Skeleton variant="rectangular" width={150} height={40} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card">
+              <Skeleton variant="text" width="60%" height={12} className="mb-3" />
+              <Skeleton variant="text" width="100%" height={32} className="mb-2" />
+              <Skeleton variant="text" width="80%" height={12} />
+            </div>
+          ))}
+        </div>
+        <SkeletonKanban />
+      </div>
+    )
   }
 
   return (
