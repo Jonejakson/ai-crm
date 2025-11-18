@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/get-session'
+import { getCurrentUser, getUserId } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 
 // DELETE /api/comments/[id]
@@ -23,7 +23,8 @@ export async function DELETE(
     }
 
     // Проверяем, что пользователь может удалить комментарий (только свой)
-    if (comment.userId !== currentUser.id) {
+    const userId = getUserId(currentUser)
+    if (!userId || comment.userId !== userId) {
       return NextResponse.json(
         { error: 'You can only delete your own comments' },
         { status: 403 }
@@ -75,7 +76,8 @@ export async function PUT(
     }
 
     // Проверяем, что пользователь может редактировать комментарий (только свой)
-    if (comment.userId !== currentUser.id) {
+    const userId = getUserId(currentUser)
+    if (!userId || comment.userId !== userId) {
       return NextResponse.json(
         { error: 'You can only edit your own comments' },
         { status: 403 }

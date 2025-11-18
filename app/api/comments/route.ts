@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getCurrentUser } from '@/lib/get-session'
+import { getCurrentUser, getUserId } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 
 // GET /api/comments?entityType=deal&entityId=1
@@ -136,12 +136,17 @@ export async function POST(req: Request) {
       )
     }
 
+    const userId = getUserId(currentUser)
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid user' }, { status: 401 })
+    }
+
     const comment = await prisma.comment.create({
       data: {
         text,
         entityType,
         entityId: parseInt(entityId),
-        userId: currentUser.id,
+        userId: userId,
       },
       include: {
         user: {
