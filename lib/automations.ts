@@ -79,7 +79,7 @@ async function executeAction(action: any, context: AutomationContext) {
         break
 
       case 'SEND_EMAIL':
-        if (context.contactId && params.subject && params.body) {
+        if (context.contactId && params.subject && (params.body || params.text || params.html)) {
           const contact = await prisma.contact.findUnique({
             where: { id: context.contactId },
           })
@@ -90,9 +90,20 @@ async function executeAction(action: any, context: AutomationContext) {
             await sendEmail({
               to: contact.email,
               subject: params.subject,
-              body: params.body,
-              contactId: context.contactId,
-              userId: context.userId || undefined,
+              text: params.text || params.body,
+              html: params.html,
+            })
+
+            // Сохраняем в лог отправки email
+            await prisma.emailMessage.create({
+              data: {
+                toEmail: contact.email,
+                subject: params.subject,
+                body: params.html || params.text || params.body || '',
+                status: 'sent',
+                contactId: context.contactId,
+                userId: context.userId || undefined,
+              },
             })
           }
         }
