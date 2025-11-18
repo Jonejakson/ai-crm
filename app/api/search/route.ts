@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getCurrentUser } from "@/lib/get-session";
+import { getDirectWhereCondition } from "@/lib/access-control";
 
 // Универсальный поиск по всем сущностям
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     
-    const userId = getUserId(user);
-    
-    if (!userId) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -27,7 +26,7 @@ export async function GET(req: Request) {
     }
 
     const searchLower = query.toLowerCase();
-    const searchPattern = `%${searchLower}%`;
+    const whereCondition = await getDirectWhereCondition();
 
     const results: any = {
       contacts: [],
@@ -36,16 +35,11 @@ export async function GET(req: Request) {
       events: []
     };
 
-    // Поиск по контактам (используем LOWER для нечувствительности к регистру в SQLite)
+    // Поиск по контактам
     if (type === 'all' || type === 'contacts') {
-      console.log('Searching contacts:', { query, searchLower, searchPattern, userId });
-      
-      // Используем обычный findMany с фильтрацией на стороне JS для надежности
       const allContacts = await prisma.contact.findMany({
-        where: {
-          userId: userId
-        },
-        take: 100 // Берем больше, чтобы потом отфильтровать
+        where: whereCondition,
+        take: 100
       });
       
       // Фильтруем на стороне JS с нечувствительностью к регистру
@@ -69,16 +63,12 @@ export async function GET(req: Request) {
           phone: contact.phone,
           company: contact.company
         }));
-      
-      console.log('Processed contacts:', results.contacts);
     }
 
     // Поиск по задачам
     if (type === 'all' || type === 'tasks') {
       const allTasks = await prisma.task.findMany({
-        where: {
-          userId: userId
-        },
+        where: whereCondition,
         include: {
           contact: {
             select: {
@@ -110,9 +100,7 @@ export async function GET(req: Request) {
     // Поиск по сделкам
     if (type === 'all' || type === 'deals') {
       const allDeals = await prisma.deal.findMany({
-        where: {
-          userId: userId
-        },
+        where: whereCondition,
         include: {
           contact: {
             select: {
@@ -144,9 +132,7 @@ export async function GET(req: Request) {
     // Поиск по событиям
     if (type === 'all' || type === 'events') {
       const allEvents = await prisma.event.findMany({
-        where: {
-          userId: userId
-        },
+        where: whereCondition,
         include: {
           contact: {
             select: {
