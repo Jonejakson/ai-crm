@@ -318,6 +318,15 @@ export default function CalendarClient() {
           </button>
           <button
             onClick={() => {
+              window.open('/api/integrations/calendar/ics', '_blank')
+            }}
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+          >
+            <span>📅</span>
+            <span>iCal / Google</span>
+          </button>
+          <button
+            onClick={() => {
               setSelectedEvent(null)
               setFormData({
                 title: '',

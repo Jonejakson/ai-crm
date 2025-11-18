@@ -40,6 +40,16 @@ interface Deal {
   createdAt: string
 }
 
+interface EmailLog {
+  id: number
+  subject: string
+  body: string
+  status: string
+  error: string | null
+  toEmail: string
+  createdAt: string
+}
+
 export default function ContactDetailPage() {
   const params = useParams()
   const contactId = params.id
@@ -48,10 +58,15 @@ export default function ContactDetailPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [dialogs, setDialogs] = useState<Dialog[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
+  const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('info')
   const [newMessage, setNewMessage] = useState('')
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+  const [emailForm, setEmailForm] = useState({ subject: '', message: '' })
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [taskFormData, setTaskFormData] = useState({
     title: '',
     dueDate: ''
@@ -65,11 +80,12 @@ export default function ContactDetailPage() {
 
   const fetchContactData = async () => {
     try {
-      const [contactRes, tasksRes, dialogsRes, dealsRes] = await Promise.all([
+      const [contactRes, tasksRes, dialogsRes, dealsRes, emailsRes] = await Promise.all([
         fetch(`/api/contacts`).then(res => res.json()),
         fetch(`/api/tasks`).then(res => res.json()),
         fetch(`/api/dialogs?contactId=${contactId}`).then(res => res.json()),
-        fetch(`/api/deals`).then(res => res.json())
+        fetch(`/api/deals`).then(res => res.json()),
+        fetch(`/api/integrations/email/logs?contactId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] }))
       ])
 
       // Находим конкретный контакт
@@ -89,10 +105,49 @@ export default function ContactDetailPage() {
       setDeals(contactDeals)
 
       setDialogs(Array.isArray(dialogsRes) ? dialogsRes : [])
+      setEmailLogs(Array.isArray(emailsRes.logs) ? emailsRes.logs : [])
     } catch (error) {
       console.error('Error fetching contact data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!emailForm.subject.trim() || !emailForm.message.trim()) {
+      setEmailAlert({ type: 'error', message: 'Заполните тему и текст письма' })
+      return
+    }
+
+    setEmailSending(true)
+    setEmailAlert(null)
+
+    try {
+      const response = await fetch('/api/integrations/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactId: Number(contactId),
+          subject: emailForm.subject,
+          message: emailForm.message,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось отправить письмо')
+      }
+
+      setEmailAlert({ type: 'success', message: 'Письмо отправлено' })
+      setEmailForm({ subject: '', message: '' })
+      await fetchContactData()
+      setIsEmailModalOpen(false)
+    } catch (error: any) {
+      setEmailAlert({ type: 'error', message: error.message || 'Ошибка отправки письма' })
+    } finally {
+      setEmailSending(false)
     }
   }
 
@@ -150,6 +205,11 @@ export default function ContactDetailPage() {
     }
   }
 
+  const openEmailModal = () => {
+    setEmailAlert(null)
+    setIsEmailModalOpen(true)
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -175,7 +235,15 @@ export default function ContactDetailPage() {
           </Link>
           <h1 className="text-3xl font-semibold text-slate-900">{contact.name}</h1>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
+          {contact.email && (
+            <button
+              onClick={openEmailModal}
+              className="btn-secondary"
+            >
+              ✉️ Отправить письмо
+            </button>
+          )}
           <button
             onClick={() => setIsTaskModalOpen(true)}
             className="btn-primary"
@@ -287,7 +355,8 @@ export default function ContactDetailPage() {
               { id: 'info', name: 'Информация' },
               { id: 'deals', name: `Сделки (${deals.length})` },
               { id: 'tasks', name: `Задачи (${tasks.length})` },
-              { id: 'dialogs', name: `Диалог (${dialogs.length})` }
+              { id: 'dialogs', name: `Диалог (${dialogs.length})` },
+              { id: 'emails', name: `Письма (${emailLogs.length})` }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -425,6 +494,57 @@ export default function ContactDetailPage() {
               </form>
             </div>
           )}
+
+          {/* Вкладка Письма */}
+          {activeTab === 'emails' && (
+            <div className="space-y-4">
+              {contact.email ? (
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-slate-500">
+                    Письма отправляются на{' '}
+                    <span className="font-medium text-slate-900">{contact.email}</span>
+                  </p>
+                  <button className="btn-primary text-sm" onClick={openEmailModal}>
+                    Написать письмо
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-red-500">У контакта нет email. Добавьте адрес, чтобы отправлять письма.</p>
+              )}
+
+              {emailLogs.length === 0 ? (
+                <p className="text-slate-500">Писем пока не было</p>
+              ) : (
+                emailLogs.map((log) => (
+                  <div key={log.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{log.subject}</p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(log.createdAt).toLocaleString('ru-RU')}
+                        </p>
+                      </div>
+                      <span
+                        className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                          log.status === 'sent'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : log.status === 'failed'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {log.status === 'sent' ? 'Отправлено' : log.status === 'failed' ? 'Ошибка' : 'В очереди'}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-700 whitespace-pre-wrap">{log.body}</p>
+                    {log.error && (
+                      <p className="mt-2 text-xs text-red-500">Ошибка: {log.error}</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -488,6 +608,82 @@ export default function ContactDetailPage() {
                   className="btn-primary text-sm"
                 >
                   Создать задачу
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isEmailModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Почта</p>
+                <h3 className="text-lg font-semibold">Отправить письмо</h3>
+              </div>
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {emailAlert && (
+              <div
+                className={`mb-4 rounded-2xl px-4 py-2 text-sm ${
+                  emailAlert.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'bg-red-50 text-red-600'
+                }`}
+              >
+                {emailAlert.message}
+              </div>
+            )}
+
+            <form onSubmit={handleSendEmail} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
+                  Тема
+                </label>
+                <input
+                  type="text"
+                  value={emailForm.subject}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, subject: e.target.value }))}
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
+                  Сообщение
+                </label>
+                <textarea
+                  rows={6}
+                  value={emailForm.message}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, message: e.target.value }))}
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEmailModalOpen(false)}
+                  className="btn-secondary text-sm"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={emailSending}
+                  className="btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {emailSending ? 'Отправка…' : 'Отправить'}
                 </button>
               </div>
             </form>

@@ -57,6 +57,7 @@ model User {
     deals         Deal[]
     events        Event[]
     notifications Notification[]
+    emailMessages EmailMessage[]
 }
 
 model Contact {
@@ -73,6 +74,7 @@ model Contact {
     dialogs   Dialog[]
     deals     Deal[]
     events    Event[]
+    emailMessages EmailMessage[]
 }
 
 model Task {
@@ -155,6 +157,21 @@ model Notification {
     user      User      @relation(fields: [userId], references: [id])
     userId    Int
     createdAt DateTime  @default(now())
+}
+
+model EmailMessage {
+    id         Int      @id @default(autoincrement())
+    subject    String
+    body       String
+    status     String   @default("pending")
+    error      String?
+    providerId String?
+    toEmail    String
+    createdAt  DateTime @default(now())
+    user       User?    @relation(fields: [userId], references: [id])
+    userId     Int?
+    contact    Contact? @relation(fields: [contactId], references: [id])
+    contactId  Int?
 }
 
 model Plan {
