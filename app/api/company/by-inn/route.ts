@@ -24,29 +24,27 @@ export async function GET(request: Request) {
     }
 
     // Используем API daData.ru (требуется API ключ в переменных окружения)
-    // Если ключа нет, можно использовать альтернативные сервисы
+    // Документация: https://dadata.ru/api/find-party/
     const apiKey = process.env.DADATA_API_KEY
-    const apiSecret = process.env.DADATA_SECRET_KEY
 
-    if (!apiKey || !apiSecret) {
-      // Если нет API ключа, возвращаем заглушку или используем альтернативный сервис
-      // Можно использовать API ФНС напрямую (но там нужна регистрация)
+    if (!apiKey) {
       return NextResponse.json(
         { 
           error: 'API ключ не настроен',
-          message: 'Настройте DADATA_API_KEY и DADATA_SECRET_KEY в переменных окружения для использования поиска по ИНН'
+          message: 'Настройте DADATA_API_KEY в переменных окружения для использования поиска по ИНН. Получить ключ можно на https://dadata.ru/'
         },
         { status: 503 }
       )
     }
 
-    // Запрос к daData API
+    // Запрос к daData API методом findById для поиска организации по ИНН
+    // Документация: https://dadata.ru/api/find-party/
     const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'Authorization': `Token ${apiKey}`,
-        'X-Secret': apiSecret,
       },
       body: JSON.stringify({
         query: cleanInn,
