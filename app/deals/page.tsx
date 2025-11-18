@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
+import Comments from '@/components/Comments'
 import {
   DndContext,
   closestCorners,
@@ -90,6 +91,8 @@ export default function DealsPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
+  const [viewingDeal, setViewingDeal] = useState<Deal | null>(null)
+  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments'>('info')
   const [newContactData, setNewContactData] = useState({
     name: '',
     email: '',
@@ -770,7 +773,9 @@ export default function DealsPage() {
                   stage={stage}
                   deals={dealsByStage[stage] || []}
                   onDelete={handleDelete}
-                  onEdit={openEditModal}
+                  onEdit={(deal) => {
+                    setViewingDeal(deal)
+                  }}
                   color={getStageColor(stage, index)}
                 />
               ))}
@@ -1136,6 +1141,140 @@ export default function DealsPage() {
           </div>
         </div>
       )}
+
+      {/* Модальное окно просмотра деталей сделки */}
+      {viewingDeal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h3 className="text-xl font-semibold">{viewingDeal.title}</h3>
+              <button
+                onClick={() => {
+                  setViewingDeal(null)
+                  setDealViewTab('info')
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Вкладки */}
+            <div className="flex border-b">
+              <button
+                onClick={() => setDealViewTab('info')}
+                className={`px-6 py-3 font-medium ${
+                  dealViewTab === 'info'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Информация
+              </button>
+              <button
+                onClick={() => setDealViewTab('comments')}
+                className={`px-6 py-3 font-medium ${
+                  dealViewTab === 'comments'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Комментарии
+              </button>
+            </div>
+
+            {/* Содержимое вкладок */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {dealViewTab === 'info' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Клиент
+                    </label>
+                    <p className="text-gray-900">
+                      <a
+                        href={`/contacts/${viewingDeal.contact.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {viewingDeal.contact.name}
+                      </a>
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Сумма
+                      </label>
+                      <p className="text-gray-900">
+                        {viewingDeal.amount.toLocaleString('ru-RU')} {viewingDeal.currency}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Вероятность
+                      </label>
+                      <p className="text-gray-900">{viewingDeal.probability}%</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Этап
+                      </label>
+                      <p className="text-gray-900">{viewingDeal.stage}</p>
+                    </div>
+                    {viewingDeal.expectedCloseDate && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Ожидаемая дата закрытия
+                        </label>
+                        <p className="text-gray-900">
+                          {new Date(viewingDeal.expectedCloseDate).toLocaleDateString('ru-RU')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {viewingDeal.user && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Ответственный
+                      </label>
+                      <p className="text-gray-900">{viewingDeal.user.name}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {dealViewTab === 'comments' && viewingDeal && (
+                <Comments
+                  entityType="deal"
+                  entityId={viewingDeal.id}
+                />
+              )}
+            </div>
+
+            <div className="p-6 border-t flex justify-end">
+              <button
+                onClick={() => {
+                  setViewingDeal(null)
+                  setDealViewTab('info')
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              >
+                Закрыть
+              </button>
+              <button
+                onClick={() => {
+                  setEditingDeal(viewingDeal)
+                  setViewingDeal(null)
+                  setDealViewTab('info')
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-3"
+              >
+                Редактировать
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1242,7 +1381,15 @@ function DealCard({
     >
       <div className="absolute inset-x-4 top-2 h-1 rounded-full bg-[var(--primary-soft)] group-hover:bg-[var(--primary)]/30 transition-colors" />
       <div className="flex justify-between items-start mb-2">
-        <h4 className="font-medium text-gray-900 text-sm flex-1 pr-2">{deal.title}</h4>
+        <h4 
+          className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600"
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            onEdit(deal)
+          }}
+        >
+          {deal.title}
+        </h4>
         <div className="flex items-center space-x-1 ml-2 text-xs">
           <button
             onClick={(e) => {

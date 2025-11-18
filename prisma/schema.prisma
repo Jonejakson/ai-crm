@@ -81,6 +81,7 @@ model User {
     emailMessages EmailMessage[]
     activityLogs  ActivityLog[]
     files         File[]
+    comments      Comment[]
 }
 
 model Contact {
@@ -283,4 +284,15 @@ model File {
     user        User?    @relation(fields: [userId], references: [id])
     userId      Int?
     createdAt   DateTime @default(now())
+}
+
+model Comment {
+    id          Int      @id @default(autoincrement())
+    text        String
+    entityType  String   // deal, task
+    entityId    Int
+    user        User     @relation(fields: [userId], references: [id])
+    userId      Int
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
 }

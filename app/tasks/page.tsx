@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import Comments from '@/components/Comments'
 import {
   DndContext,
   closestCorners,
@@ -112,6 +113,8 @@ export default function TasksPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const [viewingTask, setViewingTask] = useState<Task | null>(null)
+  const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments'>('info')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -365,6 +368,7 @@ export default function TasksPage() {
                   tasks={tasksByCategory[category.id] || []}
                   onDelete={handleDelete}
                   onStatusChange={handleStatusChange}
+                  onView={setViewingTask}
                 />
               ))}
             </div>
@@ -524,6 +528,7 @@ function TaskColumn({
             task={task} 
             onDelete={onDelete}
             onStatusChange={onStatusChange}
+            onView={onView}
           />
         ))}
       </div>
@@ -532,7 +537,7 @@ function TaskColumn({
 }
 
 // Компонент карточки задачи с drag & drop
-function TaskCard({ task, onDelete, onStatusChange }: { task: Task; onDelete: (id: number) => void; onStatusChange: (id: number, status: string) => void }) {
+function TaskCard({ task, onDelete, onStatusChange, onView }: { task: Task; onDelete: (id: number) => void; onStatusChange: (id: number, status: string) => void; onView?: (task: Task) => void }) {
   const {
     attributes,
     listeners,
@@ -576,7 +581,17 @@ function TaskCard({ task, onDelete, onStatusChange }: { task: Task; onDelete: (i
     >
       <div className="absolute inset-x-4 top-2 h-1 rounded-full bg-[var(--primary-soft)]/70 group-hover:bg-[var(--primary)]/30 transition-colors" />
       <div className="flex justify-between items-start mb-2">
-        <h4 className="font-medium text-gray-900 text-sm flex-1 pr-2">{task.title}</h4>
+        <h4 
+          className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600"
+          onDoubleClick={(e) => {
+            e.stopPropagation()
+            if (onView) {
+              onView(task)
+            }
+          }}
+        >
+          {task.title}
+        </h4>
         <button
           onClick={(e) => {
             e.stopPropagation()
