@@ -135,21 +135,23 @@ export default function Dashboard() {
         />
       </div>
       
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: 'Всего клиентов', value: contacts.length, icon: '👥', accent: 'text-blue-600' },
-          { label: 'Активные задачи', value: pendingTasks, icon: '✅', accent: 'text-orange-500' },
-          { label: 'Активные сделки', value: activeDeals, icon: '💰', accent: 'text-purple-500' },
-          { label: 'Сумма сделок', value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, icon: '💵', accent: 'text-emerald-500' },
+          { label: 'Всего клиентов', value: contacts.length, icon: '👥', gradient: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50' },
+          { label: 'Активные задачи', value: pendingTasks, icon: '✅', gradient: 'from-orange-500 to-amber-500', bg: 'bg-orange-50' },
+          { label: 'Активные сделки', value: activeDeals, icon: '💰', gradient: 'from-purple-500 to-pink-500', bg: 'bg-purple-50' },
+          { label: 'Сумма сделок', value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, icon: '💵', gradient: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-50' },
         ].map((card) => (
-          <div key={card.label} className="card relative overflow-hidden">
-            <div className="absolute inset-x-6 top-4 h-1 rounded-full bg-[var(--primary-soft)]/60" />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.4em] text-slate-400">{card.label}</p>
-                <p className={`mt-3 text-4xl font-semibold ${card.accent}`}>{card.value}</p>
+          <div key={card.label} className="stat-card group relative overflow-hidden">
+            <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+            <div className="relative flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] font-semibold mb-2">{card.label}</p>
+                <p className="stat-card-value bg-gradient-to-r bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, var(--${card.gradient.split('-')[1]}-500), var(--${card.gradient.split('-')[3]}-500))` }}>
+                  {card.value}
+                </p>
               </div>
-              <div className="rounded-2xl bg-white/70 px-4 py-3 text-2xl shadow-inner">
+              <div className={`rounded-2xl ${card.bg} p-4 text-3xl shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                 {card.icon}
               </div>
             </div>

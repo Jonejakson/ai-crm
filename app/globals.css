@@ -3,21 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --background: #f4f6fb;
-  --background-soft: #eef2fb;
+  /* Современная цветовая палитра */
+  --background: #fafbfc;
+  --background-soft: #f5f7fa;
   --surface: #ffffff;
-  --foreground: #111c3a;
-  --muted: #6b7a99;
-  --primary: #2f6fed;
-  --primary-hover: #2157c2;
-  --primary-soft: #c7d8ff;
-  --secondary: #00c6ae;
+  --foreground: #0f172a;
+  --foreground-soft: #1e293b;
+  --muted: #64748b;
+  --muted-soft: #94a3b8;
+  
+  /* Основные цвета - более яркие и современные */
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --primary-light: #818cf8;
+  --primary-soft: #e0e7ff;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  
+  --secondary: #06b6d4;
+  --secondary-hover: #0891b2;
+  --secondary-soft: #cffafe;
+  
   --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-soft: #ede9fe;
+  
   --success: #10b981;
+  --success-soft: #d1fae5;
   --warning: #f59e0b;
+  --warning-soft: #fef3c7;
   --error: #ef4444;
-  --border-soft: #e4e7f1;
-  --shadow-primary: 0 20px 45px -25px rgba(47, 111, 237, 0.65);
+  --error-soft: #fee2e2;
+  
+  --border: #e2e8f0;
+  --border-soft: #f1f5f9;
+  --border-strong: #cbd5e1;
+  
+  /* Тени - более мягкие и современные */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --shadow-primary: 0 10px 40px -10px rgba(99, 102, 241, 0.4);
 }
 
 @theme inline {
@@ -32,25 +59,28 @@
 }
 
 body {
-  background: radial-gradient(circle at top, #fefefe 0%, var(--background) 55%, #eef0f8 100%);
+  background: linear-gradient(135deg, #fafbfc 0%, #f5f7fa 50%, #f0f4f8 100%);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 .app-shell {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 25px 45px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 /* Плавные анимации */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -61,7 +91,7 @@ body {
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-12px);
   }
   to {
     opacity: 1;
@@ -69,12 +99,14 @@ body {
   }
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
-  50% {
-    opacity: 0.5;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -87,84 +119,118 @@ body {
   }
 }
 
+@keyframes gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-slideIn {
-  animation: slideIn 0.3s ease-out;
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.animate-pulse-slow {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.animate-scaleIn {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .animate-\[shimmer_2s_infinite\] {
   background: linear-gradient(
     90deg,
-    #f0f0f0 0%,
-    #e0e0e0 20%,
-    #f0f0f0 40%,
-    #f0f0f0 100%
+    #f8fafc 0%,
+    #f1f5f9 20%,
+    #f8fafc 40%,
+    #f8fafc 100%
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }
 
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
 /* Улучшенные скроллбары */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: var(--background-soft);
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: var(--border-strong);
+  border-radius: 10px;
+  border: 2px solid var(--background-soft);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--muted);
 }
 
 /* Улучшенные фокусы */
 *:focus-visible {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  @apply outline-none ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-white;
 }
 
-/* Улучшенные кнопки */
+/* Современные кнопки */
 .btn-primary {
-  @apply bg-[var(--primary)] text-white px-5 py-2.5 rounded-xl font-semibold shadow-md hover:bg-[var(--primary-hover)] hover:shadow-lg transition-all duration-200;
+  @apply bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200;
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-hover) 0%, var(--accent-hover) 100%);
 }
 
 .btn-secondary {
-  @apply bg-white text-[var(--muted)] px-5 py-2.5 rounded-xl border border-[var(--border-soft)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all duration-200;
+  @apply bg-white text-[var(--foreground-soft)] px-6 py-3 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-all duration-200 font-medium shadow-sm hover:shadow-md;
 }
 
 .btn-success {
-  @apply bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 active:bg-green-800 transition-all duration-200 shadow-sm hover:shadow-md font-medium;
+  @apply bg-[var(--success)] text-white px-5 py-2.5 rounded-xl hover:bg-[#059669] active:bg-[#047857] transition-all duration-200 shadow-md hover:shadow-lg font-semibold;
+}
+
+.btn-ghost {
+  @apply bg-transparent text-[var(--muted)] px-4 py-2 rounded-lg hover:bg-[var(--background-soft)] hover:text-[var(--foreground)] transition-all duration-200;
 }
 
 /* Улучшенные карточки */
 .card {
-  @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-sm border border-[var(--border-soft)] p-6 transition-all duration-200 hover:shadow-lg;
+  @apply bg-white rounded-2xl shadow-sm border border-[var(--border)] p-6 transition-all duration-300 hover:shadow-md hover:border-[var(--primary-soft)];
 }
 
 .card-hover {
-  @apply card hover:border-blue-200 hover:shadow-lg;
+  @apply card hover:shadow-lg hover:-translate-y-1;
 }
 
 .glass-panel {
-  @apply bg-white/90 border border-white/40 backdrop-blur-xl shadow-lg rounded-3xl;
+  @apply bg-white/80 backdrop-blur-xl border border-[var(--border)] shadow-lg rounded-2xl;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-panel-strong {
+  @apply bg-white/90 backdrop-blur-2xl border border-white/50 shadow-xl rounded-3xl;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
 }
 
 .kanban-column {
-  @apply glass-panel min-w-[280px] p-4 border border-white/50;
+  @apply glass-panel min-w-[300px] p-5 border border-[var(--border)];
 }
 
+/* Современный сайдбар */
 .sidebar-nav {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -173,4 +239,123 @@ body {
 .sidebar-nav::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Градиентные акценты */
+.gradient-primary {
+  background: var(--primary-gradient);
+}
+
+.gradient-text {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Улучшенные инпуты */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="date"],
+input[type="url"],
+textarea,
+select {
+  @apply w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all duration-200;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+/* Badge стили */
+.badge {
+  @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+.badge-primary {
+  @apply badge bg-[var(--primary-soft)] text-[var(--primary)];
+}
+
+.badge-success {
+  @apply badge bg-[var(--success-soft)] text-[var(--success)];
+}
+
+.badge-warning {
+  @apply badge bg-[var(--warning-soft)] text-[var(--warning)];
+}
+
+.badge-error {
+  @apply badge bg-[var(--error-soft)] text-[var(--error)];
+}
+
+/* Улучшенные таблицы */
+table {
+  @apply w-full;
+}
+
+thead {
+  @apply bg-[var(--background-soft)];
+}
+
+th {
+  @apply px-6 py-4 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider;
+}
+
+td {
+  @apply px-6 py-4 text-sm text-[var(--foreground-soft)] border-b border-[var(--border-soft)];
+}
+
+tr:hover {
+  @apply bg-[var(--background-soft)];
+}
+
+/* Модальные окна */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  @apply bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden;
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Улучшенные разделители */
+.divider {
+  @apply border-t border-[var(--border)];
+}
+
+/* Статистические карточки */
+.stat-card {
+  @apply glass-panel p-6 hover:shadow-xl transition-all duration-300;
+}
+
+.stat-card-value {
+  @apply text-3xl font-bold text-[var(--foreground)] mb-1;
+}
+
+.stat-card-label {
+  @apply text-sm text-[var(--muted)] font-medium;
+}
+
+/* Hover эффекты */
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.hover-glow {
+  @apply transition-shadow duration-200 hover:shadow-lg;
+}
+
+/* Градиентные фоны */
+.bg-gradient-primary {
+  background: var(--primary-gradient);
+}
+
+.bg-gradient-soft {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }

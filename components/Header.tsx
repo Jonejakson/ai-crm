@@ -14,15 +14,15 @@ export default function Header() {
   })
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/40 bg-white/75 backdrop-blur-2xl shadow-[0_10px_35px_rgba(15,23,42,0.08)]">
-      <div className="flex flex-col gap-4 px-6 py-4">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/80 backdrop-blur-xl shadow-sm">
+      <div className="flex flex-col gap-4 px-6 py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">Панель управления</p>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold">Панель управления</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">
             {session?.user ? `Добро пожаловать, ${session.user.name}` : 'Добро пожаловать в Pulse CRM'}
           </h1>
-          <p className="text-sm text-slate-500">{currentDate}</p>
+          <p className="text-sm text-[var(--muted)]">{currentDate}</p>
         </div>
           <div className="hidden w-full max-w-xl lg:block">
             <SearchBar />
@@ -31,12 +31,12 @@ export default function Header() {
             <div className="flex items-center gap-4">
               <Notifications />
               <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-slate-900">{session.user.name}</p>
-                <p className="text-xs text-slate-500">{session.user.email}</p>
+                <p className="text-sm font-semibold text-[var(--foreground)]">{session.user.name}</p>
+                <p className="text-xs text-[var(--muted)]">{session.user.email}</p>
               </div>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="btn-secondary text-sm"
+                className="btn-ghost text-sm"
               >
                 Выйти
               </button>

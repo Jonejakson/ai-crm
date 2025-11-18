@@ -35,13 +35,13 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
 
 
   return (
-    <div className="hidden md:flex w-72 h-screen bg-gradient-to-b from-[#0b1730] via-[#0f1c3f] to-[#101623] text-white px-5 py-7 border-r border-white/10 shadow-2xl">
+    <div className="hidden md:flex w-72 h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-8 border-r border-slate-700/50 shadow-2xl">
       <div className="flex flex-1 flex-col">
         {/* Логотип */}
         <div className="space-y-2 pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs uppercase tracking-[0.2em]">
-            <span className="text-[var(--secondary)]">Pulse</span>
-            <span className="text-white/70">CRM</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-xs font-bold uppercase tracking-[0.15em] shadow-lg">
+            <span className="text-white">Pulse</span>
+            <span className="text-white/90">CRM</span>
           </div>
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-1">
@@ -66,10 +66,10 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
               <a
                 key={item.id}
                 href={item.href}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 border border-transparent ${
+                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-white/15 border-white/20 shadow-lg shadow-blue-600/30'
-                    : 'hover:bg-white/5 hover:border-white/10'
+                    ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 text-white'
+                    : 'hover:bg-white/5 hover:border-white/10 border border-transparent text-white/70 hover:text-white'
                 }`}
               >
                 <span
@@ -88,7 +88,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
                   </span>
                 </div>
                 {isActive && (
-                  <span className="ml-auto w-2 h-2 rounded-full bg-[var(--secondary)] shadow-[0_0_12px_rgba(0,198,174,0.8)]" />
+                  <span className="ml-auto w-2 h-2 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
                 )}
               </a>
             )
@@ -96,14 +96,14 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </nav>
 
         {/* Пользователь */}
-        <div className="mt-auto rounded-3xl border border-white/15 bg-white/5 px-4 py-5 text-sm shadow-xl backdrop-blur-2xl">
-          <p className="text-white/60 text-xs uppercase tracking-[0.4em] mb-2">
+        <div className="mt-auto rounded-2xl border border-slate-700/50 bg-slate-800/50 px-5 py-4 text-sm shadow-xl backdrop-blur-xl">
+          <p className="text-white/50 text-xs uppercase tracking-[0.3em] mb-2 font-semibold">
             Профиль
           </p>
-          <p className="text-base font-semibold">{userName}</p>
-          <p className="text-white/60 text-xs">{userEmail}</p>
+          <p className="text-base font-semibold text-white mb-1">{userName}</p>
+          <p className="text-white/60 text-xs mb-3">{userEmail}</p>
           {isAdmin && (
-            <span className="mt-3 inline-flex items-center text-[10px] uppercase tracking-[0.35em] text-green-200 bg-white/10 px-3 py-1 rounded-full">
+            <span className="inline-flex items-center text-[10px] uppercase tracking-[0.25em] text-emerald-300 bg-emerald-500/20 px-3 py-1.5 rounded-lg font-bold border border-emerald-500/30">
               Admin
             </span>
           )}
