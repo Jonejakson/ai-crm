@@ -28,8 +28,11 @@ export default function ContactsPage() {
     name: '',
     email: '',
     phone: '',
-    company: ''
+    company: '',
+    inn: ''
   })
+  const [innLoading, setInnLoading] = useState(false)
+  const [innError, setInnError] = useState('')
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [editFormData, setEditFormData] = useState({
     name: '',
