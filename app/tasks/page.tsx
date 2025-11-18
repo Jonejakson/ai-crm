@@ -621,12 +621,14 @@ function TaskColumn({
   category, 
   tasks, 
   onDelete,
-  onStatusChange
+  onStatusChange,
+  onView
 }: { 
   category: { id: string; name: string; color: string }
   tasks: Task[]
   onDelete: (id: number) => void
   onStatusChange: (id: number, status: string) => void
+  onView?: (task: Task) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({
     id: category.id,
