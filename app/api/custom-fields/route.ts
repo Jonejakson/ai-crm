@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
+import { Prisma } from '@prisma/client'
 
 // GET - получить все кастомные поля компании
 export async function GET(request: Request) {
@@ -106,7 +107,7 @@ export async function POST(request: Request) {
         isRequired,
         isUnique,
         order,
-        options: options ? JSON.stringify(options) : null,
+        options: options ? JSON.stringify(options) : Prisma.JsonNull,
         defaultValue,
         companyId: Number(currentUser.companyId),
       },

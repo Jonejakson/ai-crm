@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
+import { Prisma } from '@prisma/client'
 
 // GET - получить кастомное поле по ID
 export async function GET(
@@ -132,7 +133,7 @@ export async function PUT(
         ...(isRequired !== undefined && { isRequired }),
         ...(isUnique !== undefined && { isUnique }),
         ...(order !== undefined && { order }),
-        ...(options !== undefined && { options: options ? JSON.stringify(options) : null }),
+        ...(options !== undefined && { options: options ? JSON.stringify(options) : Prisma.JsonNull }),
         ...(defaultValue !== undefined && { defaultValue }),
       },
     })
