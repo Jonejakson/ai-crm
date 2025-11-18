@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
+import { checkPipelineLimit } from "@/lib/subscription-limits";
 
 // Получить все воронки компании
 export async function GET() {
@@ -51,6 +52,19 @@ export async function POST(req: Request) {
     }
 
     const companyId = parseInt(user.companyId);
+
+    // Проверка лимита воронок
+    const pipelineLimitCheck = await checkPipelineLimit(companyId);
+    if (!pipelineLimitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: pipelineLimitCheck.message || "Достигнут лимит воронок",
+          limit: pipelineLimitCheck.limit,
+          current: pipelineLimitCheck.current,
+        },
+        { status: 403 }
+      );
+    }
 
     const pipeline = await prisma.pipeline.create({
       data: {

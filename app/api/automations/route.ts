@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
 import { AutomationTriggerType, AutomationActionType } from '@prisma/client'
+import { checkAutomationsAccess } from '@/lib/subscription-limits'
 
 export async function GET() {
   const currentUser = await getCurrentUser()
@@ -32,6 +33,18 @@ export async function POST(request: Request) {
 
   if (currentUser.role !== 'admin') {
     return NextResponse.json({ error: 'Только администратор может создавать автоматизации' }, { status: 403 })
+  }
+
+  // Проверка доступа к автоматизациям по тарифу
+  const companyId = Number(currentUser.companyId)
+  const automationsAccess = await checkAutomationsAccess(companyId)
+  if (!automationsAccess.allowed) {
+    return NextResponse.json(
+      { 
+        error: automationsAccess.message || 'Автоматизации недоступны в вашем тарифе',
+      },
+      { status: 403 }
+    )
   }
 
   try {

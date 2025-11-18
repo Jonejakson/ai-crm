@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { isAdmin } from "@/lib/access-control";
+import { checkUserLimit } from "@/lib/subscription-limits";
 
 /**
  * Создать пользователя в компании (только для админа)
@@ -54,6 +55,19 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "Пользователь с таким email уже существует" },
         { status: 409 }
+      );
+    }
+
+    // Проверка лимита пользователей
+    const userLimitCheck = await checkUserLimit(companyId);
+    if (!userLimitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: userLimitCheck.message || "Достигнут лимит пользователей",
+          limit: userLimitCheck.limit,
+          current: userLimitCheck.current,
+        },
+        { status: 403 }
       );
     }
 

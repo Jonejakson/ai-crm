@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { checkContactLimit } from "@/lib/subscription-limits";
 
 // ❶ Получить все контакты (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -80,10 +81,24 @@ export async function POST(req: Request) {
       }
     }
 
-        const userId = getUserId(user);
-        if (!userId) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+    const userId = getUserId(user);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Проверка лимита контактов
+    const companyId = parseInt(user.companyId);
+    const contactLimitCheck = await checkContactLimit(companyId);
+    if (!contactLimitCheck.allowed) {
+      return NextResponse.json(
+        { 
+          error: contactLimitCheck.message || "Достигнут лимит контактов",
+          limit: contactLimitCheck.limit,
+          current: contactLimitCheck.current,
+        },
+        { status: 403 }
+      );
+    }
 
         const newContact = await prisma.contact.create({
           data: {
