@@ -18,6 +18,26 @@ interface User {
   }
 }
 
+interface Plan {
+  id: number
+  name: string
+  slug: string
+  description: string | null
+  price: number
+  currency: string
+  userLimit: number | null
+  contactLimit: number | null
+  pipelineLimit: number | null
+  features: Record<string, any> | null
+}
+
+interface SubscriptionInfo {
+  id: number
+  status: string
+  currentPeriodEnd: string | null
+  plan: Plan
+}
+
 export default function CompanyPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -26,6 +46,11 @@ export default function CompanyPage() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null)
+  const [billingLoading, setBillingLoading] = useState(false)
+  const [billingError, setBillingError] = useState('')
+  const [billingMessage, setBillingMessage] = useState('')
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -69,6 +94,7 @@ export default function CompanyPage() {
         return
       }
       fetchUsers()
+      fetchBilling()
     }
   }, [status, session, router])
 
@@ -89,6 +115,80 @@ export default function CompanyPage() {
       setError('Ошибка загрузки пользователей')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchBilling = async () => {
+    setBillingLoading(true)
+    setBillingError('')
+    try {
+      const [plansRes, subscriptionRes] = await Promise.all([
+        fetch('/api/billing/plans'),
+        fetch('/api/billing/subscription'),
+      ])
+
+      if (!plansRes.ok) {
+        throw new Error('Не удалось загрузить список тарифов')
+      }
+
+      const plansData = await plansRes.json()
+      setPlans(plansData.plans || [])
+
+      if (subscriptionRes.ok) {
+        const subscriptionData = await subscriptionRes.json()
+        setSubscription(subscriptionData.subscription || null)
+      } else if (subscriptionRes.status === 401 || subscriptionRes.status === 403) {
+        setSubscription(null)
+      }
+    } catch (error: any) {
+      console.error('Error fetching billing data:', error)
+      setBillingError(error.message || 'Не удалось загрузить данные по тарифу')
+    } finally {
+      setBillingLoading(false)
+    }
+  }
+
+  const formatPrice = (plan: Plan) => {
+    if (!plan.price || plan.price <= 0) {
+      return 'Бесплатно'
+    }
+    try {
+      const formatter = new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: plan.currency || 'RUB',
+        minimumFractionDigits: 0,
+      })
+      return `${formatter.format(plan.price)} / мес`
+    } catch {
+      return `${plan.price.toLocaleString('ru-RU')} ${plan.currency || '₽'} / мес`
+    }
+  }
+
+  const handlePlanChange = async (planId: number) => {
+    setBillingError('')
+    setBillingMessage('')
+    setBillingLoading(true)
+    try {
+      const response = await fetch('/api/billing/subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось обновить тариф')
+      }
+
+      setSubscription(data.subscription)
+      setBillingMessage(`План «${data.subscription?.plan?.name ?? ''}» активирован`)
+    } catch (error: any) {
+      console.error('Error updating plan:', error)
+      setBillingError(error.message || 'Не удалось обновить тариф')
+    } finally {
+      setBillingLoading(false)
     }
   }
 
@@ -326,6 +426,107 @@ export default function CompanyPage() {
           {success}
         </div>
       )}
+
+      {billingError && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
+          {billingError}
+        </div>
+      )}
+      {billingMessage && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
+          {billingMessage}
+        </div>
+      )}
+
+      <section className="space-y-4 mb-8">
+        <div className="glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Текущий тариф</p>
+            <h2 className="text-2xl font-semibold text-slate-900">
+              {subscription?.plan?.name ?? 'План не выбран'}
+            </h2>
+            <p className="text-sm text-slate-500">
+              {subscription?.plan?.description ?? 'Выберите подходящий тариф, чтобы открыть доступ к расширенным возможностям.'}
+            </p>
+          </div>
+          <div className="text-sm text-slate-500 text-left md:text-right">
+            {subscription?.plan ? (
+              <>
+                <p className="text-lg font-semibold text-slate-900">{formatPrice(subscription.plan)}</p>
+                {subscription?.currentPeriodEnd && (
+                  <span className="text-xs text-slate-400">
+                    Следующее продление: {new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}
+                  </span>
+                )}
+              </>
+            ) : (
+              <p>Нет активной подписки</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {billingLoading && plans.length === 0 ? (
+            <div className="col-span-full text-center text-slate-500">Загрузка тарифов...</div>
+          ) : (
+            plans.map((plan) => {
+              const isCurrent = subscription?.plan?.id === plan.id
+              const highlights = Array.isArray(plan.features?.highlights) ? (plan.features?.highlights as string[]) : []
+              const limits: string[] = []
+              if (typeof plan.userLimit === 'number') {
+                limits.push(`До ${plan.userLimit} пользователей`)
+              } else {
+                limits.push('Пользователи без ограничений')
+              }
+              if (typeof plan.contactLimit === 'number') {
+                limits.push(`До ${plan.contactLimit.toLocaleString('ru-RU')} контактов`)
+              } else {
+                limits.push('Неограниченное число контактов')
+              }
+              if (typeof plan.pipelineLimit === 'number') {
+                limits.push(`До ${plan.pipelineLimit} воронок`)
+              } else {
+                limits.push('Неограниченное число воронок')
+              }
+
+              const items = [...highlights, ...limits]
+
+              return (
+                <div
+                  key={plan.id}
+                  className={`card h-full flex flex-col gap-4 border ${isCurrent ? 'ring-2 ring-[var(--primary)]/50' : ''}`}
+                >
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{plan.slug}</p>
+                    <h3 className="text-2xl font-semibold text-slate-900">{plan.name}</h3>
+                    <p className="text-sm text-slate-500">{plan.description}</p>
+                    <p className="text-3xl font-semibold text-slate-900">{formatPrice(plan)}</p>
+                  </div>
+                  <ul className="space-y-2 text-sm text-slate-600 flex-1">
+                    {items.map((item, index) => (
+                      <li key={`${plan.id}-${index}`} className="flex items-start gap-2">
+                        <span className="text-[var(--primary)] mt-1">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handlePlanChange(plan.id)}
+                    disabled={isCurrent || billingLoading}
+                    className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
+                      isCurrent
+                        ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                        : 'bg-[var(--primary)] text-white hover:opacity-90'
+                    }`}
+                  >
+                    {isCurrent ? 'Текущий план' : 'Выбрать тариф'}
+                  </button>
+                </div>
+              )
+            })
+          )}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Форма создания пользователя */}

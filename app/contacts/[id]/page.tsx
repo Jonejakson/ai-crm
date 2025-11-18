@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
 interface Contact {
@@ -169,9 +170,9 @@ export default function ContactDetailPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-4">
-          <a href="/contacts" className="text-[var(--primary)] hover:underline">
+          <Link href="/contacts" className="text-[var(--primary)] hover:underline">
             ← Назад к контактам
-          </a>
+          </Link>
           <h1 className="text-3xl font-semibold text-slate-900">{contact.name}</h1>
         </div>
         <div className="flex gap-3">
