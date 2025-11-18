@@ -61,6 +61,7 @@ model Company {
     subscriptions Subscription[]
     automations Automation[]
     activityLogs ActivityLog[]
+    tags        Tag[]
 }
 
 model User {
@@ -99,6 +100,7 @@ model Contact {
     deals     Deal[]
     events    Event[]
     emailMessages EmailMessage[]
+    tags      ContactTag[]
 }
 
 model Task {
@@ -152,6 +154,7 @@ model Deal {
     pipelineId      Int?
     createdAt       DateTime  @default(now())
     updatedAt       DateTime  @updatedAt
+    tags            DealTag[]
 }
 
 model Event {
@@ -295,4 +298,38 @@ model Comment {
     userId      Int
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
+}
+
+model Tag {
+    id          Int      @id @default(autoincrement())
+    name        String
+    color       String   @default("#3B82F6") // цвет тега в hex
+    company     Company  @relation(fields: [companyId], references: [id])
+    companyId   Int
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+    contacts    ContactTag[]
+    deals       DealTag[]
+}
+
+model ContactTag {
+    id        Int      @id @default(autoincrement())
+    contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+    contactId Int
+    tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+    tagId     Int
+    createdAt DateTime @default(now())
+
+    @@unique([contactId, tagId])
+}
+
+model DealTag {
+    id        Int      @id @default(autoincrement())
+    deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+    dealId    Int
+    tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+    tagId     Int
+    createdAt DateTime @default(now())
+
+    @@unique([dealId, tagId])
 }
