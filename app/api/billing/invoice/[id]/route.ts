@@ -7,7 +7,7 @@ import prisma from '@/lib/prisma'
  */
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
@@ -15,8 +15,9 @@ export async function GET(
   }
 
   try {
+    const { id } = await params
     const invoice = await prisma.invoice.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         subscription: {
           include: {
