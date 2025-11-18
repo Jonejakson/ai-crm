@@ -147,7 +147,7 @@ export default function Dashboard() {
             <div className="relative flex items-center justify-between">
               <div className="flex-1">
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] font-semibold mb-2">{card.label}</p>
-                <p className="stat-card-value bg-gradient-to-r bg-clip-text text-transparent" style={{ backgroundImage: `linear-gradient(135deg, var(--${card.gradient.split('-')[1]}-500), var(--${card.gradient.split('-')[3]}-500))` }}>
+                <p className={`stat-card-value bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
                   {card.value}
                 </p>
               </div>
