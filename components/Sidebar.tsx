@@ -25,8 +25,12 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     { id: 'calendar', name: 'Календарь', href: '/calendar', icon: '📅' },
     { id: 'analytics', name: 'Аналитика', href: '/analytics', icon: '📈' },
     { id: 'dialogs', name: 'Диалоги', href: '/dialogs', icon: '💬' },
-    // Показываем "Компания" только для админов
-    ...(isAdmin ? [{ id: 'company', name: 'Компания', href: '/company', icon: '🏢' }] : []),
+    { id: 'activity', name: 'Активность', href: '/activity', icon: '🕒' },
+    // Показываем админские разделы только для админов
+    ...(isAdmin ? [
+      { id: 'automations', name: 'Автоматизации', href: '/automations', icon: '⚙️' },
+      { id: 'company', name: 'Компания', href: '/company', icon: '🏢' }
+    ] : []),
   ]
 
 

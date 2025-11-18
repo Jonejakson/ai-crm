@@ -50,6 +50,21 @@ interface EmailLog {
   createdAt: string
 }
 
+interface ActivityLog {
+  id: number
+  entityType: string
+  entityId: number
+  action: string
+  description: string | null
+  metadata: any
+  user: {
+    id: number
+    name: string
+    email: string
+  } | null
+  createdAt: string
+}
+
 export default function ContactDetailPage() {
   const params = useParams()
   const contactId = params.id
@@ -59,6 +74,7 @@ export default function ContactDetailPage() {
   const [dialogs, setDialogs] = useState<Dialog[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('info')
   const [newMessage, setNewMessage] = useState('')
@@ -80,12 +96,13 @@ export default function ContactDetailPage() {
 
   const fetchContactData = async () => {
     try {
-      const [contactRes, tasksRes, dialogsRes, dealsRes, emailsRes] = await Promise.all([
+      const [contactRes, tasksRes, dialogsRes, dealsRes, emailsRes, activityRes] = await Promise.all([
         fetch(`/api/contacts`).then(res => res.json()),
         fetch(`/api/tasks`).then(res => res.json()),
         fetch(`/api/dialogs?contactId=${contactId}`).then(res => res.json()),
         fetch(`/api/deals`).then(res => res.json()),
-        fetch(`/api/integrations/email/logs?contactId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] }))
+        fetch(`/api/integrations/email/logs?contactId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] })),
+        fetch(`/api/activity?entityType=contact&entityId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] }))
       ])
 
       // Находим конкретный контакт
@@ -106,6 +123,7 @@ export default function ContactDetailPage() {
 
       setDialogs(Array.isArray(dialogsRes) ? dialogsRes : [])
       setEmailLogs(Array.isArray(emailsRes.logs) ? emailsRes.logs : [])
+      setActivityLogs(Array.isArray(activityRes.logs) ? activityRes.logs : [])
     } catch (error) {
       console.error('Error fetching contact data:', error)
     } finally {
@@ -353,6 +371,7 @@ export default function ContactDetailPage() {
           <nav className="flex space-x-8 px-6">
             {[
               { id: 'info', name: 'Информация' },
+              { id: 'activity', name: `Активность (${activityLogs.length})` },
               { id: 'deals', name: `Сделки (${deals.length})` },
               { id: 'tasks', name: `Задачи (${tasks.length})` },
               { id: 'dialogs', name: `Диалог (${dialogs.length})` },
@@ -374,6 +393,43 @@ export default function ContactDetailPage() {
         </div>
 
         <div className="p-6">
+          {/* Вкладка Активность */}
+          {activeTab === 'activity' && (
+            <div className="space-y-4">
+              {activityLogs.length === 0 ? (
+                <p className="text-slate-500">Нет записей активности</p>
+              ) : (
+                <div className="space-y-3">
+                  {activityLogs.map((log) => (
+                    <div key={log.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-semibold text-slate-900">{log.action}</span>
+                            {log.user && (
+                              <span className="text-xs text-slate-500">• {log.user.name}</span>
+                            )}
+                          </div>
+                          {log.description && (
+                            <p className="text-sm text-slate-700 mb-2">{log.description}</p>
+                          )}
+                          {log.metadata && Object.keys(log.metadata).length > 0 && (
+                            <div className="text-xs text-slate-500">
+                              {JSON.stringify(log.metadata, null, 2)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-400 whitespace-nowrap ml-4">
+                          {new Date(log.createdAt).toLocaleString('ru-RU')}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Вкладка Сделки */}
           {activeTab === 'deals' && (
             <div className="space-y-4">
