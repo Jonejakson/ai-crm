@@ -351,7 +351,7 @@ export default function ContactsPage() {
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                     {field === 'name' ? 'Имя *' :
                      field === 'email' ? 'Email *' :
-                     field === 'phone' ? 'Телефон' : 'Компания'}
+                     'Телефон'}
                   </label>
                   <input
                     type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
@@ -363,6 +363,47 @@ export default function ContactsPage() {
                   />
                 </div>
               ))}
+              
+              {/* Поле ИНН */}
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  ИНН
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="inn"
+                    value={formData.inn}
+                    onChange={handleInnChange}
+                    placeholder="Введите ИНН (10 или 12 цифр)"
+                    maxLength={12}
+                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  />
+                  {innLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
+                </div>
+                {innError && (
+                  <p className="mt-1 text-xs text-red-500">{innError}</p>
+                )}
+              </div>
+
+              {/* Поле Компания */}
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  Компания
+                </label>
+                <input
+                  type="text"
+                  name="company"
+                  value={formData.company}
+                  onChange={handleChange}
+                  placeholder="Заполнится автоматически по ИНН"
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                />
+              </div>
 
               <div className="flex justify-end gap-3 pt-4">
                 <button
