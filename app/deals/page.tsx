@@ -660,14 +660,14 @@ export default function DealsPage() {
         <div className="card">
           <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Выиграно</p>
           <p className="text-4xl font-semibold text-emerald-500 mt-3">{wonDeals.length}</p>
-          <p className="text-xs text-slate-400 mt-2">Количество сделок</p>
+          <p className="text-xs text-slate-400 mt-2">Успешно реализовано</p>
         </div>
         <div className="card">
           <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сумма выигрышей</p>
           <p className="text-4xl font-semibold text-emerald-500 mt-3">
             {wonAmount.toLocaleString('ru-RU')} ₽
           </p>
-          <p className="text-xs text-slate-400 mt-2">Закрыто успешно</p>
+          <p className="text-xs text-slate-400 mt-2">Сумма закрытых сделок</p>
         </div>
       </div>
 
