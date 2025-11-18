@@ -74,6 +74,13 @@ export async function GET(req: Request) {
               userId: manager.id,
               createdAt: { gte: startDate },
             },
+            include: {
+              deals: {
+                select: {
+                  id: true,
+                },
+              },
+            },
           }),
           prisma.event.findMany({
             where: {
