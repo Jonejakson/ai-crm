@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import Comments from '@/components/Comments'
+import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
@@ -115,7 +116,7 @@ export default function TasksPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
-  const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments'>('info')
+  const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments' | 'custom-fields'>('info')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -544,6 +545,16 @@ export default function TasksPage() {
               >
                 Комментарии
               </button>
+              <button
+                onClick={() => setTaskViewTab('custom-fields')}
+                className={`px-6 py-3 font-medium ${
+                  taskViewTab === 'custom-fields'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Доп. поля
+              </button>
             </div>
 
             {/* Содержимое вкладок */}
@@ -609,6 +620,16 @@ export default function TasksPage() {
                 <Comments
                   entityType="task"
                   entityId={viewingTask.id}
+                />
+              )}
+
+              {taskViewTab === 'custom-fields' && viewingTask && (
+                <CustomFieldsEditor
+                  entityType="task"
+                  entityId={viewingTask.id}
+                  onSave={() => {
+                    // Обновить данные задачи при необходимости
+                  }}
                 />
               )}
             </div>

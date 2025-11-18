@@ -5,6 +5,7 @@ import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
+import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
@@ -94,7 +95,7 @@ export default function DealsPage() {
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null)
-  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags'>('info')
+  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags' | 'custom-fields'>('info')
   const [newContactData, setNewContactData] = useState({
     name: '',
     email: '',
@@ -1290,6 +1291,16 @@ export default function DealsPage() {
                 <TagsManager
                   entityType="deal"
                   entityId={viewingDeal.id}
+                />
+              )}
+
+              {dealViewTab === 'custom-fields' && viewingDeal && (
+                <CustomFieldsEditor
+                  entityType="deal"
+                  entityId={viewingDeal.id}
+                  onSave={() => {
+                    // Обновить данные сделки при необходимости
+                  }}
                 />
               )}
             </div>

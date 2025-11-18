@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import FileUpload from '@/components/FileUpload'
 import TagsManager from '@/components/TagsManager'
+import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 
 interface Contact {
   id: number
@@ -379,7 +380,8 @@ export default function ContactDetailPage() {
               { id: 'dialogs', name: `Диалог (${dialogs.length})` },
               { id: 'emails', name: `Письма (${emailLogs.length})` },
               { id: 'files', name: 'Файлы' },
-              { id: 'tags', name: 'Теги' }
+              { id: 'tags', name: 'Теги' },
+              { id: 'custom-fields', name: 'Доп. поля' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -624,6 +626,17 @@ export default function ContactDetailPage() {
                 entityType="contact"
                 entityId={contact.id}
                 onTagsChange={fetchContactData}
+              />
+            </div>
+          )}
+
+          {/* Вкладка Кастомные поля */}
+          {activeTab === 'custom-fields' && contact && (
+            <div className="space-y-4">
+              <CustomFieldsEditor
+                entityType="contact"
+                entityId={contact.id}
+                onSave={fetchContactData}
               />
             </div>
           )}

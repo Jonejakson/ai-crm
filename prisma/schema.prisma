@@ -50,6 +50,19 @@ enum AutomationActionType {
     UPDATE_DEAL_STAGE
 }
 
+enum CustomFieldType {
+    TEXT
+    NUMBER
+    DATE
+    SELECT
+    MULTISELECT
+    CHECKBOX
+    URL
+    EMAIL
+    PHONE
+    TEXTAREA
+}
+
 model Company {
     id        Int       @id @default(autoincrement())
     name      String
@@ -62,6 +75,7 @@ model Company {
     automations Automation[]
     activityLogs ActivityLog[]
     tags        Tag[]
+    customFields CustomField[]
 }
 
 model User {
@@ -332,4 +346,37 @@ model DealTag {
     createdAt DateTime @default(now())
 
     @@unique([dealId, tagId])
+}
+
+model CustomField {
+    id          Int              @id @default(autoincrement())
+    name        String
+    type        CustomFieldType
+    entityType  String           // contact, deal, task
+    isRequired  Boolean          @default(false)
+    isUnique    Boolean          @default(false)
+    order       Int              @default(0) // порядок отображения
+    options     Json?            // для SELECT и MULTISELECT - массив опций
+    defaultValue String?         // значение по умолчанию
+    company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId   Int
+    createdAt   DateTime         @default(now())
+    updatedAt   DateTime         @updatedAt
+    values      CustomFieldValue[]
+
+    @@unique([companyId, entityType, name]) // уникальное имя поля в рамках компании и типа сущности
+}
+
+model CustomFieldValue {
+    id            Int         @id @default(autoincrement())
+    customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+    customFieldId Int
+    entityType    String      // contact, deal, task
+    entityId      Int         // ID контакта, сделки или задачи
+    value         String?     // значение поля (JSON для MULTISELECT)
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+
+    @@unique([customFieldId, entityType, entityId]) // одно значение поля на сущность
+    @@index([entityType, entityId]) // для быстрого поиска значений сущности
 }
