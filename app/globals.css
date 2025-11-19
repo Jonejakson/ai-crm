@@ -491,7 +491,7 @@ tr:hover {
 }
 
 .table-row-hover:hover {
-  @apply bg-[var(--primary-soft)]/30;
+  background-color: rgba(224, 231, 255, 0.3);
   transform: translateX(4px);
 }
 
