@@ -39,8 +39,10 @@ export async function GET(req: Request) {
     
     // Получаем воронки компании
     const pipelines = await prisma.pipeline.findMany({
-      where: { companyId },
-      ...(pipelineId ? { where: { id: parseInt(pipelineId) } } : {}),
+      where: {
+        companyId,
+        ...(pipelineId ? { id: parseInt(pipelineId) } : {}),
+      },
     });
 
     // Получаем условия фильтрации

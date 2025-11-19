@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import AnalyticsTabs from '@/components/analytics/AnalyticsTabs'
 
 interface AnalyticsData {
   period: string
@@ -49,10 +50,25 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month')
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  const [selectedPipelineId, setSelectedPipelineId] = useState<number | null>(null)
+  const [pipelines, setPipelines] = useState<Array<{ id: number; name: string }>>([])
 
   useEffect(() => {
     fetchAnalytics()
+    fetchPipelines()
   }, [period, selectedUserId])
+
+  const fetchPipelines = async () => {
+    try {
+      const response = await fetch('/api/pipelines')
+      if (response.ok) {
+        const data = await response.json()
+        setPipelines(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching pipelines:', error)
+    }
+  }
 
   const fetchAnalytics = async () => {
     try {
@@ -199,10 +215,31 @@ export default function AnalyticsPage() {
       
       {/* Фильтры */}
       <div className="glass-panel px-6 py-5 rounded-3xl">
-        <UserFilter 
-          selectedUserId={selectedUserId} 
-          onUserChange={setSelectedUserId} 
-        />
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <UserFilter 
+              selectedUserId={selectedUserId} 
+              onUserChange={setSelectedUserId} 
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-2">
+              Воронка
+            </label>
+            <select
+              value={selectedPipelineId || ''}
+              onChange={(e) => setSelectedPipelineId(e.target.value ? parseInt(e.target.value) : null)}
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            >
+              <option value="">Все воронки</option>
+              {pipelines.map((pipeline) => (
+                <option key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Период */}
@@ -294,6 +331,13 @@ export default function AnalyticsPage() {
           </div>
         ))}
       </div>
+
+      {/* Новые разделы аналитики */}
+      <AnalyticsTabs 
+        period={period}
+        selectedUserId={selectedUserId}
+        selectedPipelineId={selectedPipelineId}
+      />
 
       {/* График динамики */}
       <div className="glass-panel rounded-3xl">
