@@ -230,10 +230,10 @@ export default function CalendarClient() {
 
   const getEventTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      meeting: 'bg-blue-100 border-blue-300 text-blue-800',
-      call: 'bg-green-100 border-green-300 text-green-800',
-      task: 'bg-orange-100 border-orange-300 text-orange-800',
-      other: 'bg-gray-100 border-gray-300 text-gray-800',
+      meeting: 'bg-[var(--primary-soft)] border-[var(--primary)]/30 text-[var(--primary)]',
+      call: 'bg-[var(--success-soft)] border-[var(--success)]/30 text-[var(--success)]',
+      task: 'bg-[var(--warning-soft)] border-[var(--warning)]/30 text-[var(--warning)]',
+      other: 'bg-[var(--background-soft)] border-[var(--border)] text-[var(--muted)]',
     }
     return colors[type] || colors.other
   }
@@ -243,87 +243,43 @@ export default function CalendarClient() {
   const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
   if (loading) {
-    return <div className="flex justify-center p-8">Загрузка...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4"></div>
+          <p className="text-[var(--muted)]">Загрузка календаря...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Заголовок и навигация */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+    <div className="space-y-8">
+      {/* Заголовок */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Календарь</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h1>
+          <p className="text-sm text-[var(--muted)]">Управляйте событиями и встречами</p>
         </div>
-      </div>
-      
-      {/* Фильтр по менеджеру (только для админа) */}
-      <UserFilter 
-        selectedUserId={selectedUserId} 
-        onUserChange={setSelectedUserId} 
-      />
-      
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => {
-                const newDate = new Date(currentDate)
-                newDate.setMonth(newDate.getMonth() - 1)
-                setCurrentDate(newDate)
-              }}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              ←
-            </button>
-            <button
-              onClick={() => setCurrentDate(new Date())}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Сегодня
-            </button>
-            <button
-              onClick={() => {
-                const newDate = new Date(currentDate)
-                newDate.setMonth(newDate.getMonth() + 1)
-                setCurrentDate(newDate)
-              }}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              →
-            </button>
-          </div>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setView('month')}
-            className={`px-4 py-2 rounded-lg ${view === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
-          >
-            Месяц
-          </button>
-          <button
-            onClick={() => setView('week')}
-            className={`px-4 py-2 rounded-lg ${view === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
-          >
-            Неделя
-          </button>
+        <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
               window.location.href = '/api/export/events?format=excel'
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            className="btn-secondary flex items-center gap-2"
           >
-            <span>📥</span>
-            <span>Экспорт CSV</span>
+            📥 Экспорт CSV
           </button>
           <button
             onClick={() => {
               window.open('/api/integrations/calendar/ics', '_blank')
             }}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+            className="btn-secondary flex items-center gap-2"
           >
-            <span>📅</span>
-            <span>iCal / Google</span>
+            📅 iCal / Google
           </button>
           <button
             onClick={() => {
@@ -341,19 +297,83 @@ export default function CalendarClient() {
               })
               setIsModalOpen(true)
             }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            className="btn-primary"
           >
             + Новое событие
           </button>
         </div>
       </div>
 
+      {/* Фильтр по менеджеру */}
+      <div className="glass-panel px-6 py-5 rounded-3xl">
+        <UserFilter 
+          selectedUserId={selectedUserId} 
+          onUserChange={setSelectedUserId} 
+        />
+      </div>
+      
+      {/* Навигация календаря */}
+      <div className="glass-panel p-6 rounded-3xl">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const newDate = new Date(currentDate)
+                newDate.setMonth(newDate.getMonth() - 1)
+                setCurrentDate(newDate)
+              }}
+              className="btn-secondary p-2"
+            >
+              ←
+            </button>
+            <button
+              onClick={() => setCurrentDate(new Date())}
+              className="btn-secondary"
+            >
+              Сегодня
+            </button>
+            <button
+              onClick={() => {
+                const newDate = new Date(currentDate)
+                newDate.setMonth(newDate.getMonth() + 1)
+                setCurrentDate(newDate)
+              }}
+              className="btn-secondary p-2"
+            >
+              →
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setView('month')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                view === 'month' 
+                  ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
+                  : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+              }`}
+            >
+              Месяц
+            </button>
+            <button
+              onClick={() => setView('week')}
+              className={`px-4 py-2 rounded-xl font-medium transition-all ${
+                view === 'week' 
+                  ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
+                  : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+              }`}
+            >
+              Неделя
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Календарь */}
       {view === 'month' && (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="grid grid-cols-7 gap-px bg-gray-200">
+        <div className="glass-panel rounded-3xl overflow-hidden">
+          <div className="grid grid-cols-7 gap-px bg-[var(--border-soft)]">
             {dayNames.map(day => (
-              <div key={day} className="bg-gray-50 p-2 text-center text-sm font-semibold text-gray-700">
+              <div key={day} className="bg-gradient-to-r from-[var(--background-soft)] to-white/80 p-3 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                 {day}
               </div>
             ))}
@@ -364,26 +384,36 @@ export default function CalendarClient() {
               return (
                 <div
                   key={index}
-                  className={`min-h-24 bg-white p-1 ${isToday ? 'bg-blue-50' : ''}`}
+                  className={`min-h-32 bg-white p-2 transition-all hover:bg-[var(--primary-soft)]/20 ${
+                    isToday ? 'bg-gradient-to-br from-[var(--primary-soft)]/30 to-white border-2 border-[var(--primary)]' : ''
+                  }`}
                 >
                   {date && (
                     <>
-                      <div className={`text-sm font-medium mb-1 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                      <div className={`text-sm font-semibold mb-2 ${
+                        isToday 
+                          ? 'text-[var(--primary)]' 
+                          : date.toDateString() === new Date().toDateString() 
+                            ? 'text-[var(--foreground)]' 
+                            : 'text-[var(--foreground-soft)]'
+                      }`}>
                         {date.getDate()}
                       </div>
                       <div className="space-y-1">
                         {dayEvents.slice(0, 3).map(event => (
                           <div
                             key={event.id}
-                            className={`text-xs p-1 rounded border cursor-pointer hover:opacity-80 ${getEventTypeColor(event.type)}`}
+                            className={`text-xs p-1.5 rounded-lg border cursor-pointer hover:shadow-md transition-all ${getEventTypeColor(event.type)}`}
                             onClick={() => openEditModal(event)}
                             title={event.title}
                           >
-                            {event.startDate && new Date(event.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} {event.title}
+                            <div className="font-medium truncate">
+                              {event.startDate && new Date(event.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} {event.title}
+                            </div>
                           </div>
                         ))}
                         {dayEvents.length > 3 && (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-[var(--muted)] font-medium px-1">
                             +{dayEvents.length - 3} еще
                           </div>
                         )}
@@ -398,211 +428,249 @@ export default function CalendarClient() {
       )}
 
       {/* Список событий */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4">Ближайшие события</h2>
-        <div className="space-y-3">
-          {events.slice(0, 10).map(event => {
-            const startDate = new Date(event.startDate)
-            return (
-              <div
-                key={event.id}
-                className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs rounded ${getEventTypeColor(event.type)}`}>
-                      {event.type}
-                    </span>
-                    <h4 className="font-semibold">{event.title}</h4>
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {startDate.toLocaleString('ru-RU', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                    {event.location && ` • ${event.location}`}
-                    {event.contact && ` • ${event.contact.name}`}
-                  </div>
-                  {event.description && (
-                    <p className="text-sm text-gray-600 mt-1">{event.description}</p>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => openEditModal(event)}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
+      <div className="glass-panel rounded-3xl">
+        <div className="p-6 border-b border-white/40">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">События</p>
+          <h2 className="text-xl font-semibold text-slate-900 mt-1">Ближайшие события</h2>
+        </div>
+        <div className="p-6">
+          {events.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">📅</div>
+              <h3 className="empty-state-title">Нет событий</h3>
+              <p className="empty-state-description">
+                Создайте первое событие, чтобы начать планировать встречи и задачи
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {events.slice(0, 10).map(event => {
+                const startDate = new Date(event.startDate)
+                return (
+                  <div
+                    key={event.id}
+                    className="card-interactive group"
                   >
-                    Редактировать
-                  </button>
-                  <button
-                    onClick={() => handleDelete(event.id)}
-                    className="text-red-600 hover:text-red-800 text-sm"
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-          {events.length === 0 && (
-            <p className="text-gray-500 text-center py-8">Нет событий</p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getEventTypeColor(event.type)}`}>
+                            {event.type === 'meeting' ? 'Встреча' : event.type === 'call' ? 'Звонок' : event.type === 'task' ? 'Задача' : 'Другое'}
+                          </span>
+                          <h4 className="font-semibold text-[var(--foreground)]">{event.title}</h4>
+                        </div>
+                        <div className="text-sm text-[var(--muted)] space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span>🕐</span>
+                            <span>
+                              {startDate.toLocaleString('ru-RU', { 
+                                day: 'numeric', 
+                                month: 'long', 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-center gap-2">
+                              <span>📍</span>
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                          {event.contact && (
+                            <div className="flex items-center gap-2">
+                              <span>👤</span>
+                              <span>{event.contact.name}</span>
+                            </div>
+                          )}
+                        </div>
+                        {event.description && (
+                          <p className="text-sm text-[var(--muted-soft)] mt-2">{event.description}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => openEditModal(event)}
+                          className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-sm font-medium"
+                        >
+                          Редактировать
+                        </button>
+                        <button
+                          onClick={() => handleDelete(event.id)}
+                          className="text-[var(--error)] hover:text-red-700 text-sm font-medium"
+                        >
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
 
       {/* Модальное окно создания/редактирования события */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">
-                {selectedEvent ? 'Редактировать событие' : 'Новое событие'}
-              </h3>
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">
+                  {selectedEvent ? 'Редактирование' : 'Новое событие'}
+                </p>
+                <h3 className="text-2xl font-bold text-[var(--foreground)]">
+                  {selectedEvent ? 'Изменить событие' : 'Создать событие'}
+                </h3>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Название *
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  required
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body">
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                      Название *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      required
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Дата начала *
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                        required
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Время начала
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Дата окончания
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Время окончания
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Тип события
+                      </label>
+                      <select
+                        value={formData.type}
+                        onChange={(e) => setFormData({...formData, type: e.target.value})}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      >
+                        <option value="meeting">Встреча</option>
+                        <option value="call">Звонок</option>
+                        <option value="task">Задача</option>
+                        <option value="other">Другое</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        Клиент
+                      </label>
+                      <select
+                        value={formData.contactId}
+                        onChange={(e) => setFormData({...formData, contactId: e.target.value})}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      >
+                        <option value="">Не выбран</option>
+                        {contacts.map(contact => (
+                          <option key={contact.id} value={contact.id}>
+                            {contact.name} ({contact.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                      Место
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({...formData, location: e.target.value})}
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                      Описание
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      rows={3}
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Дата начала *
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                    required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Время начала
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.startTime}
-                    onChange={(e) => setFormData({...formData, startTime: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Дата окончания
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Время окончания
-                  </label>
-                  <input
-                    type="time"
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({...formData, endTime: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Тип события
-                  </label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({...formData, type: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="meeting">Встреча</option>
-                    <option value="call">Звонок</option>
-                    <option value="task">Задача</option>
-                    <option value="other">Другое</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Клиент
-                  </label>
-                  <select
-                    value={formData.contactId}
-                    onChange={(e) => setFormData({...formData, contactId: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Не выбран</option>
-                    {contacts.map(contact => (
-                      <option key={contact.id} value={contact.id}>
-                        {contact.name} ({contact.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Место
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Описание
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  rows={3}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="btn-secondary text-sm"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="btn-primary text-sm btn-ripple"
                 >
                   {selectedEvent ? 'Сохранить' : 'Создать'}
                 </button>

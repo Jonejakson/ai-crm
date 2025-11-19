@@ -95,6 +95,17 @@ export default function ActivityPage() {
     return { total, today, byType }
   }, [logs])
 
+  if (loading && logs.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4"></div>
+          <p className="text-[var(--muted)]">Загрузка ленты активности...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -102,8 +113,8 @@ export default function ActivityPage() {
           <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
             Лента активности
           </p>
-          <h1 className="text-3xl font-semibold text-slate-900">История действий</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-3xl font-semibold text-[var(--foreground)]">История действий</h1>
+          <p className="text-sm text-[var(--muted)]">
             Отслеживайте изменения по сделкам, контактам и задачам в реальном времени.
           </p>
         </div>
@@ -130,41 +141,56 @@ export default function ActivityPage() {
       </div>
 
       <div className="glass-panel p-6 rounded-3xl">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-white/80 p-4 shadow-sm border border-white/60">
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
-              За день
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-slate-900">{summary.today}</p>
-            <p className="text-sm text-slate-500">Изменений сегодня</p>
-          </div>
-          <div className="rounded-2xl bg-white/80 p-4 shadow-sm border border-white/60">
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
-              Всего
-            </p>
-            <p className="mt-2 text-3xl font-semibold text-[var(--primary)]">
-              {summary.total}
-            </p>
-            <p className="text-sm text-slate-500">Логов в выборке</p>
-          </div>
-          <div className="rounded-2xl bg-white/80 p-4 shadow-sm border border-white/60">
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
-              Активные сущности
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-600">
-              {Object.entries(summary.byType).map(([type, count]) => (
-                <span
-                  key={type}
-                  className="rounded-full bg-white px-3 py-1 border border-white/50"
-                >
-                  {ENTITY_MAP[type]?.label || type}: {count}
-                </span>
-              ))}
-              {Object.keys(summary.byType).length === 0 && (
-                <span className="text-slate-400">Нет данных</span>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            {
+              label: 'Изменений сегодня',
+              value: summary.today,
+              description: 'За день',
+              gradient: 'from-blue-500 to-cyan-500',
+              icon: '✨',
+            },
+            {
+              label: 'Логов в выборке',
+              value: summary.total,
+              description: 'Всего событий',
+              gradient: 'from-purple-500 to-pink-500',
+              icon: '📊',
+            },
+            {
+              label: 'Активные сущности',
+              value: Object.keys(summary.byType).length,
+              description: 'По типам',
+              gradient: 'from-emerald-500 to-teal-500',
+              icon: '🧩',
+            },
+          ].map((card) => (
+            <div key={card.label} className="stat-card group relative overflow-hidden">
+              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
+              <div className="relative flex items-start justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{card.description}</p>
+                  <p className={`stat-card-value bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                    {card.value}
+                  </p>
+                  <p className="text-sm text-[var(--muted)]">{card.label}</p>
+                </div>
+                <div className="text-3xl">{card.icon}</div>
+              </div>
+              {card.label === 'Активные сущности' && (
+                <div className="mt-4 flex flex-wrap gap-2 text-xs text-[var(--muted)]">
+                  {Object.entries(summary.byType).map(([type, count]) => (
+                    <span key={type} className="rounded-full bg-white/80 border border-[var(--border)] px-3 py-1">
+                      {ENTITY_MAP[type]?.label || type}: {count}
+                    </span>
+                  ))}
+                  {Object.keys(summary.byType).length === 0 && (
+                    <span className="text-[var(--muted-soft)]">Нет данных</span>
+                  )}
+                </div>
               )}
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -174,10 +200,10 @@ export default function ActivityPage() {
             <button
               key={item.id}
               onClick={() => setFilter(item.id)}
-              className={`rounded-full px-4 py-2 text-sm border transition ${
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 filter === item.id
-                  ? 'bg-[var(--primary)] text-white border-[var(--primary)]'
-                  : 'bg-white/80 text-slate-600 border-white/60 hover:border-[var(--primary)] hover:text-[var(--primary)]'
+                  ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg'
+                  : 'bg-white/80 text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)]'
               }`}
             >
               {item.label}
@@ -186,25 +212,29 @@ export default function ActivityPage() {
         </div>
 
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <div className="rounded-2xl border border-[var(--error)]/30 bg-[var(--error-soft)] px-4 py-3 text-sm text-[var(--error)]">
             {error}
           </div>
         )}
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-b-transparent border-[var(--primary)]" />
+            <div className="loading-spinner h-10 w-10 border-2 border-b-transparent border-[var(--primary)]" />
           </div>
         ) : logs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/60 bg-white/60 p-8 text-center text-slate-500">
-            Пока нет записей активности
+          <div className="empty-state">
+            <div className="empty-state-icon">📭</div>
+            <h3 className="empty-state-title">Пока нет записей активности</h3>
+            <p className="empty-state-description">
+              Выполните действия в CRM, чтобы увидеть историю изменений.
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
             {logs.map((log) => (
               <div
                 key={log.id}
-                className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm flex flex-col gap-3"
+                className="card-interactive flex flex-col gap-3"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -212,11 +242,11 @@ export default function ActivityPage() {
                       {ENTITY_MAP[log.entityType]?.icon || '📝'}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
+                      <p className="text-sm font-semibold text-[var(--foreground)]">
                         {ENTITY_MAP[log.entityType]?.label || log.entityType}{' '}
-                        <span className="text-slate-400">#{log.entityId}</span>
+                        <span className="text-[var(--muted)]">#{log.entityId}</span>
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-[var(--muted)]">
                         {log.action === 'created'
                           ? 'Создано'
                           : log.action === 'updated'
@@ -233,7 +263,7 @@ export default function ActivityPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-[var(--muted)]">
                     {new Date(log.createdAt).toLocaleString('ru-RU', {
                       day: '2-digit',
                       month: 'short',
@@ -244,7 +274,7 @@ export default function ActivityPage() {
                 </div>
 
                 {log.description && (
-                  <p className="text-sm text-slate-700">{log.description}</p>
+                  <p className="text-sm text-[var(--foreground-soft)]">{log.description}</p>
                 )}
 
                 {log.metadata && renderMetadata(log.metadata)}
@@ -269,9 +299,9 @@ function renderMetadata(metadata: Record<string, any>) {
       {items.map(([key, value]) => (
         <span
           key={key}
-          className="rounded-full bg-white px-3 py-1 text-xs text-slate-600 border border-white/60"
+          className="rounded-full bg-white/80 px-3 py-1 text-xs text-[var(--foreground-soft)] border border-[var(--border)]"
         >
-          <span className="uppercase tracking-[0.3em] text-[10px] text-slate-400 mr-2">
+          <span className="uppercase tracking-[0.3em] text-[10px] text-[var(--muted-soft)] mr-2">
             {key}
           </span>
           <span>{String(value)}</span>

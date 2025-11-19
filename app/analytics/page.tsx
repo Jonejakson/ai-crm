@@ -95,11 +95,26 @@ export default function AnalyticsPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center p-8">Загрузка...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4"></div>
+          <p className="text-[var(--muted)]">Загрузка аналитики...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!data) {
-    return <div className="flex justify-center p-8">Ошибка загрузки данных</div>
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">⚠️</div>
+        <h3 className="empty-state-title">Ошибка загрузки данных</h3>
+        <p className="empty-state-description">
+          Не удалось загрузить данные аналитики. Попробуйте обновить страницу.
+        </p>
+      </div>
+    )
   }
 
   // Подготовка данных для графика (линейный)
@@ -146,16 +161,20 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Заголовок и фильтр периода */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Аналитика и отчеты</h1>
-        <div className="flex gap-2">
+    <div className="space-y-8">
+      {/* Заголовок */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Аналитика</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Отчеты и статистика</h1>
+          <p className="text-sm text-[var(--muted)]">Анализ эффективности работы и продаж</p>
+        </div>
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={() => {
               window.open(`/api/analytics/export?type=deals&period=${period}`, '_blank')
             }}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+            className="btn-secondary flex items-center gap-2"
           >
             📊 Экспорт сделок
           </button>
@@ -163,7 +182,7 @@ export default function AnalyticsPage() {
             onClick={() => {
               window.open(`/api/analytics/export?type=tasks&period=${period}`, '_blank')
             }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            className="btn-secondary flex items-center gap-2"
           >
             📋 Экспорт задач
           </button>
@@ -171,41 +190,50 @@ export default function AnalyticsPage() {
             onClick={() => {
               window.open(`/api/analytics/export?type=contacts&period=${period}`, '_blank')
             }}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+            className="btn-secondary flex items-center gap-2"
           >
             👥 Экспорт контактов
           </button>
         </div>
       </div>
       
-      {/* Фильтр по менеджеру (только для админа) */}
-      <UserFilter 
-        selectedUserId={selectedUserId} 
-        onUserChange={setSelectedUserId} 
-      />
-      
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-2">
+      {/* Фильтры */}
+      <div className="glass-panel px-6 py-5 rounded-3xl">
+        <UserFilter 
+          selectedUserId={selectedUserId} 
+          onUserChange={setSelectedUserId} 
+        />
+      </div>
+
+      {/* Период */}
+      <div className="glass-panel p-6 rounded-3xl">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setPeriod('week')}
-            className={`px-4 py-2 rounded-lg ${
-              period === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${
+              period === 'week' 
+                ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
+                : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
             }`}
           >
             Неделя
           </button>
           <button
             onClick={() => setPeriod('month')}
-            className={`px-4 py-2 rounded-lg ${
-              period === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${
+              period === 'month' 
+                ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
+                : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
             }`}
           >
             Месяц
           </button>
           <button
             onClick={() => setPeriod('year')}
-            className={`px-4 py-2 rounded-lg ${
-              period === 'year' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${
+              period === 'year' 
+                ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
+                : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
             }`}
           >
             Год
@@ -214,45 +242,66 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Основная статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Всего клиентов</h3>
-          <p className="text-3xl font-bold text-blue-600 mt-2">{data.contacts.total}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Новых за период: +{data.contacts.newThisPeriod}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Активные задачи</h3>
-          <p className="text-3xl font-bold text-orange-600 mt-2">{data.tasks.pending}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Просрочено: {data.tasks.overdue}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Активные сделки</h3>
-          <p className="text-3xl font-bold text-purple-600 mt-2">{data.deals.active}</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Всего: {data.deals.total}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-sm font-medium text-gray-500">Сумма сделок</h3>
-          <p className="text-3xl font-bold text-green-600 mt-2">
-            {data.deals.totalAmount.toLocaleString('ru-RU')} ₽
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Выиграно: {data.deals.wonAmount.toLocaleString('ru-RU')} ₽
-          </p>
-        </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { 
+            label: 'Всего клиентов', 
+            value: data.contacts.total, 
+            icon: '👥', 
+            gradient: 'from-blue-500 to-cyan-500', 
+            bg: 'bg-blue-50',
+            subtitle: `Новых за период: +${data.contacts.newThisPeriod}`
+          },
+          { 
+            label: 'Активные задачи', 
+            value: data.tasks.pending, 
+            icon: '✅', 
+            gradient: 'from-orange-500 to-amber-500', 
+            bg: 'bg-orange-50',
+            subtitle: `Просрочено: ${data.tasks.overdue}`
+          },
+          { 
+            label: 'Активные сделки', 
+            value: data.deals.active, 
+            icon: '💰', 
+            gradient: 'from-purple-500 to-pink-500', 
+            bg: 'bg-purple-50',
+            subtitle: `Всего: ${data.deals.total}`
+          },
+          { 
+            label: 'Сумма сделок', 
+            value: `${data.deals.totalAmount.toLocaleString('ru-RU')} ₽`, 
+            icon: '💵', 
+            gradient: 'from-emerald-500 to-teal-500', 
+            bg: 'bg-emerald-50',
+            subtitle: `Выиграно: ${data.deals.wonAmount.toLocaleString('ru-RU')} ₽`
+          },
+        ].map((card) => (
+          <div key={card.label} className="stat-card group relative overflow-hidden">
+            <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+            <div className="relative flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] font-semibold mb-2">{card.label}</p>
+                <p className={`stat-card-value bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                  {card.value}
+                </p>
+                <p className="text-sm text-[var(--muted)] mt-1">{card.subtitle}</p>
+              </div>
+              <div className={`rounded-2xl ${card.bg} p-4 text-3xl shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                {card.icon}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* График динамики */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-semibold mb-4">Динамика за период</h2>
+      <div className="glass-panel rounded-3xl">
+        <div className="p-6 border-b border-white/40">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">График</p>
+          <h2 className="text-xl font-semibold text-slate-900 mt-1">Динамика за период</h2>
+        </div>
+        <div className="p-6">
         {data.chartData.length > 0 ? (
           <div className="overflow-x-auto">
             <svg width={chartWidth} height={chartHeight + 60} className="w-full">
@@ -504,142 +553,171 @@ export default function AnalyticsPage() {
             </svg>
           </div>
         ) : (
-          <div className="w-full h-64 flex items-center justify-center text-gray-400">
-            Нет данных за выбранный период
+          <div className="empty-state">
+            <div className="empty-state-icon">📊</div>
+            <h3 className="empty-state-title">Нет данных</h3>
+            <p className="empty-state-description">
+              Нет данных за выбранный период. Попробуйте выбрать другой период.
+            </p>
           </div>
         )}
-        <div className="flex justify-center space-x-4 mt-4 text-sm">
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-            <span>Контакты</span>
+        <div className="flex flex-wrap justify-center gap-4 mt-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[var(--primary)]"></div>
+            <span className="text-[var(--muted)]">Контакты</span>
           </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-orange-500 rounded mr-2"></div>
-            <span>Задачи</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[var(--warning)]"></div>
+            <span className="text-[var(--muted)]">Задачи</span>
           </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-purple-500 rounded mr-2"></div>
-            <span>Сделки</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[var(--accent)]"></div>
+            <span className="text-[var(--muted)]">Сделки</span>
           </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-            <span>События</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-[var(--success)]"></div>
+            <span className="text-[var(--muted)]">События</span>
           </div>
+        </div>
         </div>
       </div>
 
       {/* Детальная статистика */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Статистика по сделкам */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h2 className="text-xl font-semibold mb-4">Статистика по сделкам</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Выиграно:</span>
-              <span className="font-semibold text-green-600">
-                {data.deals.won} ({data.deals.wonAmount.toLocaleString('ru-RU')} ₽)
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Проиграно:</span>
-              <span className="font-semibold text-red-600">
-                {data.deals.lost} ({data.deals.lostAmount.toLocaleString('ru-RU')} ₽)
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Конверсия:</span>
-              <span className="font-semibold">
-                {data.deals.total > 0 
-                  ? ((data.deals.won / data.deals.total) * 100).toFixed(1) 
-                  : 0}%
-              </span>
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="font-semibold mb-2">По этапам:</h3>
-              {Object.entries(data.deals.byStage).map(([stage, count]) => (
-                <div key={stage} className="flex justify-between mb-1">
-                  <span className="text-sm text-gray-600">{getStageName(stage)}:</span>
-                  <span className="text-sm font-semibold">{count}</span>
+        <div className="glass-panel rounded-3xl">
+          <div className="p-6 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сделки</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по сделкам</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Выиграно:</span>
+                <span className="font-semibold text-[var(--success)]">
+                  {data.deals.won} ({data.deals.wonAmount.toLocaleString('ru-RU')} ₽)
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--error-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Проиграно:</span>
+                <span className="font-semibold text-[var(--error)]">
+                  {data.deals.lost} ({data.deals.lostAmount.toLocaleString('ru-RU')} ₽)
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Конверсия:</span>
+                <span className="font-semibold text-[var(--primary)]">
+                  {data.deals.total > 0 
+                    ? ((data.deals.won / data.deals.total) * 100).toFixed(1) 
+                    : 0}%
+                </span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-white/40">
+                <h3 className="font-semibold text-[var(--foreground)] mb-3">По этапам:</h3>
+                <div className="space-y-2">
+                  {Object.entries(data.deals.byStage).map(([stage, count]) => (
+                    <div key={stage} className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors">
+                      <span className="text-sm text-[var(--muted)]">{getStageName(stage)}:</span>
+                      <span className="text-sm font-semibold text-[var(--foreground)]">{count}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Статистика по задачам */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h2 className="text-xl font-semibold mb-4">Статистика по задачам</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Всего:</span>
-              <span className="font-semibold">{data.tasks.total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">В работе:</span>
-              <span className="font-semibold text-orange-600">{data.tasks.pending}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Завершено:</span>
-              <span className="font-semibold text-green-600">{data.tasks.completed}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Просрочено:</span>
-              <span className="font-semibold text-red-600">{data.tasks.overdue}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Выполнение:</span>
-              <span className="font-semibold">
-                {data.tasks.total > 0 
-                  ? ((data.tasks.completed / data.tasks.total) * 100).toFixed(1) 
-                  : 0}%
-              </span>
+        <div className="glass-panel rounded-3xl">
+          <div className="p-6 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Задачи</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по задачам</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+                <span className="text-[var(--muted)] font-medium">Всего:</span>
+                <span className="font-semibold text-[var(--foreground)]">{data.tasks.total}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--warning-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">В работе:</span>
+                <span className="font-semibold text-[var(--warning)]">{data.tasks.pending}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Завершено:</span>
+                <span className="font-semibold text-[var(--success)]">{data.tasks.completed}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--error-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Просрочено:</span>
+                <span className="font-semibold text-[var(--error)]">{data.tasks.overdue}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Выполнение:</span>
+                <span className="font-semibold text-[var(--primary)]">
+                  {data.tasks.total > 0 
+                    ? ((data.tasks.completed / data.tasks.total) * 100).toFixed(1) 
+                    : 0}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Статистика по событиям */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h2 className="text-xl font-semibold mb-4">Статистика по событиям</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Всего:</span>
-              <span className="font-semibold">{data.events.total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Предстоящие:</span>
-              <span className="font-semibold text-blue-600">{data.events.upcoming}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Прошедшие:</span>
-              <span className="font-semibold text-gray-600">{data.events.past}</span>
-            </div>
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="font-semibold mb-2">По типам:</h3>
-              {Object.entries(data.events.byType).map(([type, count]) => (
-                <div key={type} className="flex justify-between mb-1">
-                  <span className="text-sm text-gray-600">{getTypeName(type)}:</span>
-                  <span className="text-sm font-semibold">{count}</span>
+        <div className="glass-panel rounded-3xl">
+          <div className="p-6 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">События</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по событиям</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+                <span className="text-[var(--muted)] font-medium">Всего:</span>
+                <span className="font-semibold text-[var(--foreground)]">{data.events.total}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Предстоящие:</span>
+                <span className="font-semibold text-[var(--primary)]">{data.events.upcoming}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--background-soft)]">
+                <span className="text-[var(--muted)] font-medium">Прошедшие:</span>
+                <span className="font-semibold text-[var(--muted)]">{data.events.past}</span>
+              </div>
+              <div className="mt-4 pt-4 border-t border-white/40">
+                <h3 className="font-semibold text-[var(--foreground)] mb-3">По типам:</h3>
+                <div className="space-y-2">
+                  {Object.entries(data.events.byType).map(([type, count]) => (
+                    <div key={type} className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors">
+                      <span className="text-sm text-[var(--muted)]">{getTypeName(type)}:</span>
+                      <span className="text-sm font-semibold text-[var(--foreground)]">{count}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Статистика по контактам */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h2 className="text-xl font-semibold mb-4">Статистика по контактам</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Всего:</span>
-              <span className="font-semibold">{data.contacts.total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">С сделками:</span>
-              <span className="font-semibold text-green-600">{data.contacts.withDeals}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Новых за период:</span>
-              <span className="font-semibold text-blue-600">+{data.contacts.newThisPeriod}</span>
+        <div className="glass-panel rounded-3xl">
+          <div className="p-6 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Контакты</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по контактам</h2>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+                <span className="text-[var(--muted)] font-medium">Всего:</span>
+                <span className="font-semibold text-[var(--foreground)]">{data.contacts.total}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">С сделками:</span>
+                <span className="font-semibold text-[var(--success)]">{data.contacts.withDeals}</span>
+              </div>
+              <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+                <span className="text-[var(--muted)] font-medium">Новых за период:</span>
+                <span className="font-semibold text-[var(--primary)]">+{data.contacts.newThisPeriod}</span>
+              </div>
             </div>
           </div>
         </div>

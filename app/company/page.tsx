@@ -392,9 +392,9 @@ export default function CompanyPage() {
 
   const getRoleBadge = (role: string) => {
     const badges = {
-      admin: 'bg-red-100 text-red-800 border-red-200',
-      manager: 'bg-blue-100 text-blue-800 border-blue-200',
-      user: 'bg-gray-100 text-gray-800 border-gray-200'
+      admin: 'bg-[var(--error-soft)] text-[var(--error)] border-[var(--error)]/30',
+      manager: 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]/30',
+      user: 'bg-[var(--background-soft)] text-[var(--muted)] border-[var(--border)]'
     }
     return badges[role as keyof typeof badges] || badges.user
   }
@@ -412,8 +412,8 @@ export default function CompanyPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Загрузка...</p>
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-[var(--muted)]">Загрузка настроек компании...</p>
         </div>
       </div>
     )
@@ -424,56 +424,44 @@ export default function CompanyPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Управление компанией</h1>
-        <p className="text-gray-600">Создавайте и управляйте пользователями вашей компании</p>
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Компания</p>
+          <h1 className="text-3xl font-bold text-[var(--foreground)]">Управление компанией</h1>
+          <p className="text-sm text-[var(--muted)]">Настройки пользователей, прав доступа и тарифов</p>
+        </div>
+        <a
+          href="/company/custom-fields"
+          className="btn-secondary flex items-center gap-2"
+        >
+          🧩 Кастомные поля
+        </a>
       </div>
 
-      {/* Сообщения об ошибках и успехе */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
-          {success}
-        </div>
-      )}
-
-      {billingError && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800">
-          {billingError}
-        </div>
-      )}
-      {billingMessage && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800">
-          {billingMessage}
-        </div>
-      )}
-
-      {/* Ссылка на управление кастомными полями */}
-      <section className="mb-6">
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Кастомные поля
-              </h3>
-              <p className="text-sm text-gray-600">
-                Создавайте дополнительные поля для контактов, сделок и задач
-              </p>
-            </div>
-            <a
-              href="/company/custom-fields"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Управление полями →
-            </a>
+      {/* Сообщения */}
+      <div className="space-y-3">
+        {error && (
+          <div className="rounded-2xl border border-[var(--error)]/30 bg-[var(--error-soft)] px-4 py-3 text-[var(--error)]">
+            {error}
           </div>
-        </div>
-      </section>
+        )}
+        {success && (
+          <div className="rounded-2xl border border-[var(--success)]/30 bg-[var(--success-soft)] px-4 py-3 text-[var(--success)]">
+            {success}
+          </div>
+        )}
+        {billingError && (
+          <div className="rounded-2xl border border-[var(--error)]/30 bg-[var(--error-soft)] px-4 py-3 text-[var(--error)]">
+            {billingError}
+          </div>
+        )}
+        {billingMessage && (
+          <div className="rounded-2xl border border-[var(--success)]/30 bg-[var(--success-soft)] px-4 py-3 text-[var(--success)]">
+            {billingMessage}
+          </div>
+        )}
+      </div>
 
       <section className="space-y-4 mb-8">
         <div className="glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -567,12 +555,15 @@ export default function CompanyPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Форма создания пользователя */}
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Создать нового пользователя</h2>
+        <div className="glass-panel rounded-3xl p-6 space-y-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Команда</p>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Создать нового пользователя</h2>
+          </div>
           
           <form onSubmit={handleCreateUser} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                 Имя
               </label>
               <input
@@ -580,13 +571,13 @@ export default function CompanyPage() {
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 placeholder="Иван Иванов"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                 Email (логин)
               </label>
               <input
@@ -594,13 +585,13 @@ export default function CompanyPage() {
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 placeholder="user@example.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                 Пароль
               </label>
               <input
@@ -609,25 +600,25 @@ export default function CompanyPage() {
                 minLength={6}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 placeholder="Минимум 6 символов"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                 Роль
               </label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value as 'user' | 'manager' | 'admin' })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
               >
                 <option value="user">Пользователь</option>
                 <option value="manager">Менеджер</option>
                 <option value="admin">Администратор</option>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[var(--muted)] mt-1">
                 Менеджер видит только свои данные, админ видит всю компанию
               </p>
             </div>
@@ -635,7 +626,7 @@ export default function CompanyPage() {
             <button
               type="submit"
               disabled={creating}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creating ? 'Создание...' : 'Создать пользователя'}
             </button>
@@ -643,44 +634,55 @@ export default function CompanyPage() {
         </div>
 
         {/* Список пользователей */}
-        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Пользователи компании ({users.length})
-          </h2>
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Команда</p>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">
+                Пользователи компании ({users.length})
+              </h2>
+            </div>
+          </div>
 
           {users.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">Пользователи не найдены</p>
+            <div className="empty-state">
+              <div className="empty-state-icon">👥</div>
+              <h3 className="empty-state-title">Пользователи не найдены</h3>
+              <p className="empty-state-description">
+                Добавьте первого сотрудника, чтобы начать совместную работу.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
               {users.map((user) => (
                 <div
                   key={user.id}
-                  className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="card-interactive"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full border ${getRoleBadge(user.role)}`}>
+                        <h3 className="font-semibold text-[var(--foreground)]">{user.name}</h3>
+                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getRoleBadge(user.role)}`}>
                           {getRoleName(user.role)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-1">{user.email}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm text-[var(--muted)] mb-1">{user.email}</p>
+                      <p className="text-xs text-[var(--muted)]">
                         Создан: {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
-                    <div className="flex gap-2 ml-4">
+                    <div className="flex gap-2">
                       <button
                         onClick={() => handleEditClick(user)}
-                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                        className="px-3 py-2 text-sm rounded-xl bg-[var(--primary-soft)] text-[var(--primary)] hover:bg-[var(--primary-soft)]/70 transition-colors"
                         title="Редактировать"
                       >
                         ✏️
                       </button>
                       <button
                         onClick={() => handlePasswordClick(user)}
-                        className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                        className="px-3 py-2 text-sm rounded-xl bg-[var(--warning-soft)] text-[var(--warning)] hover:bg-[var(--warning-soft)]/70 transition-colors"
                         title="Изменить пароль"
                       >
                         🔑
@@ -688,7 +690,7 @@ export default function CompanyPage() {
                       {user.id !== parseInt(session?.user?.id || '0') && (
                         <button
                           onClick={() => handleDeleteClick(user)}
-                          className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                          className="px-3 py-2 text-sm rounded-xl bg-[var(--error-soft)] text-[var(--error)] hover:bg-[var(--error-soft)]/70 transition-colors"
                           title="Удалить"
                         >
                           🗑️
@@ -698,22 +700,22 @@ export default function CompanyPage() {
                   </div>
 
                   {/* Статистика пользователя */}
-                  <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-4 gap-2 text-xs">
+                  <div className="mt-3 pt-3 border-t border-white/60 grid grid-cols-4 gap-2 text-xs">
                     <div className="text-center">
-                      <div className="font-semibold text-gray-900">{user.stats.contacts}</div>
-                      <div className="text-gray-500">Контакты</div>
+                      <div className="font-semibold text-[var(--foreground)]">{user.stats.contacts}</div>
+                      <div className="text-[var(--muted)]">Контакты</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold text-gray-900">{user.stats.tasks}</div>
-                      <div className="text-gray-500">Задачи</div>
+                      <div className="font-semibold text-[var(--foreground)]">{user.stats.tasks}</div>
+                      <div className="text-[var(--muted)]">Задачи</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold text-gray-900">{user.stats.deals}</div>
-                      <div className="text-gray-500">Сделки</div>
+                      <div className="font-semibold text-[var(--foreground)]">{user.stats.deals}</div>
+                      <div className="text-[var(--muted)]">Сделки</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold text-gray-900">{user.stats.events}</div>
-                      <div className="text-gray-500">События</div>
+                      <div className="font-semibold text-[var(--foreground)]">{user.stats.events}</div>
+                      <div className="text-[var(--muted)]">События</div>
                     </div>
                   </div>
                 </div>
@@ -725,66 +727,78 @@ export default function CompanyPage() {
 
       {/* Модальное окно редактирования пользователя */}
       {editModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Редактировать пользователя</h2>
-            
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
-                {success}
-              </div>
-            )}
-
-            <form onSubmit={handleUpdateUser} className="space-y-4">
+        <div className="modal-overlay" onClick={() => {
+          setEditModalOpen(false)
+          setSelectedUser(null)
+          setError('')
+          setSuccess('')
+        }}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Имя
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Иван Иванов"
-                />
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Редактирование</p>
+                <h2 className="text-2xl font-bold text-[var(--foreground)]">Редактировать пользователя</h2>
+              </div>
+              <button
+                onClick={() => {
+                  setEditModalOpen(false)
+                  setSelectedUser(null)
+                  setError('')
+                  setSuccess('')
+                }}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateUser}>
+              <div className="modal-body space-y-4">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Имя
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    placeholder="Иван Иванов"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Email (логин)
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    placeholder="user@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Роль
+                  </label>
+                  <select
+                    value={editFormData.role}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'user' | 'manager' | 'admin' })}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  >
+                    <option value="user">Пользователь</option>
+                    <option value="manager">Менеджер</option>
+                    <option value="admin">Администратор</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email (логин)
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="user@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Роль
-                </label>
-                <select
-                  value={editFormData.role}
-                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'user' | 'manager' | 'admin' })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="user">Пользователь</option>
-                  <option value="manager">Менеджер</option>
-                  <option value="admin">Администратор</option>
-                </select>
-              </div>
-
-              <div className="flex gap-3 pt-4">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => {
@@ -793,14 +807,14 @@ export default function CompanyPage() {
                     setError('')
                     setSuccess('')
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="btn-secondary text-sm"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn-primary text-sm btn-ripple disabled:opacity-50"
                 >
                   {updating ? 'Сохранение...' : 'Сохранить'}
                 </button>
@@ -812,25 +826,49 @@ export default function CompanyPage() {
 
       {/* Модальное окно смены пароля */}
       {passwordModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Изменить пароль</h2>
-            <p className="text-sm text-gray-600 mb-4">Пользователь: {selectedUser.name}</p>
-            
+        <div className="modal-overlay" onClick={() => {
+          setPasswordModalOpen(false)
+          setSelectedUser(null)
+          setError('')
+          setSuccess('')
+          setPasswordFormData({ password: '', confirmPassword: '' })
+        }}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Пароль</p>
+                <h2 className="text-2xl font-bold text-[var(--foreground)]">Изменить пароль</h2>
+                <p className="text-sm text-[var(--muted)] mt-1">Пользователь: {selectedUser.name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setPasswordModalOpen(false)
+                  setSelectedUser(null)
+                  setError('')
+                  setSuccess('')
+                  setPasswordFormData({ password: '', confirmPassword: '' })
+                }}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              <div className="mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">
                 {error}
               </div>
             )}
             {success && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+              <div className="mb-4 p-3 bg-[var(--success-soft)] border border-[var(--success)]/30 rounded-lg text-[var(--success)] text-sm">
                 {success}
               </div>
             )}
 
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+            <form onSubmit={handleChangePassword}>
+              <div className="modal-body space-y-4">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Новый пароль
                 </label>
                 <input
@@ -839,13 +877,13 @@ export default function CompanyPage() {
                   minLength={6}
                   value={passwordFormData.password}
                   onChange={(e) => setPasswordFormData({ ...passwordFormData, password: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   placeholder="Минимум 6 символов"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Подтвердите пароль
                 </label>
                 <input
@@ -854,12 +892,13 @@ export default function CompanyPage() {
                   minLength={6}
                   value={passwordFormData.confirmPassword}
                   onChange={(e) => setPasswordFormData({ ...passwordFormData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   placeholder="Повторите пароль"
                 />
               </div>
+              </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => {
@@ -869,14 +908,14 @@ export default function CompanyPage() {
                     setSuccess('')
                     setPasswordFormData({ password: '', confirmPassword: '' })
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="btn-secondary text-sm"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn-primary text-sm btn-ripple disabled:opacity-50"
                 >
                   {updating ? 'Изменение...' : 'Изменить пароль'}
                 </button>

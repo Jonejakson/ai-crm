@@ -192,8 +192,12 @@ export default function Dashboard() {
         </div>
         <div className="divide-y divide-white/40">
           {recentContacts.length === 0 && (
-            <div className="px-6 py-8 text-center text-sm text-slate-500">
-              Пока нет клиентов — импортируйте контакты или добавьте вручную.
+            <div className="empty-state">
+              <div className="empty-state-icon">👥</div>
+              <h3 className="empty-state-title">Нет контактов</h3>
+              <p className="empty-state-description">
+                Пока нет клиентов — импортируйте контакты или добавьте вручную.
+              </p>
             </div>
           )}
           {recentContacts.map((contact) => (

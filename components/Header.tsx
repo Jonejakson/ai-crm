@@ -15,7 +15,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-white/80 backdrop-blur-xl shadow-sm">
-      <div className="flex flex-col gap-4 px-6 py-5">
+      <div className="flex flex-col gap-4 px-4 py-4 md:px-6 md:py-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold">Панель управления</p>
