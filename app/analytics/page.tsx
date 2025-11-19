@@ -186,30 +186,106 @@ export default function AnalyticsPage() {
           <p className="text-sm text-[var(--muted)]">Анализ эффективности работы и продаж</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => {
-              window.open(`/api/analytics/export?type=deals&period=${period}`, '_blank')
-            }}
-            className="btn-secondary flex items-center gap-2"
-          >
-            📊 Экспорт сделок
-          </button>
-          <button
-            onClick={() => {
-              window.open(`/api/analytics/export?type=tasks&period=${period}`, '_blank')
-            }}
-            className="btn-secondary flex items-center gap-2"
-          >
-            📋 Экспорт задач
-          </button>
-          <button
-            onClick={() => {
-              window.open(`/api/analytics/export?type=contacts&period=${period}`, '_blank')
-            }}
-            className="btn-secondary flex items-center gap-2"
-          >
-            👥 Экспорт контактов
-          </button>
+          <div className="relative group">
+            <button className="btn-secondary flex items-center gap-2">
+              📊 Экспорт сделок
+            </button>
+            <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
+              <a
+                href={`/api/analytics/export?type=deals&period=${period}&format=csv`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📄 CSV
+              </a>
+              <a
+                href={`/api/analytics/export?type=deals&period=${period}&format=xlsx`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📊 Excel
+              </a>
+              <a
+                href={`/api/analytics/export?type=deals&period=${period}&format=pdf`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📑 PDF
+              </a>
+            </div>
+          </div>
+          <div className="relative group">
+            <button className="btn-secondary flex items-center gap-2">
+              📋 Экспорт задач
+            </button>
+            <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
+              <a
+                href={`/api/analytics/export?type=tasks&period=${period}&format=csv`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📄 CSV
+              </a>
+              <a
+                href={`/api/analytics/export?type=tasks&period=${period}&format=xlsx`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📊 Excel
+              </a>
+              <a
+                href={`/api/analytics/export?type=tasks&period=${period}&format=pdf`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📑 PDF
+              </a>
+            </div>
+          </div>
+          <div className="relative group">
+            <button className="btn-secondary flex items-center gap-2">
+              👥 Экспорт контактов
+            </button>
+            <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
+              <a
+                href={`/api/analytics/export?type=contacts&period=${period}&format=csv`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📄 CSV
+              </a>
+              <a
+                href={`/api/analytics/export?type=contacts&period=${period}&format=xlsx`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📊 Excel
+              </a>
+              <a
+                href={`/api/analytics/export?type=contacts&period=${period}&format=pdf`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📑 PDF
+              </a>
+            </div>
+          </div>
+          <div className="relative group">
+            <button className="btn-secondary flex items-center gap-2">
+              👔 Экспорт менеджеров
+            </button>
+            <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
+              <a
+                href={`/api/analytics/export?type=managers&period=${period}&format=csv`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📄 CSV
+              </a>
+              <a
+                href={`/api/analytics/export?type=managers&period=${period}&format=xlsx`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📊 Excel
+              </a>
+              <a
+                href={`/api/analytics/export?type=managers&period=${period}&format=pdf`}
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+              >
+                📑 PDF
+              </a>
+            </div>
+          </div>
         </div>
       </div>
       
