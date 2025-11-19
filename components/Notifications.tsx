@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import NotificationToast from './NotificationToast'
+import { BellIcon } from './Icons'
 
 export default function Notifications() {
   const [isOpen, setIsOpen] = useState(false)
@@ -46,11 +47,11 @@ export default function Notifications() {
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+          className="relative p-2 text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] rounded-lg transition-colors"
         >
-          <span className="text-2xl">🔔</span>
+          <BellIcon className="w-5 h-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}

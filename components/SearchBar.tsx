@@ -158,9 +158,8 @@ export default function SearchBar() {
             }
           }}
           placeholder="Поиск по контактам, задачам, сделкам, событиям..."
-          className="w-full rounded-2xl border border-white/40 bg-white/80 px-12 py-3 text-sm text-slate-700 shadow-[0_20px_45px_rgba(15,23,42,0.06)] placeholder:text-slate-400 focus:border-[var(--primary)] focus:ring-0"
+          className="w-full rounded-2xl border border-white/40 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-[0_20px_45px_rgba(15,23,42,0.06)] placeholder:text-slate-400 focus:border-[var(--primary)] focus:ring-0"
         />
-        <div className="pointer-events-none absolute left-4 top-3 text-lg">🔍</div>
         {loading && (
           <div className="absolute right-3 top-3">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
