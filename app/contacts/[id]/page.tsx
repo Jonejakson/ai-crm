@@ -610,13 +610,10 @@ export default function ContactDetailPage() {
 
           {/* Вкладка Файлы */}
           {activeTab === 'files' && contact && (
-            <div className="space-y-4">
-              <FileUpload
-                entityType="contact"
-                entityId={contact.id}
-                onUploadComplete={fetchContactData}
-              />
-            </div>
+            <FilesManager
+              entityType="contact"
+              entityId={contact.id}
+            />
           )}
 
           {/* Вкладка Теги */}
