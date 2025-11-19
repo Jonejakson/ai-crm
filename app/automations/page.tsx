@@ -1,6 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -35,6 +39,81 @@ const ACTION_TYPES = [
   { value: 'UPDATE_DEAL_STAGE', label: 'Изменить этап сделки' },
 ]
 
+interface ActionForm {
+  id: string
+  type: string
+  params: Record<string, any>
+}
+
+type ActionFieldType = 'text' | 'textarea' | 'number' | 'select'
+
+interface ActionField {
+  key: string
+  label: string
+  type: ActionFieldType
+  placeholder?: string
+  required?: boolean
+  options?: Array<{ value: string; label: string }>
+  helperText?: string
+}
+
+const ACTION_FIELD_CONFIG: Record<string, ActionField[]> = {
+  SEND_EMAIL: [
+    { key: 'subject', label: 'Тема письма', type: 'text', placeholder: 'Например: Спасибо за встречу', required: true },
+    {
+      key: 'body',
+      label: 'Текст письма',
+      type: 'textarea',
+      placeholder: 'Вы можете использовать плейсхолдеры: {{deal.title}}, {{contact.name}}',
+      required: true,
+    },
+  ],
+  CREATE_TASK: [
+    { key: 'title', label: 'Заголовок задачи', type: 'text', placeholder: 'Позвонить клиенту', required: true },
+    { key: 'description', label: 'Описание', type: 'textarea', placeholder: 'Детали задачи' },
+    {
+      key: 'dueInDays',
+      label: 'Срок (дни после события)',
+      type: 'number',
+      placeholder: 'Например: 2',
+      helperText: '0 — в день события, 1 — на следующий день',
+    },
+    { key: 'assignedUserId', label: 'Назначить на пользователя', type: 'select' },
+  ],
+  CHANGE_PROBABILITY: [
+    { key: 'probability', label: 'Новая вероятность (%)', type: 'number', placeholder: 'Например: 75', required: true },
+  ],
+  UPDATE_DEAL_STAGE: [
+    { key: 'newStage', label: 'Новый этап сделки', type: 'text', placeholder: 'Например: negotiation', required: true },
+  ],
+  CREATE_NOTIFICATION: [
+    { key: 'userId', label: 'Пользователь (опционально)', type: 'select' },
+    { key: 'title', label: 'Заголовок', type: 'text', required: true },
+    { key: 'message', label: 'Сообщение', type: 'textarea', required: true },
+    {
+      key: 'type',
+      label: 'Тип уведомления',
+      type: 'select',
+      options: [
+        { value: 'info', label: 'Информация' },
+        { value: 'success', label: 'Успех' },
+        { value: 'warning', label: 'Предупреждение' },
+        { value: 'error', label: 'Ошибка' },
+      ],
+    },
+  ],
+  ASSIGN_USER: [
+    { key: 'userId', label: 'Назначить на пользователя', type: 'select', required: true },
+  ],
+}
+
+const generateActionId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `action-${Math.random().toString(36).slice(2)}`
+}
+
 export default function AutomationsPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -44,6 +123,7 @@ export default function AutomationsPage() {
   const [success, setSuccess] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null)
+  const [users, setUsers] = useState<{ id: number; name: string; email: string }[]>([])
 
   const [formData, setFormData] = useState({
     name: '',
@@ -51,7 +131,7 @@ export default function AutomationsPage() {
     isActive: true,
     triggerType: 'DEAL_STAGE_CHANGED',
     triggerConfig: {} as any,
-    actions: [] as any[],
+    actions: [] as ActionForm[],
   })
 
   useEffect(() => {
@@ -66,6 +146,7 @@ export default function AutomationsPage() {
         return
       }
       fetchAutomations()
+      fetchUsersList()
     }
   }, [status, session, router])
 
@@ -89,6 +170,23 @@ export default function AutomationsPage() {
     }
   }
 
+  const fetchUsersList = async () => {
+    try {
+      const response = await fetch('/api/admin/users')
+      if (!response.ok) return
+      const data = await response.json()
+      setUsers(
+        (data.users || []).map((user: any) => ({
+          id: user.id,
+          name: user.name || 'Без имени',
+          email: user.email,
+        }))
+      )
+    } catch (error) {
+      console.error('Error fetching users list:', error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -100,11 +198,14 @@ export default function AutomationsPage() {
     }
 
     try {
-      const url = editingAutomation ? '/api/automations' : '/api/automations'
+      const url = '/api/automations'
       const method = editingAutomation ? 'PUT' : 'POST'
-      const body = editingAutomation
-        ? { ...formData, id: editingAutomation.id }
-        : formData
+      const payload = {
+        ...formData,
+        triggerConfig: formData.triggerConfig || {},
+        actions: formData.actions.map(({ id, ...rest }) => rest),
+      }
+      const body = editingAutomation ? { ...payload, id: editingAutomation.id } : payload
 
       const response = await fetch(url, {
         method,
@@ -127,7 +228,7 @@ export default function AutomationsPage() {
         isActive: true,
         triggerType: 'DEAL_STAGE_CHANGED',
         triggerConfig: {},
-        actions: [],
+        actions: [] as ActionForm[],
       })
       await fetchAutomations()
     } catch (error: any) {
@@ -144,7 +245,11 @@ export default function AutomationsPage() {
       isActive: automation.isActive,
       triggerType: automation.triggerType,
       triggerConfig: automation.triggerConfig || {},
-      actions: automation.actions || [],
+      actions: (automation.actions || []).map((action: any) => ({
+        id: generateActionId(),
+        type: action.type,
+        params: action.params || {},
+      })),
     })
     setIsModalOpen(true)
   }
@@ -170,26 +275,57 @@ export default function AutomationsPage() {
   }
 
   const addAction = () => {
-    setFormData({
-      ...formData,
-      actions: [...formData.actions, { type: 'CREATE_TASK', params: {} }],
-    })
+    setFormData((prev) => ({
+      ...prev,
+      actions: [
+        ...prev.actions,
+        {
+          id: generateActionId(),
+          type: 'CREATE_TASK',
+          params: {},
+        },
+      ],
+    }))
   }
 
-  const updateAction = (index: number, field: string, value: any) => {
-    const newActions = [...formData.actions]
-    if (field === 'type') {
-      newActions[index] = { type: value, params: {} }
-    } else {
-      newActions[index] = { ...newActions[index], params: { ...newActions[index].params, [field]: value } }
-    }
-    setFormData({ ...formData, actions: newActions })
+  const updateActionType = (actionId: string, type: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      actions: prev.actions.map((action) =>
+        action.id === actionId ? { id: action.id, type, params: {} } : action
+      ),
+    }))
   }
 
-  const removeAction = (index: number) => {
-    setFormData({
-      ...formData,
-      actions: formData.actions.filter((_, i) => i !== index),
+  const updateActionParam = (actionId: string, key: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      actions: prev.actions.map((action) =>
+        action.id === actionId
+          ? { ...action, params: { ...action.params, [key]: value } }
+          : action
+      ),
+    }))
+  }
+
+  const removeAction = (actionId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      actions: prev.actions.filter((action) => action.id !== actionId),
+    }))
+  }
+
+  const handleActionsReorder = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setFormData((prev) => {
+      const oldIndex = prev.actions.findIndex((action) => action.id === active.id)
+      const newIndex = prev.actions.findIndex((action) => action.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return prev
+      return {
+        ...prev,
+        actions: arrayMove(prev.actions, oldIndex, newIndex),
+      }
     })
   }
 
@@ -197,8 +333,8 @@ export default function AutomationsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Загрузка...</p>
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-[var(--muted)]">Загрузка автоматизаций...</p>
         </div>
       </div>
     )
@@ -225,7 +361,8 @@ export default function AutomationsPage() {
               isActive: true,
               triggerType: 'DEAL_STAGE_CHANGED',
               triggerConfig: {},
-              actions: [],
+              actions: [] as ActionForm[],
+              actions: [] as ActionForm[],
             })
             setIsModalOpen(true)
           }}
@@ -402,172 +539,89 @@ export default function AutomationsPage() {
               )}
 
               {formData.triggerType === 'DEAL_AMOUNT_CHANGED' && (
-                <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                    Минимальная сумма (₽)
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.triggerConfig.minAmount || ''}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        triggerConfig: { ...formData.triggerConfig, minAmount: parseFloat(e.target.value) || 0 },
-                      })
-                    }
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
-                    placeholder="0"
-                  />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      Минимальная сумма (₽)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.triggerConfig.minAmount ?? ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          triggerConfig: {
+                            ...formData.triggerConfig,
+                            minAmount: e.target.value === '' ? null : Number(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      Максимальная сумма (опционально)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.triggerConfig.maxAmount ?? ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          triggerConfig: {
+                            ...formData.triggerConfig,
+                            maxAmount: e.target.value === '' ? null : Number(e.target.value),
+                          },
+                        })
+                      }
+                      className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                      placeholder="Не ограничено"
+                    />
+                  </div>
                 </div>
               )}
 
               {/* Действия */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                    Действия *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addAction}
-                    className="btn-secondary text-sm"
-                  >
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Действия *</p>
+                    <p className="text-sm text-slate-500">Шаги выполняются последовательно после срабатывания триггера</p>
+                  </div>
+                  <button type="button" onClick={addAction} className="btn-secondary text-sm">
                     + Добавить действие
                   </button>
                 </div>
 
-                <div className="space-y-3">
-                  {formData.actions.map((action, index) => (
-                    <div key={index} className="card p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <select
-                          value={action.type}
-                          onChange={(e) => updateAction(index, 'type', e.target.value)}
-                          className="flex-1 rounded-2xl border border-white/50 bg-white/80 px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-0 mr-2"
-                        >
-                          {ACTION_TYPES.map((type) => (
-                            <option key={type.value} value={type.value}>
-                              {type.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          onClick={() => removeAction(index)}
-                          className="text-red-500 hover:text-red-700 ml-2"
-                        >
-                          ✕
-                        </button>
+                {formData.actions.length === 0 ? (
+                  <div className="empty-state border border-dashed border-white/50 rounded-3xl bg-white/40 py-10">
+                    <div className="empty-state-icon">⚙️</div>
+                    <h3 className="empty-state-title">Нет действий</h3>
+                    <p className="empty-state-description">
+                      Добавьте хотя бы одно действие, чтобы автоматизация начала работать.
+                    </p>
+                  </div>
+                ) : (
+                  <DndContext collisionDetection={closestCenter} onDragEnd={handleActionsReorder}>
+                    <SortableContext items={formData.actions.map((action) => action.id)} strategy={verticalListSortingStrategy}>
+                      <div className="space-y-4">
+                        {formData.actions.map((action, index) => (
+                          <SortableActionCard
+                            key={action.id}
+                            action={action}
+                            index={index}
+                            users={users}
+                            onRemove={removeAction}
+                            onTypeChange={updateActionType}
+                            onParamChange={updateActionParam}
+                          />
+                        ))}
                       </div>
-
-                      {/* Параметры действий */}
-                      {action.type === 'CREATE_TASK' && (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="Название задачи *"
-                            value={action.params?.title || ''}
-                            onChange={(e) => updateAction(index, 'title', e.target.value)}
-                            required
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                          <textarea
-                            placeholder="Описание задачи"
-                            value={action.params?.description || ''}
-                            onChange={(e) => updateAction(index, 'description', e.target.value)}
-                            rows={2}
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                        </div>
-                      )}
-
-                      {action.type === 'SEND_EMAIL' && (
-                        <div className="space-y-2">
-                          <input
-                            type="text"
-                            placeholder="Тема письма *"
-                            value={action.params?.subject || ''}
-                            onChange={(e) => updateAction(index, 'subject', e.target.value)}
-                            required
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                          <textarea
-                            placeholder="Текст письма *"
-                            value={action.params?.body || ''}
-                            onChange={(e) => updateAction(index, 'body', e.target.value)}
-                            required
-                            rows={4}
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                        </div>
-                      )}
-
-                      {action.type === 'CHANGE_PROBABILITY' && (
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          placeholder="Вероятность (0-100) *"
-                          value={action.params?.probability || ''}
-                          onChange={(e) => updateAction(index, 'probability', parseInt(e.target.value) || 0)}
-                          required
-                          className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                        />
-                      )}
-
-                      {action.type === 'ASSIGN_USER' && (
-                        <input
-                          type="number"
-                          placeholder="ID пользователя *"
-                          value={action.params?.userId || ''}
-                          onChange={(e) => updateAction(index, 'userId', parseInt(e.target.value) || 0)}
-                          required
-                          className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                        />
-                      )}
-
-                      {action.type === 'CREATE_NOTIFICATION' && (
-                        <div className="space-y-2">
-                          <input
-                            type="number"
-                            placeholder="ID пользователя *"
-                            value={action.params?.userId || ''}
-                            onChange={(e) => updateAction(index, 'userId', parseInt(e.target.value) || 0)}
-                            required
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Заголовок *"
-                            value={action.params?.title || ''}
-                            onChange={(e) => updateAction(index, 'title', e.target.value)}
-                            required
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                          <textarea
-                            placeholder="Сообщение *"
-                            value={action.params?.message || ''}
-                            onChange={(e) => updateAction(index, 'message', e.target.value)}
-                            required
-                            rows={2}
-                            className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                          />
-                        </div>
-                      )}
-
-                      {action.type === 'UPDATE_DEAL_STAGE' && (
-                        <input
-                          type="text"
-                          placeholder="Название этапа *"
-                          value={action.params?.stage || ''}
-                          onChange={(e) => updateAction(index, 'stage', e.target.value)}
-                          required
-                          className="w-full rounded-xl border border-white/50 bg-white/80 px-3 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    </SortableContext>
+                  </DndContext>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-4">
@@ -605,3 +659,200 @@ export default function AutomationsPage() {
   )
 }
 
+interface SortableActionCardProps {
+  action: ActionForm
+  index: number
+  users: { id: number; name: string; email: string }[]
+  onRemove: (id: string) => void
+  onTypeChange: (id: string, type: string) => void
+  onParamChange: (id: string, key: string, value: any) => void
+}
+
+function SortableActionCard({
+  action,
+  index,
+  users,
+  onRemove,
+  onTypeChange,
+  onParamChange,
+}: SortableActionCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: action.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  const fields = ACTION_FIELD_CONFIG[action.type] || []
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="rounded-3xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur"
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-1 items-center gap-3">
+          <button
+            type="button"
+            className="text-slate-400 hover:text-slate-600 cursor-grab"
+            {...listeners}
+            {...attributes}
+            aria-label="Перетащить"
+          >
+            ⋮⋮
+          </button>
+          <div className="flex-1">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-1">Шаг {index + 1}</p>
+            <select
+              value={action.type}
+              onChange={(e) => onTypeChange(action.id, e.target.value)}
+              className="w-full rounded-2xl border border-white/50 bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
+            >
+              {ACTION_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onRemove(action.id)}
+          className="btn-secondary text-sm text-red-500 hover:text-red-600"
+        >
+          Удалить
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {fields.length === 0 ? (
+          <p className="text-sm text-slate-500">Дополнительные параметры не требуются</p>
+        ) : (
+          fields.map((field) => (
+            <ActionFieldControl
+              key={`${action.id}-${field.key}`}
+              field={field}
+              value={action.params?.[field.key]}
+              users={users}
+              onChange={(value) => onParamChange(action.id, field.key, value)}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface ActionFieldControlProps {
+  field: ActionField
+  value: any
+  users: { id: number; name: string; email: string }[]
+  onChange: (value: any) => void
+}
+
+function ActionFieldControl({ field, value, users, onChange }: ActionFieldControlProps) {
+  const inputValue = value ?? ''
+  const handleNumberChange = (val: string) => {
+    if (val === '') {
+      onChange(null)
+      return
+    }
+    const parsed = Number(val)
+    onChange(Number.isNaN(parsed) ? null : parsed)
+  }
+
+  const label = (
+    <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.25em] text-slate-400">
+      {field.label}
+    </label>
+  )
+
+  const helper = field.helperText ? <p className="text-xs text-slate-500">{field.helperText}</p> : null
+
+  if (field.type === 'textarea') {
+    return (
+      <div>
+        {label}
+        <textarea
+          value={inputValue}
+          onChange={(e) => onChange(e.target.value)}
+          rows={field.placeholder ? 4 : 3}
+          placeholder={field.placeholder}
+          className="w-full rounded-2xl border border-white/50 bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+          required={field.required}
+        />
+        {helper}
+      </div>
+    )
+  }
+
+  if (field.type === 'number') {
+    return (
+      <div>
+        {label}
+        <input
+          type="number"
+          value={inputValue}
+          onChange={(e) => handleNumberChange(e.target.value)}
+          placeholder={field.placeholder}
+          className="w-full rounded-2xl border border-white/50 bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+          required={field.required}
+        />
+        {helper}
+      </div>
+    )
+  }
+
+  if (field.type === 'select') {
+    const isUserSelect = field.key.toLowerCase().includes('userid')
+    const options = isUserSelect
+      ? users.map((user) => ({
+          value: String(user.id),
+          label: `${user.name} (${user.email})`,
+        }))
+      : field.options || []
+    return (
+      <div>
+        {label}
+        <select
+          value={inputValue}
+          onChange={(e) => {
+            const val = e.target.value
+            if (isUserSelect) {
+              onChange(val === '' ? null : Number(val))
+            } else {
+              onChange(val)
+            }
+          }}
+          className="w-full rounded-2xl border border-white/50 bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+          required={field.required}
+        >
+          <option value="">Не выбрано</option>
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {helper}
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {label}
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={field.placeholder}
+        className="w-full rounded-2xl border border-white/50 bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+        required={field.required}
+      />
+      {helper}
+    </div>
+  )
+}

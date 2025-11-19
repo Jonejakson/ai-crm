@@ -29,23 +29,38 @@ export async function processAutomations(
 
     for (const automation of automations) {
       // Проверяем условия триггера
-      if (automation.triggerConfig) {
-        const config = automation.triggerConfig as any
+        if (automation.triggerConfig) {
+          const config = automation.triggerConfig as any
 
-        // Проверка этапа (для DEAL_STAGE_CHANGED)
-        if (triggerType === 'DEAL_STAGE_CHANGED' && config.stage) {
-          if (context.newStage !== config.stage) {
-            continue // пропускаем, если этап не совпадает
+          if (triggerType === 'DEAL_STAGE_CHANGED') {
+            if (config.stage && context.newStage !== config.stage) {
+              continue
+            }
+            if (config.fromStage && context.oldStage !== config.fromStage) {
+              continue
+            }
+            if (config.toStage && context.newStage !== config.toStage) {
+              continue
+            }
+          }
+
+          if (triggerType === 'DEAL_AMOUNT_CHANGED') {
+            const amount =
+              typeof context.newAmount === 'number'
+                ? context.newAmount
+                : typeof context.oldAmount === 'number'
+                ? context.oldAmount
+                : undefined
+
+            if (typeof config.minAmount === 'number' && (amount === undefined || amount < config.minAmount)) {
+              continue
+            }
+
+            if (typeof config.maxAmount === 'number' && (amount === undefined || amount > config.maxAmount)) {
+              continue
+            }
           }
         }
-
-        // Проверка суммы (для DEAL_AMOUNT_CHANGED)
-        if (triggerType === 'DEAL_AMOUNT_CHANGED' && config.minAmount) {
-          if (!context.newAmount || context.newAmount < config.minAmount) {
-            continue
-          }
-        }
-      }
 
       // Выполняем действия
       const actions = automation.actions as any[]
@@ -65,14 +80,21 @@ async function executeAction(action: any, context: AutomationContext) {
     switch (type) {
       case 'CREATE_TASK':
         if (context.contactId && params.title) {
+          const dueDate =
+            params.dueDate
+              ? new Date(params.dueDate)
+              : typeof params.dueInDays === 'number'
+              ? addDays(new Date(), Number(params.dueInDays))
+              : null
+
           await prisma.task.create({
             data: {
               title: params.title,
               description: params.description || null,
               status: 'pending',
-              dueDate: params.dueDate ? new Date(params.dueDate) : null,
+              dueDate,
               contactId: context.contactId,
-              userId: context.userId || null,
+              userId: params.assignedUserId ? Number(params.assignedUserId) : context.userId || null,
             },
           })
         }
@@ -128,7 +150,9 @@ async function executeAction(action: any, context: AutomationContext) {
         break
 
       case 'CREATE_NOTIFICATION':
-        if (params.userId && params.title && params.message) {
+        if (params.title && params.message) {
+          const targetUserId = params.userId ? Number(params.userId) : context.userId
+          if (!targetUserId) break
           await prisma.notification.create({
             data: {
               title: params.title,
@@ -136,7 +160,7 @@ async function executeAction(action: any, context: AutomationContext) {
               type: params.type || 'info',
               entityType: params.entityType || null,
               entityId: params.entityId || null,
-              userId: Number(params.userId),
+              userId: targetUserId,
             },
           })
         }
@@ -157,5 +181,11 @@ async function executeAction(action: any, context: AutomationContext) {
   } catch (error) {
     console.error('[automations][executeAction]', error)
   }
+}
+
+function addDays(date: Date, days: number) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
 }
 
