@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import Modal from '@/components/Modal'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
@@ -406,25 +407,14 @@ export default function ContactsPage() {
       </div>
 
       {/* Модальное окно добавления контакта */}
-      {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Новый контакт</p>
-                <h3 className="text-2xl font-bold text-[var(--foreground)]">Добавить клиента</h3>
-              </div>
-              <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
-              >
-                ✕
-              </button>
-            </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Добавить клиента"
+        size="md"
+      >
 
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
                   {['name', 'email', 'phone'].map((field) => (
                     <div key={field}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -486,25 +476,23 @@ export default function ContactsPage() {
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="btn-secondary text-sm"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary text-sm btn-ripple"
-                >
-                  Добавить
-                </button>
-              </div>
-            </form>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="btn-secondary text-sm"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="btn-primary text-sm"
+            >
+              Добавить
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {editingContact && (
         <div className="modal-overlay" onClick={() => setEditingContact(null)}>
