@@ -133,6 +133,18 @@ export default function SearchBar() {
     }
   }
 
+  // Автодополнение - показываем подсказки при вводе
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  
+  useEffect(() => {
+    if (query.trim().length >= 1 && query.trim().length < 2) {
+      // Можно добавить подсказки на основе популярных запросов
+      setSuggestions([])
+    } else {
+      setSuggestions([])
+    }
+  }, [query])
+
   return (
     <div className="relative w-full max-w-2xl" ref={searchRef}>
       <div className="relative">
@@ -174,6 +186,19 @@ export default function SearchBar() {
                   <div className="text-sm text-gray-500">{contact.email}</div>
                   {contact.company && (
                     <div className="text-xs text-gray-400">{contact.company}</div>
+                  )}
+                  {(contact as any).tags && (contact as any).tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {(contact as any).tags.map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
@@ -219,6 +244,19 @@ export default function SearchBar() {
                     {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
                     {deal.contact && ` • ${deal.contact.name}`}
                   </div>
+                  {(deal as any).tags && (deal as any).tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {(deal as any).tags.map((tag: any) => (
+                        <span
+                          key={tag.id}
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: tag.color + '20', color: tag.color }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

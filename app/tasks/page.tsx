@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import AdvancedFilters from '@/components/AdvancedFilters'
 import Comments from '@/components/Comments'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
@@ -117,6 +118,8 @@ export default function TasksPage() {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments' | 'custom-fields'>('info')
+  const [filters, setFilters] = useState<any>({})
+  const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -139,6 +142,15 @@ export default function TasksPage() {
   useEffect(() => {
     fetchData()
     checkNotifications()
+    // Загружаем сохраненные фильтры из localStorage
+    const saved = localStorage.getItem('savedFilters_tasks')
+    if (saved) {
+      try {
+        setSavedFilters(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading saved filters:', e)
+      }
+    }
   }, [selectedUserId])
 
   const checkNotifications = async () => {
@@ -307,9 +319,47 @@ export default function TasksPage() {
     }
   }
 
+  // Применяем фильтры к задачам
+  const filteredTasks = tasks.filter(task => {
+    // Фильтр по статусам
+    if (filters.status && filters.status.length > 0) {
+      if (!filters.status.includes(task.status)) return false
+    }
+
+    // Фильтр по дате создания
+    if (filters.dateRange) {
+      const taskDate = new Date(task.createdAt || new Date())
+      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null
+      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null
+      
+      if (startDate && taskDate < startDate) return false
+      if (endDate) {
+        const endDateEnd = new Date(endDate)
+        endDateEnd.setHours(23, 59, 59, 999)
+        if (taskDate > endDateEnd) return false
+      }
+    }
+
+    // Фильтр по сроку выполнения
+    if (filters.dueDateRange && task.dueDate) {
+      const dueDate = new Date(task.dueDate)
+      const startDate = filters.dueDateRange.start ? new Date(filters.dueDateRange.start) : null
+      const endDate = filters.dueDateRange.end ? new Date(filters.dueDateRange.end) : null
+      
+      if (startDate && dueDate < startDate) return false
+      if (endDate) {
+        const endDateEnd = new Date(endDate)
+        endDateEnd.setHours(23, 59, 59, 999)
+        if (dueDate > endDateEnd) return false
+      }
+    }
+
+    return true
+  })
+
   // Распределяем задачи по категориям
   const tasksByCategory = TASK_CATEGORIES.reduce((acc, category) => {
-    acc[category.id] = tasks.filter(task => getTaskCategory(task.dueDate) === category.id)
+    acc[category.id] = filteredTasks.filter(task => getTaskCategory(task.dueDate) === category.id)
     return acc
   }, {} as Record<string, Task[]>)
 
@@ -357,10 +407,30 @@ export default function TasksPage() {
         </div>
       </div>
       
-      <div className="glass-panel px-6 py-5 rounded-3xl">
+      <div className="glass-panel px-6 py-5 rounded-3xl space-y-4">
         <UserFilter 
           selectedUserId={selectedUserId} 
           onUserChange={setSelectedUserId} 
+        />
+        <AdvancedFilters
+          entityType="tasks"
+          onFilterChange={setFilters}
+          savedFilters={savedFilters}
+          onSaveFilter={(name, filterData) => {
+            const newFilter = {
+              id: Date.now(),
+              name,
+              filters: filterData,
+            }
+            const updated = [...savedFilters, newFilter]
+            setSavedFilters(updated)
+            localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
+          }}
+          onDeleteFilter={(id) => {
+            const updated = savedFilters.filter(f => f.id !== id)
+            setSavedFilters(updated)
+            localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
+          }}
         />
       </div>
 

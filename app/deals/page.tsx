@@ -6,6 +6,7 @@ import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
+import AdvancedFilters from '@/components/AdvancedFilters'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
@@ -96,6 +97,8 @@ export default function DealsPage() {
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null)
   const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags' | 'custom-fields'>('info')
+  const [filters, setFilters] = useState<any>({})
+  const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [newContactData, setNewContactData] = useState({
     name: '',
     email: '',
@@ -126,6 +129,15 @@ export default function DealsPage() {
 
   useEffect(() => {
     fetchData()
+    // Загружаем сохраненные фильтры из localStorage
+    const saved = localStorage.getItem('savedFilters_deals')
+    if (saved) {
+      try {
+        setSavedFilters(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading saved filters:', e)
+      }
+    }
   }, [selectedUserId])
 
   const fetchData = async () => {
@@ -597,14 +609,58 @@ export default function DealsPage() {
     return `${gradients[index % gradients.length]} border-white/70`
   }
 
+  // Применяем фильтры к сделкам
+  const filteredDeals = deals.filter(deal => {
+    // Фильтр по статусам/этапам
+    if (filters.status && filters.status.length > 0) {
+      if (!filters.status.includes(deal.stage)) return false
+    }
+
+    // Фильтр по диапазону сумм
+    if (filters.amountRange) {
+      if (filters.amountRange.min !== undefined && deal.amount < filters.amountRange.min) return false
+      if (filters.amountRange.max !== undefined && deal.amount > filters.amountRange.max) return false
+    }
+
+    // Фильтр по дате создания
+    if (filters.dateRange) {
+      const dealDate = new Date(deal.createdAt || new Date())
+      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null
+      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null
+      
+      if (startDate && dealDate < startDate) return false
+      if (endDate) {
+        const endDateEnd = new Date(endDate)
+        endDateEnd.setHours(23, 59, 59, 999)
+        if (dealDate > endDateEnd) return false
+      }
+    }
+
+    // Фильтр по ожидаемой дате закрытия
+    if (filters.expectedCloseDateRange && deal.expectedCloseDate) {
+      const closeDate = new Date(deal.expectedCloseDate)
+      const startDate = filters.expectedCloseDateRange.start ? new Date(filters.expectedCloseDateRange.start) : null
+      const endDate = filters.expectedCloseDateRange.end ? new Date(filters.expectedCloseDateRange.end) : null
+      
+      if (startDate && closeDate < startDate) return false
+      if (endDate) {
+        const endDateEnd = new Date(endDate)
+        endDateEnd.setHours(23, 59, 59, 999)
+        if (closeDate > endDateEnd) return false
+      }
+    }
+
+    return true
+  })
+
   const stages = getStages()
   const dealsByStage = stages.reduce((acc, stage) => {
-    acc[stage] = deals.filter(deal => deal.stage === stage)
+    acc[stage] = filteredDeals.filter(deal => deal.stage === stage)
     return acc
   }, {} as Record<string, Deal[]>)
 
-  const totalAmount = deals.reduce((sum, deal) => sum + deal.amount, 0)
-  const wonDeals = deals.filter(d => d.stage === 'Закрыто и реализованное')
+  const totalAmount = filteredDeals.reduce((sum, deal) => sum + deal.amount, 0)
+  const wonDeals = filteredDeals.filter(d => d.stage === 'Закрыто и реализованное')
   const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
 
   if (loading) {
@@ -667,17 +723,39 @@ export default function DealsPage() {
         </div>
       </div>
 
-      {/* Фильтр по менеджеру (только для админа) */}
-      <UserFilter
-        selectedUserId={selectedUserId}
-        onUserChange={setSelectedUserId}
-      />
+      {/* Фильтры */}
+      <div className="glass-panel px-6 py-5 rounded-3xl space-y-4">
+        <UserFilter
+          selectedUserId={selectedUserId}
+          onUserChange={setSelectedUserId}
+        />
+        <AdvancedFilters
+          entityType="deals"
+          onFilterChange={setFilters}
+          savedFilters={savedFilters}
+          onSaveFilter={(name, filterData) => {
+            const newFilter = {
+              id: Date.now(),
+              name,
+              filters: filterData,
+            }
+            const updated = [...savedFilters, newFilter]
+            setSavedFilters(updated)
+            localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
+          }}
+          onDeleteFilter={(id) => {
+            const updated = savedFilters.filter(f => f.id !== id)
+            setSavedFilters(updated)
+            localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
+          }}
+        />
+      </div>
 
       {/* Статистика */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="card">
           <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Всего сделок</p>
-          <p className="text-4xl font-semibold mt-3">{deals.length}</p>
+          <p className="text-4xl font-semibold mt-3">{filteredDeals.length}</p>
           <p className="text-xs text-slate-400 mt-2">Активные + архивные</p>
         </div>
         <div className="card">
