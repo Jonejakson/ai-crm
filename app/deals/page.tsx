@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import Comments from '@/components/Comments'
@@ -374,9 +375,14 @@ export default function DealsPage() {
         await fetchData()
         setIsModalOpen(false)
         resetFormState()
+        toast.success('Сделка успешно создана')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при создании сделки')
       }
     } catch (error) {
       console.error('Error creating deal:', error)
+      toast.error('Ошибка при создании сделки')
     }
   }
 
@@ -401,13 +407,14 @@ export default function DealsPage() {
         await fetchData()
         setIsModalOpen(false)
         resetFormState()
+        toast.success('Сделка успешно обновлена')
       } else {
         const error = await response.json()
-        alert(error.error || 'Не удалось обновить сделку')
+        toast.error(error.error || 'Не удалось обновить сделку')
       }
     } catch (error) {
       console.error('Error updating deal:', error)
-      alert('Ошибка при обновлении сделки')
+      toast.error('Ошибка при обновлении сделки')
     }
   }
 
@@ -590,9 +597,14 @@ export default function DealsPage() {
 
       if (response.ok) {
         await fetchData()
+        toast.success('Сделка успешно удалена')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при удалении сделки')
       }
     } catch (error) {
       console.error('Error deleting deal:', error)
+      toast.error('Ошибка при удалении сделки')
     }
   }
 

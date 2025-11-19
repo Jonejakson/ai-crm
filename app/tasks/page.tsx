@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
 import FilesManager from '@/components/FilesManager'
@@ -209,9 +210,14 @@ export default function TasksPage() {
           contactId: '',
           status: 'pending'
         })
+        toast.success('Задача успешно создана')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при создании задачи')
       }
     } catch (error) {
       console.error('Error creating task:', error)
+      toast.error('Ошибка при создании задачи')
     }
   }
 
@@ -286,9 +292,14 @@ export default function TasksPage() {
 
       if (response.ok) {
         await fetchData()
+        toast.success('Задача успешно удалена')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при удалении задачи')
       }
     } catch (error) {
       console.error('Error deleting task:', error)
+      toast.error('Ошибка при удалении задачи')
     }
   }
 
