@@ -36,6 +36,8 @@ interface Deal {
   stage: string
   probability: number
   expectedCloseDate: string | null
+  createdAt?: string
+  updatedAt?: string
   contact: {
     id: number
     name: string
@@ -623,8 +625,8 @@ export default function DealsPage() {
     }
 
     // Фильтр по дате создания
-    if (filters.dateRange) {
-      const dealDate = new Date(deal.createdAt || new Date())
+    if (filters.dateRange && deal.createdAt) {
+      const dealDate = new Date(deal.createdAt)
       const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null
       const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null
       
