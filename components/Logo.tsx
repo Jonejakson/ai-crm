@@ -19,29 +19,36 @@ export default function Logo({ variant = 'full', size = 'md', className = '', st
   // Aero CRM - логотип в стиле крыла
   const WingIcon = () => (
     <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      <defs>
+        <linearGradient id="aero-gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
+        </linearGradient>
+        <linearGradient id="aero-gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="1" />
+        </linearGradient>
+        <linearGradient id="aero-gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="1" />
+          <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
+        </linearGradient>
+      </defs>
       {style === 'single' ? (
         // Одиночное крыло
         <path
           d="M4 20C4 20 8 12 16 12C24 12 28 20 28 20"
-          stroke="url(#gradient1)"
+          stroke="url(#aero-gradient1)"
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
-        >
-          <defs>
-            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
-            </linearGradient>
-          </defs>
-        </path>
+        />
       ) : (
         // Двойное крыло
         <>
           <path
             d="M4 18C4 18 8 10 16 10C24 10 28 18 28 18"
-            stroke="url(#gradient2)"
+            stroke="url(#aero-gradient2)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -49,22 +56,12 @@ export default function Logo({ variant = 'full', size = 'md', className = '', st
           />
           <path
             d="M4 22C4 22 8 14 16 14C24 14 28 22 28 22"
-            stroke="url(#gradient3)"
+            stroke="url(#aero-gradient3)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
           />
-          <defs>
-            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.9" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="1" />
-            </linearGradient>
-            <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="1" />
-              <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
-            </linearGradient>
-          </defs>
         </>
       )}
     </svg>
