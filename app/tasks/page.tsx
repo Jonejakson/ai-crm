@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
+import FilesManager from '@/components/FilesManager'
 import Comments from '@/components/Comments'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
@@ -117,7 +118,7 @@ export default function TasksPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
-  const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments' | 'custom-fields'>('info')
+  const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments' | 'custom-fields' | 'files'>('info')
   const [filters, setFilters] = useState<any>({})
   const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [formData, setFormData] = useState({
@@ -630,6 +631,16 @@ export default function TasksPage() {
               >
                 Доп. поля
               </button>
+              <button
+                onClick={() => setTaskViewTab('files')}
+                className={`px-6 py-3 font-medium ${
+                  taskViewTab === 'files'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Файлы
+              </button>
             </div>
 
             {/* Содержимое вкладок */}
@@ -705,6 +716,13 @@ export default function TasksPage() {
                   onSave={() => {
                     // Обновить данные задачи при необходимости
                   }}
+                />
+              )}
+
+              {taskViewTab === 'files' && viewingTask && (
+                <FilesManager
+                  entityType="task"
+                  entityId={viewingTask.id}
                 />
               )}
             </div>

@@ -7,6 +7,7 @@ import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import AdvancedFilters from '@/components/AdvancedFilters'
+import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
   DndContext,
@@ -98,7 +99,7 @@ export default function DealsPage() {
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null)
-  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags' | 'custom-fields'>('info')
+  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags' | 'custom-fields' | 'files'>('info')
   const [filters, setFilters] = useState<any>({})
   const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [newContactData, setNewContactData] = useState({
@@ -1306,6 +1307,26 @@ export default function DealsPage() {
               >
                 Теги
               </button>
+              <button
+                onClick={() => setDealViewTab('custom-fields')}
+                className={`px-6 py-3 font-medium ${
+                  dealViewTab === 'custom-fields'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Доп. поля
+              </button>
+              <button
+                onClick={() => setDealViewTab('files')}
+                className={`px-6 py-3 font-medium ${
+                  dealViewTab === 'files'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Файлы
+              </button>
             </div>
 
             {/* Содержимое вкладок */}
@@ -1389,6 +1410,13 @@ export default function DealsPage() {
                   onSave={() => {
                     // Обновить данные сделки при необходимости
                   }}
+                />
+              )}
+
+              {dealViewTab === 'files' && viewingDeal && (
+                <FilesManager
+                  entityType="deal"
+                  entityId={viewingDeal.id}
                 />
               )}
             </div>
