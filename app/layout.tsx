@@ -2,8 +2,24 @@ import type { Metadata } from 'next'
 import LayoutClient from './layout-client'
 
 export const metadata: Metadata = {
-  title: 'CRM System',
-  description: 'Customer Relationship Management',
+  title: {
+    default: 'Pulse CRM - Управление клиентами и сделками',
+    template: '%s | Pulse CRM'
+  },
+  description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
+  keywords: ['CRM', 'управление клиентами', 'сделки', 'задачи', 'аналитика'],
+  authors: [{ name: 'Pulse CRM' }],
+  openGraph: {
+    type: 'website',
+    locale: 'ru_RU',
+    siteName: 'Pulse CRM',
+    title: 'Pulse CRM - Управление клиентами и сделками',
+    description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export const dynamic = 'force-dynamic'

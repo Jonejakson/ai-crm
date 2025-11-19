@@ -24,9 +24,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   useGlobalShortcuts()
 
   return (
-    <SessionProvider>
-      <ThemeProvider>
-        <Toaster
+    <ErrorBoundary>
+      <SessionProvider>
+        <ThemeProvider>
+          <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
