@@ -2,6 +2,7 @@
 
 import './globals.css'
 import { SessionProvider } from 'next-auth/react'
+import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from '@/lib/theme'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
@@ -24,6 +25,32 @@ export default function LayoutClient({
   return (
     <SessionProvider>
       <ThemeProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'var(--surface)',
+              color: 'var(--foreground)',
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              padding: '16px',
+              boxShadow: 'var(--shadow-lg)',
+            },
+            success: {
+              iconTheme: {
+                primary: 'var(--success)',
+                secondary: 'var(--surface)',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: 'var(--error)',
+                secondary: 'var(--surface)',
+              },
+            },
+          }}
+        />
         <div className="flex h-screen bg-[var(--background)]">
           <Sidebar currentContactId={currentContactId} />
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">

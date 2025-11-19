@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
@@ -103,9 +104,14 @@ export default function ContactsPage() {
       if (response.ok) {
         await fetchContacts()
         setEditingContact(null)
+        toast.success('Контакт успешно обновлен')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при обновлении контакта')
       }
     } catch (error) {
       console.error('Error updating contact:', error)
+      toast.error('Ошибка при обновлении контакта')
     }
   }
 
@@ -120,9 +126,14 @@ export default function ContactsPage() {
 
       if (response.ok) {
         await fetchContacts()
+        toast.success('Контакт успешно удален')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при удалении контакта')
       }
     } catch (error) {
       console.error('Error deleting contact:', error)
+      toast.error('Ошибка при удалении контакта')
     }
   }
 
