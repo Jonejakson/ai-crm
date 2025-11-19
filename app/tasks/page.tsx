@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
 import FilesManager from '@/components/FilesManager'
@@ -154,6 +155,16 @@ export default function TasksPage() {
       }
     }
   }, [selectedUserId])
+
+  // Клавиатурные сокращения для страницы задач
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      ctrl: true,
+      action: () => setIsModalOpen(true),
+      description: 'Создать новую задачу',
+    },
+  ])
 
   const checkNotifications = async () => {
     try {

@@ -14,13 +14,12 @@ function getCurrentContactId(pathname: string): number | undefined {
   return match ? parseInt(match[1], 10) : undefined
 }
 
-export default function LayoutClient({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const currentContactId = getCurrentContactId(pathname)
+  
+  // Глобальные клавиатурные сокращения
+  useGlobalShortcuts()
 
   return (
     <SessionProvider>
@@ -59,8 +58,17 @@ export default function LayoutClient({
               {children}
             </main>
           </div>
+          <KeyboardShortcutsHelp />
         </div>
       </ThemeProvider>
     </SessionProvider>
   )
+}
+
+export default function LayoutClient({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  return <LayoutContent>{children}</LayoutContent>
 }

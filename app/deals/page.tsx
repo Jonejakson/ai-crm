@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import Comments from '@/components/Comments'
@@ -143,6 +144,16 @@ export default function DealsPage() {
       }
     }
   }, [selectedUserId])
+
+  // Клавиатурные сокращения для страницы сделок
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      ctrl: true,
+      action: () => setIsModalOpen(true),
+      description: 'Создать новую сделку',
+    },
+  ])
 
   const fetchData = async () => {
     try {

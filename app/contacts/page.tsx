@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import Modal from '@/components/Modal'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
@@ -58,6 +59,16 @@ export default function ContactsPage() {
       }
     }
   }, [selectedUserId])
+
+  // Клавиатурные сокращения для страницы контактов
+  useKeyboardShortcuts([
+    {
+      key: 'n',
+      ctrl: true,
+      action: () => setIsModalOpen(true),
+      description: 'Создать новый контакт',
+    },
+  ])
 
   const fetchContacts = async () => {
     try {
