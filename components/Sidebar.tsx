@@ -18,6 +18,7 @@ import {
   MenuIcon,
   CloseIcon
 } from './Icons'
+import Logo from './Logo'
 
 interface SidebarProps {
   currentContactId?: number;
@@ -54,12 +55,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       <div className="flex flex-1 flex-col">
         {/* Логотип */}
         <div className="space-y-3 pb-6">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center">
-              <span className="text-white text-sm font-bold">P</span>
-            </div>
-            <span className="text-lg font-semibold text-white">Pulse CRM</span>
-          </div>
+          <Logo variant="full" size="md" className="text-white" />
           {currentContactId && (
             <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70">
               Просмотр клиента #{currentContactId}
