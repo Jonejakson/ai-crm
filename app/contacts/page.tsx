@@ -494,24 +494,13 @@ export default function ContactsPage() {
         </form>
       </Modal>
 
-      {editingContact && (
-        <div className="modal-overlay" onClick={() => setEditingContact(null)}>
-          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Редактирование</p>
-                <h3 className="text-xl font-semibold text-slate-900">Изменить клиента</h3>
-              </div>
-              <button
-                onClick={() => setEditingContact(null)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleEditSubmit}>
-              <div className="modal-body">
+      <Modal
+        isOpen={!!editingContact}
+        onClose={() => setEditingContact(null)}
+        title="Изменить клиента"
+        size="md"
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="space-y-4">
                   {['name', 'email', 'phone', 'company'].map((field) => (
                     <div key={field}>
@@ -533,25 +522,23 @@ export default function ContactsPage() {
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button
-                  type="button"
-                  onClick={() => setEditingContact(null)}
-                  className="btn-secondary text-sm"
-                >
-                  Отмена
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary text-sm btn-ripple"
-                >
-                  Сохранить
-                </button>
-              </div>
-            </form>
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setEditingContact(null)}
+              className="btn-secondary text-sm"
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              className="btn-primary text-sm"
+            >
+              Сохранить
+            </button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
     </div>
   )
 }
