@@ -7,17 +7,7 @@ import SearchBar from './SearchBar'
 
 export default function Header() {
   const { data: session } = useSession()
-  let theme: 'light' | 'dark' = 'light'
-  let toggleTheme: () => void = () => {}
-  
-  try {
-    const themeContext = useTheme()
-    theme = themeContext.theme
-    toggleTheme = themeContext.toggleTheme
-  } catch (e) {
-    // ThemeProvider еще не инициализирован, используем значения по умолчанию
-    console.warn('ThemeProvider not available:', e)
-  }
+  const { theme, toggleTheme } = useTheme()
   const currentDate = new Date().toLocaleDateString('ru-RU', { 
     weekday: 'long', 
     year: 'numeric', 
