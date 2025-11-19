@@ -3,278 +3,399 @@
 import { useState, useEffect } from 'react'
 
 interface FilterOptions {
-  contacts?: {
-    companies: string[]
+  dateRange?: {
+    start: string
+    end: string
   }
-  tasks?: {
-    statuses: string[]
+  status?: string[]
+  stage?: string[]
+  amountRange?: {
+    min: number
+    max: number
   }
-  deals?: {
-    stages: string[]
-    currencies: string[]
-    pipelines: Array<{ id: number; name: string }>
-  }
-  events?: {
-    types: string[]
-  }
+  tags?: number[]
+  userId?: number
+  pipelineId?: number
 }
 
 interface AdvancedFiltersProps {
-  type: 'contacts' | 'tasks' | 'deals' | 'events'
-  onFilterChange: (filters: Record<string, any>) => void
-  initialFilters?: Record<string, any>
+  entityType: 'contacts' | 'deals' | 'tasks' | 'events'
+  onFilterChange: (filters: FilterOptions) => void
+  savedFilters?: Array<{ id: number; name: string; filters: FilterOptions }>
+  onSaveFilter?: (name: string, filters: FilterOptions) => void
+  onDeleteFilter?: (id: number) => void
 }
 
 export default function AdvancedFilters({
-  type,
+  entityType,
   onFilterChange,
-  initialFilters = {},
+  savedFilters = [],
+  onSaveFilter,
+  onDeleteFilter,
 }: AdvancedFiltersProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [options, setOptions] = useState<FilterOptions>({})
-  const [filters, setFilters] = useState<Record<string, any>>(initialFilters)
-  const [loading, setLoading] = useState(false)
+  const [filters, setFilters] = useState<FilterOptions>({})
+  const [quickFilter, setQuickFilter] = useState<string>('')
+  const [saveFilterName, setSaveFilterName] = useState('')
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+
+  // Быстрые фильтры по датам
+  const quickFilters = [
+    { value: 'today', label: 'Сегодня' },
+    { value: 'week', label: 'Эта неделя' },
+    { value: 'month', label: 'Этот месяц' },
+    { value: 'quarter', label: 'Этот квартал' },
+    { value: 'year', label: 'Этот год' },
+  ]
 
   useEffect(() => {
-    fetchFilterOptions()
-  }, [type])
+    if (quickFilter) {
+      const now = new Date()
+      const start = new Date()
+      const end = new Date(now)
 
-  const fetchFilterOptions = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch(`/api/filters?type=${type}`)
-      if (response.ok) {
-        const data = await response.json()
-        setOptions(data.filters || {})
+      switch (quickFilter) {
+        case 'today':
+          start.setHours(0, 0, 0, 0)
+          end.setHours(23, 59, 59, 999)
+          break
+        case 'week':
+          start.setDate(now.getDate() - now.getDay())
+          start.setHours(0, 0, 0, 0)
+          break
+        case 'month':
+          start.setDate(1)
+          start.setHours(0, 0, 0, 0)
+          end.setMonth(now.getMonth() + 1)
+          end.setDate(0)
+          end.setHours(23, 59, 59, 999)
+          break
+        case 'quarter':
+          const quarter = Math.floor(now.getMonth() / 3)
+          start.setMonth(quarter * 3, 1)
+          start.setHours(0, 0, 0, 0)
+          end.setMonth((quarter + 1) * 3, 0)
+          end.setHours(23, 59, 59, 999)
+          break
+        case 'year':
+          start.setMonth(0, 1)
+          start.setHours(0, 0, 0, 0)
+          end.setMonth(11, 31)
+          end.setHours(23, 59, 59, 999)
+          break
       }
-    } catch (error) {
-      console.error('Error fetching filter options:', error)
-    } finally {
-      setLoading(false)
+
+      setFilters(prev => ({
+        ...prev,
+        dateRange: {
+          start: start.toISOString().split('T')[0],
+          end: end.toISOString().split('T')[0],
+        },
+      }))
     }
+  }, [quickFilter])
+
+  useEffect(() => {
+    onFilterChange(filters)
+  }, [filters, onFilterChange])
+
+  const handleQuickFilter = (value: string) => {
+    setQuickFilter(value === quickFilter ? '' : value)
   }
 
-  const handleFilterChange = (key: string, value: any) => {
-    const newFilters = { ...filters, [key]: value }
-    setFilters(newFilters)
-    onFilterChange(newFilters)
+  const handleDateRangeChange = (field: 'start' | 'end', value: string) => {
+    setFilters(prev => ({
+      ...prev,
+      dateRange: {
+        ...prev.dateRange,
+        [field]: value,
+      } as any,
+    }))
+    setQuickFilter('') // Сбрасываем быстрый фильтр при ручном выборе даты
+  }
+
+  const handleStatusChange = (status: string) => {
+    setFilters(prev => {
+      const statuses = prev.status || []
+      const newStatuses = statuses.includes(status)
+        ? statuses.filter(s => s !== status)
+        : [...statuses, status]
+      return { ...prev, status: newStatuses.length > 0 ? newStatuses : undefined }
+    })
+  }
+
+  const handleAmountRangeChange = (field: 'min' | 'max', value: string) => {
+    const numValue = value ? parseFloat(value) : undefined
+    setFilters(prev => ({
+      ...prev,
+      amountRange: {
+        ...prev.amountRange,
+        [field]: numValue,
+      } as any,
+    }))
   }
 
   const clearFilters = () => {
-    const clearedFilters: Record<string, any> = {}
-    setFilters(clearedFilters)
-    onFilterChange(clearedFilters)
+    setFilters({})
+    setQuickFilter('')
   }
 
-  const hasActiveFilters = Object.keys(filters).some(key => {
-    const value = filters[key]
-    if (Array.isArray(value)) return value.length > 0
-    return value !== null && value !== undefined && value !== ''
-  })
+  const handleSaveFilter = () => {
+    if (saveFilterName && onSaveFilter) {
+      onSaveFilter(saveFilterName, filters)
+      setSaveFilterName('')
+      setShowSaveDialog(false)
+    }
+  }
+
+  const applySavedFilter = (savedFilter: FilterOptions) => {
+    setFilters(savedFilter)
+  }
+
+  const hasActiveFilters = Object.keys(filters).length > 0
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-          hasActiveFilters
-            ? 'bg-blue-50 border-blue-300 text-blue-700'
-            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-        }`}
-      >
-        <span>🔍</span>
-        <span>Фильтры</span>
-        {hasActiveFilters && (
-          <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
-            {Object.keys(filters).filter(k => {
-              const v = filters[k]
-              if (Array.isArray(v)) return v.length > 0
-              return v !== null && v !== undefined && v !== ''
-            }).length}
-          </span>
-        )}
-      </button>
+    <div className="space-y-4">
+      {/* Кнопка открытия фильтров */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 ${
+            hasActiveFilters
+              ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg'
+              : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+          }`}
+        >
+          <span>🔍</span>
+          <span>Расширенные фильтры</span>
+          {hasActiveFilters && (
+            <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">
+              {Object.keys(filters).length}
+            </span>
+          )}
+        </button>
 
+        {hasActiveFilters && (
+          <button
+            onClick={clearFilters}
+            className="px-3 py-2 rounded-xl text-sm text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
+          >
+            Очистить
+          </button>
+        )}
+
+        {onSaveFilter && hasActiveFilters && (
+          <button
+            onClick={() => setShowSaveDialog(true)}
+            className="px-3 py-2 rounded-xl text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
+          >
+            💾 Сохранить фильтр
+          </button>
+        )}
+      </div>
+
+      {/* Панель фильтров */}
       {isOpen && (
-        <div className="absolute z-50 mt-2 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="font-semibold text-gray-900">Расширенные фильтры</h3>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              ✕
-            </button>
+        <div className="glass-panel rounded-3xl p-6 space-y-6">
+          {/* Быстрые фильтры */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+              Быстрые фильтры
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {quickFilters.map(filter => (
+                <button
+                  key={filter.value}
+                  onClick={() => handleQuickFilter(filter.value)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    quickFilter === filter.value
+                      ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-md'
+                      : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                  }`}
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {loading ? (
-            <div className="text-center py-4 text-gray-500">Загрузка...</div>
-          ) : (
-            <div className="space-y-4">
-              {/* Фильтры для контактов */}
-              {type === 'contacts' && options.contacts && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Компания
-                  </label>
-                  <select
-                    value={filters.company || ''}
-                    onChange={(e) => handleFilterChange('company', e.target.value || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Все компании</option>
-                    {options.contacts.companies.map((company) => (
-                      <option key={company} value={company}>
-                        {company}
-                      </option>
+          {/* Диапазон дат */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+              Диапазон дат
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-[var(--muted)] mb-1">От</label>
+                <input
+                  type="date"
+                  value={filters.dateRange?.start || ''}
+                  onChange={(e) => handleDateRangeChange('start', e.target.value)}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[var(--muted)] mb-1">До</label>
+                <input
+                  type="date"
+                  value={filters.dateRange?.end || ''}
+                  onChange={(e) => handleDateRangeChange('end', e.target.value)}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Фильтры по статусам (для задач и сделок) */}
+          {(entityType === 'tasks' || entityType === 'deals') && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+                Статусы
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {entityType === 'tasks' ? (
+                  <>
+                    {['pending', 'in_progress', 'completed', 'cancelled'].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => handleStatusChange(status)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                          filters.status?.includes(status)
+                            ? 'bg-[var(--primary)] text-white shadow-md'
+                            : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                        }`}
+                      >
+                        {status === 'pending' ? 'В ожидании' :
+                         status === 'in_progress' ? 'В работе' :
+                         status === 'completed' ? 'Завершено' :
+                         'Отменено'}
+                      </button>
                     ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Фильтры для задач */}
-              {type === 'tasks' && options.tasks && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Статус
-                  </label>
-                  <select
-                    value={filters.status || ''}
-                    onChange={(e) => handleFilterChange('status', e.target.value || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Все статусы</option>
-                    {options.tasks.statuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status === 'pending' ? 'В работе' : status === 'completed' ? 'Завершено' : status}
-                      </option>
+                  </>
+                ) : (
+                  <>
+                    {['lead', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'].map(stage => (
+                      <button
+                        key={stage}
+                        onClick={() => handleStatusChange(stage)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                          filters.status?.includes(stage)
+                            ? 'bg-[var(--primary)] text-white shadow-md'
+                            : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                        }`}
+                      >
+                        {stage === 'lead' ? 'Лид' :
+                         stage === 'qualification' ? 'Квалификация' :
+                         stage === 'proposal' ? 'Предложение' :
+                         stage === 'negotiation' ? 'Переговоры' :
+                         stage === 'closed_won' ? 'Выиграно' :
+                         'Проиграно'}
+                      </button>
                     ))}
-                  </select>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
-              {/* Фильтры для сделок */}
-              {type === 'deals' && options.deals && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Этап
-                    </label>
-                    <select
-                      value={filters.stage || ''}
-                      onChange={(e) => handleFilterChange('stage', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Все этапы</option>
-                      {options.deals.stages.map((stage) => (
-                        <option key={stage} value={stage}>
-                          {stage}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Валюта
-                    </label>
-                    <select
-                      value={filters.currency || ''}
-                      onChange={(e) => handleFilterChange('currency', e.target.value || null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Все валюты</option>
-                      {options.deals.currencies.map((currency) => (
-                        <option key={currency} value={currency}>
-                          {currency}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Воронка
-                    </label>
-                    <select
-                      value={filters.pipelineId || ''}
-                      onChange={(e) => handleFilterChange('pipelineId', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">Все воронки</option>
-                      {options.deals.pipelines.map((pipeline) => (
-                        <option key={pipeline.id} value={pipeline.id}>
-                          {pipeline.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Сумма от
-                    </label>
-                    <input
-                      type="number"
-                      value={filters.minAmount || ''}
-                      onChange={(e) => handleFilterChange('minAmount', e.target.value ? parseFloat(e.target.value) : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Сумма до
-                    </label>
-                    <input
-                      type="number"
-                      value={filters.maxAmount || ''}
-                      onChange={(e) => handleFilterChange('maxAmount', e.target.value ? parseFloat(e.target.value) : null)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="∞"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Фильтры для событий */}
-              {type === 'events' && options.events && (
+          {/* Диапазон сумм (для сделок) */}
+          {entityType === 'deals' && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+                Диапазон сумм
+              </label>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Тип события
-                  </label>
-                  <select
-                    value={filters.type || ''}
-                    onChange={(e) => handleFilterChange('type', e.target.value || null)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Все типы</option>
-                    {options.events.types.map((eventType) => (
-                      <option key={eventType} value={eventType}>
-                        {eventType === 'meeting' ? 'Встреча' : eventType === 'call' ? 'Звонок' : eventType}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-sm text-[var(--muted)] mb-1">От (₽)</label>
+                  <input
+                    type="number"
+                    value={filters.amountRange?.min || ''}
+                    onChange={(e) => handleAmountRangeChange('min', e.target.value)}
+                    placeholder="0"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="block text-sm text-[var(--muted)] mb-1">До (₽)</label>
+                  <input
+                    type="number"
+                    value={filters.amountRange?.max || ''}
+                    onChange={(e) => handleAmountRangeChange('max', e.target.value)}
+                    placeholder="Без ограничений"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
-              {/* Кнопки действий */}
-              <div className="flex gap-2 pt-4 border-t">
-                <button
-                  onClick={clearFilters}
-                  className="flex-1 px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Сбросить
-                </button>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="flex-1 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Применить
-                </button>
+          {/* Сохраненные фильтры */}
+          {savedFilters.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+                Сохраненные фильтры
+              </label>
+              <div className="space-y-2">
+                {savedFilters.map(filter => (
+                  <div
+                    key={filter.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+                  >
+                    <button
+                      onClick={() => applySavedFilter(filter.filters)}
+                      className="flex-1 text-left text-sm font-medium text-[var(--foreground)] hover:text-[var(--primary)]"
+                    >
+                      {filter.name}
+                    </button>
+                    {onDeleteFilter && (
+                      <button
+                        onClick={() => onDeleteFilter(filter.id)}
+                        className="ml-2 px-2 py-1 text-xs text-[var(--error)] hover:bg-[var(--error-soft)] rounded-lg transition-colors"
+                      >
+                        Удалить
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </div>
       )}
+
+      {/* Диалог сохранения фильтра */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-white p-6 shadow-2xl">
+            <h3 className="text-xl font-semibold text-[var(--foreground)] mb-4">Сохранить фильтр</h3>
+            <input
+              type="text"
+              value={saveFilterName}
+              onChange={(e) => setSaveFilterName(e.target.value)}
+              placeholder="Название фильтра"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all mb-4"
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSaveDialog(false)
+                  setSaveFilterName('')
+                }}
+                className="flex-1 btn-secondary text-sm"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleSaveFilter}
+                disabled={!saveFilterName.trim()}
+                className="flex-1 btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-

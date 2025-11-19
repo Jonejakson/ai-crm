@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 
-// Универсальный поиск по всем сущностям
+// Улучшенный универсальный поиск по всем сущностям с поддержкой тегов
 export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
@@ -15,8 +15,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('q') || '';
     const type = searchParams.get('type') || 'all'; // all, contacts, tasks, deals, events
+    const tagIds = searchParams.get('tags')?.split(',').map(id => parseInt(id)).filter(id => !isNaN(id)) || [];
 
-    if (!query.trim()) {
+    if (!query.trim() && tagIds.length === 0) {
       return NextResponse.json({
         contacts: [],
         tasks: [],
@@ -37,23 +38,56 @@ export async function GET(req: Request) {
 
     // Поиск по контактам
     if (type === 'all' || type === 'contacts') {
+      let contactsWhere: any = whereCondition;
+
+      // Фильтр по тегам
+      if (tagIds.length > 0) {
+        contactsWhere = {
+          ...whereCondition,
+          tags: {
+            some: {
+              tagId: { in: tagIds }
+            }
+          }
+        };
+      }
+
       const allContacts = await prisma.contact.findMany({
-        where: whereCondition,
+        where: contactsWhere,
+        include: {
+          tags: {
+            include: {
+              tag: true
+            }
+          }
+        },
         take: 100
       });
       
       // Фильтруем на стороне JS с нечувствительностью к регистру
       results.contacts = allContacts
         .filter(contact => {
-          const name = (contact.name || '').toLowerCase();
-          const email = (contact.email || '').toLowerCase();
-          const phone = (contact.phone || '').toLowerCase();
-          const company = (contact.company || '').toLowerCase();
+          if (query.trim()) {
+            const name = (contact.name || '').toLowerCase();
+            const email = (contact.email || '').toLowerCase();
+            const phone = (contact.phone || '').toLowerCase();
+            const company = (contact.company || '').toLowerCase();
+            
+            const matchesSearch = name.includes(searchLower) || 
+                                 email.includes(searchLower) || 
+                                 phone.includes(searchLower) || 
+                                 company.includes(searchLower);
+            
+            if (!matchesSearch) return false;
+          }
           
-          return name.includes(searchLower) || 
-                 email.includes(searchLower) || 
-                 phone.includes(searchLower) || 
-                 company.includes(searchLower);
+          // Если есть фильтр по тегам, проверяем наличие тегов
+          if (tagIds.length > 0) {
+            const contactTagIds = contact.tags.map(ct => ct.tagId);
+            return tagIds.some(tagId => contactTagIds.includes(tagId));
+          }
+          
+          return true;
         })
         .slice(0, 10)
         .map(contact => ({
@@ -61,7 +95,12 @@ export async function GET(req: Request) {
           name: contact.name,
           email: contact.email,
           phone: contact.phone,
-          company: contact.company
+          company: contact.company,
+          tags: contact.tags.map(ct => ({
+            id: ct.tag.id,
+            name: ct.tag.name,
+            color: ct.tag.color
+          }))
         }));
     }
 
@@ -83,6 +122,7 @@ export async function GET(req: Request) {
       
       results.tasks = allTasks
         .filter(task => {
+          if (!query.trim()) return true;
           const title = (task.title || '').toLowerCase();
           const description = (task.description || '').toLowerCase();
           return title.includes(searchLower) || description.includes(searchLower);
@@ -99,14 +139,33 @@ export async function GET(req: Request) {
 
     // Поиск по сделкам
     if (type === 'all' || type === 'deals') {
+      let dealsWhere: any = whereCondition;
+
+      // Фильтр по тегам
+      if (tagIds.length > 0) {
+        dealsWhere = {
+          ...whereCondition,
+          tags: {
+            some: {
+              tagId: { in: tagIds }
+            }
+          }
+        };
+      }
+
       const allDeals = await prisma.deal.findMany({
-        where: whereCondition,
+        where: dealsWhere,
         include: {
           contact: {
             select: {
               id: true,
               name: true,
               email: true
+            }
+          },
+          tags: {
+            include: {
+              tag: true
             }
           }
         },
@@ -115,8 +174,18 @@ export async function GET(req: Request) {
       
       results.deals = allDeals
         .filter(deal => {
-          const title = (deal.title || '').toLowerCase();
-          return title.includes(searchLower);
+          if (query.trim()) {
+            const title = (deal.title || '').toLowerCase();
+            if (!title.includes(searchLower)) return false;
+          }
+          
+          // Если есть фильтр по тегам, проверяем наличие тегов
+          if (tagIds.length > 0) {
+            const dealTagIds = deal.tags.map(dt => dt.tagId);
+            return tagIds.some(tagId => dealTagIds.includes(tagId));
+          }
+          
+          return true;
         })
         .slice(0, 10)
         .map(deal => ({
@@ -125,7 +194,12 @@ export async function GET(req: Request) {
           amount: deal.amount,
           currency: deal.currency,
           stage: deal.stage,
-          contact: deal.contact
+          contact: deal.contact,
+          tags: deal.tags.map(dt => ({
+            id: dt.tag.id,
+            name: dt.tag.name,
+            color: dt.tag.color
+          }))
         }));
     }
 
@@ -147,6 +221,7 @@ export async function GET(req: Request) {
       
       results.events = allEvents
         .filter(event => {
+          if (!query.trim()) return true;
           const title = (event.title || '').toLowerCase();
           const description = (event.description || '').toLowerCase();
           const location = (event.location || '').toLowerCase();

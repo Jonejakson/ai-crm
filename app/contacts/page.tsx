@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import AdvancedFilters from '@/components/AdvancedFilters'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 
 interface Contact {
@@ -34,6 +35,8 @@ export default function ContactsPage() {
   const [innLoading, setInnLoading] = useState(false)
   const [innError, setInnError] = useState('')
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [filters, setFilters] = useState<any>({})
+  const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
@@ -43,6 +46,15 @@ export default function ContactsPage() {
 
   useEffect(() => {
     fetchContacts()
+    // Загружаем сохраненные фильтры из localStorage
+    const saved = localStorage.getItem('savedFilters_contacts')
+    if (saved) {
+      try {
+        setSavedFilters(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading saved filters:', e)
+      }
+    }
   }, [selectedUserId])
 
   const fetchContacts = async () => {
@@ -193,11 +205,32 @@ export default function ContactsPage() {
     }
   }
 
-  const filteredContacts = contacts.filter(contact =>
-    contact.name.toLowerCase().includes(search.toLowerCase()) ||
-    contact.email.toLowerCase().includes(search.toLowerCase()) ||
-    contact.company?.toLowerCase().includes(search.toLowerCase())
-  )
+  // Применяем фильтры
+  const filteredContacts = contacts.filter(contact => {
+    // Поиск по тексту
+    const matchesSearch = !search || 
+      contact.name.toLowerCase().includes(search.toLowerCase()) ||
+      contact.email.toLowerCase().includes(search.toLowerCase()) ||
+      contact.company?.toLowerCase().includes(search.toLowerCase())
+
+    if (!matchesSearch) return false
+
+    // Фильтр по дате создания
+    if (filters.dateRange) {
+      const contactDate = new Date(contact.createdAt)
+      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null
+      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null
+      
+      if (startDate && contactDate < startDate) return false
+      if (endDate) {
+        const endDateEnd = new Date(endDate)
+        endDateEnd.setHours(23, 59, 59, 999)
+        if (contactDate > endDateEnd) return false
+      }
+    }
+
+    return true
+  })
 
   if (loading) {
     return (
@@ -249,7 +282,7 @@ export default function ContactsPage() {
         />
       </div>
 
-      <div className="glass-panel rounded-3xl p-5">
+      <div className="glass-panel rounded-3xl p-5 space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <input
             type="text"
@@ -259,6 +292,26 @@ export default function ContactsPage() {
             className="w-full rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[var(--primary)] focus:ring-0"
           />
         </div>
+        <AdvancedFilters
+          entityType="contacts"
+          onFilterChange={setFilters}
+          savedFilters={savedFilters}
+          onSaveFilter={(name, filterData) => {
+            const newFilter = {
+              id: Date.now(),
+              name,
+              filters: filterData,
+            }
+            setSavedFilters([...savedFilters, newFilter])
+            // Сохраняем в localStorage
+            localStorage.setItem('savedFilters_contacts', JSON.stringify([...savedFilters, newFilter]))
+          }}
+          onDeleteFilter={(id) => {
+            const updated = savedFilters.filter(f => f.id !== id)
+            setSavedFilters(updated)
+            localStorage.setItem('savedFilters_contacts', JSON.stringify(updated))
+          }}
+        />
       </div>
 
       <div className="table-container">
