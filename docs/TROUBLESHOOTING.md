@@ -84,3 +84,4 @@ npm run db:studio
 Если Prisma Studio открывается - подключение работает!
 
 
+

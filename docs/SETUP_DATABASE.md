@@ -94,3 +94,4 @@ postgresql://username:password@host:port/database?schema=public
 - Полный путь: `"C:\Program Files\PostgreSQL\16\bin\psql.exe" -U postgres`
 
 
+

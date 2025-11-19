@@ -101,7 +101,7 @@ export default function DealsPage() {
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null)
   const [viewingDeal, setViewingDeal] = useState<Deal | null>(null)
-  const [dealViewTab, setDealViewTab] = useState<'info' | 'comments' | 'tags' | 'custom-fields' | 'files'>('info')
+  // Убрали вкладки - все в одной прокручиваемой странице
   const [filters, setFilters] = useState<any>({})
   const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [newContactData, setNewContactData] = useState({

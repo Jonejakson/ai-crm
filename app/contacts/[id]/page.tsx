@@ -79,7 +79,7 @@ export default function ContactDetailPage() {
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('info')
+  // Убрали вкладки - все в одной прокручиваемой странице
   const [newMessage, setNewMessage] = useState('')
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
@@ -368,39 +368,13 @@ export default function ContactDetailPage() {
         </div>
       </div>
 
-      {/* Табы */}
+      {/* Упрощенная версия - все в одной прокручиваемой области */}
       <div className="glass-panel rounded-3xl">
-        <div className="border-b border-white/40">
-          <nav className="flex space-x-8 px-6">
-            {[
-              { id: 'info', name: 'Информация' },
-              { id: 'activity', name: `Активность (${activityLogs.length})` },
-              { id: 'deals', name: `Сделки (${deals.length})` },
-              { id: 'tasks', name: `Задачи (${tasks.length})` },
-              { id: 'dialogs', name: `Диалог (${dialogs.length})` },
-              { id: 'emails', name: `Письма (${emailLogs.length})` },
-              { id: 'files', name: 'Файлы' },
-              { id: 'tags', name: 'Теги' },
-              { id: 'custom-fields', name: 'Доп. поля' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.name}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        <div className="p-6">
-          {/* Вкладка Активность */}
-          {activeTab === 'activity' && (
+        <div className="p-6 space-y-8">
+          {/* Активность */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Активность ({activityLogs.length})</h3>
+            {activityLogs.length === 0 ? (
             <div className="space-y-4">
               {activityLogs.length === 0 ? (
                 <p className="text-slate-500">Нет записей активности</p>
@@ -434,150 +408,142 @@ export default function ContactDetailPage() {
                 </div>
               )}
             </div>
-          )}
+          </div>
 
-          {/* Вкладка Сделки */}
-          {activeTab === 'deals' && (
-            <div className="space-y-4">
-              {deals.length === 0 ? (
-                <p className="text-slate-500">Нет сделок для этого контакта</p>
-              ) : (
-                deals.map((deal) => (
+          {/* Сделки */}
+          <div className="border-t pt-6">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Сделки ({deals.length})</h3>
+            {deals.length === 0 ? (
+              <p className="text-slate-500">Нет сделок для этого контакта</p>
+            ) : (
+              <div className="space-y-3">
+                {deals.map((deal) => (
                   <div key={deal.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold">{deal.title}</h4>
-                        <div className="flex space-x-4 mt-2 text-sm text-gray-500">
+                        <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-500">
                           <span>Сумма: {deal.amount.toLocaleString('ru-RU')} {deal.currency}</span>
+                          <span>•</span>
                           <span>Этап: {deal.stage}</span>
+                          <span>•</span>
                           <span>Вероятность: {deal.probability}%</span>
                           {deal.expectedCloseDate && (
-                            <span>
-                              До: {new Date(deal.expectedCloseDate).toLocaleDateString('ru-RU')}
-                            </span>
+                            <>
+                              <span>•</span>
+                              <span>До: {new Date(deal.expectedCloseDate).toLocaleDateString('ru-RU')}</span>
+                            </>
                           )}
                         </div>
                       </div>
-                      <a
-                        href="/deals"
-                    className="text-[var(--primary)] hover:underline text-sm"
-                      >
-                        Перейти →
+                      <a href="/deals" className="text-[var(--primary)] hover:underline text-sm ml-4">
+                        →
                       </a>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
 
-          {/* Вкладка Задачи */}
-          {activeTab === 'tasks' && (
-            <div className="space-y-4">
-              {tasks.length === 0 ? (
-                <p className="text-slate-500">Нет задач для этого контакта</p>
-              ) : (
-                tasks.map((task) => (
+          {/* Задачи */}
+          <div className="border-t pt-6">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Задачи ({tasks.length})</h3>
+            {tasks.length === 0 ? (
+              <p className="text-slate-500">Нет задач для этого контакта</p>
+            ) : (
+              <div className="space-y-3">
+                {tasks.map((task) => (
                   <div key={task.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold">{task.title}</h4>
                         {task.description && (
-                          <p className="text-gray-600 mt-1">{task.description}</p>
+                          <p className="text-gray-600 mt-1 text-sm">{task.description}</p>
                         )}
-                        <div className="flex space-x-4 mt-2 text-sm text-gray-500">
+                        <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-500">
                           <span>Статус: {task.status}</span>
                           {task.dueDate && (
-                            <span>
-                              Срок: {new Date(task.dueDate).toLocaleDateString('ru-RU')}
-                            </span>
+                            <>
+                              <span>•</span>
+                              <span>Срок: {new Date(task.dueDate).toLocaleDateString('ru-RU')}</span>
+                            </>
                           )}
                         </div>
                       </div>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-400 ml-4">
                         {new Date(task.createdAt).toLocaleDateString('ru-RU')}
                       </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Диалог */}
+          <div className="border-t pt-6">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Диалог ({dialogs.length})</h3>
+            <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
+              {dialogs.length === 0 ? (
+                <p className="text-slate-500">Нет сообщений</p>
+              ) : (
+                dialogs.map((dialog) => (
+                  <div
+                    key={dialog.id}
+                    className={`p-3 rounded-lg ${
+                      dialog.sender === 'user'
+                        ? 'bg-[var(--primary-soft)]/70 ml-8'
+                        : 'bg-white/80 mr-8'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <p className="text-gray-900 text-sm">{dialog.message}</p>
+                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                        {new Date(dialog.createdAt).toLocaleTimeString('ru-RU', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {dialog.sender === 'user' ? 'Вы' : 'Клиент'}
                     </div>
                   </div>
                 ))
               )}
             </div>
-          )}
+            <form onSubmit={handleSendMessage} className="flex space-x-3">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Введите сообщение..."
+                className="flex-1 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+              />
+              <button type="submit" className="btn-primary text-sm">
+                Отправить
+              </button>
+            </form>
+          </div>
 
-          {/* Вкладка Диалог */}
-          {activeTab === 'dialogs' && (
-            <div className="space-y-4">
-              {/* История сообщений */}
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {dialogs.length === 0 ? (
-                  <p className="text-slate-500">Нет сообщений</p>
-                ) : (
-                  dialogs.map((dialog) => (
-                    <div
-                      key={dialog.id}
-                      className={`p-3 rounded-lg ${
-                        dialog.sender === 'user'
-                          ? 'bg-[var(--primary-soft)]/70 ml-8'
-                          : 'bg-white/80 mr-8'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <p className="text-gray-900">{dialog.message}</p>
-                        <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                          {new Date(dialog.createdAt).toLocaleTimeString('ru-RU', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {dialog.sender === 'user' ? 'Вы' : 'Клиент'}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Форма отправки сообщения */}
-              <form onSubmit={handleSendMessage} className="flex space-x-3">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Введите сообщение..."
-                  className="flex-1 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
-                />
-                <button
-                  type="submit"
-                  className="btn-primary text-sm"
-                >
-                  Отправить
+          {/* Письма */}
+          <div className="border-t pt-6">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Письма ({emailLogs.length})</h3>
+              {contact.email && (
+                <button className="btn-primary text-sm" onClick={openEmailModal}>
+                  Написать письмо
                 </button>
-              </form>
-            </div>
-          )}
-
-          {/* Вкладка Письма */}
-          {activeTab === 'emails' && (
-            <div className="space-y-4">
-              {contact.email ? (
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <p className="text-sm text-slate-500">
-                    Письма отправляются на{' '}
-                    <span className="font-medium text-slate-900">{contact.email}</span>
-                  </p>
-                  <button className="btn-primary text-sm" onClick={openEmailModal}>
-                    Написать письмо
-                  </button>
-                </div>
-              ) : (
-                <p className="text-sm text-red-500">У контакта нет email. Добавьте адрес, чтобы отправлять письма.</p>
               )}
-
-              {emailLogs.length === 0 ? (
-                <p className="text-slate-500">Писем пока не было</p>
-              ) : (
-                emailLogs.map((log) => (
+            </div>
+            {!contact.email ? (
+              <p className="text-sm text-red-500">У контакта нет email. Добавьте адрес, чтобы отправлять письма.</p>
+            ) : emailLogs.length === 0 ? (
+              <p className="text-slate-500">Писем пока не было</p>
+            ) : (
+              <div className="space-y-3">
+                {emailLogs.map((log) => (
                   <div key={log.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div>
@@ -603,22 +569,26 @@ export default function ContactDetailPage() {
                       <p className="mt-2 text-xs text-red-500">Ошибка: {log.error}</p>
                     )}
                   </div>
-                ))
-              )}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Файлы */}
+          {contact && (
+            <div className="border-t pt-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Файлы</h3>
+              <FilesManager
+                entityType="contact"
+                entityId={contact.id}
+              />
             </div>
           )}
 
-          {/* Вкладка Файлы */}
-          {activeTab === 'files' && contact && (
-            <FilesManager
-              entityType="contact"
-              entityId={contact.id}
-            />
-          )}
-
-          {/* Вкладка Теги */}
-          {activeTab === 'tags' && contact && (
-            <div className="space-y-4">
+          {/* Теги */}
+          {contact && (
+            <div className="border-t pt-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Теги</h3>
               <TagsManager
                 entityType="contact"
                 entityId={contact.id}
@@ -627,9 +597,10 @@ export default function ContactDetailPage() {
             </div>
           )}
 
-          {/* Вкладка Кастомные поля */}
-          {activeTab === 'custom-fields' && contact && (
-            <div className="space-y-4">
+          {/* Кастомные поля */}
+          {contact && (
+            <div className="border-t pt-6">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Дополнительные поля</h3>
               <CustomFieldsEditor
                 entityType="contact"
                 entityId={contact.id}

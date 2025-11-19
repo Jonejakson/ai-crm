@@ -120,7 +120,7 @@ export default function TasksPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
-  const [taskViewTab, setTaskViewTab] = useState<'info' | 'comments' | 'custom-fields' | 'files'>('info')
+  // Убрали вкладки - все в одной прокручиваемой странице
   const [filters, setFilters] = useState<any>({})
   const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [formData, setFormData] = useState({
@@ -612,105 +612,50 @@ export default function TasksPage() {
         </div>
       )}
 
-      {/* Модальное окно просмотра деталей задачи */}
+      {/* Модальное окно просмотра деталей задачи - упрощенное, без вкладок */}
       {viewingTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center p-6 border-b">
               <h3 className="text-xl font-semibold">{viewingTask.title}</h3>
               <button
-                onClick={() => {
-                  setViewingTask(null)
-                  setTaskViewTab('info')
-                }}
+                onClick={() => setViewingTask(null)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
             </div>
 
-            {/* Вкладки */}
-            <div className="flex border-b">
-              <button
-                onClick={() => setTaskViewTab('info')}
-                className={`px-6 py-3 font-medium ${
-                  taskViewTab === 'info'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Информация
-              </button>
-              <button
-                onClick={() => setTaskViewTab('comments')}
-                className={`px-6 py-3 font-medium ${
-                  taskViewTab === 'comments'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Комментарии
-              </button>
-              <button
-                onClick={() => setTaskViewTab('custom-fields')}
-                className={`px-6 py-3 font-medium ${
-                  taskViewTab === 'custom-fields'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Доп. поля
-              </button>
-              <button
-                onClick={() => setTaskViewTab('files')}
-                className={`px-6 py-3 font-medium ${
-                  taskViewTab === 'files'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Файлы
-              </button>
-            </div>
-
-            {/* Содержимое вкладок */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {taskViewTab === 'info' && (
-                <div className="space-y-4">
-                  {viewingTask.description && (
+            {/* Все содержимое в одной прокручиваемой области */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Основная информация */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Основная информация</h4>
+                {viewingTask.description && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Описание</label>
+                    <p className="text-gray-900 whitespace-pre-wrap">{viewingTask.description}</p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Статус</label>
+                    <p className="text-gray-900">
+                      {viewingTask.status === 'completed' ? 'Завершена' : 
+                       viewingTask.status === 'in_progress' ? 'В работе' : 'Ожидает'}
+                    </p>
+                  </div>
+                  {viewingTask.dueDate && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Описание
-                      </label>
-                      <p className="text-gray-900 whitespace-pre-wrap">{viewingTask.description}</p>
-                    </div>
-                  )}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Статус
-                      </label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Срок выполнения</label>
                       <p className="text-gray-900">
-                        {viewingTask.status === 'completed' ? 'Завершена' : 
-                         viewingTask.status === 'in_progress' ? 'В работе' : 'Ожидает'}
+                        {new Date(viewingTask.dueDate).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
-                    {viewingTask.dueDate && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Срок выполнения
-                        </label>
-                        <p className="text-gray-900">
-                          {new Date(viewingTask.dueDate).toLocaleDateString('ru-RU')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                   {viewingTask.contact && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Клиент
-                      </label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Клиент</label>
                       <p className="text-gray-900">
                         <a
                           href={`/contacts/${viewingTask.contact.id}`}
@@ -723,50 +668,40 @@ export default function TasksPage() {
                   )}
                   {viewingTask.user && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Ответственный
-                      </label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Ответственный</label>
                       <p className="text-gray-900">{viewingTask.user.name}</p>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {taskViewTab === 'comments' && viewingTask && (
+              {/* Комментарии */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Комментарии</h4>
                 <Comments
                   entityType="task"
                   entityId={viewingTask.id}
                 />
-              )}
+              </div>
 
-              {taskViewTab === 'custom-fields' && viewingTask && (
+              {/* Дополнительные поля */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Дополнительные поля</h4>
                 <CustomFieldsEditor
                   entityType="task"
                   entityId={viewingTask.id}
-                  onSave={() => {
-                    // Обновить данные задачи при необходимости
-                  }}
+                  onSave={() => {}}
                 />
-              )}
+              </div>
 
-              {taskViewTab === 'files' && viewingTask && (
+              {/* Файлы */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Файлы</h4>
                 <FilesManager
                   entityType="task"
                   entityId={viewingTask.id}
                 />
-              )}
-            </div>
-
-            <div className="p-6 border-t flex justify-end">
-              <button
-                onClick={() => {
-                  setViewingTask(null)
-                  setTaskViewTab('info')
-                }}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                Закрыть
-              </button>
+              </div>
             </div>
           </div>
         </div>

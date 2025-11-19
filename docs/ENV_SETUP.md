@@ -47,3 +47,4 @@ node scripts/test-prisma-connection.js
 3. Перезапустите терминал и dev сервер
 
 
+
