@@ -21,16 +21,16 @@ export default function Logo({ variant = 'full', size = 'md', className = '', st
     <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
         <linearGradient id="aero-gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
+          <stop offset="0%" stopColor="#10b981" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#047857" stopOpacity="1" />
         </linearGradient>
         <linearGradient id="aero-gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#3b82f6" stopOpacity="1" />
+          <stop offset="0%" stopColor="#34d399" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#10b981" stopOpacity="1" />
         </linearGradient>
         <linearGradient id="aero-gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#3b82f6" stopOpacity="1" />
-          <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
+          <stop offset="0%" stopColor="#10b981" stopOpacity="1" />
+          <stop offset="100%" stopColor="#047857" stopOpacity="1" />
         </linearGradient>
       </defs>
       {style === 'single' ? (
