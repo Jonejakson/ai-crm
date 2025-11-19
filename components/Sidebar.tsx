@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { getActiveSection } from '@/lib/utils'
@@ -10,6 +11,7 @@ interface SidebarProps {
 
 export default function Sidebar({ currentContactId }: SidebarProps) {
   const { data: session } = useSession()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const pathname = usePathname()
   const activeSection = getActiveSection(pathname)
@@ -33,9 +35,8 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     ] : []),
   ]
 
-
-  return (
-    <div className="hidden md:flex w-72 h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-8 border-r border-slate-700/50 shadow-2xl">
+  const SidebarContent = () => (
+    <>
       <div className="flex flex-1 flex-col">
         {/* Логотип */}
         <div className="space-y-2 pb-6">
@@ -66,6 +67,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
               <a
                 key={item.id}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
                     ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 text-white'
@@ -109,6 +111,37 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
           )}
         </div>
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Десктопный сайдбар */}
+      <div className="hidden md:flex w-72 h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-8 border-r border-slate-700/50 shadow-2xl">
+        <SidebarContent />
+      </div>
+
+      {/* Мобильное меню кнопка */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="md:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
+        aria-label="Открыть меню"
+      >
+        {isMobileMenuOpen ? '✕' : '☰'}
+      </button>
+
+      {/* Мобильный сайдбар */}
+      {isMobileMenuOpen && (
+        <>
+          <div 
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="md:hidden fixed left-0 top-0 h-full w-72 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-8 border-r border-slate-700/50 shadow-2xl z-50 animate-slideIn">
+            <SidebarContent />
+          </div>
+        </>
+      )}
+    </>
   )
 }
