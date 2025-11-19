@@ -362,7 +362,6 @@ export default function AutomationsPage() {
               triggerType: 'DEAL_STAGE_CHANGED',
               triggerConfig: {},
               actions: [] as ActionForm[],
-              actions: [] as ActionForm[],
             })
             setIsModalOpen(true)
           }}
