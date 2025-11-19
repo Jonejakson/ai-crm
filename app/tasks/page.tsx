@@ -328,9 +328,14 @@ export default function TasksPage() {
 
       if (response.ok) {
         await fetchData()
+        toast.success('Статус задачи обновлен')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при обновлении задачи')
       }
     } catch (error) {
       console.error('Error updating task:', error)
+      toast.error('Ошибка при обновлении задачи')
     }
   }
 
