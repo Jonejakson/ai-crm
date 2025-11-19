@@ -484,8 +484,6 @@ export default function ContactsPage() {
                       className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                     />
                   </div>
-                </div>
-              </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <button
