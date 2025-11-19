@@ -261,21 +261,21 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      <div className="glass-panel rounded-3xl overflow-hidden">
+      <div className="table-container">
         <table className="w-full">
-          <thead className="bg-white/60 text-left text-xs uppercase tracking-[0.35em] text-slate-400">
+          <thead className="bg-gradient-to-r from-[var(--background-soft)] to-white/80 text-left text-xs uppercase tracking-[0.35em] text-slate-400">
             <tr>
-              <th className="px-6 py-4">Имя</th>
-              <th className="px-6 py-4">Email</th>
-              <th className="px-6 py-4">Телефон</th>
-              <th className="px-6 py-4">Компания</th>
-              <th className="px-6 py-4">Дата</th>
-              <th className="px-6 py-4">Действия</th>
+              <th className="px-6 py-4 font-semibold">Имя</th>
+              <th className="px-6 py-4 font-semibold">Email</th>
+              <th className="px-6 py-4 font-semibold">Телефон</th>
+              <th className="px-6 py-4 font-semibold">Компания</th>
+              <th className="px-6 py-4 font-semibold">Дата</th>
+              <th className="px-6 py-4 font-semibold">Действия</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/50">
+          <tbody className="divide-y divide-[var(--border-soft)]">
             {filteredContacts.map((contact) => (
-              <tr key={contact.id} className="hover:bg-white/60 transition-colors">
+              <tr key={contact.id} className="table-row-hover">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-soft)] text-sm font-semibold text-[var(--primary)]">
@@ -322,17 +322,25 @@ export default function ContactsPage() {
         </table>
 
         {filteredContacts.length === 0 && (
-          <div className="py-12 text-center text-sm text-slate-500">
-            {search ? 'Контакты не найдены' : 'Нет контактов'}
+          <div className="empty-state">
+            <div className="empty-state-icon">{search ? '🔍' : '👥'}</div>
+            <h3 className="empty-state-title">
+              {search ? 'Контакты не найдены' : 'Нет контактов'}
+            </h3>
+            <p className="empty-state-description">
+              {search 
+                ? 'Попробуйте изменить параметры поиска'
+                : 'Добавьте первый контакт, чтобы начать работу с клиентской базой'}
+            </p>
           </div>
         )}
       </div>
 
       {/* Модальное окно добавления контакта */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-[var(--border)] bg-white p-8 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[var(--border)] pb-5 mb-6">
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Новый контакт</p>
                 <h3 className="text-2xl font-bold text-[var(--foreground)]">Добавить клиента</h3>
@@ -345,67 +353,71 @@ export default function ContactsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              {['name', 'email', 'phone'].map((field) => (
-                <div key={field}>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                    {field === 'name' ? 'Имя *' :
-                     field === 'email' ? 'Email *' :
-                     'Телефон'}
-                  </label>
-                  <input
-                    type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
-                    name={field}
-                    value={(formData as any)[field]}
-                    onChange={handleChange}
-                    required={field === 'name' || field === 'email'}
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-                  />
-                </div>
-              ))}
-              
-              {/* Поле ИНН */}
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  ИНН
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="inn"
-                    value={formData.inn}
-                    onChange={handleInnChange}
-                    placeholder="Введите ИНН (10 или 12 цифр)"
-                    maxLength={12}
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-                  />
-                  {innLoading && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body">
+                <div className="space-y-4">
+                  {['name', 'email', 'phone'].map((field) => (
+                    <div key={field}>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        {field === 'name' ? 'Имя *' :
+                         field === 'email' ? 'Email *' :
+                         'Телефон'}
+                      </label>
+                      <input
+                        type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
+                        name={field}
+                        value={(formData as any)[field]}
+                        onChange={handleChange}
+                        required={field === 'name' || field === 'email'}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
                     </div>
-                  )}
+                  ))}
+                  
+                  {/* Поле ИНН */}
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      ИНН
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="inn"
+                        value={formData.inn}
+                        onChange={handleInnChange}
+                        placeholder="Введите ИНН (10 или 12 цифр)"
+                        maxLength={12}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                      {innLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="loading-spinner"></div>
+                        </div>
+                      )}
+                    </div>
+                    {innError && (
+                      <p className="mt-1 text-xs text-red-500">{innError}</p>
+                    )}
+                  </div>
+
+                  {/* Поле Компания */}
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      Компания
+                    </label>
+                    <input
+                      type="text"
+                      name="company"
+                      value={formData.company}
+                      onChange={handleChange}
+                      placeholder="Заполнится автоматически по ИНН"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    />
+                  </div>
                 </div>
-                {innError && (
-                  <p className="mt-1 text-xs text-red-500">{innError}</p>
-                )}
               </div>
 
-              {/* Поле Компания */}
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                  Компания
-                </label>
-                <input
-                  type="text"
-                  name="company"
-                  value={formData.company}
-                  onChange={handleChange}
-                  placeholder="Заполнится автоматически по ИНН"
-                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -415,7 +427,7 @@ export default function ContactsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary text-sm"
+                  className="btn-primary text-sm btn-ripple"
                 >
                   Добавить
                 </button>
@@ -426,9 +438,9 @@ export default function ContactsPage() {
       )}
 
       {editingContact && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl">
-            <div className="flex items-center justify-between border-б border-white/40 pb-4">
+        <div className="modal-overlay" onClick={() => setEditingContact(null)}>
+          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <div>
                 <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Редактирование</p>
                 <h3 className="text-xl font-semibold text-slate-900">Изменить клиента</h3>
@@ -441,26 +453,30 @@ export default function ContactsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
-              {['name', 'email', 'phone', 'company'].map((field) => (
-                <div key={field}>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                    {field === 'name' ? 'Имя *' :
-                     field === 'email' ? 'Email *' :
-                     field === 'phone' ? 'Телефон' : 'Компания'}
-                  </label>
-                  <input
-                    type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
-                    name={field}
-                    value={(editFormData as any)[field]}
-                    onChange={(e) => setEditFormData({ ...editFormData, [field]: e.target.value })}
-                    required={field === 'name' || field === 'email'}
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-                  />
+            <form onSubmit={handleEditSubmit}>
+              <div className="modal-body">
+                <div className="space-y-4">
+                  {['name', 'email', 'phone', 'company'].map((field) => (
+                    <div key={field}>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                        {field === 'name' ? 'Имя *' :
+                         field === 'email' ? 'Email *' :
+                         field === 'phone' ? 'Телефон' : 'Компания'}
+                      </label>
+                      <input
+                        type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
+                        name={field}
+                        value={(editFormData as any)[field]}
+                        onChange={(e) => setEditFormData({ ...editFormData, [field]: e.target.value })}
+                        required={field === 'name' || field === 'email'}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setEditingContact(null)}
@@ -470,7 +486,7 @@ export default function ContactsPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary text-sm"
+                  className="btn-primary text-sm btn-ripple"
                 >
                   Сохранить
                 </button>
