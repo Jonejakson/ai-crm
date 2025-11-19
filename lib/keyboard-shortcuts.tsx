@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 
 interface Shortcut {
   key: string
@@ -34,8 +33,6 @@ export function useKeyboardShortcuts(shortcuts: Shortcut[]) {
 }
 
 export function useGlobalShortcuts() {
-  const router = useRouter()
-
   useKeyboardShortcuts([
     {
       key: 'k',
@@ -54,9 +51,14 @@ export function useGlobalShortcuts() {
       key: 'n',
       ctrl: true,
       action: () => {
-        // Открыть модальное окно создания (если есть кнопка "Добавить")
-        const addButton = document.querySelector('button:has-text("Добавить"), button:has-text("Новая")') as HTMLButtonElement
-        if (addButton) {
+        // Открыть модальное окно создания (ищем кнопку с текстом "Добавить" или "Новая")
+        const buttons = Array.from(document.querySelectorAll('button'))
+        const addButton = buttons.find(btn => 
+          btn.textContent?.includes('Добавить') || 
+          btn.textContent?.includes('Новая') ||
+          btn.textContent?.includes('Новый')
+        ) as HTMLButtonElement
+        if (addButton && !addButton.disabled) {
           addButton.click()
         }
       },
