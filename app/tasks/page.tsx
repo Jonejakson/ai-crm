@@ -270,14 +270,17 @@ export default function TasksPage() {
         }),
       })
 
-      if (!response.ok) {
+      if (response.ok) {
         await fetchData()
-        throw new Error('Failed to update task')
+        toast.success('Статус задачи обновлен')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при обновлении задачи')
+        await fetchData()
       }
-      
-      await fetchData()
     } catch (error) {
       console.error('Error updating task:', error)
+      toast.error('Ошибка при обновлении задачи')
       await fetchData()
     }
   }
