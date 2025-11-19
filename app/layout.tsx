@@ -3,17 +3,17 @@ import LayoutClient from './layout-client'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Pulse CRM - Управление клиентами и сделками',
-    template: '%s | Pulse CRM'
+    default: 'Aero CRM - Управление клиентами и сделками',
+    template: '%s | Aero CRM'
   },
   description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
   keywords: ['CRM', 'управление клиентами', 'сделки', 'задачи', 'аналитика'],
-  authors: [{ name: 'Pulse CRM' }],
+  authors: [{ name: 'Aero CRM' }],
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
-    siteName: 'Pulse CRM',
-    title: 'Pulse CRM - Управление клиентами и сделками',
+    siteName: 'Aero CRM',
+    title: 'Aero CRM - Управление клиентами и сделками',
     description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
   },
   robots: {

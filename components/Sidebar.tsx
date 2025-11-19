@@ -55,7 +55,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       <div className="flex flex-1 flex-col">
         {/* Логотип */}
         <div className="space-y-3 pb-6">
-          <Logo variant="full" size="md" className="text-white" />
+          <Logo variant="full" size="md" style="double" />
           {currentContactId && (
             <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70">
               Просмотр клиента #{currentContactId}

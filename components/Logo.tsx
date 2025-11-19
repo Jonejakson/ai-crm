@@ -4,89 +4,107 @@ interface LogoProps {
   variant?: 'full' | 'icon' | 'text'
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  style?: 'single' | 'double' // Одиночное или двойное крыло
 }
 
-export default function Logo({ variant = 'full', size = 'md', className = '' }: LogoProps) {
+export default function Logo({ variant = 'full', size = 'md', className = '', style = 'double' }: LogoProps) {
   const sizeClasses = {
-    sm: { icon: 'w-6 h-6', text: 'text-base' },
-    md: { icon: 'w-8 h-8', text: 'text-lg' },
-    lg: { icon: 'w-10 h-10', text: 'text-xl' }
+    sm: { icon: 'w-6 h-6', text: 'text-sm' },
+    md: { icon: 'w-8 h-8', text: 'text-base' },
+    lg: { icon: 'w-10 h-10', text: 'text-lg' }
   }
 
   const currentSize = sizeClasses[size]
 
-  // Вариант 1: FlowCRM - волна/поток
-  if (variant === 'icon') {
-    return (
-      <div className={`${currentSize.icon} ${className}`}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  // Aero CRM - логотип в стиле крыла
+  const WingIcon = () => (
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+      {style === 'single' ? (
+        // Одиночное крыло
+        <path
+          d="M4 20C4 20 8 12 16 12C24 12 28 20 28 20"
+          stroke="url(#gradient1)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        >
+          <defs>
+            <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
+            </linearGradient>
+          </defs>
+        </path>
+      ) : (
+        // Двойное крыло
+        <>
           <path
-            d="M8 20C8 20 12 16 20 16C28 16 32 20 32 20C32 20 28 24 20 24C12 24 8 20 8 20Z"
-            stroke="currentColor"
+            d="M4 18C4 18 8 10 16 10C24 10 28 18 28 18"
+            stroke="url(#gradient2)"
             strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-[var(--primary)]"
+            fill="none"
           />
           <path
-            d="M8 20C8 20 10 18 15 18C20 18 22 20 22 20"
-            stroke="currentColor"
-            strokeWidth="2"
+            d="M4 22C4 22 8 14 16 14C24 14 28 22 28 22"
+            stroke="url(#gradient3)"
+            strokeWidth="2.5"
             strokeLinecap="round"
-            className="text-[var(--primary)] opacity-60"
+            strokeLinejoin="round"
+            fill="none"
           />
-          <path
-            d="M32 20C32 20 30 22 25 22C20 22 18 20 18 20"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="text-[var(--primary)] opacity-60"
-          />
-        </svg>
+          <defs>
+            <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="1" />
+            </linearGradient>
+            <linearGradient id="gradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="1" />
+              <stop offset="100%" stopColor="#1e40af" stopOpacity="1" />
+            </linearGradient>
+          </defs>
+        </>
+      )}
+    </svg>
+  )
+
+  if (variant === 'icon') {
+    return (
+      <div className={`${currentSize.icon} ${className}`}>
+        <WingIcon />
       </div>
     )
   }
 
   if (variant === 'text') {
     return (
-      <span className={`font-semibold ${currentSize.text} text-[var(--foreground)] ${className}`}>
-        FlowCRM
-      </span>
+      <div className={`flex flex-col ${className}`}>
+        <span className={`font-semibold ${currentSize.text} text-[var(--foreground)]`}>
+          Aero
+        </span>
+        <span className={`font-semibold ${currentSize.text} text-[var(--foreground)]`}>
+          CRM
+        </span>
+      </div>
     )
   }
 
   // Full logo
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-3 ${className}`}>
       <div className={currentSize.icon}>
-        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M8 20C8 20 12 16 20 16C28 16 32 20 32 20C32 20 28 24 20 24C12 24 8 20 8 20Z"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-[var(--primary)]"
-          />
-          <path
-            d="M8 20C8 20 10 18 15 18C20 18 22 20 22 20"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="text-[var(--primary)] opacity-60"
-          />
-          <path
-            d="M32 20C32 20 30 22 25 22C20 22 18 20 18 20"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            className="text-[var(--primary)] opacity-60"
-          />
-        </svg>
+        <WingIcon />
       </div>
-      <span className={`font-semibold ${currentSize.text} text-[var(--foreground)]`}>
-        FlowCRM
-      </span>
+      <div className="flex flex-col">
+        <span className={`font-semibold ${currentSize.text} text-[var(--foreground)] leading-tight`}>
+          Aero
+        </span>
+        <span className={`font-semibold ${currentSize.text} text-[var(--foreground)] leading-tight`}>
+          CRM
+        </span>
+      </div>
     </div>
   )
 }
