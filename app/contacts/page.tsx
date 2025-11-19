@@ -153,9 +153,14 @@ export default function ContactsPage() {
         setIsModalOpen(false)
         setFormData({ name: '', email: '', phone: '', company: '', inn: '' })
         setInnError('')
+        toast.success('Контакт успешно создан')
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Ошибка при создании контакта')
       }
     } catch (error) {
       console.error('Error creating contact:', error)
+      toast.error('Ошибка при создании контакта')
     }
   }
 
