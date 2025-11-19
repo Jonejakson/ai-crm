@@ -409,24 +409,26 @@ export default function TasksPage() {
 
       {/* Модальное окно создания задачи */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-3xl rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/40 pb-4">
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <div>
-                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Новая задача</p>
-                <h3 className="text-xl font-semibold text-slate-900">Создать карточку</h3>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Новая задача</p>
+                <h3 className="text-2xl font-bold text-[var(--foreground)]">Создать задачу</h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <form onSubmit={handleSubmit}>
+              <div className="modal-body">
+                <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Название задачи *
                 </label>
                 <input
@@ -435,12 +437,12 @@ export default function TasksPage() {
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
-                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Описание
                 </label>
                 <textarea
@@ -448,13 +450,13 @@ export default function TasksPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows={4}
-                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Срок выполнения
                   </label>
                   <input
@@ -462,19 +464,19 @@ export default function TasksPage() {
                     name="dueDate"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Связать с клиентом
                   </label>
                   <select
                     name="contactId"
                     value={formData.contactId}
                     onChange={(e) => setFormData({...formData, contactId: e.target.value})}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   >
                     <option value="">Без клиента</option>
                     {contacts.map(contact => (
@@ -486,7 +488,10 @@ export default function TasksPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+                </div>
+              </div>
+
+              <div className="modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
@@ -496,7 +501,7 @@ export default function TasksPage() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-primary text-sm"
+                  className="btn-primary text-sm btn-ripple"
                 >
                   Создать задачу
                 </button>
