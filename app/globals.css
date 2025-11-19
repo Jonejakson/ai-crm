@@ -634,4 +634,29 @@ textarea:disabled {
   .stat-card {
     @apply p-4;
   }
+  
+  .kanban-column {
+    @apply w-full min-w-[260px];
+  }
+
+  .table-container {
+    @apply overflow-x-auto;
+  }
+
+  .table-container table {
+    min-width: 640px;
+  }
+
+  .modal-body {
+    max-height: calc(90vh - 120px);
+  }
+
+  .modal-footer {
+    @apply flex-col gap-2;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    @apply w-full justify-center;
+  }
 }
