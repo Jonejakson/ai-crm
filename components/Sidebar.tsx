@@ -4,6 +4,20 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { getActiveSection } from '@/lib/utils'
+import {
+  DashboardIcon,
+  DealsIcon,
+  ContactsIcon,
+  TasksIcon,
+  CalendarIcon,
+  AnalyticsIcon,
+  DialogsIcon,
+  ActivityIcon,
+  AutomationsIcon,
+  CompanyIcon,
+  MenuIcon,
+  CloseIcon
+} from './Icons'
 
 interface SidebarProps {
   currentContactId?: number;
@@ -20,18 +34,18 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   const userEmail = session?.user?.email || 'email@company.com'
 
   const menuItems = [
-    { id: 'dashboard', name: 'Дашборд', href: '/', icon: '📊' },
-    { id: 'deals', name: 'Сделки', href: '/deals', icon: '💰' },
-    { id: 'contacts', name: 'Клиенты', href: '/contacts', icon: '👥' },
-    { id: 'tasks', name: 'Задачи', href: '/tasks', icon: '✅' },
-    { id: 'calendar', name: 'Календарь', href: '/calendar', icon: '📅' },
-    { id: 'analytics', name: 'Аналитика', href: '/analytics', icon: '📈' },
-    { id: 'dialogs', name: 'Диалоги', href: '/dialogs', icon: '💬' },
-    { id: 'activity', name: 'Активность', href: '/activity', icon: '🕒' },
+    { id: 'dashboard', name: 'Дашборд', href: '/', Icon: DashboardIcon },
+    { id: 'deals', name: 'Сделки', href: '/deals', Icon: DealsIcon },
+    { id: 'contacts', name: 'Клиенты', href: '/contacts', Icon: ContactsIcon },
+    { id: 'tasks', name: 'Задачи', href: '/tasks', Icon: TasksIcon },
+    { id: 'calendar', name: 'Календарь', href: '/calendar', Icon: CalendarIcon },
+    { id: 'analytics', name: 'Аналитика', href: '/analytics', Icon: AnalyticsIcon },
+    { id: 'dialogs', name: 'Диалоги', href: '/dialogs', Icon: DialogsIcon },
+    { id: 'activity', name: 'Активность', href: '/activity', Icon: ActivityIcon },
     // Показываем админские разделы только для админов
     ...(isAdmin ? [
-      { id: 'automations', name: 'Автоматизации', href: '/automations', icon: '⚙️' },
-      { id: 'company', name: 'Компания', href: '/company', icon: '🏢' }
+      { id: 'automations', name: 'Автоматизации', href: '/automations', Icon: AutomationsIcon },
+      { id: 'company', name: 'Компания', href: '/company', Icon: CompanyIcon }
     ] : []),
   ]
 
@@ -68,9 +82,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
                     : 'text-[var(--muted)] hover:bg-[var(--background-soft)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <span className="text-lg">
-                  {item.icon}
-                </span>
+                <item.Icon className={`w-5 h-5 ${isActive ? 'text-[var(--primary)]' : 'text-[var(--muted)]'}`} />
                 <span className="text-sm">
                   {item.name}
                 </span>
@@ -113,7 +125,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-md"
         aria-label="Открыть меню"
       >
-        {isMobileMenuOpen ? '✕' : '☰'}
+        {isMobileMenuOpen ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
       </button>
 
       {/* Мобильный сайдбар */}

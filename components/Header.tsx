@@ -4,6 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from '@/lib/theme'
 import Notifications from './Notifications'
 import SearchBar from './SearchBar'
+import { MoonIcon, SunIcon } from './Icons'
 
 export default function Header() {
   const { data: session } = useSession()
@@ -34,7 +35,7 @@ export default function Header() {
                 className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
                 title={theme === 'light' ? 'Переключить на темную тему' : 'Переключить на светлую тему'}
               >
-                {theme === 'light' ? '🌙' : '☀️'}
+                {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
               </button>
               <Notifications />
               <div className="hidden text-right sm:block">
