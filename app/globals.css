@@ -728,7 +728,7 @@ textarea:disabled {
     }
     
     .table-container td {
-      @apply border-none p-2 text-right relative pl-1/2;
+      @apply border-none p-2 text-right relative pl-[50%];
     }
     
     .table-container td:before {

@@ -375,39 +375,36 @@ export default function ContactDetailPage() {
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Активность ({activityLogs.length})</h3>
             {activityLogs.length === 0 ? (
-            <div className="space-y-4">
-              {activityLogs.length === 0 ? (
-                <p className="text-slate-500">Нет записей активности</p>
-              ) : (
-                <div className="space-y-3">
-                  {activityLogs.map((log) => (
-                    <div key={log.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-semibold text-slate-900">{log.action}</span>
-                            {log.user && (
-                              <span className="text-xs text-slate-500">• {log.user.name}</span>
-                            )}
-                          </div>
-                          {log.description && (
-                            <p className="text-sm text-slate-700 mb-2">{log.description}</p>
-                          )}
-                          {log.metadata && Object.keys(log.metadata).length > 0 && (
-                            <div className="text-xs text-slate-500">
-                              {JSON.stringify(log.metadata, null, 2)}
-                            </div>
+              <p className="text-slate-500">Нет записей активности</p>
+            ) : (
+              <div className="space-y-3">
+                {activityLogs.map((log) => (
+                  <div key={log.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold text-slate-900">{log.action}</span>
+                          {log.user && (
+                            <span className="text-xs text-slate-500">• {log.user.name}</span>
                           )}
                         </div>
-                        <span className="text-xs text-slate-400 whitespace-nowrap ml-4">
-                          {new Date(log.createdAt).toLocaleString('ru-RU')}
-                        </span>
+                        {log.description && (
+                          <p className="text-sm text-slate-700 mb-2">{log.description}</p>
+                        )}
+                        {log.metadata && Object.keys(log.metadata).length > 0 && (
+                          <div className="text-xs text-slate-500">
+                            {JSON.stringify(log.metadata, null, 2)}
+                          </div>
+                        )}
                       </div>
+                      <span className="text-xs text-slate-400 whitespace-nowrap ml-4">
+                        {new Date(log.createdAt).toLocaleString('ru-RU')}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Сделки */}
