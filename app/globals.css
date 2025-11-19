@@ -281,7 +281,7 @@ body {
 }
 
 .kanban-column {
-  @apply glass-panel min-w-[300px] p-5 border border-[var(--border)];
+  @apply bg-[var(--surface)] min-w-[300px] p-4 border border-[var(--border)] rounded-lg;
 }
 
 /* Современный сайдбар */
@@ -537,16 +537,15 @@ tr:hover {
 
 /* Улучшенные таблицы */
 .table-container {
-  @apply glass-panel rounded-3xl overflow-hidden;
+  @apply bg-[var(--surface)] border border-[var(--border)] rounded-lg overflow-hidden;
 }
 
 .table-row-hover {
-  @apply transition-all duration-200;
+  @apply transition-colors;
 }
 
 .table-row-hover:hover {
-  background-color: rgba(224, 231, 255, 0.3);
-  transform: translateX(4px);
+  background-color: var(--background-soft);
 }
 
 /* Улучшенные badge с анимацией */
