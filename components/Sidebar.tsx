@@ -39,22 +39,16 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     <>
       <div className="flex flex-1 flex-col">
         {/* Логотип */}
-        <div className="space-y-2 pb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-xs font-bold uppercase tracking-[0.15em] shadow-lg">
-            <span className="text-white">Pulse</span>
-            <span className="text-white/90">CRM</span>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-1">
-              Управление воронкой
-            </p>
-            <h1 className="text-2xl font-semibold">
-              Умная CRM
-            </h1>
+        <div className="space-y-3 pb-6">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center">
+              <span className="text-white text-sm font-bold">P</span>
+            </div>
+            <span className="text-lg font-semibold text-white">Pulse CRM</span>
           </div>
           {currentContactId && (
-            <div className="mt-3 px-4 py-2 rounded-2xl bg-white/10 border border-white/10 text-sm text-white/80">
-              👁️ Просмотр клиента #{currentContactId}
+            <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70">
+              Просмотр клиента #{currentContactId}
             </div>
           )}
         </div>
@@ -68,44 +62,36 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
                 key={item.id}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                className={`group flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                   isActive
-                    ? 'bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 shadow-lg shadow-indigo-500/20 text-white'
-                    : 'hover:bg-white/5 hover:border-white/10 border border-transparent text-white/70 hover:text-white'
+                    ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-medium'
+                    : 'text-[var(--muted)] hover:bg-[var(--background-soft)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <span
-                  className={`text-xl ${
-                    isActive ? 'scale-110' : 'text-white/70'
-                  }`}
-                >
+                <span className="text-lg">
                   {item.icon}
                 </span>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium tracking-wide">
-                    {item.name}
-                  </span>
-                  <span className="text-[11px] uppercase tracking-[0.25em] text-white/40">
-                    {isActive ? 'Активно' : 'Раздел'}
-                  </span>
-                </div>
-                {isActive && (
-                  <span className="ml-auto w-2 h-2 rounded-full bg-gradient-to-r from-indigo-400 to-purple-400 shadow-[0_0_8px_rgba(99,102,241,0.6)]" />
-                )}
+                <span className="text-sm">
+                  {item.name}
+                </span>
               </a>
             )
           })}
         </nav>
 
         {/* Пользователь */}
-        <div className="mt-auto rounded-2xl border border-slate-700/50 bg-slate-800/50 px-5 py-4 text-sm shadow-xl backdrop-blur-xl">
-          <p className="text-white/50 text-xs uppercase tracking-[0.3em] mb-2 font-semibold">
-            Профиль
-          </p>
-          <p className="text-base font-semibold text-white mb-1">{userName}</p>
-          <p className="text-white/60 text-xs mb-3">{userEmail}</p>
+        <div className="mt-auto pt-4 border-t border-[var(--border)]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[var(--primary-soft)] flex items-center justify-center text-[var(--primary)] text-sm font-semibold">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-[var(--foreground)] truncate">{userName}</p>
+              <p className="text-xs text-[var(--muted)] truncate">{userEmail}</p>
+            </div>
+          </div>
           {isAdmin && (
-            <span className="inline-flex items-center text-[10px] uppercase tracking-[0.25em] text-emerald-300 bg-emerald-500/20 px-3 py-1.5 rounded-lg font-bold border border-emerald-500/30">
+            <span className="mt-2 inline-flex items-center text-xs text-[var(--success)] bg-[var(--success-soft)] px-2 py-1 rounded">
               Admin
             </span>
           )}
@@ -117,14 +103,14 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   return (
     <>
       {/* Десктопный сайдбар */}
-      <div className="hidden md:flex w-72 h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-8 border-r border-slate-700/50 shadow-2xl">
+      <div className="hidden md:flex w-64 h-screen bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)]">
         <SidebarContent />
       </div>
 
       {/* Мобильное меню кнопка */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-md"
         aria-label="Открыть меню"
       >
         {isMobileMenuOpen ? '✕' : '☰'}
@@ -137,7 +123,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
             className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="md:hidden fixed left-0 top-0 h-full w-72 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-6 py-8 border-r border-slate-700/50 shadow-2xl z-50 animate-slideIn">
+          <div className="md:hidden fixed left-0 top-0 h-full w-64 bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-xl z-50">
             <SidebarContent />
           </div>
         </>

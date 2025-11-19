@@ -16,11 +16,11 @@ export default function Header() {
   })
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]/80 backdrop-blur-xl shadow-sm">
-      <div className="flex flex-col gap-4 px-4 py-4 md:px-6 md:py-5">
+    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)]">
+      <div className="flex flex-col gap-4 px-4 py-4 md:px-6 md:py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)]">
+          <h1 className="text-xl md:text-2xl font-semibold text-[var(--foreground)]">
             {session?.user ? session.user.name : 'Pulse CRM'}
           </h1>
         </div>
