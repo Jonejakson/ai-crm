@@ -86,6 +86,7 @@ export default function Modal({
           max-h-[90vh] overflow-hidden
           flex flex-col
           animate-scaleIn
+          mx-4 md:mx-0
         `}
         onClick={(e) => e.stopPropagation()}
       >

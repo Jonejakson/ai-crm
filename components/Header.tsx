@@ -21,7 +21,7 @@ export default function Header() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
           <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold">Панель управления</p>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)]">
             {session?.user ? `Добро пожаловать, ${session.user.name}` : 'Добро пожаловать в Pulse CRM'}
           </h1>
           <p className="text-sm text-[var(--muted)]">{currentDate}</p>

@@ -703,9 +703,40 @@ textarea:disabled {
   }
 
   .table-container {
-    @apply overflow-x-auto;
+    @apply overflow-x-auto -mx-4 md:mx-0;
   }
-
+  
+  /* Карточный вид таблиц на мобильных */
+  @media (max-width: 768px) {
+    .table-container table,
+    .table-container thead,
+    .table-container tbody,
+    .table-container th,
+    .table-container td,
+    .table-container tr {
+      display: block;
+    }
+    
+    .table-container thead tr {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+    }
+    
+    .table-container tr {
+      @apply mb-4 border border-[var(--border)] rounded-xl p-4 bg-[var(--surface)];
+    }
+    
+    .table-container td {
+      @apply border-none p-2 text-right relative pl-1/2;
+    }
+    
+    .table-container td:before {
+      content: attr(data-label);
+      @apply absolute left-0 font-semibold text-[var(--muted)] text-left;
+    }
+  }
+  
   .table-container table {
     min-width: 640px;
   }

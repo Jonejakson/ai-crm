@@ -357,7 +357,7 @@ export default function ContactsPage() {
           <tbody className="divide-y divide-[var(--border-soft)]">
             {filteredContacts.map((contact) => (
               <tr key={contact.id} className="table-row-hover">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap" data-label="Имя">
                   <div className="flex items-center">
                     <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-soft)] text-sm font-semibold text-[var(--primary)]">
                       {contact.name.charAt(0).toUpperCase()}
@@ -367,19 +367,19 @@ export default function ContactsPage() {
                     </a>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-label="Email">
                   {contact.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-label="Телефон">
                   {contact.phone || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-label="Компания">
                   {contact.company || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400" data-label="Дата">
                   {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-label="Действия">
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleEdit(contact)}
