@@ -9,6 +9,7 @@ import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
 import { usePathname } from 'next/navigation'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 // Функция для извлечения ID контакта из пути
 function getCurrentContactId(pathname: string): number | undefined {
@@ -65,6 +66,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </ThemeProvider>
     </SessionProvider>
+    </ErrorBoundary>
   )
 }
 
