@@ -15,30 +15,31 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
 
   const currentSize = sizeClasses[size]
 
-  // Стильный современный логотип - абстрактная форма с градиентом
+  // Стильный современный логотип - буква "a" в геометрическом стиле
   const ModernIcon = () => (
     <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="modern-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="aero-gradient-modern" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#10b981" />
-          <stop offset="50%" stopColor="#059669" />
           <stop offset="100%" stopColor="#047857" />
         </linearGradient>
       </defs>
-      {/* Современная абстрактная форма */}
+      {/* Стилизованная буква "a" */}
+      <circle cx="20" cy="20" r="16" fill="url(#aero-gradient-modern)" opacity="0.1" />
       <path
-        d="M8 20C8 12 14 8 20 8C26 8 32 12 32 20C32 28 26 32 20 32C14 32 8 28 8 20Z"
-        fill="url(#modern-gradient)"
-        opacity="0.2"
+        d="M20 10C15 10 12 13 12 18C12 23 15 26 20 26C25 26 28 23 28 18C28 13 25 10 20 10Z"
+        fill="url(#aero-gradient-modern)"
       />
       <path
-        d="M12 20C12 15 15 12 20 12C25 12 28 15 28 20C28 25 25 28 20 28C15 28 12 25 12 20Z"
-        fill="url(#modern-gradient)"
-      />
-      <path
-        d="M16 20C16 17 17.5 16 20 16C22.5 16 24 17 24 20C24 23 22.5 24 20 24C17.5 24 16 23 16 20Z"
+        d="M20 14C17 14 15 16 15 18C15 20 17 22 20 22C23 22 25 20 25 18C25 16 23 14 20 14Z"
         fill="white"
-        opacity="0.3"
+        opacity="0.9"
+      />
+      <path
+        d="M18 18L22 18M20 16L20 20"
+        stroke="url(#aero-gradient-modern)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
       />
     </svg>
   )
