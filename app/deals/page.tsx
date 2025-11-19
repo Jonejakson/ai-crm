@@ -1281,85 +1281,28 @@ export default function DealsPage() {
         </div>
       )}
 
-      {/* Модальное окно просмотра деталей сделки */}
+      {/* Модальное окно просмотра деталей сделки - упрощенное, без вкладок */}
       {viewingDeal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-center p-6 border-b">
               <h3 className="text-xl font-semibold">{viewingDeal.title}</h3>
               <button
-                onClick={() => {
-                  setViewingDeal(null)
-                  setDealViewTab('info')
-                }}
+                onClick={() => setViewingDeal(null)}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
               </button>
             </div>
 
-            {/* Вкладки */}
-            <div className="flex border-b">
-              <button
-                onClick={() => setDealViewTab('info')}
-                className={`px-6 py-3 font-medium ${
-                  dealViewTab === 'info'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Информация
-              </button>
-              <button
-                onClick={() => setDealViewTab('comments')}
-                className={`px-6 py-3 font-medium ${
-                  dealViewTab === 'comments'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Комментарии
-              </button>
-              <button
-                onClick={() => setDealViewTab('tags')}
-                className={`px-6 py-3 font-medium ${
-                  dealViewTab === 'tags'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Теги
-              </button>
-              <button
-                onClick={() => setDealViewTab('custom-fields')}
-                className={`px-6 py-3 font-medium ${
-                  dealViewTab === 'custom-fields'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Доп. поля
-              </button>
-              <button
-                onClick={() => setDealViewTab('files')}
-                className={`px-6 py-3 font-medium ${
-                  dealViewTab === 'files'
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Файлы
-              </button>
-            </div>
-
-            {/* Содержимое вкладок */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {dealViewTab === 'info' && (
-                <div className="space-y-4">
+            {/* Все содержимое в одной прокручиваемой области */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Основная информация */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Основная информация</h4>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Клиент
-                    </label>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Клиент</label>
                     <p className="text-gray-900">
                       <a
                         href={`/contacts/${viewingDeal.contact.id}`}
@@ -1369,87 +1312,77 @@ export default function DealsPage() {
                       </a>
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Сумма</label>
+                    <p className="text-gray-900 font-medium">
+                      {viewingDeal.amount.toLocaleString('ru-RU')} {viewingDeal.currency}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Вероятность</label>
+                    <p className="text-gray-900">{viewingDeal.probability}%</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Этап</label>
+                    <p className="text-gray-900">{viewingDeal.stage}</p>
+                  </div>
+                  {viewingDeal.expectedCloseDate && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Сумма
-                      </label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Ожидаемая дата закрытия</label>
                       <p className="text-gray-900">
-                        {viewingDeal.amount.toLocaleString('ru-RU')} {viewingDeal.currency}
+                        {new Date(viewingDeal.expectedCloseDate).toLocaleDateString('ru-RU')}
                       </p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Вероятность
-                      </label>
-                      <p className="text-gray-900">{viewingDeal.probability}%</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Этап
-                      </label>
-                      <p className="text-gray-900">{viewingDeal.stage}</p>
-                    </div>
-                    {viewingDeal.expectedCloseDate && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Ожидаемая дата закрытия
-                        </label>
-                        <p className="text-gray-900">
-                          {new Date(viewingDeal.expectedCloseDate).toLocaleDateString('ru-RU')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  )}
                   {viewingDeal.user && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Ответственный
-                      </label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Ответственный</label>
                       <p className="text-gray-900">{viewingDeal.user.name}</p>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {dealViewTab === 'comments' && viewingDeal && (
+              {/* Комментарии */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Комментарии</h4>
                 <Comments
                   entityType="deal"
                   entityId={viewingDeal.id}
                 />
-              )}
+              </div>
 
-              {dealViewTab === 'tags' && viewingDeal && (
+              {/* Теги */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Теги</h4>
                 <TagsManager
                   entityType="deal"
                   entityId={viewingDeal.id}
                 />
-              )}
+              </div>
 
-              {dealViewTab === 'custom-fields' && viewingDeal && (
+              {/* Дополнительные поля */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Дополнительные поля</h4>
                 <CustomFieldsEditor
                   entityType="deal"
                   entityId={viewingDeal.id}
-                  onSave={() => {
-                    // Обновить данные сделки при необходимости
-                  }}
                 />
-              )}
+              </div>
 
-              {dealViewTab === 'files' && viewingDeal && (
+              {/* Файлы */}
+              <div className="border-t pt-6">
+                <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Файлы</h4>
                 <FilesManager
                   entityType="deal"
                   entityId={viewingDeal.id}
                 />
-              )}
+              </div>
             </div>
 
             <div className="p-6 border-t flex justify-end">
               <button
-                onClick={() => {
-                  setViewingDeal(null)
-                  setDealViewTab('info')
-                }}
+                onClick={() => setViewingDeal(null)}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
               >
                 Закрыть
@@ -1458,7 +1391,6 @@ export default function DealsPage() {
                 onClick={() => {
                   setEditingDeal(viewingDeal)
                   setViewingDeal(null)
-                  setDealViewTab('info')
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-3"
               >
