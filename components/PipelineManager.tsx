@@ -199,8 +199,16 @@ export default function PipelineManager({
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" onClick={() => setIsOpen(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden z-[101] relative animate-scaleIn" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" 
+          onClick={() => setIsOpen(false)}
+          style={{ isolation: 'isolate', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          <div 
+            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden relative animate-scaleIn" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ zIndex: 101, isolation: 'isolate', position: 'relative' }}
+          >
             <div className="modal-header">
               <h2 className="text-xl font-bold text-[var(--foreground)]">Управление воронками</h2>
               <button

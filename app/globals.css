@@ -360,6 +360,8 @@ body {
 .card-interactive {
   @apply card cursor-pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  isolation: isolate;
 }
 
 .card-interactive:hover {
@@ -367,6 +369,7 @@ body {
   transform: translateY(-4px) scale(1.01);
   border-color: var(--primary-soft);
   box-shadow: var(--shadow-primary-lg);
+  z-index: 2;
 }
 
 .card-interactive:hover::before {
@@ -375,6 +378,7 @@ body {
 
 .card-interactive:active {
   transform: translateY(-2px) scale(0.99);
+  z-index: 1;
 }
 
 .glass-panel {
@@ -534,6 +538,8 @@ tbody tr:hover {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  z-index: 1;
+  isolation: isolate;
 }
 
 .stat-card::before {
@@ -552,6 +558,7 @@ tbody tr:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: var(--shadow-xl);
   border-color: var(--primary-soft);
+  z-index: 2;
 }
 
 .stat-card:hover::before {
@@ -657,14 +664,23 @@ tbody tr:hover {
 .modal-overlay {
   @apply fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4;
   animation: fadeIn 0.2s ease-out;
+  isolation: isolate;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .modal-content {
-  @apply bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden z-[101] relative;
+  @apply bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden relative;
   animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 1));
   border: 1px solid var(--border);
+  z-index: 101;
+  isolation: isolate;
+  position: relative;
 }
 
 .modal-header {

@@ -76,6 +76,7 @@ export default function Modal({
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? 'modal-title' : undefined}
+      style={{ isolation: 'isolate', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
     >
       <div
         ref={modalRef}
@@ -89,6 +90,7 @@ export default function Modal({
           mx-4 md:mx-0
         `}
         onClick={(e) => e.stopPropagation()}
+        style={{ zIndex: 101, isolation: 'isolate', position: 'relative' }}
       >
         {/* Заголовок */}
         {(title || showCloseButton) && (
