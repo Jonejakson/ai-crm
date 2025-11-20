@@ -794,38 +794,70 @@ export default function DealsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="min-w-[220px]">
-              <UserFilter
-                selectedUserId={selectedUserId}
-                onUserChange={setSelectedUserId}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <select
-                value={selectedPipeline || ''}
-                onChange={(e) => handlePipelineChange(Number(e.target.value))}
-                className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all min-w-[200px]"
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="min-w-[220px]">
+                <UserFilter
+                  selectedUserId={selectedUserId}
+                  onUserChange={setSelectedUserId}
+                />
+              </div>
+              <button
+                className="btn-secondary text-sm"
+                onClick={() => setFiltersOpen(prev => !prev)}
               >
-                {pipelines.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.isDefault ? '(по умолчанию)' : ''}
-                  </option>
-                ))}
-              </select>
-              <PipelineManager
-                pipelines={pipelines}
-                onPipelinesChange={fetchData}
-                onSelectPipeline={handlePipelineChange}
-                selectedPipelineId={selectedPipeline}
-              />
+                {filtersOpen ? 'Скрыть фильтры' : 'Доп. фильтры'}
+              </button>
             </div>
-            <button
-              className="btn-secondary text-sm"
-              onClick={() => setFiltersOpen(prev => !prev)}
-            >
-              {filtersOpen ? 'Скрыть фильтры' : 'Доп. фильтры'}
-            </button>
+            
+            {/* Блок управления воронками */}
+            <div className="glass-panel rounded-2xl p-4 border-2 border-[var(--border)]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-semibold text-[var(--foreground)] whitespace-nowrap">
+                    Воронка:
+                  </label>
+                  <select
+                    value={selectedPipeline || ''}
+                    onChange={(e) => handlePipelineChange(Number(e.target.value))}
+                    className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all min-w-[200px]"
+                  >
+                    {pipelines.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} {p.isDefault ? '(по умолчанию)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <PipelineManager
+                    pipelines={pipelines}
+                    onPipelinesChange={fetchData}
+                    onSelectPipeline={handlePipelineChange}
+                    selectedPipelineId={selectedPipeline}
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!selectedPipeline) return
+                      const pipeline = pipelines.find(p => p.id === selectedPipeline)
+                      if (!pipeline) return
+
+                      const pipelineStages = getStagesFromPipeline(pipeline)
+                      const validStages = [...pipelineStages, UNASSIGNED_STAGE]
+                      setStages(validStages)
+                      setIsStagesEditorOpen(true)
+                    }}
+                    className="btn-secondary text-sm flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Настроить этапы
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         {filtersOpen && (
@@ -928,19 +960,11 @@ export default function DealsPage() {
 
       {/* Канбан-доска */}
       <div className="glass-panel p-6 rounded-3xl shadow-xl">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Активная воронка</p>
-            <p className="text-base font-semibold text-[var(--foreground)]">
-              {currentPipeline?.name || '—'}
-            </p>
-          </div>
-          <button
-            onClick={() => setIsStagesEditorOpen(true)}
-            className="btn-secondary text-xs"
-          >
-            ⚙️ Настроить этапы
-          </button>
+        <div className="mb-4">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">Активная воронка</p>
+          <p className="text-base font-semibold text-[var(--foreground)]">
+            {currentPipeline?.name || '—'}
+          </p>
         </div>
         <p className="text-sm text-[var(--muted)] mb-4">
           Перетаскивайте карточки между колонками, чтобы изменять этапы и держать воронку в актуальном состоянии.
