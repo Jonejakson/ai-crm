@@ -15,6 +15,315 @@ interface ChartPoint {
   events: number
 }
 
+function PeriodDynamicsChart({ chartData }: { chartData: ChartPoint[] }) {
+  const chartHeight = 200
+  const chartPadding = { top: 20, right: 20, bottom: 40, left: 50 }
+  const chartWidth = Math.max(600, chartData.length * 30)
+
+  const maxContacts = Math.max(...chartData.map(d => d.contacts), 0)
+  const maxTasks = Math.max(...chartData.map(d => d.tasks), 0)
+  const maxDeals = Math.max(...chartData.map(d => d.deals), 0)
+  const maxEvents = Math.max(...chartData.map(d => d.events), 0)
+  const maxValue = Math.max(maxContacts, maxTasks, maxDeals, maxEvents, 1)
+
+  const getY = (value: number, maxForCategory: number = maxValue) => {
+    const availableHeight = chartHeight - chartPadding.top - chartPadding.bottom
+    if (maxForCategory === 0) {
+      return chartHeight - chartPadding.bottom - availableHeight * 0.1
+    }
+    const normalizedValue = maxValue > 0 ? value / maxValue : 0
+    return chartHeight - chartPadding.bottom - normalizedValue * availableHeight
+  }
+
+  const getX = (index: number) => {
+    const availableWidth = chartWidth - chartPadding.left - chartPadding.right
+    if (chartData.length === 1) {
+      return chartPadding.left + availableWidth / 2
+    }
+    return chartPadding.left + (index / (chartData.length - 1)) * availableWidth
+  }
+
+  const generateLinePath = (values: number[], maxForCategory: number = maxValue) => {
+    if (values.length === 0) return ''
+    const points = values.map((value, index) => {
+      const x = getX(index)
+      const y = getY(value, maxForCategory)
+      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
+    })
+    return points.join(' ')
+  }
+
+  return (
+    <div className="glass-panel rounded-3xl p-6 h-full flex flex-col">
+      <div className="border-b border-white/40 pb-4 mb-4">
+        <p className="text-xs uppercase tracking-[0.35em] text-slate-400">График</p>
+        <h2 className="text-xl font-semibold text-slate-900 mt-1">Динамика за период</h2>
+      </div>
+      {chartData.length > 0 ? (
+        <>
+          <div className="overflow-x-auto">
+            <svg width={chartWidth} height={chartHeight + 60} className="w-full">
+              <defs>
+                <linearGradient id="contactsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="tasksGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="dealsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#a855f7" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="eventsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+                const y = chartPadding.top + (chartHeight - chartPadding.top - chartPadding.bottom) * (1 - ratio)
+                return (
+                  <g key={ratio}>
+                    <line
+                      x1={chartPadding.left}
+                      y1={y}
+                      x2={chartWidth - chartPadding.right}
+                      y2={y}
+                      stroke="#e5e7eb"
+                      strokeWidth="1"
+                      strokeDasharray="4,4"
+                    />
+                    <text x={chartPadding.left - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#6b7280">
+                      {Math.round(maxValue * ratio)}
+                    </text>
+                  </g>
+                )
+              })}
+
+              {/* Контакты */}
+              {maxContacts > 0 || chartData.some(d => d.contacts > 0) ? (
+                <>
+                  <path
+                    d={generateLinePath(chartData.map(d => d.contacts), maxContacts)}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={`${generateLinePath(chartData.map(d => d.contacts), maxContacts)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                    fill="url(#contactsGradient)"
+                  />
+                </>
+              ) : (
+                <line
+                  x1={getX(0)}
+                  y1={getY(0, maxContacts)}
+                  x2={getX(chartData.length - 1)}
+                  y2={getY(0, maxContacts)}
+                  stroke="#3b82f6"
+                  strokeWidth="2.5"
+                  strokeDasharray="5,5"
+                  opacity="0.5"
+                />
+              )}
+
+              {/* Задачи */}
+              {maxTasks > 0 || chartData.some(d => d.tasks > 0) ? (
+                <>
+                  <path
+                    d={generateLinePath(chartData.map(d => d.tasks), maxTasks)}
+                    fill="none"
+                    stroke="#f97316"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={`${generateLinePath(chartData.map(d => d.tasks), maxTasks)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                    fill="url(#tasksGradient)"
+                  />
+                </>
+              ) : (
+                <line
+                  x1={getX(0)}
+                  y1={getY(0, maxTasks)}
+                  x2={getX(chartData.length - 1)}
+                  y2={getY(0, maxTasks)}
+                  stroke="#f97316"
+                  strokeWidth="2.5"
+                  strokeDasharray="5,5"
+                  opacity="0.5"
+                />
+              )}
+
+              {/* Сделки */}
+              {maxDeals > 0 || chartData.some(d => d.deals > 0) ? (
+                <>
+                  <path
+                    d={generateLinePath(chartData.map(d => d.deals), maxDeals)}
+                    fill="none"
+                    stroke="#a855f7"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={`${generateLinePath(chartData.map(d => d.deals), maxDeals)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                    fill="url(#dealsGradient)"
+                  />
+                </>
+              ) : (
+                <line
+                  x1={getX(0)}
+                  y1={getY(0, maxDeals)}
+                  x2={getX(chartData.length - 1)}
+                  y2={getY(0, maxDeals)}
+                  stroke="#a855f7"
+                  strokeWidth="2.5"
+                  strokeDasharray="5,5"
+                  opacity="0.5"
+                />
+              )}
+
+              {/* События */}
+              {maxEvents > 0 || chartData.some(d => d.events > 0) ? (
+                <>
+                  <path
+                    d={generateLinePath(chartData.map(d => d.events), maxEvents)}
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d={`${generateLinePath(chartData.map(d => d.events), maxEvents)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
+                    fill="url(#eventsGradient)"
+                  />
+                </>
+              ) : (
+                <line
+                  x1={getX(0)}
+                  y1={getY(0, maxEvents)}
+                  x2={getX(chartData.length - 1)}
+                  y2={getY(0, maxEvents)}
+                  stroke="#10b981"
+                  strokeWidth="2.5"
+                  strokeDasharray="5,5"
+                  opacity="0.5"
+                />
+              )}
+
+              {chartData.map((day, index) => {
+                const date = new Date(day.date)
+                const isToday = date.toDateString() === new Date().toDateString()
+                const x = getX(index)
+
+                return (
+                  <g key={index}>
+                    <circle
+                      cx={x}
+                      cy={getY(day.contacts, maxContacts)}
+                      r={day.contacts > 0 ? 4 : 3}
+                      fill={day.contacts > 0 ? '#3b82f6' : 'transparent'}
+                      stroke={day.contacts > 0 ? 'white' : '#3b82f6'}
+                      strokeWidth={day.contacts > 0 ? 2 : 1.5}
+                      className="hover:r-6 transition-all cursor-pointer"
+                      opacity={day.contacts > 0 ? 1 : 0.6}
+                    >
+                      <title>Контакты: {day.contacts}</title>
+                    </circle>
+
+                    <circle
+                      cx={x}
+                      cy={getY(day.tasks, maxTasks)}
+                      r={day.tasks > 0 ? 4 : 3}
+                      fill={day.tasks > 0 ? '#f97316' : 'transparent'}
+                      stroke={day.tasks > 0 ? 'white' : '#f97316'}
+                      strokeWidth={day.tasks > 0 ? 2 : 1.5}
+                      className="hover:r-6 transition-all cursor-pointer"
+                      opacity={day.tasks > 0 ? 1 : 0.6}
+                    >
+                      <title>Задачи: {day.tasks}</title>
+                    </circle>
+
+                    <circle
+                      cx={x}
+                      cy={getY(day.deals, maxDeals)}
+                      r={day.deals > 0 ? 4 : 3}
+                      fill={day.deals > 0 ? '#a855f7' : 'transparent'}
+                      stroke={day.deals > 0 ? 'white' : '#a855f7'}
+                      strokeWidth={day.deals > 0 ? 2 : 1.5}
+                      className="hover:r-6 transition-all cursor-pointer"
+                      opacity={day.deals > 0 ? 1 : 0.6}
+                    >
+                      <title>Сделки: {day.deals}</title>
+                    </circle>
+
+                    <circle
+                      cx={x}
+                      cy={getY(day.events, maxEvents)}
+                      r={day.events > 0 ? 4 : 3}
+                      fill={day.events > 0 ? '#10b981' : 'transparent'}
+                      stroke={day.events > 0 ? 'white' : '#10b981'}
+                      strokeWidth={day.events > 0 ? 2 : 1.5}
+                      className="hover:r-6 transition-all cursor-pointer"
+                      opacity={day.events > 0 ? 1 : 0.6}
+                    >
+                      <title>События: {day.events}</title>
+                    </circle>
+
+                    <text
+                      x={x}
+                      y={chartHeight + 20}
+                      textAnchor="middle"
+                      fontSize="10"
+                      fill={isToday ? '#3b82f6' : '#6b7280'}
+                      fontWeight={isToday ? 'bold' : 'normal'}
+                    >
+                      {date.getDate()}/{date.getMonth() + 1}
+                    </text>
+                  </g>
+                )
+              })}
+            </svg>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4 mt-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--primary)]"></div>
+              <span className="text-[var(--muted)]">Контакты</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--warning)]"></div>
+              <span className="text-[var(--muted)]">Задачи</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--accent)]"></div>
+              <span className="text-[var(--muted)]">Сделки</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--success)]"></div>
+              <span className="text-[var(--muted)]">События</span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="empty-state">
+          <div className="empty-state-icon">📊</div>
+          <h3 className="empty-state-title">Нет данных</h3>
+          <p className="empty-state-description">
+            Нет данных за выбранный период. Попробуйте выбрать другой период.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface AnalyticsTabsProps {
   period: string
   selectedUserId: number | null
@@ -332,318 +641,3 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
     </div>
   )
 }
-  const chartHeight = 200
-  const chartPadding = { top: 20, right: 20, bottom: 40, left: 50 }
-  const chartWidth = Math.max(600, chartData.length * 30)
-
-  const maxContacts = Math.max(...chartData.map(d => d.contacts), 0)
-  const maxTasks = Math.max(...chartData.map(d => d.tasks), 0)
-  const maxDeals = Math.max(...chartData.map(d => d.deals), 0)
-  const maxEvents = Math.max(...chartData.map(d => d.events), 0)
-  const maxValue = Math.max(maxContacts, maxTasks, maxDeals, maxEvents, 1)
-
-  const getY = (value: number, maxForCategory: number = maxValue) => {
-    const availableHeight = chartHeight - chartPadding.top - chartPadding.bottom
-    if (maxForCategory === 0) {
-      return chartHeight - chartPadding.bottom - (availableHeight * 0.1)
-    }
-    const normalizedValue = maxValue > 0 ? (value / maxValue) : 0
-    return chartHeight - chartPadding.bottom - (normalizedValue * availableHeight)
-  }
-
-  const getX = (index: number) => {
-    const availableWidth = chartWidth - chartPadding.left - chartPadding.right
-    if (chartData.length === 1) {
-      return chartPadding.left + availableWidth / 2
-    }
-    return chartPadding.left + (index / (chartData.length - 1)) * availableWidth
-  }
-
-  const generateLinePath = (values: number[], maxForCategory: number = maxValue) => {
-    if (values.length === 0) return ''
-    const points = values.map((value, index) => {
-      const x = getX(index)
-      const y = getY(value, maxForCategory)
-      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
-    })
-    return points.join(' ')
-  }
-
-  return (
-    <div className="glass-panel rounded-3xl p-6 h-full flex flex-col">
-      <div className="border-b border-white/40 pb-4 mb-4">
-        <p className="text-xs uppercase tracking-[0.35em] text-slate-400">График</p>
-        <h2 className="text-xl font-semibold text-slate-900 mt-1">Динамика за период</h2>
-      </div>
-      {chartData.length > 0 ? (
-        <>
-          <div className="overflow-x-auto">
-            <svg width={chartWidth} height={chartHeight + 60} className="w-full">
-              <defs>
-                <linearGradient id="contactsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="tasksGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="dealsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#a855f7" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
-                </linearGradient>
-                <linearGradient id="eventsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-
-              {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-                const y = chartPadding.top + (chartHeight - chartPadding.top - chartPadding.bottom) * (1 - ratio)
-                return (
-                  <g key={ratio}>
-                    <line
-                      x1={chartPadding.left}
-                      y1={y}
-                      x2={chartWidth - chartPadding.right}
-                      y2={y}
-                      stroke="#e5e7eb"
-                      strokeWidth="1"
-                      strokeDasharray="4,4"
-                    />
-                    <text
-                      x={chartPadding.left - 10}
-                      y={y + 4}
-                      textAnchor="end"
-                      fontSize="10"
-                      fill="#6b7280"
-                    >
-                      {Math.round(maxValue * ratio)}
-                    </text>
-                  </g>
-                )
-              })}
-
-              {/* Контакты */}
-              {maxContacts > 0 || chartData.some(d => d.contacts > 0) ? (
-                <>
-                  <path
-                    d={generateLinePath(chartData.map(d => d.contacts), maxContacts)}
-                    fill="none"
-                    stroke="#3b82f6"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={`${generateLinePath(chartData.map(d => d.contacts), maxContacts)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
-                    fill="url(#contactsGradient)"
-                  />
-                </>
-              ) : (
-                <line
-                  x1={getX(0)}
-                  y1={getY(0, maxContacts)}
-                  x2={getX(chartData.length - 1)}
-                  y2={getY(0, maxContacts)}
-                  stroke="#3b82f6"
-                  strokeWidth="2.5"
-                  strokeDasharray="5,5"
-                  opacity="0.5"
-                />
-              )}
-
-              {/* Задачи */}
-              {maxTasks > 0 || chartData.some(d => d.tasks > 0) ? (
-                <>
-                  <path
-                    d={generateLinePath(chartData.map(d => d.tasks), maxTasks)}
-                    fill="none"
-                    stroke="#f97316"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={`${generateLinePath(chartData.map(d => d.tasks), maxTasks)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
-                    fill="url(#tasksGradient)"
-                  />
-                </>
-              ) : (
-                <line
-                  x1={getX(0)}
-                  y1={getY(0, maxTasks)}
-                  x2={getX(chartData.length - 1)}
-                  y2={getY(0, maxTasks)}
-                  stroke="#f97316"
-                  strokeWidth="2.5"
-                  strokeDasharray="5,5"
-                  opacity="0.5"
-                />
-              )}
-
-              {/* Сделки */}
-              {maxDeals > 0 || chartData.some(d => d.deals > 0) ? (
-                <>
-                  <path
-                    d={generateLinePath(chartData.map(d => d.deals), maxDeals)}
-                    fill="none"
-                    stroke="#a855f7"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={`${generateLinePath(chartData.map(d => d.deals), maxDeals)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
-                    fill="url(#dealsGradient)"
-                  />
-                </>
-              ) : (
-                <line
-                  x1={getX(0)}
-                  y1={getY(0, maxDeals)}
-                  x2={getX(chartData.length - 1)}
-                  y2={getY(0, maxDeals)}
-                  stroke="#a855f7"
-                  strokeWidth="2.5"
-                  strokeDasharray="5,5"
-                  opacity="0.5"
-                />
-              )}
-
-              {/* События */}
-              {maxEvents > 0 || chartData.some(d => d.events > 0) ? (
-                <>
-                  <path
-                    d={generateLinePath(chartData.map(d => d.events), maxEvents)}
-                    fill="none"
-                    stroke="#10b981"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d={`${generateLinePath(chartData.map(d => d.events), maxEvents)} L ${getX(chartData.length - 1)} ${chartHeight - chartPadding.bottom} L ${getX(0)} ${chartHeight - chartPadding.bottom} Z`}
-                    fill="url(#eventsGradient)"
-                  />
-                </>
-              ) : (
-                <line
-                  x1={getX(0)}
-                  y1={getY(0, maxEvents)}
-                  x2={getX(chartData.length - 1)}
-                  y2={getY(0, maxEvents)}
-                  stroke="#10b981"
-                  strokeWidth="2.5"
-                  strokeDasharray="5,5"
-                  opacity="0.5"
-                />
-              )}
-
-              {chartData.map((day, index) => {
-                const date = new Date(day.date)
-                const isToday = date.toDateString() === new Date().toDateString()
-                const x = getX(index)
-
-                return (
-                  <g key={index}>
-                    <circle
-                      cx={x}
-                      cy={getY(day.contacts, maxContacts)}
-                      r={day.contacts > 0 ? 4 : 3}
-                      fill={day.contacts > 0 ? '#3b82f6' : 'transparent'}
-                      stroke={day.contacts > 0 ? 'white' : '#3b82f6'}
-                      strokeWidth={day.contacts > 0 ? 2 : 1.5}
-                      className="hover:r-6 transition-all cursor-pointer"
-                      opacity={day.contacts > 0 ? 1 : 0.6}
-                    >
-                      <title>Контакты: {day.contacts}</title>
-                    </circle>
-
-                    <circle
-                      cx={x}
-                      cy={getY(day.tasks, maxTasks)}
-                      r={day.tasks > 0 ? 4 : 3}
-                      fill={day.tasks > 0 ? '#f97316' : 'transparent'}
-                      stroke={day.tasks > 0 ? 'white' : '#f97316'}
-                      strokeWidth={day.tasks > 0 ? 2 : 1.5}
-                      className="hover:r-6 transition-all cursor-pointer"
-                      opacity={day.tasks > 0 ? 1 : 0.6}
-                    >
-                      <title>Задачи: {day.tasks}</title>
-                    </circle>
-
-                    <circle
-                      cx={x}
-                      cy={getY(day.deals, maxDeals)}
-                      r={day.deals > 0 ? 4 : 3}
-                      fill={day.deals > 0 ? '#a855f7' : 'transparent'}
-                      stroke={day.deals > 0 ? 'white' : '#a855f7'}
-                      strokeWidth={day.deals > 0 ? 2 : 1.5}
-                      className="hover:r-6 transition-all cursor-pointer"
-                      opacity={day.deals > 0 ? 1 : 0.6}
-                    >
-                      <title>Сделки: {day.deals}</title>
-                    </circle>
-
-                    <circle
-                      cx={x}
-                      cy={getY(day.events, maxEvents)}
-                      r={day.events > 0 ? 4 : 3}
-                      fill={day.events > 0 ? '#10b981' : 'transparent'}
-                      stroke={day.events > 0 ? 'white' : '#10b981'}
-                      strokeWidth={day.events > 0 ? 2 : 1.5}
-                      className="hover:r-6 transition-all cursor-pointer"
-                      opacity={day.events > 0 ? 1 : 0.6}
-                    >
-                      <title>События: {day.events}</title>
-                    </circle>
-
-                    <text
-                      x={x}
-                      y={chartHeight + 20}
-                      textAnchor="middle"
-                      fontSize="10"
-                      fill={isToday ? '#3b82f6' : '#6b7280'}
-                      fontWeight={isToday ? 'bold' : 'normal'}
-                    >
-                      {date.getDate()}/{date.getMonth() + 1}
-                    </text>
-                  </g>
-                )
-              })}
-            </svg>
-          </div>
-          <div className="flex flex-wrap justify-center gap-4 mt-6 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--primary)]"></div>
-              <span className="text-[var(--muted)]">Контакты</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--warning)]"></div>
-              <span className="text-[var(--muted)]">Задачи</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--accent)]"></div>
-              <span className="text-[var(--muted)]">Сделки</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--success)]"></div>
-              <span className="text-[var(--muted)]">События</span>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
-          <h3 className="empty-state-title">Нет данных</h3>
-          <p className="empty-state-description">
-            Нет данных за выбранный период. Попробуйте выбрать другой период.
-          </p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function PeriodDynamicsChart({ chartData }: { chartData: ChartPoint[] }) {
