@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
+import PipelineManager from '@/components/PipelineManager'
 import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
@@ -800,15 +801,25 @@ export default function DealsPage() {
                 onUserChange={setSelectedUserId}
               />
             </div>
-            <select
-              value={selectedPipeline || ''}
-              onChange={(e) => handlePipelineChange(Number(e.target.value))}
-              className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-            >
-              {pipelines.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedPipeline || ''}
+                onChange={(e) => handlePipelineChange(Number(e.target.value))}
+                className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all min-w-[200px]"
+              >
+                {pipelines.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.isDefault ? '(по умолчанию)' : ''}
+                  </option>
+                ))}
+              </select>
+              <PipelineManager
+                pipelines={pipelines}
+                onPipelinesChange={fetchData}
+                onSelectPipeline={handlePipelineChange}
+                selectedPipelineId={selectedPipeline}
+              />
+            </div>
             <button
               className="btn-secondary text-sm"
               onClick={() => setFiltersOpen(prev => !prev)}

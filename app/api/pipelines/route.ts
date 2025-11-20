@@ -122,6 +122,18 @@ export async function PUT(req: Request) {
     }
     
     if (data.isDefault !== undefined) {
+      // Если устанавливаем воронку как дефолтную, снимаем флаг с других
+      if (data.isDefault) {
+        await prisma.pipeline.updateMany({
+          where: {
+            companyId,
+            isDefault: true
+          },
+          data: {
+            isDefault: false
+          }
+        });
+      }
       updateData.isDefault = data.isDefault;
     }
 
