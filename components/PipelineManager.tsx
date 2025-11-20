@@ -200,7 +200,7 @@ export default function PipelineManager({
 
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center" 
           onClick={() => setIsOpen(false)}
           style={{ 
             isolation: 'isolate', 
@@ -209,14 +209,14 @@ export default function PipelineManager({
             left: 0, 
             right: 0, 
             bottom: 0,
-            zIndex: 9999
+            zIndex: 99999
           }}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden relative animate-scaleIn" 
+            className="bg-white w-full h-full md:w-[95vw] md:h-[95vh] md:rounded-3xl shadow-2xl overflow-hidden relative animate-scaleIn flex flex-col" 
             onClick={(e) => e.stopPropagation()}
             style={{ 
-              zIndex: 10000, 
+              zIndex: 100000, 
               isolation: 'isolate', 
               position: 'relative',
               margin: 'auto'
@@ -239,7 +239,7 @@ export default function PipelineManager({
               </button>
             </div>
 
-            <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 100px)' }}>
+            <div className="px-6 py-5 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 140px)' }}>
               <div className="space-y-4">
                 {/* Список воронок */}
                 <div className="space-y-3">
