@@ -22,7 +22,7 @@ export default function Header() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold text-[var(--foreground)]">
-            {session?.user ? session.user.name : 'Aero CRM'}
+            {session?.user ? session.user.name : 'Pocket CRM'}
           </h1>
         </div>
           <div className="hidden w-full max-w-xl lg:block">

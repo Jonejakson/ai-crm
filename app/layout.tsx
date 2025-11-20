@@ -3,17 +3,17 @@ import LayoutClient from './layout-client'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Aero CRM - Управление клиентами и сделками',
-    template: '%s | Aero CRM'
+    default: 'Pocket CRM - Управление клиентами и сделками',
+    template: '%s | Pocket CRM'
   },
   description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
   keywords: ['CRM', 'управление клиентами', 'сделки', 'задачи', 'аналитика'],
-  authors: [{ name: 'Aero CRM' }],
+  authors: [{ name: 'Pocket CRM' }],
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
-    siteName: 'Aero CRM',
-    title: 'Aero CRM - Управление клиентами и сделками',
+    siteName: 'Pocket CRM',
+    title: 'Pocket CRM - Управление клиентами и сделками',
     description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
   },
   robots: {

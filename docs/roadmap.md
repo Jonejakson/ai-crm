@@ -1,4 +1,4 @@
-## Pulse CRM – дорожная карта
+## Pocket CRM – дорожная карта
 
 Основано на сравнении с amoCRM, Битрикс24 и SMB‑конкурентами (Pipedrive, HubSpot Starter и др.).
 

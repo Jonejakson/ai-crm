@@ -15,31 +15,50 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
 
   const currentSize = sizeClasses[size]
 
-  // Стильный современный логотип - буква "a" в геометрическом стиле
-  const ModernIcon = () => (
+  // Стильный логотип в виде конверта (Pocket CRM = CRM в кармане)
+  const EnvelopeIcon = () => (
     <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
-        <linearGradient id="aero-gradient-modern" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#10b981" />
-          <stop offset="100%" stopColor="#047857" />
+        <linearGradient id="pocket-envelope-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#06b6d4" />
+        </linearGradient>
+        <linearGradient id="pocket-envelope-shadow" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#0f172a" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {/* Стилизованная буква "a" */}
-      <circle cx="20" cy="20" r="16" fill="url(#aero-gradient-modern)" opacity="0.1" />
+      <rect x="6" y="8" width="28" height="24" rx="10" fill="url(#pocket-envelope-shadow)" opacity="0.35" />
+      <rect x="8" y="10" width="24" height="20" rx="8" fill="url(#pocket-envelope-gradient)" />
       <path
-        d="M20 10C15 10 12 13 12 18C12 23 15 26 20 26C25 26 28 23 28 18C28 13 25 10 20 10Z"
-        fill="url(#aero-gradient-modern)"
-      />
-      <path
-        d="M20 14C17 14 15 16 15 18C15 20 17 22 20 22C23 22 25 20 25 18C25 16 23 14 20 14Z"
-        fill="white"
-        opacity="0.9"
-      />
-      <path
-        d="M18 18L22 18M20 16L20 20"
-        stroke="url(#aero-gradient-modern)"
-        strokeWidth="1.5"
+        d="M9.5 13L20 21L30.5 13"
+        stroke="white"
+        strokeWidth="1.8"
         strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.95"
+      />
+      <path
+        d="M11 26L16.5 20.5"
+        stroke="white"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        opacity="0.8"
+      />
+      <path
+        d="M29 26L23.5 20.5"
+        stroke="white"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        opacity="0.8"
+      />
+      <circle cx="28" cy="15" r="2" fill="white" opacity="0.85" />
+      <path
+        d="M12 18C16 21 24 21 28 18"
+        stroke="white"
+        strokeWidth="0.8"
+        strokeLinecap="round"
+        opacity="0.5"
       />
     </svg>
   )
@@ -47,7 +66,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   if (variant === 'icon') {
     return (
       <div className={`${currentSize.icon} ${className}`}>
-        <ModernIcon />
+        <EnvelopeIcon />
       </div>
     )
   }
@@ -55,7 +74,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   if (variant === 'text') {
     return (
       <span className={`font-bold ${currentSize.text} text-[var(--foreground)] ${className}`}>
-        aerocrm
+        Pocket CRM
       </span>
     )
   }
@@ -64,10 +83,10 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <div className={currentSize.icon}>
-        <ModernIcon />
+        <EnvelopeIcon />
       </div>
       <span className={`font-bold ${currentSize.text} text-[var(--foreground)] tracking-tight`}>
-        aerocrm
+        Pocket CRM
       </span>
     </div>
   )
