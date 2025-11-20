@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import { useSession } from 'next-auth/react'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
-import UserFilter from '@/components/UserFilter'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import PipelineManager from '@/components/PipelineManager'
 import Comments from '@/components/Comments'
@@ -88,10 +88,19 @@ const DEFAULT_STAGES = [
 // Колонка для неразобранных сделок (всегда существует, не удаляется)
 const UNASSIGNED_STAGE = 'Неразобранные'
 
+interface User {
+  id: number
+  name: string
+  email: string
+  role: string
+}
+
 export default function DealsPage() {
+  const { data: session } = useSession()
   const [deals, setDeals] = useState<Deal[]>([])
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isStagesEditorOpen, setIsStagesEditorOpen] = useState(false)
@@ -145,8 +154,22 @@ export default function DealsPage() {
     }
   }
 
+  const fetchUsers = async () => {
+    if (session?.user?.role !== 'admin') return
+    try {
+      const response = await fetch('/api/admin/users')
+      if (response.ok) {
+        const data = await response.json()
+        setUsers(data.users || [])
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
   useEffect(() => {
     fetchData()
+    fetchUsers()
     // Загружаем сохраненные фильтры из localStorage
     const saved = localStorage.getItem('savedFilters_deals')
     if (saved) {
@@ -817,42 +840,6 @@ export default function DealsPage() {
         </div>
       </div>
 
-      <div className="glass-panel rounded-3xl space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Поиск по названию сделки или клиенту..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="min-w-[220px]">
-              <UserFilter
-                selectedUserId={selectedUserId}
-                onUserChange={setSelectedUserId}
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <label className="text-sm font-semibold text-[var(--foreground)] whitespace-nowrap">
-                Воронка:
-              </label>
-              <select
-                value={selectedPipeline || ''}
-                onChange={(e) => handlePipelineChange(Number(e.target.value))}
-                className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all min-w-[200px]"
-              >
-                {pipelines.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.isDefault ? '(по умолчанию)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
@@ -1441,6 +1428,18 @@ export default function DealsPage() {
         entityType="deals"
         onFilterChange={setFilters}
         savedFilters={savedFilters}
+        users={users}
+        pipelines={pipelines}
+        selectedUserId={selectedUserId}
+        selectedPipelineId={selectedPipeline}
+        onUserIdChange={setSelectedUserId}
+        onPipelineIdChange={(pipelineId) => {
+          if (pipelineId) {
+            handlePipelineChange(pipelineId)
+          } else {
+            setSelectedPipeline(null)
+          }
+        }}
         onSaveFilter={(name, filterData) => {
           const newFilter = {
             id: Date.now(),

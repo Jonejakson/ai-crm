@@ -18,6 +18,19 @@ interface FilterOptions {
   pipelineId?: number
 }
 
+interface User {
+  id: number
+  name: string
+  email: string
+  role: string
+}
+
+interface Pipeline {
+  id: number
+  name: string
+  isDefault: boolean
+}
+
 interface FiltersModalProps {
   isOpen: boolean
   onClose: () => void
@@ -26,6 +39,12 @@ interface FiltersModalProps {
   savedFilters?: Array<{ id: number; name: string; filters: FilterOptions }>
   onSaveFilter?: (name: string, filters: FilterOptions) => void
   onDeleteFilter?: (id: number) => void
+  users?: User[]
+  pipelines?: Pipeline[]
+  selectedUserId?: number | null
+  selectedPipelineId?: number | null
+  onUserIdChange?: (userId: number | null) => void
+  onPipelineIdChange?: (pipelineId: number | null) => void
 }
 
 export default function FiltersModal({
@@ -36,6 +55,12 @@ export default function FiltersModal({
   savedFilters = [],
   onSaveFilter,
   onDeleteFilter,
+  users = [],
+  pipelines = [],
+  selectedUserId,
+  selectedPipelineId,
+  onUserIdChange,
+  onPipelineIdChange,
 }: FiltersModalProps) {
   const [filters, setFilters] = useState<FilterOptions>({})
   const [quickFilter, setQuickFilter] = useState<string>('')
@@ -240,6 +265,54 @@ export default function FiltersModal({
                   ))}
                 </div>
               </div>
+
+              {/* Фильтр по менеджерам (только для deals) */}
+              {entityType === 'deals' && users.length > 0 && onUserIdChange && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+                    Менеджер
+                  </label>
+                  <select
+                    value={selectedUserId || 'all'}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      onUserIdChange(value === 'all' ? null : parseInt(value))
+                    }}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  >
+                    <option value="all">Все менеджеры</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} {user.role === 'admin' ? ' [Админ]' : user.role === 'manager' ? ' [Менеджер]' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Фильтр по воронкам (только для deals) */}
+              {entityType === 'deals' && pipelines.length > 0 && onPipelineIdChange && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
+                    Воронка
+                  </label>
+                  <select
+                    value={selectedPipelineId || ''}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      onPipelineIdChange(value === '' ? null : parseInt(value))
+                    }}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  >
+                    <option value="">Все воронки</option>
+                    {pipelines.map((pipeline) => (
+                      <option key={pipeline.id} value={pipeline.id}>
+                        {pipeline.name} {pipeline.isDefault ? '(по умолчанию)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Диапазон дат */}
               <div>
