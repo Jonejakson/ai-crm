@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, ReactNode } from 'react'
 import {
   DndContext,
   DragEndEvent,
@@ -94,7 +94,7 @@ interface WidgetDefinition {
   id: WidgetId
   title: string
   description: string
-  render: (data: AnalyticsData) => JSX.Element | null
+  render: (data: AnalyticsData) => ReactNode
 }
 
 const DEFAULT_WIDGETS: WidgetId[] = ['kpi', 'chart', 'pipeline', 'managers', 'tasks', 'forecast', 'events']
