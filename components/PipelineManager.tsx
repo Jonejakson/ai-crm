@@ -259,7 +259,11 @@ export default function PipelineManager({
                             onClick={(e) => {
                               e.stopPropagation()
                               onSelectPipeline(pipeline.id)
-                              setIsOpen(false)
+                              if (isExternalOpen === undefined) {
+                                setIsOpen(false)
+                              } else {
+                                handleClose()
+                              }
                             }}
                             className="px-3 py-1.5 text-sm rounded-lg bg-[var(--background-soft)] hover:bg-[var(--primary-soft)] text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
                           >
@@ -457,7 +461,11 @@ export default function PipelineManager({
                             onClick={(e) => {
                               e.stopPropagation()
                               onSelectPipeline(pipeline.id)
-                              setIsOpen(false)
+                              if (isExternalOpen === undefined) {
+                                setIsOpen(false)
+                              } else {
+                                handleClose()
+                              }
                             }}
                             className="px-3 py-1.5 text-sm rounded-lg bg-[var(--background-soft)] hover:bg-[var(--primary-soft)] text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
                           >
