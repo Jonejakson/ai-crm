@@ -96,6 +96,7 @@ export default function DealsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isStagesEditorOpen, setIsStagesEditorOpen] = useState(false)
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false)
+  const [isPipelineManagerOpen, setIsPipelineManagerOpen] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
