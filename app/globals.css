@@ -13,14 +13,17 @@
   --muted-soft: #9ca3af;
   --panel: #ffffff;
   --panel-muted: #f0f2f5;
-  --radius-lg: 20px;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
   
-  /* Основные цвета - глубокий зеленый */
+  /* Основные цвета - глубокий зеленый с улучшенными градиентами */
   --primary: #047857;
   --primary-hover: #065f46;
   --primary-light: #059669;
   --primary-soft: #d1fae5;
-  --primary-gradient: linear-gradient(135deg, #047857 0%, #059669 100%);
+  --primary-gradient: linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #065f46 0%, #047857 50%, #059669 100%);
   
   --secondary: #10b981;
   --secondary-hover: #059669;
@@ -41,13 +44,15 @@
   --border-soft: #f3f4f6;
   --border-strong: #d1d5db;
   
-  /* Тени - мягкие и современные */
+  /* Тени - мягкие и современные с улучшенной глубиной */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-primary: 0 4px 14px 0 rgba(4, 120, 87, 0.2);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  --shadow-primary: 0 4px 14px 0 rgba(4, 120, 87, 0.25);
+  --shadow-primary-lg: 0 8px 24px 0 rgba(4, 120, 87, 0.3);
 }
 
 .dark {
@@ -108,20 +113,30 @@
 
 body {
   background: var(--background);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(4, 120, 87, 0.03) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.01em;
   transition: background-color 0.3s ease, color 0.3s ease;
+  line-height: 1.6;
 }
 
 .app-shell {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-shell:hover {
+  box-shadow: var(--shadow-2xl);
+  transform: translateY(-1px);
 }
 
 /* Плавные анимации */
@@ -250,42 +265,148 @@ body {
 
 /* Современные кнопки */
 .btn-primary {
-  @apply bg-[var(--primary)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[var(--primary-hover)] transition-colors;
+  @apply text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden;
+  background: var(--primary-gradient);
+  box-shadow: var(--shadow-primary);
+  border: none;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn-primary:hover {
+  background: var(--primary-gradient-hover);
+  box-shadow: var(--shadow-primary-lg);
+  transform: translateY(-1px);
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-primary);
 }
 
 .btn-secondary {
-  @apply bg-[var(--surface)] text-[var(--foreground)] px-4 py-2 rounded-lg border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-colors font-medium;
+  @apply bg-[var(--surface)] text-[var(--foreground)] px-5 py-2.5 rounded-xl border border-[var(--border)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all duration-300 font-semibold;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  background: var(--background-soft);
 }
 
 .btn-success {
-  @apply bg-[var(--success)] text-white px-4 py-2 rounded-lg hover:bg-[#047857] transition-colors font-medium;
+  @apply text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-300;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.25);
+  border: none;
+}
+
+.btn-success:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 24px 0 rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
 }
 
 .btn-ghost {
-  @apply bg-transparent text-[var(--muted)] px-4 py-2 rounded-lg hover:bg-[var(--background-soft)] hover:text-[var(--foreground)] transition-colors;
+  @apply bg-transparent text-[var(--muted)] px-4 py-2 rounded-xl hover:bg-[var(--background-soft)] hover:text-[var(--foreground)] transition-all duration-300 font-medium;
+}
+
+.btn-ghost:hover {
+  transform: translateY(-1px);
 }
 
 /* Улучшенные карточки */
 .card {
-  @apply bg-[var(--surface)] rounded-lg border border-[var(--border)] p-4 transition-all duration-200;
+  @apply bg-[var(--surface)] rounded-xl border border-[var(--border)] p-5 transition-all duration-300;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-gradient);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .card-hover {
-  @apply card hover:border-[var(--primary)] hover:shadow-sm;
+  @apply card hover:border-[var(--primary)] hover:shadow-md;
+}
+
+.card-hover:hover::before {
+  opacity: 1;
+}
+
+.card-interactive {
+  @apply card cursor-pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-interactive:hover {
+  @apply shadow-xl -translate-y-1;
+  transform: translateY(-4px) scale(1.01);
+  border-color: var(--primary-soft);
+  box-shadow: var(--shadow-primary-lg);
+}
+
+.card-interactive:hover::before {
+  opacity: 1;
+}
+
+.card-interactive:active {
+  transform: translateY(-2px) scale(0.99);
 }
 
 .glass-panel {
   border-radius: var(--radius-lg);
   background: var(--panel);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.98));
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
 }
 
 .glass-panel-strong {
   border-radius: var(--radius-lg);
   background: var(--panel);
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 1));
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-strong:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
 }
 
 .kanban-column {
@@ -324,13 +445,29 @@ input[type="date"],
 input[type="url"],
 textarea,
 select {
-  @apply w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-white text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent transition-all duration-200;
+  @apply w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300;
+  box-shadow: var(--shadow-sm);
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  box-shadow: 0 0 0 3px var(--primary-soft);
+  box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+input:disabled,
+textarea:disabled,
+select:disabled {
+  @apply opacity-50 cursor-not-allowed bg-[var(--background-soft)];
+  box-shadow: none;
 }
 
 /* Badge стили */
@@ -360,31 +497,26 @@ table {
 }
 
 thead {
-  @apply bg-[var(--background-soft)];
+  @apply bg-gradient-to-r from-[var(--background-soft)] to-[var(--panel-muted)];
 }
 
 th {
-  @apply px-5 py-3 text-left text-[0.7rem] font-semibold text-[var(--muted)] uppercase tracking-[0.08em];
+  @apply px-5 py-4 text-left text-[0.7rem] font-bold text-[var(--muted)] uppercase tracking-[0.1em];
 }
 
 td {
-  @apply px-5 py-3 text-sm text-[var(--foreground)] border-b border-[var(--border-soft)];
+  @apply px-5 py-4 text-sm text-[var(--foreground)] border-b border-[var(--border-soft)];
+}
+
+tbody tr {
+  @apply transition-colors duration-200;
 }
 
 tbody tr:hover {
   @apply bg-[var(--panel-muted)];
 }
 
-/* Модальные окна */
-.modal-overlay {
-  @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.modal-content {
-  @apply bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden;
-  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
+/* Модальные окна - уже определено ниже */
 
 /* Улучшенные разделители */
 .divider {
@@ -396,14 +528,34 @@ tbody tr:hover {
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   background: var(--panel);
-  padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 1));
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-gradient);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary-soft);
+}
+
+.stat-card:hover::before {
+  opacity: 1;
 }
 
 .stat-card-value {
@@ -503,7 +655,7 @@ tbody tr:hover {
 
 /* Улучшенные модальные окна */
 .modal-overlay {
-  @apply fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4;
+  @apply fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -511,38 +663,28 @@ tbody tr:hover {
   @apply bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden;
   animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 1));
+  border: 1px solid var(--border);
 }
 
 .modal-header {
   @apply flex items-center justify-between px-6 py-5 border-b border-[var(--border-soft)];
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.95));
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.98));
 }
 
 .modal-body {
   @apply px-6 py-5 overflow-y-auto;
   max-height: calc(90vh - 140px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) var(--background-soft);
 }
 
 .modal-footer {
   @apply flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-soft)];
-  background: linear-gradient(to top, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.95));
+  background: linear-gradient(to top, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.98));
 }
 
-/* Улучшенные карточки с hover эффектами */
-.card-interactive {
-  @apply card cursor-pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-interactive:hover {
-  @apply shadow-xl -translate-y-1;
-  transform: translateY(-4px) scale(1.01);
-  border-color: var(--primary-soft);
-}
-
-.card-interactive:active {
-  transform: translateY(-2px) scale(0.99);
-}
+/* Улучшенные карточки с hover эффектами - уже определено выше */
 
 /* Улучшенные инпуты с анимацией */
 .input-group {

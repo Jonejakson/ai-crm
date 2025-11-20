@@ -137,52 +137,56 @@ export default function Dashboard() {
   const newContactsCount = contacts.filter(contact => new Date(contact.createdAt) >= weekAgo).length
 
   return (
-    <div className="space-y-7">
-      <div className="glass-panel px-5 py-5 rounded-3xl">
+    <div className="space-y-8">
+      <div className="glass-panel px-6 py-5 rounded-3xl">
         <UserFilter 
           selectedUserId={selectedUserId} 
           onUserChange={setSelectedUserId} 
         />
       </div>
       
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {[
           { 
             label: 'Клиенты', 
             value: contacts.length, 
             icon: '👥', 
             note: `+${newContactsCount} за 7 дней`, 
-            accent: 'bg-blue-50 text-blue-600' 
+            accent: 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600',
+            gradient: 'from-blue-500 to-blue-600'
           },
           { 
             label: 'Активные задачи', 
             value: pendingTasks, 
             icon: '✅', 
             note: overdueTasks ? `${overdueTasks} просрочено` : 'Без просрочки', 
-            accent: 'bg-amber-50 text-amber-600' 
+            accent: 'bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600',
+            gradient: 'from-amber-500 to-amber-600'
           },
           { 
             label: 'Активные сделки', 
             value: activeDeals, 
             icon: '💼', 
             note: `${openDealsAmount.toLocaleString('ru-RU')} ₽ в работе`, 
-            accent: 'bg-purple-50 text-purple-600' 
+            accent: 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600',
+            gradient: 'from-purple-500 to-purple-600'
           },
           { 
             label: 'Выручка', 
             value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, 
             icon: '💵', 
             note: `${wonAmount.toLocaleString('ru-RU')} ₽ выиграно`, 
-            accent: 'bg-emerald-50 text-emerald-600' 
+            accent: 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600',
+            gradient: 'from-emerald-500 to-emerald-600'
           },
         ].map((card) => (
-          <div key={card.label} className="stat-card flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] font-semibold mb-1">{card.label}</p>
-              <p className="stat-card-value">{card.value}</p>
-              <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          <div key={card.label} className="stat-card flex items-center justify-between gap-4 group">
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-2">{card.label}</p>
+              <p className="stat-card-value mb-1 group-hover:scale-105 transition-transform duration-300">{card.value}</p>
+              <p className="text-sm text-[var(--muted)] font-medium">{card.note}</p>
             </div>
-            <div className={`h-12 w-12 rounded-2xl flex items-center justify-center text-xl ${card.accent}`}>
+            <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform duration-300 ${card.accent}`}>
               {card.icon}
             </div>
           </div>
@@ -193,35 +197,35 @@ export default function Dashboard() {
         <div className="glass-panel rounded-3xl p-6 space-y-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Сделки</p>
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">Срез по воронке</h2>
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
+              <h2 className="text-2xl font-bold text-[var(--foreground)] bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">Срез по воронке</h2>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {[
-              { label: 'Всего сделок', value: deals.length },
-              { label: 'Выиграно', value: wonDeals.length },
-              { label: 'Сумма выигрышей', value: `${wonAmount.toLocaleString('ru-RU')} ₽` },
+              { label: 'Всего сделок', value: deals.length, color: 'from-blue-500 to-blue-600' },
+              { label: 'Выиграно', value: wonDeals.length, color: 'from-emerald-500 to-emerald-600' },
+              { label: 'Сумма выигрышей', value: `${wonAmount.toLocaleString('ru-RU')} ₽`, color: 'from-purple-500 to-purple-600' },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-[var(--border)] bg-[var(--panel-muted)] p-4">
-                <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">{item.label}</p>
-                <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">{item.value}</p>
+              <div key={item.label} className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--panel-muted)] to-[var(--surface)] p-5 hover:shadow-md transition-all duration-300 group">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-3">{item.label}</p>
+                <p className={`text-3xl font-bold bg-gradient-to-r ${item.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{item.value}</p>
               </div>
             ))}
           </div>
         </div>
 
         <div className="glass-panel rounded-3xl p-0 overflow-hidden">
-          <div className="flex items-center justify-between border-b border-[var(--border)] px-5 py-4">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
             <div>
-              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Клиенты</p>
-              <h2 className="text-lg font-semibold text-[var(--foreground)]">Последние контакты</h2>
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Клиенты</p>
+              <h2 className="text-xl font-bold text-[var(--foreground)]">Последние контакты</h2>
             </div>
-            <span className="text-xs text-[var(--muted)]">{recentContacts.length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{recentContacts.length} записей</span>
           </div>
           <div>
             {recentContacts.length === 0 ? (
-              <div className="empty-state py-10">
+              <div className="empty-state py-12">
                 <div className="empty-state-icon">👥</div>
                 <h3 className="empty-state-title">Нет контактов</h3>
                 <p className="empty-state-description">
@@ -229,31 +233,29 @@ export default function Dashboard() {
                 </p>
               </div>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Имя</th>
-                    <th>Компания</th>
-                    <th>Дата</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentContacts.map((contact) => (
-                    <tr key={contact.id}>
-                      <td>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-[var(--foreground)]">{contact.name}</span>
-                          <span className="text-xs text-[var(--muted)]">{contact.email}</span>
+              <div className="divide-y divide-[var(--border-soft)]">
+                {recentContacts.map((contact, index) => (
+                  <div key={contact.id} className="px-6 py-4 hover:bg-[var(--background-soft)] transition-colors duration-200 group">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-1">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-soft)] to-[var(--primary)] flex items-center justify-center text-[var(--primary)] font-bold text-sm shadow-sm group-hover:scale-110 transition-transform duration-300">
+                            {contact.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-[var(--foreground)] truncate">{contact.name}</p>
+                            <p className="text-xs text-[var(--muted)] truncate">{contact.email}</p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="text-sm text-[var(--muted)]">{contact.company || '—'}</td>
-                      <td className="text-sm text-[var(--muted)]">
-                        {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <p className="text-sm text-[var(--muted)] ml-[52px]">{contact.company || '—'}</p>
+                      </div>
+                      <span className="text-xs text-[var(--muted)] font-medium whitespace-nowrap">
+                        {new Date(contact.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>

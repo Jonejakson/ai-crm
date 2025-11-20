@@ -64,7 +64,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </div>
 
         {/* Навигация */}
-        <nav className="sidebar-nav space-y-1 flex-1 overflow-y-auto pr-1">
+        <nav className="sidebar-nav space-y-1.5 flex-1 overflow-y-auto pr-1">
           {menuItems.map((item) => {
             const isActive = activeSection === item.id
             return (
@@ -72,14 +72,17 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
                 key={item.id}
                 href={item.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`group flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                className={`group flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-300 relative ${
                   isActive
-                    ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-medium'
-                    : 'text-[var(--muted)] hover:bg-[var(--background-soft)] hover:text-[var(--foreground)]'
+                    ? 'bg-gradient-to-r from-[var(--primary-soft)] to-[var(--primary-soft)] text-[var(--primary)] font-semibold shadow-sm'
+                    : 'text-[var(--muted)] hover:bg-[var(--background-soft)] hover:text-[var(--foreground)] hover:translate-x-1'
                 }`}
               >
-                <item.Icon className={`w-5 h-5 ${isActive ? 'text-[var(--primary)]' : 'text-[var(--muted)]'}`} />
-                <span className="text-sm">
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--primary)] rounded-r-full" />
+                )}
+                <item.Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'text-[var(--primary)] scale-110' : 'text-[var(--muted)] group-hover:scale-110'}`} />
+                <span className="text-sm font-medium">
                   {item.name}
                 </span>
               </a>
@@ -89,18 +92,18 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
 
         {/* Пользователь */}
         <div className="mt-auto pt-4 border-t border-[var(--border)]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-[var(--primary-soft)] flex items-center justify-center text-[var(--primary)] text-sm font-semibold">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--background-soft)] hover:bg-[var(--panel-muted)] transition-all duration-300">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white text-sm font-bold shadow-md">
               {userName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[var(--foreground)] truncate">{userName}</p>
+              <p className="text-sm font-semibold text-[var(--foreground)] truncate">{userName}</p>
               <p className="text-xs text-[var(--muted)] truncate">{userEmail}</p>
             </div>
           </div>
           {isAdmin && (
-            <span className="mt-2 inline-flex items-center text-xs text-[var(--success)] bg-[var(--success-soft)] px-2 py-1 rounded">
-              Admin
+            <span className="mt-2 inline-flex items-center text-xs font-semibold text-[var(--success)] bg-[var(--success-soft)] px-3 py-1.5 rounded-lg shadow-sm">
+              ⭐ Admin
             </span>
           )}
         </div>
@@ -111,7 +114,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   return (
     <>
       {/* Десктопный сайдбар */}
-      <div className="hidden md:flex w-64 h-screen bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)]">
+      <div className="hidden md:flex w-64 h-screen bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-sm backdrop-blur-xl bg-opacity-95">
         <SidebarContent />
       </div>
 
