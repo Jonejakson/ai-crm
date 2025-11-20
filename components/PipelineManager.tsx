@@ -213,9 +213,12 @@ export default function PipelineManager({
                             )}
                           </div>
                           <p className="text-sm text-[var(--muted)]">
-                            {typeof pipeline.stages === 'string' 
-                              ? JSON.parse(pipeline.stages).length 
-                              : pipeline.stages.length} этапов
+                            {(() => {
+                              const stages = typeof pipeline.stages === 'string' 
+                                ? JSON.parse(pipeline.stages) 
+                                : pipeline.stages;
+                              return Array.isArray(stages) ? stages.length : 0;
+                            })()} этапов
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
