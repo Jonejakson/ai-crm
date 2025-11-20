@@ -365,7 +365,7 @@ export default function AdvancedFilters({
 
       {/* Диалог сохранения фильтра */}
       {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-white p-6 shadow-2xl">
             <h3 className="text-xl font-semibold text-[var(--foreground)] mb-4">Сохранить фильтр</h3>
             <input
