@@ -1248,7 +1248,7 @@ export default function DealsPage() {
       {/* Модальное окно управления воронками */}
       {isPipelineManagerOpen && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center" 
+          className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center p-4 z-[99999]" 
           onClick={() => setIsPipelineManagerOpen(false)}
           style={{ 
             position: 'fixed', 
@@ -1260,7 +1260,7 @@ export default function DealsPage() {
           }}
         >
           <div 
-            className="bg-white w-full h-full md:w-[95vw] md:h-[95vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col" 
+            className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col z-[100000]" 
             onClick={(e) => e.stopPropagation()}
             style={{ 
               zIndex: 100000, 
