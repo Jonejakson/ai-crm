@@ -221,7 +221,7 @@ export default function PipelineManager({
               </button>
             </div>
 
-            <div className="px-6 py-5 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+            <div className="px-6 py-5 overflow-y-auto flex-1" style={{ maxHeight: 'calc(90vh - 140px)' }}>
               <div className="space-y-4">
                 {/* Список воронок */}
                 <div className="space-y-3">
@@ -423,7 +423,7 @@ export default function PipelineManager({
               </button>
             </div>
 
-            <div className="px-6 py-5 overflow-y-auto flex-1" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+            <div className="px-6 py-5 overflow-y-auto flex-1" style={{ maxHeight: 'calc(90vh - 140px)' }}>
               <div className="space-y-4">
                 {/* Список воронок */}
                 <div className="space-y-3">
