@@ -1433,6 +1433,30 @@ export default function DealsPage() {
           </div>
         </div>
       )}
+
+      {/* Модальное окно фильтров */}
+      <FiltersModal
+        isOpen={isFiltersModalOpen}
+        onClose={() => setIsFiltersModalOpen(false)}
+        entityType="deals"
+        onFilterChange={setFilters}
+        savedFilters={savedFilters}
+        onSaveFilter={(name, filterData) => {
+          const newFilter = {
+            id: Date.now(),
+            name,
+            filters: filterData,
+          }
+          const updated = [...savedFilters, newFilter]
+          setSavedFilters(updated)
+          localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
+        }}
+        onDeleteFilter={(id) => {
+          const updated = savedFilters.filter(f => f.id !== id)
+          setSavedFilters(updated)
+          localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
+        }}
+      />
     </div>
   )
 }
@@ -1588,30 +1612,7 @@ function DealCard({
         {deal.user && (
           <span className="text-gray-400">{deal.user.name}</span>
         )}
-
-      {/* Модальное окно фильтров */}
-      <FiltersModal
-        isOpen={isFiltersModalOpen}
-        onClose={() => setIsFiltersModalOpen(false)}
-        entityType="deals"
-        onFilterChange={setFilters}
-        savedFilters={savedFilters}
-        onSaveFilter={(name, filterData) => {
-          const newFilter = {
-            id: Date.now(),
-            name,
-            filters: filterData,
-          }
-          const updated = [...savedFilters, newFilter]
-          setSavedFilters(updated)
-          localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
-        }}
-        onDeleteFilter={(id) => {
-          const updated = savedFilters.filter(f => f.id !== id)
-          setSavedFilters(updated)
-          localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
-        }}
-      />
+      </div>
     </div>
   )
 }
