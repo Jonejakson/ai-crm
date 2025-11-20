@@ -9,7 +9,7 @@ import PipelineManager from '@/components/PipelineManager'
 import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
-import AdvancedFilters from '@/components/AdvancedFilters'
+import FiltersModal from '@/components/FiltersModal'
 import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import {
@@ -123,7 +123,7 @@ export default function DealsPage() {
     pipelineId: ''
   })
   const [searchTerm, setSearchTerm] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -770,6 +770,15 @@ export default function DealsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <button
+            onClick={() => setIsFiltersModalOpen(true)}
+            className="btn-secondary text-sm flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Фильтр
+          </button>
+          <button
             onClick={() => {
               window.location.href = '/api/export/deals?format=excel'
             }}
@@ -782,6 +791,28 @@ export default function DealsPage() {
             className="btn-primary text-sm"
           >
             + Новая сделка
+          </button>
+          <button
+            onClick={() => setIsPipelineManagerOpen(true)}
+            className="btn-secondary text-sm flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+            </svg>
+            Управление воронками
+          </button>
+          <button
+            onClick={() => {
+              if (!selectedPipeline) return
+              setIsStagesEditorOpen(true)
+            }}
+            className="btn-secondary text-sm flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Настроить этапы
           </button>
         </div>
       </div>
@@ -796,148 +827,29 @@ export default function DealsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="min-w-[220px]">
-                <UserFilter
-                  selectedUserId={selectedUserId}
-                  onUserChange={setSelectedUserId}
-                />
-              </div>
-              <button
-                className="btn-secondary text-sm"
-                onClick={() => setFiltersOpen(prev => !prev)}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[220px]">
+              <UserFilter
+                selectedUserId={selectedUserId}
+                onUserChange={setSelectedUserId}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-semibold text-[var(--foreground)] whitespace-nowrap">
+                Воронка:
+              </label>
+              <select
+                value={selectedPipeline || ''}
+                onChange={(e) => handlePipelineChange(Number(e.target.value))}
+                className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all min-w-[200px]"
               >
-                {filtersOpen ? 'Скрыть фильтры' : 'Доп. фильтры'}
-              </button>
+                {pipelines.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.isDefault ? '(по умолчанию)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
-            
-            {/* Блок управления воронками */}
-            <div className="glass-panel rounded-2xl p-4 border-2 border-[var(--border)]">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-3">
-                  <label className="text-sm font-semibold text-[var(--foreground)] whitespace-nowrap">
-                    Воронка:
-                  </label>
-                  <select
-                    value={selectedPipeline || ''}
-                    onChange={(e) => handlePipelineChange(Number(e.target.value))}
-                    className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all min-w-[200px]"
-                  >
-                    {pipelines.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} {p.isDefault ? '(по умолчанию)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsPipelineManagerOpen(true)}
-                    className="btn-secondary text-sm flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
-                    </svg>
-                    Управление воронками
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!selectedPipeline) return
-                      setIsStagesEditorOpen(true)
-                    }}
-                    className="btn-secondary text-sm flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Настроить этапы
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        {filtersOpen && (
-          <AdvancedFilters
-            entityType="deals"
-            onFilterChange={setFilters}
-            savedFilters={savedFilters}
-            onSaveFilter={(name, filterData) => {
-              const newFilter = {
-                id: Date.now(),
-                name,
-                filters: filterData,
-              }
-              const updated = [...savedFilters, newFilter]
-              setSavedFilters(updated)
-              localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
-            }}
-            onDeleteFilter={(id) => {
-              const updated = savedFilters.filter(f => f.id !== id)
-              setSavedFilters(updated)
-              localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
-            }}
-          />
-        )}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <p className="text-sm text-[var(--muted)]">
-            Текущая воронка: {currentPipeline?.name || 'не выбрано'}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={async () => {
-                if (!selectedPipeline) return
-                const pipeline = pipelines.find(p => p.id === selectedPipeline)
-                if (!pipeline) return
-
-                const pipelineStages = getStagesFromPipeline(pipeline)
-                const validStages = [...pipelineStages, UNASSIGNED_STAGE]
-
-                const dealsToUpdate = deals.filter(deal => !validStages.includes(deal.stage))
-
-                if (dealsToUpdate.length === 0) {
-                  alert('Все сделки уже в правильных этапах')
-                  return
-                }
-
-                if (!confirm(`Переместить ${dealsToUpdate.length} сделок в "Неразобранные"?`)) {
-                  return
-                }
-
-                const updatePromises = dealsToUpdate.map(deal =>
-                  fetch('/api/deals', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      id: deal.id,
-                      title: deal.title,
-                      amount: deal.amount,
-                      currency: deal.currency,
-                      stage: UNASSIGNED_STAGE,
-                      probability: deal.probability,
-                      expectedCloseDate: deal.expectedCloseDate,
-                      pipelineId: deal.pipeline?.id || selectedPipeline,
-                    }),
-                  })
-                )
-
-                await Promise.all(updatePromises)
-                await fetchData()
-                alert('Сделки перемещены в "Неразобранные"')
-              }}
-              className="btn-secondary text-sm"
-              title="Переместить сделки с несуществующими этапами в 'Неразобранные'"
-            >
-              🔄 Найти потерянные сделки
-            </button>
-            <button
-              onClick={() => setIsStagesEditorOpen(true)}
-              className="btn-primary text-sm"
-            >
-              ⚙️ Управление этапами
-            </button>
           </div>
         </div>
       </div>
