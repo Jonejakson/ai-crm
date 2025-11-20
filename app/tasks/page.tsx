@@ -123,6 +123,8 @@ export default function TasksPage() {
   // Убрали вкладки - все в одной прокручиваемой странице
   const [filters, setFilters] = useState<any>({})
   const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -352,6 +354,16 @@ export default function TasksPage() {
 
   // Применяем фильтры к задачам
   const filteredTasks = tasks.filter(task => {
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase()
+      const matchesSearch =
+        task.title.toLowerCase().includes(term) ||
+        (task.description?.toLowerCase().includes(term)) ||
+        (task.contact?.name?.toLowerCase().includes(term)) ||
+        (task.contact?.email?.toLowerCase().includes(term))
+      if (!matchesSearch) return false
+    }
+
     // Фильтр по статусам
     if (filters.status && filters.status.length > 0) {
       if (!filters.status.includes(task.status)) return false
@@ -394,6 +406,14 @@ export default function TasksPage() {
     return acc
   }, {} as Record<string, Task[]>)
 
+  const totalTasks = filteredTasks.length
+  const completedTasks = filteredTasks.filter(task => task.status === 'completed').length
+  const inProgressTasks = filteredTasks.filter(task => task.status === 'in_progress').length
+  const overdueTasks = tasksByCategory.overdue?.length || 0
+  const todayTasks = tasksByCategory.today?.length || 0
+  const upcomingTasks = tasksByCategory.next_week?.length || 0
+  const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -414,55 +434,96 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Задачи</p>
-          <h1 className="text-3xl font-semibold text-slate-900">Лента задач</h1>
-          <p className="text-sm text-slate-500">Следите за сроками, перетаскивайте карточки между категориями и изменяйте статус.</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Контроль задач</p>
+          <h1 className="text-3xl font-semibold text-[var(--foreground)]">Лента задач</h1>
+          <p className="text-sm text-[var(--muted)]">
+            Следите за сроками, распределяйте ответственность и мгновенно реагируйте на просрочки.
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
               window.location.href = '/api/export/tasks?format=excel'
             }}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary text-sm"
           >
             📥 Экспорт CSV
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary"
+            className="btn-primary text-sm"
           >
             + Новая задача
           </button>
         </div>
       </div>
       
-      <div className="glass-panel px-6 py-5 rounded-3xl space-y-4">
-        <UserFilter 
-          selectedUserId={selectedUserId} 
-          onUserChange={setSelectedUserId} 
-        />
-        <AdvancedFilters
-          entityType="tasks"
-          onFilterChange={setFilters}
-          savedFilters={savedFilters}
-          onSaveFilter={(name, filterData) => {
-            const newFilter = {
-              id: Date.now(),
-              name,
-              filters: filterData,
-            }
-            const updated = [...savedFilters, newFilter]
-            setSavedFilters(updated)
-            localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
-          }}
-          onDeleteFilter={(id) => {
-            const updated = savedFilters.filter(f => f.id !== id)
-            setSavedFilters(updated)
-            localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
-          }}
-        />
+      <div className="glass-panel rounded-3xl p-6 space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="Быстрый поиск по названию, описанию или клиенту..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-12 pr-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[220px]">
+              <UserFilter 
+                selectedUserId={selectedUserId} 
+                onUserChange={setSelectedUserId} 
+              />
+            </div>
+            <button
+              className="btn-secondary text-sm"
+              onClick={() => setFiltersOpen(prev => !prev)}
+            >
+              {filtersOpen ? 'Скрыть фильтры' : 'Доп. фильтры'}
+            </button>
+          </div>
+        </div>
+        {filtersOpen && (
+          <AdvancedFilters
+            entityType="tasks"
+            onFilterChange={setFilters}
+            savedFilters={savedFilters}
+            onSaveFilter={(name, filterData) => {
+              const newFilter = {
+                id: Date.now(),
+                name,
+                filters: filterData,
+              }
+              const updated = [...savedFilters, newFilter]
+              setSavedFilters(updated)
+              localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
+            }}
+            onDeleteFilter={(id) => {
+              const updated = savedFilters.filter(f => f.id !== id)
+              setSavedFilters(updated)
+              localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
+            }}
+          />
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Всего активных', value: totalTasks, note: `${completedTasks} завершено` },
+          { label: 'Просрочено', value: overdueTasks, note: `${todayTasks} на сегодня` },
+          { label: 'В работе', value: inProgressTasks, note: `${upcomingTasks} на ближайшую неделю` },
+          { label: 'Выполнение', value: `${completionRate}%`, note: 'Доля закрытых задач' },
+        ].map((card) => (
+          <div key={card.label} className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">{card.label}</p>
+            <p className="stat-card-value">{card.value}</p>
+            <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          </div>
+        ))}
       </div>
 
       <div className="glass-panel p-6 rounded-3xl">
@@ -735,10 +796,10 @@ function TaskColumn({
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Категория</p>
-          <h3 className="text-lg font-semibold text-slate-900">{category.name}</h3>
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Категория</p>
+          <h3 className="text-lg font-semibold text-[var(--foreground)]">{category.name}</h3>
         </div>
-        <span className="text-sm font-semibold text-slate-500">{tasks.length}</span>
+        <span className="text-sm font-semibold text-[var(--muted)]">{tasks.length}</span>
       </div>
       <div className="space-y-3 min-h-[120px]">
         {tasks.map((task) => (

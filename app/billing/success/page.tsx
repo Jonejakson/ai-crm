@@ -4,12 +4,22 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
+interface InvoiceInfo {
+  id?: string
+  status?: string
+  amount?: number
+  currency?: string
+  planName?: string
+  createdAt?: string
+}
+
 export default function BillingSuccessPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const invoiceId = searchParams.get('invoiceId')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [invoiceInfo, setInvoiceInfo] = useState<InvoiceInfo | null>(null)
 
   useEffect(() => {
     if (!invoiceId) {
@@ -26,7 +36,18 @@ export default function BillingSuccessPage() {
           throw new Error('Failed to check invoice status')
         }
         const data = await response.json()
-        
+
+        if (data.invoice) {
+          setInvoiceInfo({
+            id: data.invoice.id ?? data.invoice.externalId ?? invoiceId ?? undefined,
+            status: data.invoice.status,
+            amount: data.invoice.amount,
+            currency: data.invoice.currency,
+            planName: data.invoice.metadata?.planName || data.invoice.plan?.name,
+            createdAt: data.invoice.createdAt,
+          })
+        }
+
         if (data.invoice?.status === 'PAID') {
           setLoading(false)
         } else {
@@ -44,6 +65,19 @@ export default function BillingSuccessPage() {
 
     checkPayment()
   }, [invoiceId])
+
+  const formatCurrency = (amount?: number, currency?: string) => {
+    if (!amount || amount <= 0) return '—'
+    try {
+      return new Intl.NumberFormat('ru-RU', {
+        style: 'currency',
+        currency: currency || 'RUB',
+        minimumFractionDigits: 0,
+      }).format(amount / 100)
+    } catch {
+      return `${(amount / 100).toLocaleString('ru-RU')} ${currency || '₽'}`
+    }
+  }
 
   if (loading) {
     return (
@@ -76,29 +110,56 @@ export default function BillingSuccessPage() {
     )
   }
 
+  const infoChips = [
+    { label: 'План', value: invoiceInfo?.planName ?? 'Pocket CRM' },
+    { label: 'Сумма', value: formatCurrency(invoiceInfo?.amount, invoiceInfo?.currency) },
+    { label: 'Invoice ID', value: invoiceInfo?.id ?? invoiceId ?? '—' },
+  ]
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--background-soft)] via-white to-[var(--primary-soft)] px-4">
-      <div className="glass-panel rounded-3xl p-8 max-w-md w-full text-center space-y-4">
-        <div className="text-5xl">✅</div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">Оплата успешна!</h1>
-          <p className="text-[var(--muted)]">
-            Ваша подписка активирована. Вы можете начать использовать все возможности выбранного тарифа.
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--background-soft)] via-white to-[var(--primary-soft)] px-4 py-10">
+      <div className="glass-panel rounded-3xl p-8 max-w-2xl w-full space-y-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 text-4xl">
+              <span>🎉</span>
+              <span>✅</span>
+            </div>
+            <h1 className="text-3xl font-bold text-[var(--foreground)]">Оплата прошла успешно!</h1>
+            <p className="text-[var(--muted)]">
+              Подписка активирована, доступ к возможностям выбранного тарифа открыт мгновенно. Мы уже отправили чек на ваш email.
+            </p>
+          </div>
+          <div className="text-sm text-[var(--muted)] text-right">
+            <p className="uppercase tracking-[0.2em] text-xs">Дата платежа</p>
+            <p className="text-lg font-semibold text-[var(--foreground)]">
+              {invoiceInfo?.createdAt ? new Date(invoiceInfo.createdAt).toLocaleDateString('ru-RU') : 'Сегодня'}
+            </p>
+          </div>
         </div>
-        <div className="space-y-3">
-          <Link
-            href="/company"
-            className="btn-primary block w-full text-center"
-          >
-            Перейти к настройкам компании
-          </Link>
-          <Link
-            href="/"
-            className="btn-secondary block w-full text-center"
-          >
-            На главную
-          </Link>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {infoChips.map((chip) => (
+            <div key={chip.label} className="rounded-2xl border border-[var(--border)] bg-white/80 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">{chip.label}</p>
+              <p className="text-lg font-semibold text-[var(--foreground)]">{chip.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-3xl border border-[var(--primary-soft)] bg-gradient-to-br from-white to-[var(--primary-soft)]/40 p-6 space-y-4">
+          <p className="text-sm text-[var(--muted)]">
+            Если оплата отображается с задержкой, просто обновите страницу — синхронизация с биллингом может занять до пары минут.
+            В случае повторяющейся ошибки свяжитесь с нашей поддержкой: <a href="mailto:support@pocketcrm.io" className="text-[var(--primary)] underline">support@pocketcrm.io</a>.
+          </p>
+          <div className="flex flex-col md:flex-row gap-3">
+            <Link href="/company" className="btn-primary flex-1 text-center">
+              Перейти в настройки компании
+            </Link>
+            <Link href="/" className="btn-secondary flex-1 text-center">
+              Открыть главную
+            </Link>
+          </div>
         </div>
       </div>
     </div>

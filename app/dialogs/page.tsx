@@ -29,6 +29,7 @@ export default function DialogsPage() {
   const [selectedContactForMessage, setSelectedContactForMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     fetchData()
@@ -107,11 +108,22 @@ export default function DialogsPage() {
     }
   }
 
-  const filteredDialogs = selectedContact === 'all' 
-    ? (Array.isArray(dialogs) ? dialogs : [])
-    : (Array.isArray(dialogs) ? dialogs.filter(dialog => dialog.contact?.id === Number(selectedContact)) : [])
+  const filteredDialogs = (Array.isArray(dialogs) ? dialogs : [])
+    .filter(dialog => {
+      if (selectedContact !== 'all' && dialog.contact?.id !== Number(selectedContact)) {
+        return false
+      }
+      if (!searchTerm.trim()) return true
+      const term = searchTerm.toLowerCase()
+      return (
+        dialog.message.toLowerCase().includes(term) ||
+        dialog.contact?.name.toLowerCase().includes(term) ||
+        (dialog.contact?.email?.toLowerCase().includes(term)) ||
+        dialog.sender.toLowerCase().includes(term)
+      )
+    })
 
-  const dialogsByContact = Array.isArray(filteredDialogs) ? filteredDialogs.reduce((acc, dialog) => {
+  const dialogsByContact = filteredDialogs.reduce((acc, dialog) => {
     if (!dialog.contact) return acc
     const contactId = dialog.contact.id
     if (!acc[contactId]) {
@@ -122,7 +134,20 @@ export default function DialogsPage() {
     }
     acc[contactId].dialogs.push(dialog)
     return acc
-  }, {} as Record<number, { contact: Contact; dialogs: Dialog[] }>) : {}
+  }, {} as Record<number, { contact: Contact; dialogs: Dialog[] }>)
+
+  const totalMessages = dialogs.length
+  const totalContacts = Array.isArray(dialogs)
+    ? new Set(dialogs.map(dialog => dialog.contact?.id).filter((id): id is number => typeof id === 'number')).size
+    : 0
+  const todayMessages = filteredDialogs.filter(dialog => {
+    const created = new Date(dialog.createdAt)
+    const now = new Date()
+    return created.toDateString() === now.toDateString()
+  }).length
+  const outgoingMessages = filteredDialogs.filter(dialog => dialog.sender === 'user').length
+  const incomingMessages = filteredDialogs.filter(dialog => dialog.sender !== 'user').length
+  const responseRatio = outgoingMessages > 0 ? Math.round((incomingMessages / outgoingMessages) * 100) : 0
 
   if (loading) {
     return (
@@ -137,38 +162,71 @@ export default function DialogsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Диалоги</p>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">Сообщения с клиентами</h1>
-          <p className="text-sm text-[var(--muted)]">Всего сообщений: {dialogs.length}</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Коммуникации</p>
+          <h1 className="text-3xl font-semibold text-[var(--foreground)]">Диалоги с клиентами</h1>
+          <p className="text-sm text-[var(--muted)]">
+            Отслеживайте переписку и быстро отвечайте на обращения.
+          </p>
+        </div>
+        <div className="text-sm text-[var(--muted)]">
+          Всего сообщений: <span className="font-semibold text-[var(--foreground)]">{totalMessages}</span>
         </div>
       </div>
 
-      <div className="glass-panel px-6 py-5 rounded-3xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <label className="text-sm font-semibold text-[var(--muted)]">
-            Фильтр по клиенту:
-          </label>
-          <select
-            value={selectedContact}
-            onChange={(e) => setSelectedContact(e.target.value)}
-            className="w-full md:w-auto rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-          >
-            <option value="all">Все клиенты</option>
-            {contacts.map(contact => (
-              <option key={contact.id} value={contact.id}>
-                {contact.name}
-              </option>
-            ))}
-          </select>
+      <div className="glass-panel rounded-3xl p-6 space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="Поиск по тексту сообщения, имени или email клиента..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-12 pr-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            />
+          </div>
+          <div className="min-w-[220px]">
+            <select
+              value={selectedContact}
+              onChange={(e) => setSelectedContact(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            >
+              <option value="all">Все клиенты</option>
+              {contacts.map(contact => (
+                <option key={contact.id} value={contact.id}>
+                  {contact.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+          Найдено сообщений: {filteredDialogs.length}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Уникальных клиентов', value: totalContacts, note: 'Ведут диалог' },
+          { label: 'Сообщений сегодня', value: todayMessages, note: 'За последние 24 часа' },
+          { label: 'Исходящие/Входящие', value: `${outgoingMessages}/${incomingMessages}`, note: `Ответы ${responseRatio}%` },
+          { label: 'Сообщений в выборке', value: filteredDialogs.length, note: 'С учётом поиска и фильтра' },
+        ].map(card => (
+          <div key={card.label} className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">{card.label}</p>
+            <p className="stat-card-value">{card.value}</p>
+            <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          </div>
+        ))}
       </div>
 
       <div className="glass-panel rounded-3xl">
         <div className="p-6 border-b border-white/40">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Новое сообщение</p>
-          <h3 className="text-xl font-semibold text-slate-900 mt-1">Отправить сообщение</h3>
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Новое сообщение</p>
+          <h3 className="text-2xl font-semibold text-[var(--foreground)] mt-1">Отправить клиенту</h3>
+          <p className="text-sm text-[var(--muted)]">Выберите клиента и задайте тон диалога без переключения вкладок.</p>
         </div>
         <div className="p-6">
           {error && (

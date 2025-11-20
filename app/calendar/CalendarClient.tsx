@@ -50,6 +50,8 @@ export default function CalendarClient() {
     type: 'meeting',
     contactId: ''
   })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [eventTypeFilter, setEventTypeFilter] = useState<'all' | 'meeting' | 'call' | 'task' | 'other'>('all')
 
   useEffect(() => {
     fetchData()
@@ -219,10 +221,10 @@ export default function CalendarClient() {
     return days
   }
 
-  const getEventsForDate = (date: Date | null) => {
+  const getEventsForDate = (date: Date | null, list: Event[] = filteredEvents) => {
     if (!date) return []
     const dateStr = date.toISOString().split('T')[0]
-    return events.filter(event => {
+    return list.filter(event => {
       const eventDate = new Date(event.startDate).toISOString().split('T')[0]
       return eventDate === dateStr
     })
@@ -237,6 +239,42 @@ export default function CalendarClient() {
     }
     return colors[type] || colors.other
   }
+
+  const filteredEvents = events.filter(event => {
+    const term = searchTerm.trim().toLowerCase()
+    const matchesSearch = term
+      ? event.title.toLowerCase().includes(term) ||
+        (event.description?.toLowerCase().includes(term)) ||
+        (event.contact?.name?.toLowerCase().includes(term)) ||
+        (event.contact?.email?.toLowerCase().includes(term))
+      : true
+    const matchesType = eventTypeFilter === 'all' || event.type === eventTypeFilter
+    return matchesSearch && matchesType
+  })
+
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const nextWeek = new Date(now)
+  nextWeek.setDate(now.getDate() + 7)
+
+  const totalEvents = filteredEvents.length
+  const meetingsCount = filteredEvents.filter(event => event.type === 'meeting').length
+  const callsCount = filteredEvents.filter(event => event.type === 'call').length
+  const todayEvents = filteredEvents.filter(event => {
+    const eventDate = new Date(event.startDate)
+    eventDate.setHours(0, 0, 0, 0)
+    return eventDate.getTime() === now.getTime()
+  }).length
+  const upcomingWeekEvents = filteredEvents.filter(event => {
+    const eventDate = new Date(event.startDate)
+    return eventDate >= now && eventDate <= nextWeek
+  }).length
+  const uniqueContacts = new Set(
+    filteredEvents
+      .map(event => event.contact?.id)
+      .filter((id): id is number => typeof id === 'number')
+  ).size
+  const busyScore = totalEvents > 0 ? Math.min(100, Math.round((upcomingWeekEvents / totalEvents) * 100)) : 0
 
   const days = getDaysInMonth(currentDate)
   const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
@@ -256,20 +294,22 @@ export default function CalendarClient() {
   return (
     <div className="space-y-8">
       {/* Заголовок */}
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Календарь</p>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Календарь Pocket CRM</p>
+          <h1 className="text-3xl font-semibold text-[var(--foreground)]">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h1>
-          <p className="text-sm text-[var(--muted)]">Управляйте событиями и встречами</p>
+          <p className="text-sm text-[var(--muted)]">
+            Синхронизируйте встречи, звонки и задачи по всей команде в одном окне.
+          </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => {
               window.location.href = '/api/export/events?format=excel'
             }}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary text-sm"
           >
             📥 Экспорт CSV
           </button>
@@ -277,7 +317,7 @@ export default function CalendarClient() {
             onClick={() => {
               window.open('/api/integrations/calendar/ics', '_blank')
             }}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary text-sm"
           >
             📅 iCal / Google
           </button>
@@ -297,21 +337,70 @@ export default function CalendarClient() {
               })
               setIsModalOpen(true)
             }}
-            className="btn-primary"
+            className="btn-primary text-sm"
           >
             + Новое событие
           </button>
         </div>
       </div>
-
-      {/* Фильтр по менеджеру */}
-      <div className="glass-panel px-6 py-5 rounded-3xl">
-        <UserFilter 
-          selectedUserId={selectedUserId} 
-          onUserChange={setSelectedUserId} 
-        />
+      
+      <div className="glass-panel rounded-3xl p-6 space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="Быстрый поиск по названию, клиенту или описанию..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-12 pr-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            />
+          </div>
+          <div className="min-w-[220px]">
+            <UserFilter 
+              selectedUserId={selectedUserId} 
+              onUserChange={setSelectedUserId} 
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: 'all', label: 'Все' },
+            { id: 'meeting', label: 'Встречи' },
+            { id: 'call', label: 'Звонки' },
+            { id: 'task', label: 'Задачи' },
+            { id: 'other', label: 'Прочее' },
+          ].map(option => (
+            <button
+              key={option.id}
+              onClick={() => setEventTypeFilter(option.id as typeof eventTypeFilter)}
+              className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all ${
+                eventTypeFilter === option.id
+                  ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg'
+                  : 'bg-white/80 text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
       
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Всего событий', value: totalEvents, note: `${meetingsCount} встреч · ${callsCount} звонков` },
+          { label: 'Сегодня', value: todayEvents, note: `${upcomingWeekEvents} в ближайшие 7 дней` },
+          { label: 'С клиентами', value: uniqueContacts, note: 'Уникальные контакты' },
+          { label: 'Загрузка недели', value: `${busyScore}%`, note: 'Заполненность слотов' },
+        ].map(card => (
+          <div key={card.label} className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">{card.label}</p>
+            <p className="stat-card-value">{card.value}</p>
+            <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Навигация календаря */}
       <div className="glass-panel p-6 rounded-3xl">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -430,21 +519,24 @@ export default function CalendarClient() {
       {/* Список событий */}
       <div className="glass-panel rounded-3xl">
         <div className="p-6 border-b border-white/40">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">События</p>
-          <h2 className="text-xl font-semibold text-slate-900 mt-1">Ближайшие события</h2>
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Лента событий</p>
+          <h2 className="text-2xl font-semibold text-[var(--foreground)] mt-1">Ближайшие активности</h2>
+          <p className="text-sm text-[var(--muted)]">Фокус на следующих шагах и быстрая реакция на изменения.</p>
         </div>
         <div className="p-6">
-          {events.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">📅</div>
               <h3 className="empty-state-title">Нет событий</h3>
               <p className="empty-state-description">
-                Создайте первое событие, чтобы начать планировать встречи и задачи
+                {searchTerm || eventTypeFilter !== 'all'
+                  ? 'Измените фильтры или очистите поиск, чтобы увидеть события'
+                  : 'Создайте первое событие, чтобы начать планировать встречи и задачи'}
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {events.slice(0, 10).map(event => {
+              {filteredEvents.slice(0, 10).map(event => {
                 const startDate = new Date(event.startDate)
                 return (
                   <div

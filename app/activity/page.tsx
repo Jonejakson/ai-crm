@@ -43,6 +43,7 @@ export default function ActivityPage() {
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<string>('all')
   const [limit, setLimit] = useState(50)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const fetchLogs = async () => {
     setLoading(true)
@@ -76,9 +77,28 @@ export default function ActivityPage() {
     fetchLogs()
   }, [filter, limit])
 
+  const filteredLogs = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim()
+    if (!term) return logs
+    return logs.filter(log => {
+      const description = log.description?.toLowerCase() ?? ''
+      const action = log.action.toLowerCase()
+      const label = ENTITY_MAP[log.entityType]?.label?.toLowerCase() ?? ''
+      const userName = log.user?.name?.toLowerCase() ?? ''
+      const userEmail = log.user?.email?.toLowerCase() ?? ''
+      return (
+        description.includes(term) ||
+        action.includes(term) ||
+        label.includes(term) ||
+        userName.includes(term) ||
+        userEmail.includes(term)
+      )
+    })
+  }, [logs, searchTerm])
+
   const summary = useMemo(() => {
-    const total = logs.length
-    const today = logs.filter((log) => {
+    const total = filteredLogs.length
+    const today = filteredLogs.filter((log) => {
       const date = new Date(log.createdAt)
       const now = new Date()
       return (
@@ -87,13 +107,65 @@ export default function ActivityPage() {
         date.getFullYear() === now.getFullYear()
       )
     }).length
-    const byType = logs.reduce<Record<string, number>>((acc, log) => {
+    const byType = filteredLogs.reduce<Record<string, number>>((acc, log) => {
       acc[log.entityType] = (acc[log.entityType] || 0) + 1
       return acc
     }, {})
 
     return { total, today, byType }
-  }, [logs])
+  }, [filteredLogs])
+
+  const uniqueUsers = useMemo(() => {
+    const ids = filteredLogs
+      .map((log) => log.user?.id)
+      .filter((id): id is number => typeof id === 'number')
+    return new Set(ids).size
+  }, [filteredLogs])
+
+  const avgPerUser = uniqueUsers > 0 ? Math.max(1, Math.round(filteredLogs.length / uniqueUsers)) : 0
+
+  const topEntity = useMemo(() => {
+    const entries = Object.entries(summary.byType)
+    if (entries.length === 0) return null
+    const [entity, count] = entries.sort((a, b) => b[1] - a[1])[0]
+    return {
+      label: ENTITY_MAP[entity]?.label || entity,
+      count,
+    }
+  }, [summary.byType])
+
+  const lastActivityAt = filteredLogs[0]?.createdAt
+
+  const summaryCards = [
+    {
+      title: 'Изменения сегодня',
+      value: summary.today,
+      subtitle: 'За последние 24 часа',
+      gradient: 'from-blue-500 to-cyan-500',
+      icon: '⚡',
+    },
+    {
+      title: 'Событий в выборке',
+      value: summary.total,
+      subtitle: 'С учётом фильтров',
+      gradient: 'from-purple-500 to-pink-500',
+      icon: '📊',
+    },
+    {
+      title: 'Активных пользователей',
+      value: uniqueUsers,
+      subtitle: uniqueUsers > 0 ? `${avgPerUser} действий на человека` : 'Пока нет действий',
+      gradient: 'from-emerald-500 to-teal-500',
+      icon: '👥',
+    },
+    {
+      title: 'Ведущая сущность',
+      value: topEntity ? topEntity.count : '—',
+      subtitle: topEntity ? topEntity.label : 'Нет данных',
+      gradient: 'from-amber-500 to-orange-500',
+      icon: '🧩',
+    },
+  ]
 
   if (loading && logs.length === 0) {
     return (
@@ -108,83 +180,50 @@ export default function ActivityPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
             Лента активности
           </p>
           <h1 className="text-3xl font-semibold text-[var(--foreground)]">История действий</h1>
           <p className="text-sm text-[var(--muted)]">
-            Отслеживайте изменения по сделкам, контактам и задачам в реальном времени.
+            Анализируйте важные изменения по сделкам, контактам и задачам, чтобы команда оставалась синхронизированной.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="rounded-2xl border border-white/60 bg-white/80 px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-0"
-          >
-            {[25, 50, 100, 200].map((value) => (
-              <option key={value} value={value}>
-                Последние {value}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={fetchLogs}
-            className="btn-secondary"
-            disabled={loading}
-          >
-            ↻ Обновить
-          </button>
+        <div className="text-sm text-[var(--muted)]">
+          {lastActivityAt
+            ? `Обновлено ${new Date(lastActivityAt).toLocaleTimeString('ru-RU', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}`
+            : 'Нет данных для выбранных фильтров'}
         </div>
       </div>
 
       <div className="glass-panel p-6 rounded-3xl">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {[
-            {
-              label: 'Изменений сегодня',
-              value: summary.today,
-              description: 'За день',
-              gradient: 'from-blue-500 to-cyan-500',
-              icon: '✨',
-            },
-            {
-              label: 'Логов в выборке',
-              value: summary.total,
-              description: 'Всего событий',
-              gradient: 'from-purple-500 to-pink-500',
-              icon: '📊',
-            },
-            {
-              label: 'Активные сущности',
-              value: Object.keys(summary.byType).length,
-              description: 'По типам',
-              gradient: 'from-emerald-500 to-teal-500',
-              icon: '🧩',
-            },
-          ].map((card) => (
-            <div key={card.label} className="stat-card group relative overflow-hidden">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map((card) => (
+            <div key={card.title} className="stat-card group relative overflow-hidden">
               <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-10 transition-opacity`} />
               <div className="relative flex items-start justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{card.description}</p>
+                  <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">{card.subtitle}</p>
                   <p className={`stat-card-value bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
                     {card.value}
                   </p>
-                  <p className="text-sm text-[var(--muted)]">{card.label}</p>
+                  <p className="text-sm text-[var(--muted)]">{card.title}</p>
                 </div>
                 <div className="text-3xl">{card.icon}</div>
               </div>
-              {card.label === 'Активные сущности' && (
+              {card.title === 'Ведущая сущность' && (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-[var(--muted)]">
-                  {Object.entries(summary.byType).map(([type, count]) => (
-                    <span key={type} className="rounded-full bg-white/80 border border-[var(--border)] px-3 py-1">
-                      {ENTITY_MAP[type]?.label || type}: {count}
-                    </span>
-                  ))}
-                  {Object.keys(summary.byType).length === 0 && (
+                  {Object.entries(summary.byType).length > 0 ? (
+                    Object.entries(summary.byType).map(([type, count]) => (
+                      <span key={type} className="rounded-full bg-white/80 border border-[var(--border)] px-3 py-1">
+                        {ENTITY_MAP[type]?.label || type}: {count}
+                      </span>
+                    ))
+                  ) : (
                     <span className="text-[var(--muted-soft)]">Нет данных</span>
                   )}
                 </div>
@@ -194,7 +233,39 @@ export default function ActivityPage() {
         </div>
       </div>
 
-      <div className="glass-panel p-6 rounded-3xl space-y-6">
+      <div className="glass-panel p-6 rounded-3xl space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative flex-1">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+            <input
+              type="text"
+              placeholder="Поиск по действию, описанию или пользователю..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-12 pr-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <select
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              className="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+            >
+              {[25, 50, 100, 200].map((value) => (
+                <option key={value} value={value}>
+                  Последние {value}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={fetchLogs}
+              className="btn-secondary text-sm"
+              disabled={loading}
+            >
+              ↻ Обновить
+            </button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2">
           {filters.map((item) => (
             <button
@@ -210,28 +281,34 @@ export default function ActivityPage() {
             </button>
           ))}
         </div>
-
         {error && (
           <div className="rounded-2xl border border-[var(--error)]/30 bg-[var(--error-soft)] px-4 py-3 text-sm text-[var(--error)]">
             {error}
           </div>
         )}
+        <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+          Показано записей: {filteredLogs.length}
+        </p>
+      </div>
 
+      <div className="glass-panel p-6 rounded-3xl">
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="loading-spinner h-10 w-10 border-2 border-b-transparent border-[var(--primary)]" />
           </div>
-        ) : logs.length === 0 ? (
+        ) : filteredLogs.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">📭</div>
-            <h3 className="empty-state-title">Пока нет записей активности</h3>
+            <h3 className="empty-state-title">Нет записей по текущим условиям</h3>
             <p className="empty-state-description">
-              Выполните действия в CRM, чтобы увидеть историю изменений.
+              {searchTerm || filter !== 'all'
+                ? 'Попробуйте изменить фильтры или очистить поиск'
+                : 'Выполните действия в CRM, чтобы увидеть историю изменений.'}
             </p>
           </div>
         ) : (
           <div className="space-y-4">
-            {logs.map((log) => (
+            {filteredLogs.map((log) => (
               <div
                 key={log.id}
                 className="card-interactive flex flex-col gap-3"

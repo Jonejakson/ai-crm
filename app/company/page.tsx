@@ -51,6 +51,7 @@ export default function CompanyPage() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
+  const [userSearch, setUserSearch] = useState('')
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -423,20 +424,70 @@ export default function CompanyPage() {
     return null
   }
 
+  const filteredUsers = users.filter((user) => {
+    const term = userSearch.toLowerCase().trim()
+    if (!term) return true
+    return (
+      user.name.toLowerCase().includes(term) ||
+      user.email.toLowerCase().includes(term) ||
+      getRoleName(user.role).toLowerCase().includes(term)
+    )
+  })
+
+  const roleStats = users.reduce<Record<string, number>>((acc, user) => {
+    acc[user.role] = (acc[user.role] || 0) + 1
+    return acc
+  }, {})
+
+  const summaryCards = [
+    {
+      label: 'Команда',
+      value: users.length,
+      note: `Админов ${roleStats.admin ?? 0}, менеджеров ${roleStats.manager ?? 0}`,
+    },
+    {
+      label: 'Тариф',
+      value: subscription?.plan?.name ?? 'Не выбран',
+      note: subscription?.plan ? formatPrice(subscription.plan) : 'Подключите план',
+    },
+    {
+      label: 'Следующее продление',
+      value: subscription?.currentPeriodEnd
+        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
+        : '—',
+      note: subscription?.currentPeriodEnd ? 'Автопродление активно' : 'Ещё не настроено',
+    },
+    {
+      label: 'Фильтр',
+      value: `${filteredUsers.length} из ${users.length}`,
+      note: userSearch ? 'Применён поиск' : 'Все пользователи',
+    },
+  ]
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Компания</p>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">Управление компанией</h1>
-          <p className="text-sm text-[var(--muted)]">Настройки пользователей, прав доступа и тарифов</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Профиль компании</p>
+          <h1 className="text-3xl font-semibold text-[var(--foreground)]">Управление командой и тарифами</h1>
+          <p className="text-sm text-[var(--muted)]">Контролируйте доступ, роли и подписку Pocket CRM из одного окна.</p>
         </div>
         <a
           href="/company/custom-fields"
-          className="btn-secondary flex items-center gap-2"
+          className="btn-secondary text-sm"
         >
           🧩 Кастомные поля
         </a>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">{card.label}</p>
+            <p className="stat-card-value">{card.value}</p>
+            <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          </div>
+        ))}
       </div>
 
       {/* Сообщения */}
@@ -466,21 +517,21 @@ export default function CompanyPage() {
       <section className="space-y-4 mb-8">
         <div className="glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Текущий тариф</p>
-            <h2 className="text-2xl font-semibold text-slate-900">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Текущий тариф</p>
+            <h2 className="text-2xl font-semibold text-[var(--foreground)]">
               {subscription?.plan?.name ?? 'План не выбран'}
             </h2>
-            <p className="text-sm text-slate-500">
-              {subscription?.plan?.description ?? 'Выберите подходящий тариф, чтобы открыть доступ к расширенным возможностям.'}
+            <p className="text-sm text-[var(--muted)]">
+              {subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
             </p>
           </div>
-          <div className="text-sm text-slate-500 text-left md:text-right">
+          <div className="text-sm text-[var(--muted)] text-left md:text-right">
             {subscription?.plan ? (
               <>
-                <p className="text-lg font-semibold text-slate-900">{formatPrice(subscription.plan)}</p>
+                <p className="text-lg font-semibold text-[var(--foreground)]">{formatPrice(subscription.plan)}</p>
                 {subscription?.currentPeriodEnd && (
-                  <span className="text-xs text-slate-400">
-                    Следующее продление: {new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}
+                  <span className="text-xs text-[var(--muted)]">
+                    Продление: {new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}
                   </span>
                 )}
               </>
@@ -522,12 +573,12 @@ export default function CompanyPage() {
                   className={`card h-full flex flex-col gap-4 border ${isCurrent ? 'ring-2 ring-[var(--primary)]/50' : ''}`}
                 >
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.35em] text-slate-400">{plan.slug}</p>
-                    <h3 className="text-2xl font-semibold text-slate-900">{plan.name}</h3>
-                    <p className="text-sm text-slate-500">{plan.description}</p>
-                    <p className="text-3xl font-semibold text-slate-900">{formatPrice(plan)}</p>
+                    <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">{plan.slug}</p>
+                    <h3 className="text-2xl font-semibold text-[var(--foreground)]">{plan.name}</h3>
+                    <p className="text-sm text-[var(--muted)]">{plan.description}</p>
+                    <p className="text-3xl font-semibold text-[var(--foreground)]">{formatPrice(plan)}</p>
                   </div>
-                  <ul className="space-y-2 text-sm text-slate-600 flex-1">
+                  <ul className="space-y-2 text-sm text-[var(--muted)] flex-1">
                     {items.map((item, index) => (
                       <li key={`${plan.id}-${index}`} className="flex items-start gap-2">
                         <span className="text-[var(--primary)] mt-1">•</span>
@@ -557,7 +608,7 @@ export default function CompanyPage() {
         {/* Форма создания пользователя */}
         <div className="glass-panel rounded-3xl p-6 space-y-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Команда</p>
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Команда</p>
             <h2 className="text-xl font-semibold text-[var(--foreground)]">Создать нового пользователя</h2>
           </div>
           
@@ -634,27 +685,42 @@ export default function CompanyPage() {
         </div>
 
         {/* Список пользователей */}
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
+        <div className="glass-panel rounded-3xl p-6 space-y-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Команда</p>
+              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Команда</p>
               <h2 className="text-xl font-semibold text-[var(--foreground)]">
                 Пользователи компании ({users.length})
               </h2>
             </div>
+            <div className="relative w-full md:w-72">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-[var(--muted)]">🔍</span>
+              <input
+                type="text"
+                placeholder="Поиск по имени или email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-10 pr-4 py-2.5 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+              />
+            </div>
           </div>
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            Найдено: {filteredUsers.length}
+          </p>
 
-          {users.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <div className="empty-state">
               <div className="empty-state-icon">👥</div>
               <h3 className="empty-state-title">Пользователи не найдены</h3>
               <p className="empty-state-description">
-                Добавьте первого сотрудника, чтобы начать совместную работу.
+                {userSearch
+                  ? 'Сбросьте поиск или добавьте нового пользователя.'
+                  : 'Добавьте первого сотрудника, чтобы начать совместную работу.'}
               </p>
             </div>
           ) : (
             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <div
                   key={user.id}
                   className="card-interactive"

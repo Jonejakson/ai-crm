@@ -120,6 +120,8 @@ export default function DealsPage() {
     expectedCloseDate: '',
     pipelineId: ''
   })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -131,6 +133,15 @@ export default function DealsPage() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   )
+
+  const handlePipelineChange = (pipelineId: number) => {
+    setSelectedPipeline(pipelineId)
+    const pipeline = pipelines.find((p) => p.id === pipelineId)
+    if (pipeline) {
+      const pipelineStages = getStagesFromPipeline(pipeline)
+      setFormData(prev => ({ ...prev, stage: pipelineStages[0] || '' }))
+    }
+  }
 
   useEffect(() => {
     fetchData()
@@ -636,7 +647,20 @@ export default function DealsPage() {
   }
 
   // Применяем фильтры к сделкам
+  const normalizedSearch = searchTerm.trim().toLowerCase()
   const filteredDeals = deals.filter(deal => {
+    if (normalizedSearch) {
+      const searchFields = [
+        deal.title,
+        deal.contact?.name,
+        deal.contact?.company || '',
+        deal.contact?.email || '',
+      ]
+      const matchesSearch = searchFields.some(field =>
+        field?.toLowerCase().includes(normalizedSearch)
+      )
+      if (!matchesSearch) return false
+    }
     // Фильтр по статусам/этапам
     if (filters.status && filters.status.length > 0) {
       if (!filters.status.includes(deal.stage)) return false
@@ -688,6 +712,18 @@ export default function DealsPage() {
   const totalAmount = filteredDeals.reduce((sum, deal) => sum + deal.amount, 0)
   const wonDeals = filteredDeals.filter(d => d.stage === 'Закрыто и реализованное')
   const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
+  const activeDealsCount = filteredDeals.filter(deal => !deal.stage.toLowerCase().includes('закрыто')).length
+  const averageCheck = filteredDeals.length ? Math.round(totalAmount / filteredDeals.length) : 0
+  const conversionRate = filteredDeals.length ? Math.round((wonDeals.length / filteredDeals.length) * 100) : 0
+  const upcomingClosings = filteredDeals.filter(deal => {
+    if (!deal.expectedCloseDate) return false
+    const closeDate = new Date(deal.expectedCloseDate)
+    const now = new Date()
+    const twoWeeks = new Date()
+    twoWeeks.setDate(now.getDate() + 14)
+    return closeDate >= now && closeDate <= twoWeeks
+  }).length
+  const currentPipeline = selectedPipeline ? pipelines.find((p) => p.id === selectedPipeline) : null
 
   if (loading) {
     return (
@@ -718,139 +754,116 @@ export default function DealsPage() {
   }
 
   return (
-    <div className="space-y-8 relative">
-      {/* Заголовок */}
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.4em] text-slate-400">
+    <div className="space-y-7 relative">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
             Управление воронкой
           </p>
-          <h1 className="text-3xl font-semibold text-slate-900">Сделки</h1>
-          <p className="text-slate-500">
-            Отслеживайте динамику процессов, перетаскивайте карточки и контролируйте этапы.
+          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Сделки</h1>
+          <p className="text-sm text-[var(--muted)]">
+            Перетаскивайте карточки между этапами и контролируйте воронку в реальном времени.
           </p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
               window.location.href = '/api/export/deals?format=excel'
             }}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary text-sm"
           >
-            <span className="text-lg">⬇️</span>
-            Экспорт CSV
+            📥 Экспорт CSV
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary"
+            className="btn-primary text-sm"
           >
             + Новая сделка
           </button>
         </div>
       </div>
 
-      {/* Фильтры */}
-      <div className="glass-panel px-6 py-5 rounded-3xl space-y-4">
-        <UserFilter
-          selectedUserId={selectedUserId}
-          onUserChange={setSelectedUserId}
-        />
-        <AdvancedFilters
-          entityType="deals"
-          onFilterChange={setFilters}
-          savedFilters={savedFilters}
-          onSaveFilter={(name, filterData) => {
-            const newFilter = {
-              id: Date.now(),
-              name,
-              filters: filterData,
-            }
-            const updated = [...savedFilters, newFilter]
-            setSavedFilters(updated)
-            localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
-          }}
-          onDeleteFilter={(id) => {
-            const updated = savedFilters.filter(f => f.id !== id)
-            setSavedFilters(updated)
-            localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
-          }}
-        />
-      </div>
-
-      {/* Статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <div className="card">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Всего сделок</p>
-          <p className="text-4xl font-semibold mt-3">{filteredDeals.length}</p>
-          <p className="text-xs text-slate-400 mt-2">Активные + архивные</p>
-        </div>
-        <div className="card">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Общая сумма</p>
-          <p className="text-4xl font-semibold text-blue-600 mt-3">
-            {totalAmount.toLocaleString('ru-RU')} ₽
-          </p>
-          <p className="text-xs text-slate-400 mt-2">Все стадии</p>
-        </div>
-        <div className="card">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Отгружено</p>
-          <p className="text-4xl font-semibold text-emerald-500 mt-3">{wonDeals.length}</p>
-          <p className="text-xs text-slate-400 mt-2">Успешно реализовано</p>
-        </div>
-        <div className="card">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сумма</p>
-          <p className="text-4xl font-semibold text-emerald-500 mt-3">
-            {wonAmount.toLocaleString('ru-RU')} ₽
-          </p>
-          <p className="text-xs text-slate-400 mt-2">Сумма закрытых сделок</p>
-        </div>
-      </div>
-
-      {/* Канбан-доска */}
-      <div className="glass-panel p-6 rounded-3xl shadow-xl">
-        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xs uppercase tracking-[0.35em] text-slate-400">
-              Воронка
-            </span>
+      <div className="glass-panel rounded-3xl space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Поиск по названию сделки или клиенту..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[220px]">
+              <UserFilter
+                selectedUserId={selectedUserId}
+                onUserChange={setSelectedUserId}
+              />
+            </div>
             <select
               value={selectedPipeline || ''}
-              onChange={(e) => {
-                const pipelineId = Number(e.target.value)
-                setSelectedPipeline(pipelineId)
-                const pipeline = pipelines.find(p => p.id === pipelineId)
-                if (pipeline) {
-                  const stages = getStagesFromPipeline(pipeline)
-                  setFormData(prev => ({ ...prev, stage: stages[0] || '' }))
-                }
-              }}
-              className="px-4 py-2 rounded-xl border border-[var(--border-soft)] bg-white/80 focus:border-[var(--primary)] focus:ring-0 text-sm"
+              onChange={(e) => handlePipelineChange(Number(e.target.value))}
+              className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
             >
               {pipelines.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
+            <button
+              className="btn-secondary text-sm"
+              onClick={() => setFiltersOpen(prev => !prev)}
+            >
+              {filtersOpen ? 'Скрыть фильтры' : 'Доп. фильтры'}
+            </button>
           </div>
-          <div className="flex flex-wrap gap-3">
+        </div>
+        {filtersOpen && (
+          <AdvancedFilters
+            entityType="deals"
+            onFilterChange={setFilters}
+            savedFilters={savedFilters}
+            onSaveFilter={(name, filterData) => {
+              const newFilter = {
+                id: Date.now(),
+                name,
+                filters: filterData,
+              }
+              const updated = [...savedFilters, newFilter]
+              setSavedFilters(updated)
+              localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
+            }}
+            onDeleteFilter={(id) => {
+              const updated = savedFilters.filter(f => f.id !== id)
+              setSavedFilters(updated)
+              localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
+            }}
+          />
+        )}
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <p className="text-sm text-[var(--muted)]">
+            Текущая воронка: {currentPipeline?.name || 'не выбрано'}
+          </p>
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={async () => {
                 if (!selectedPipeline) return
                 const pipeline = pipelines.find(p => p.id === selectedPipeline)
                 if (!pipeline) return
-                
+
                 const pipelineStages = getStagesFromPipeline(pipeline)
                 const validStages = [...pipelineStages, UNASSIGNED_STAGE]
-                
+
                 const dealsToUpdate = deals.filter(deal => !validStages.includes(deal.stage))
-                
+
                 if (dealsToUpdate.length === 0) {
                   alert('Все сделки уже в правильных этапах')
                   return
                 }
-                
+
                 if (!confirm(`Переместить ${dealsToUpdate.length} сделок в "Неразобранные"?`)) {
                   return
                 }
-                
+
                 const updatePromises = dealsToUpdate.map(deal =>
                   fetch('/api/deals', {
                     method: 'PUT',
@@ -867,7 +880,7 @@ export default function DealsPage() {
                     }),
                   })
                 )
-                
+
                 await Promise.all(updatePromises)
                 await fetchData()
                 alert('Сделки перемещены в "Неразобранные"')
@@ -885,6 +898,42 @@ export default function DealsPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: 'Всего сделок', value: filteredDeals.length, note: 'Все стадии' },
+          { label: 'В работе', value: activeDealsCount, note: `${upcomingClosings} закрытий в 14 дней` },
+          { label: 'Портфель', value: `${totalAmount.toLocaleString('ru-RU')} ₽`, note: `Средний чек ${averageCheck.toLocaleString('ru-RU')} ₽` },
+          { label: 'Конверсия', value: `${conversionRate}%`, note: `${wonDeals.length} закрыто успешно` },
+        ].map((card) => (
+          <div key={card.label} className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">{card.label}</p>
+            <p className="stat-card-value">{card.value}</p>
+            <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Канбан-доска */}
+      <div className="glass-panel p-6 rounded-3xl shadow-xl">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Активная воронка</p>
+            <p className="text-base font-semibold text-[var(--foreground)]">
+              {currentPipeline?.name || '—'}
+            </p>
+          </div>
+          <button
+            onClick={() => setIsStagesEditorOpen(true)}
+            className="btn-secondary text-xs"
+          >
+            ⚙️ Настроить этапы
+          </button>
+        </div>
+        <p className="text-sm text-[var(--muted)] mb-4">
+          Перетаскивайте карточки между колонками, чтобы изменять этапы и держать воронку в актуальном состоянии.
+        </p>
 
         <DndContext
           sensors={sensors}
