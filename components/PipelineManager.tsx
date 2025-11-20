@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 interface Pipeline {
@@ -156,6 +156,36 @@ export default function PipelineManager({
     })
   }
 
+  // Блокируем скролл body при открытом модальном окне
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
+  // Закрытие по ESC
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+        setIsCreating(false)
+        setEditingPipeline(null)
+        setFormData({ name: '', stages: DEFAULT_STAGES })
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+    }
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [isOpen])
+
   return (
     <>
       <button
@@ -223,14 +253,21 @@ export default function PipelineManager({
                         </div>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => onSelectPipeline(pipeline.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onSelectPipeline(pipeline.id)
+                              setIsOpen(false)
+                            }}
                             className="px-3 py-1.5 text-sm rounded-lg bg-[var(--background-soft)] hover:bg-[var(--primary-soft)] text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
                           >
                             Выбрать
                           </button>
                           {!pipeline.isDefault && (
                             <button
-                              onClick={() => handleSetDefault(pipeline.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSetDefault(pipeline.id)
+                              }}
                               className="px-3 py-1.5 text-sm rounded-lg bg-[var(--background-soft)] hover:bg-[var(--primary-soft)] text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
                               title="Установить по умолчанию"
                             >
@@ -240,7 +277,10 @@ export default function PipelineManager({
                             </button>
                           )}
                           <button
-                            onClick={() => startEdit(pipeline)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              startEdit(pipeline)
+                            }}
                             className="px-3 py-1.5 text-sm rounded-lg bg-[var(--background-soft)] hover:bg-[var(--primary-soft)] text-[var(--foreground)] hover:text-[var(--primary)] transition-colors"
                             title="Редактировать"
                           >
@@ -250,7 +290,10 @@ export default function PipelineManager({
                           </button>
                           {pipelines.length > 1 && !pipeline.isDefault && (
                             <button
-                              onClick={() => handleDelete(pipeline.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDelete(pipeline.id)
+                              }}
                               className="px-3 py-1.5 text-sm rounded-lg bg-[var(--error-soft)] hover:bg-[var(--error)] text-[var(--error)] hover:text-white transition-colors"
                               title="Удалить"
                             >
