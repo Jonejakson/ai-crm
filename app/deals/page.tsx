@@ -169,7 +169,6 @@ export default function DealsPage() {
 
   useEffect(() => {
     fetchData()
-    fetchUsers()
     // Загружаем сохраненные фильтры из localStorage
     const saved = localStorage.getItem('savedFilters_deals')
     if (saved) {
@@ -181,6 +180,10 @@ export default function DealsPage() {
     }
 
   }, [selectedUserId])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [session])
 
   // Клавиатурные сокращения для страницы сделок
   useKeyboardShortcuts([

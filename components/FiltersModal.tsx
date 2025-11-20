@@ -291,7 +291,7 @@ export default function FiltersModal({
               )}
 
               {/* Фильтр по менеджерам (только для deals) */}
-              {entityType === 'deals' && users.length > 0 && onUserIdChange && (
+              {entityType === 'deals' && onUserIdChange && (
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-3">
                     Менеджер
@@ -303,13 +303,18 @@ export default function FiltersModal({
                       onUserIdChange(value === 'all' ? null : parseInt(value))
                     }}
                     className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    disabled={users.length === 0}
                   >
                     <option value="all">Все менеджеры</option>
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} {user.role === 'admin' ? ' [Админ]' : user.role === 'manager' ? ' [Менеджер]' : ''}
-                      </option>
-                    ))}
+                    {users.length > 0 ? (
+                      users.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} {user.role === 'admin' ? ' [Админ]' : user.role === 'manager' ? ' [Менеджер]' : ''}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="all" disabled>Загрузка...</option>
+                    )}
                   </select>
                 </div>
               )}
