@@ -16,9 +16,10 @@ interface SalesData {
 interface SalesChartProps {
   data: SalesData[]
   period: string
+  height?: number
 }
 
-export default function SalesChart({ data, period }: SalesChartProps) {
+export default function SalesChart({ data, period, height = 400 }: SalesChartProps) {
   // Форматируем даты для отображения
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -34,7 +35,7 @@ export default function SalesChart({ data, period }: SalesChartProps) {
   }))
 
   return (
-    <ResponsiveContainer width="100%" height={400}>
+    <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="colorWonAmount" x1="0" y1="0" x2="0" y2="1">

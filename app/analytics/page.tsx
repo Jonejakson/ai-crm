@@ -408,24 +408,26 @@ export default function AnalyticsPage() {
         ))}
       </div>
 
-      {/* Новые разделы аналитики */}
-      <AnalyticsTabs 
-        period={period}
-        selectedUserId={selectedUserId}
-        selectedPipelineId={selectedPipelineId}
-        analyticsData={data}
-      />
-
-      {/* График динамики */}
-      <div className="glass-panel rounded-3xl">
-        <div className="p-6 border-b border-white/40">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">График</p>
-          <h2 className="text-xl font-semibold text-slate-900 mt-1">Динамика за период</h2>
+      {/* Новые разделы аналитики + общий график */}
+      <div className="grid grid-cols-1 gap-6 xl:[grid-template-columns:1.3fr_0.9fr]">
+        <div>
+          <AnalyticsTabs 
+            period={period}
+            selectedUserId={selectedUserId}
+            selectedPipelineId={selectedPipelineId}
+            analyticsData={data}
+          />
         </div>
-        <div className="p-6">
-        {data.chartData.length > 0 ? (
-          <div className="overflow-x-auto">
-            <svg width={chartWidth} height={chartHeight + 60} className="w-full">
+
+        <div className="glass-panel rounded-3xl h-full flex flex-col">
+          <div className="p-6 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">График</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Динамика за период</h2>
+          </div>
+          <div className="p-6 flex-1 flex flex-col">
+          {data.chartData.length > 0 ? (
+            <div className="overflow-x-auto flex-1">
+              <svg width={chartWidth} height={chartHeight + 60} className="w-full">
               {/* Сетка и оси */}
               <defs>
                 <linearGradient id="contactsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -671,35 +673,36 @@ export default function AnalyticsPage() {
                   </g>
                 )
               })}
-            </svg>
+              </svg>
+            </div>
+          ) : (
+            <div className="empty-state flex-1">
+              <div className="empty-state-icon">📊</div>
+              <h3 className="empty-state-title">Нет данных</h3>
+              <p className="empty-state-description">
+                Нет данных за выбранный период. Попробуйте выбрать другой период.
+              </p>
+            </div>
+          )}
+          <div className="flex flex-wrap justify-center gap-4 mt-6 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--primary)]"></div>
+              <span className="text-[var(--muted)]">Контакты</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--warning)]"></div>
+              <span className="text-[var(--muted)]">Задачи</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--accent)]"></div>
+              <span className="text-[var(--muted)]">Сделки</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[var(--success)]"></div>
+              <span className="text-[var(--muted)]">События</span>
+            </div>
           </div>
-        ) : (
-          <div className="empty-state">
-            <div className="empty-state-icon">📊</div>
-            <h3 className="empty-state-title">Нет данных</h3>
-            <p className="empty-state-description">
-              Нет данных за выбранный период. Попробуйте выбрать другой период.
-            </p>
           </div>
-        )}
-        <div className="flex flex-wrap justify-center gap-4 mt-6 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-[var(--primary)]"></div>
-            <span className="text-[var(--muted)]">Контакты</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-[var(--warning)]"></div>
-            <span className="text-[var(--muted)]">Задачи</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-[var(--accent)]"></div>
-            <span className="text-[var(--muted)]">Сделки</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-[var(--success)]"></div>
-            <span className="text-[var(--muted)]">События</span>
-          </div>
-        </div>
         </div>
       </div>
 

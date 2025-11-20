@@ -169,7 +169,7 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
               <div className="space-y-4">
                 <h2 className="text-xl font-semibold text-[var(--foreground)]">Динамика продаж</h2>
                 {salesData.length > 0 ? (
-                  <SalesChart data={salesData} period={period} />
+                  <SalesChart data={salesData} period={period} height={320} />
                 ) : (
                   <div className="text-center py-12 text-[var(--muted)]">
                     Нет данных за выбранный период
