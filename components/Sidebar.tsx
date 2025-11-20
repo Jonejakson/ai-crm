@@ -114,7 +114,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   return (
     <>
       {/* Десктопный сайдбар */}
-      <div className="hidden md:flex w-64 bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-sm backdrop-blur-xl bg-opacity-95">
+      <div className="hidden md:flex w-64 h-screen bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-sm backdrop-blur-xl bg-opacity-95">
         <SidebarContent />
       </div>
 
