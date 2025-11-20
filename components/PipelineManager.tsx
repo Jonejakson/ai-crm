@@ -200,17 +200,30 @@ export default function PipelineManager({
 
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4" 
           onClick={() => setIsOpen(false)}
-          style={{ isolation: 'isolate', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          style={{ 
+            isolation: 'isolate', 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 9999
+          }}
         >
           <div 
-            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden relative animate-scaleIn" 
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden relative animate-scaleIn" 
             onClick={(e) => e.stopPropagation()}
-            style={{ zIndex: 101, isolation: 'isolate', position: 'relative' }}
+            style={{ 
+              zIndex: 10000, 
+              isolation: 'isolate', 
+              position: 'relative',
+              margin: 'auto'
+            }}
           >
-            <div className="modal-header">
-              <h2 className="text-xl font-bold text-[var(--foreground)]">Управление воронками</h2>
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
+              <h2 className="text-2xl font-bold text-[var(--foreground)]">Управление воронками</h2>
               <button
                 onClick={() => {
                   setIsOpen(false)
@@ -218,7 +231,7 @@ export default function PipelineManager({
                   setEditingPipeline(null)
                   setFormData({ name: '', stages: DEFAULT_STAGES })
                 }}
-                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -226,7 +239,7 @@ export default function PipelineManager({
               </button>
             </div>
 
-            <div className="modal-body">
+            <div className="px-6 py-5 overflow-y-auto" style={{ maxHeight: 'calc(95vh - 100px)' }}>
               <div className="space-y-4">
                 {/* Список воронок */}
                 <div className="space-y-3">
