@@ -155,6 +155,7 @@ export default function DealsPage() {
         console.error('Error loading saved filters:', e)
       }
     }
+
   }, [selectedUserId])
 
   // Клавиатурные сокращения для страницы сделок
@@ -830,12 +831,15 @@ export default function DealsPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <PipelineManager
-                    pipelines={pipelines}
-                    onPipelinesChange={fetchData}
-                    onSelectPipeline={handlePipelineChange}
-                    selectedPipelineId={selectedPipeline}
-                  />
+                  <button
+                    onClick={() => setIsPipelineManagerOpen(true)}
+                    className="btn-secondary text-sm flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+                    </svg>
+                    Управление воронками
+                  </button>
                   <button
                     onClick={() => {
                       if (!selectedPipeline) return
@@ -1238,6 +1242,44 @@ export default function DealsPage() {
           onClose={() => setIsStagesEditorOpen(false)}
           unassignedStage={UNASSIGNED_STAGE}
         />
+      )}
+
+      {/* Модальное окно управления воронками */}
+      {isPipelineManagerOpen && (
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-lg flex items-center justify-center" 
+          onClick={() => setIsPipelineManagerOpen(false)}
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 99999
+          }}
+        >
+          <div 
+            className="bg-white w-full h-full md:w-[95vw] md:h-[95vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col" 
+            onClick={(e) => e.stopPropagation()}
+            style={{ 
+              zIndex: 100000, 
+              position: 'relative',
+              margin: 'auto'
+            }}
+          >
+            <PipelineManager
+              pipelines={pipelines}
+              onPipelinesChange={fetchData}
+              onSelectPipeline={(id) => {
+                handlePipelineChange(id)
+                setIsPipelineManagerOpen(false)
+              }}
+              selectedPipelineId={selectedPipeline}
+              isExternalOpen={isPipelineManagerOpen}
+              onExternalClose={() => setIsPipelineManagerOpen(false)}
+            />
+          </div>
+        </div>
       )}
 
       {/* Модальное окно создания нового клиента */}
