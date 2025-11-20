@@ -1,22 +1,6 @@
 'use client'
 
-interface LogoProps {
-  variant?: 'full' | 'icon' | 'text'
-  size?: 'sm' | 'md' | 'lg'
-  className?: string
-}
-
-export default function Logo({ variant = 'full', size = 'md', className = '' }: LogoProps) {
-  const sizeClasses = {
-    sm: { icon: 'w-5 h-5', text: 'text-sm' },
-    md: { icon: 'w-7 h-7', text: 'text-base' },
-    lg: { icon: 'w-9 h-9', text: 'text-lg' }
-  }
-
-  const currentSize = sizeClasses[size]
-
-  // Стильный логотип в виде конверта (Pocket CRM = CRM в кармане)
-  const EnvelopeIcon = () => (
+const EnvelopeIcon = () => (
     <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
       <defs>
         <linearGradient id="pocket-envelope-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -62,6 +46,21 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
       />
     </svg>
   )
+
+interface LogoProps {
+  variant?: 'full' | 'icon' | 'text'
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
+}
+
+export default function Logo({ variant = 'full', size = 'md', className = '' }: LogoProps) {
+  const sizeClasses = {
+    sm: { icon: 'w-5 h-5', text: 'text-sm' },
+    md: { icon: 'w-7 h-7', text: 'text-base' },
+    lg: { icon: 'w-9 h-9', text: 'text-lg' }
+  }
+
+  const currentSize = sizeClasses[size]
 
   if (variant === 'icon') {
     return (

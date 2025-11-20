@@ -9,8 +9,11 @@
   --surface: #ffffff;
   --foreground: #111827;
   --foreground-soft: #374151;
-  --muted: #6b7280;
+  --muted: #5b6475;
   --muted-soft: #9ca3af;
+  --panel: #ffffff;
+  --panel-muted: #f0f2f5;
+  --radius-lg: 20px;
   
   /* Основные цвета - глубокий зеленый */
   --primary: #047857;
@@ -104,8 +107,7 @@
 }
 
 body {
-  background: linear-gradient(135deg, var(--background) 0%, var(--background-soft) 50%, var(--background) 100%);
-  background-attachment: fixed;
+  background: var(--background);
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Inter', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -273,11 +275,17 @@ body {
 }
 
 .glass-panel {
-  @apply bg-[var(--surface)] border border-[var(--border)] rounded-lg;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .glass-panel-strong {
-  @apply bg-[var(--surface)] border border-[var(--border)] rounded-lg shadow-sm;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
 }
 
 .kanban-column {
@@ -356,15 +364,15 @@ thead {
 }
 
 th {
-  @apply px-6 py-4 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider;
+  @apply px-5 py-3 text-left text-[0.7rem] font-semibold text-[var(--muted)] uppercase tracking-[0.08em];
 }
 
 td {
-  @apply px-6 py-4 text-sm text-[var(--foreground-soft)] border-b border-[var(--border-soft)];
+  @apply px-5 py-3 text-sm text-[var(--foreground)] border-b border-[var(--border-soft)];
 }
 
-tr:hover {
-  @apply bg-[var(--background-soft)];
+tbody tr:hover {
+  @apply bg-[var(--panel-muted)];
 }
 
 /* Модальные окна */
@@ -385,15 +393,30 @@ tr:hover {
 
 /* Статистические карточки */
 .stat-card {
-  @apply glass-panel p-6 hover:shadow-xl transition-all duration-300;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-card-value {
-  @apply text-3xl font-bold text-[var(--foreground)] mb-1;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 0.15rem;
 }
 
 .stat-card-label {
-  @apply text-sm text-[var(--muted)] font-medium;
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 /* Hover эффекты */

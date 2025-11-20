@@ -27,6 +27,7 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     name: '',
@@ -277,123 +278,151 @@ export default function ContactsPage() {
     )
   }
 
+  const newContacts = contacts.filter(contact => {
+    const created = new Date(contact.createdAt)
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    return created >= weekAgo
+  }).length
+  const contactsWithCompany = contacts.filter(contact => contact.company).length
+  const assignedContacts = contacts.filter(contact => contact.user).length
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="space-y-7">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold">Клиенты</p>
-          <h1 className="text-3xl font-bold text-[var(--foreground)]">Контакты компании</h1>
-          <p className="text-sm text-[var(--muted)]">Управляйте клиентской базой, фильтруйте по менеджерам, добавляйте новых.</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] font-semibold">Клиенты</p>
+          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Контакты компании</h1>
+          <p className="text-sm text-[var(--muted)]">Быстрый поиск, фильтрация по менеджерам и создание карточек.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          <button 
+        <div className="flex flex-wrap gap-2">
+          <button
             onClick={() => {
               window.location.href = '/api/export/contacts?format=excel'
             }}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary text-sm"
           >
             📥 Экспорт CSV
           </button>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary"
+            className="btn-primary text-sm"
           >
             + Добавить клиента
           </button>
         </div>
       </div>
 
-      <div className="glass-panel px-6 py-5 rounded-3xl">
-        <UserFilter 
-          selectedUserId={selectedUserId} 
-          onUserChange={setSelectedUserId} 
-        />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {[
+          { label: 'Всего контактов', value: contacts.length, note: `+${newContacts} за 7 дней` },
+          { label: 'С компанией', value: contactsWithCompany, note: `${Math.round((contactsWithCompany / Math.max(contacts.length, 1)) * 100)}% базы` },
+          { label: 'Закреплено за менеджерами', value: assignedContacts, note: `${assignedContacts ? Math.round((assignedContacts / Math.max(contacts.length, 1)) * 100) : 0}% активны` },
+        ].map((card) => (
+          <div key={card.label} className="stat-card">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">{card.label}</p>
+            <p className="text-2xl font-semibold text-[var(--foreground)]">{card.value}</p>
+            <p className="text-sm text-[var(--muted)]">{card.note}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="glass-panel rounded-3xl p-5 space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <input
-            type="text"
-            placeholder="Поиск по имени, email или компании..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:border-[var(--primary)] focus:ring-0"
-          />
+      <div className="glass-panel rounded-3xl space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Поиск по имени, email или компании..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn-secondary text-sm"
+              onClick={() => setIsFiltersOpen((prev) => !prev)}
+            >
+              {isFiltersOpen ? 'Скрыть фильтры' : 'Фильтры'}
+            </button>
+          </div>
+          <div className="w-full sm:w-auto sm:min-w-[240px]">
+            <UserFilter 
+              selectedUserId={selectedUserId} 
+              onUserChange={setSelectedUserId} 
+            />
+          </div>
         </div>
-        <AdvancedFilters
-          entityType="contacts"
-          onFilterChange={setFilters}
-          savedFilters={savedFilters}
-          onSaveFilter={(name, filterData) => {
-            const newFilter = {
-              id: Date.now(),
-              name,
-              filters: filterData,
-            }
-            setSavedFilters([...savedFilters, newFilter])
-            // Сохраняем в localStorage
-            localStorage.setItem('savedFilters_contacts', JSON.stringify([...savedFilters, newFilter]))
-          }}
-          onDeleteFilter={(id) => {
-            const updated = savedFilters.filter(f => f.id !== id)
-            setSavedFilters(updated)
-            localStorage.setItem('savedFilters_contacts', JSON.stringify(updated))
-          }}
-        />
+        {isFiltersOpen && (
+          <AdvancedFilters
+            entityType="contacts"
+            onFilterChange={setFilters}
+            savedFilters={savedFilters}
+            onSaveFilter={(name, filterData) => {
+              const newFilter = {
+                id: Date.now(),
+                name,
+                filters: filterData,
+              }
+              const updated = [...savedFilters, newFilter]
+              setSavedFilters(updated)
+              localStorage.setItem('savedFilters_contacts', JSON.stringify(updated))
+            }}
+            onDeleteFilter={(id) => {
+              const updated = savedFilters.filter(f => f.id !== id)
+              setSavedFilters(updated)
+              localStorage.setItem('savedFilters_contacts', JSON.stringify(updated))
+            }}
+          />
+        )}
       </div>
 
       <div className="table-container">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-[var(--background-soft)] to-white/80 text-left text-xs uppercase tracking-[0.35em] text-slate-400">
+        <table>
+          <thead>
             <tr>
-              <th className="px-6 py-4 font-semibold">Имя</th>
-              <th className="px-6 py-4 font-semibold">Email</th>
-              <th className="px-6 py-4 font-semibold">Телефон</th>
-              <th className="px-6 py-4 font-semibold">Компания</th>
-              <th className="px-6 py-4 font-semibold">Дата</th>
-              <th className="px-6 py-4 font-semibold">Действия</th>
+              <th>Имя</th>
+              <th>Email</th>
+              <th>Телефон</th>
+              <th>Компания</th>
+              <th>Дата</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--border-soft)]">
+          <tbody>
             {filteredContacts.map((contact) => (
-              <tr key={contact.id} className="table-row-hover">
-                <td className="px-6 py-4 whitespace-nowrap" data-label="Имя">
-                  <div className="flex items-center">
-                    <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-soft)] text-sm font-semibold text-[var(--primary)]">
+              <tr key={contact.id}>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--primary-soft)] text-sm font-semibold text-[var(--primary)]">
                       {contact.name.charAt(0).toUpperCase()}
                     </div>
-                    <a href={`/contacts/${contact.id}`} className="font-medium text-[var(--primary)] hover:underline">
-                      {contact.name}
-                    </a>
+                    <div className="flex flex-col">
+                      <a href={`/contacts/${contact.id}`} className="font-medium text-[var(--foreground)] hover:text-[var(--primary)]">
+                        {contact.name}
+                      </a>
+                      {contact.user && (
+                        <span className="text-xs text-[var(--muted)]">Менеджер: {contact.user.name}</span>
+                      )}
+                    </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-label="Email">
-                  {contact.email}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-label="Телефон">
-                  {contact.phone || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700" data-label="Компания">
-                  {contact.company || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-400" data-label="Дата">
-                  {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" data-label="Действия">
-                  <div className="flex gap-3">
+                <td>{contact.email}</td>
+                <td>{contact.phone || '—'}</td>
+                <td>{contact.company || '—'}</td>
+                <td>{new Date(contact.createdAt).toLocaleDateString('ru-RU')}</td>
+                <td>
+                  <div className="flex gap-2 justify-end">
                     <button
                       onClick={() => handleEdit(contact)}
-                      className="text-blue-500 hover:text-blue-700"
-                      title="Редактировать"
+                      className="btn-secondary text-xs px-3 py-1.5"
                     >
-                      ✏️
+                      Редактировать
                     </button>
                     <button
                       onClick={() => handleDelete(contact.id)}
-                      className="text-red-500 hover:text-red-700"
-                      title="Удалить"
+                      className="btn-ghost text-xs px-3 py-1.5 text-red-500 hover:text-red-600"
                     >
-                      🗑️
+                      Удалить
                     </button>
                   </div>
                 </td>
