@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
+import { UsersIcon, CheckCircleIcon, BriefcaseIcon, CurrencyIcon } from '@/components/Icons'
 
 interface Contact {
   id: number
@@ -150,7 +151,7 @@ export default function Dashboard() {
           { 
             label: 'Клиенты', 
             value: contacts.length, 
-            icon: '👥', 
+            Icon: UsersIcon, 
             note: `+${newContactsCount} за 7 дней`, 
             accent: 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600',
             gradient: 'from-blue-500 to-blue-600'
@@ -158,7 +159,7 @@ export default function Dashboard() {
           { 
             label: 'Активные задачи', 
             value: pendingTasks, 
-            icon: '✅', 
+            Icon: CheckCircleIcon, 
             note: overdueTasks ? `${overdueTasks} просрочено` : 'Без просрочки', 
             accent: 'bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600',
             gradient: 'from-amber-500 to-amber-600'
@@ -166,7 +167,7 @@ export default function Dashboard() {
           { 
             label: 'Активные сделки', 
             value: activeDeals, 
-            icon: '💼', 
+            Icon: BriefcaseIcon, 
             note: `${openDealsAmount.toLocaleString('ru-RU')} ₽ в работе`, 
             accent: 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600',
             gradient: 'from-purple-500 to-purple-600'
@@ -174,7 +175,7 @@ export default function Dashboard() {
           { 
             label: 'Выручка', 
             value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, 
-            icon: '💵', 
+            Icon: CurrencyIcon, 
             note: `${wonAmount.toLocaleString('ru-RU')} ₽ выиграно`, 
             accent: 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600',
             gradient: 'from-emerald-500 to-emerald-600'
@@ -186,8 +187,8 @@ export default function Dashboard() {
               <p className="stat-card-value mb-1 group-hover:scale-105 transition-transform duration-300">{card.value}</p>
               <p className="text-sm text-[var(--muted)] font-medium">{card.note}</p>
             </div>
-            <div className={`h-14 w-14 rounded-2xl flex items-center justify-center text-2xl shadow-md group-hover:scale-110 transition-transform duration-300 ${card.accent}`}>
-              {card.icon}
+            <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 ${card.accent}`}>
+              <card.Icon className="w-7 h-7" />
             </div>
           </div>
         ))}
@@ -226,7 +227,9 @@ export default function Dashboard() {
           <div>
             {recentContacts.length === 0 ? (
               <div className="empty-state py-12">
-                <div className="empty-state-icon">👥</div>
+                <div className="empty-state-icon flex items-center justify-center">
+                  <UsersIcon className="w-16 h-16 text-[var(--muted-soft)]" />
+                </div>
                 <h3 className="empty-state-title">Нет контактов</h3>
                 <p className="empty-state-description">
                   Пока нет клиентов — импортируйте контакты или добавьте вручную.
