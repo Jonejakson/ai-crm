@@ -837,14 +837,8 @@ export default function DealsPage() {
                     selectedPipelineId={selectedPipeline}
                   />
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                       if (!selectedPipeline) return
-                      const pipeline = pipelines.find(p => p.id === selectedPipeline)
-                      if (!pipeline) return
-
-                      const pipelineStages = getStagesFromPipeline(pipeline)
-                      const validStages = [...pipelineStages, UNASSIGNED_STAGE]
-                      setStages(validStages)
                       setIsStagesEditorOpen(true)
                     }}
                     className="btn-secondary text-sm flex items-center gap-2"
@@ -1239,7 +1233,7 @@ export default function DealsPage() {
       {/* Редактор этапов */}
       {isStagesEditorOpen && selectedPipeline && (
         <PipelineStagesEditor
-          stages={stages}
+          stages={getStages().filter(s => s !== UNASSIGNED_STAGE)}
           onStagesChange={handleStagesUpdate}
           onClose={() => setIsStagesEditorOpen(false)}
           unassignedStage={UNASSIGNED_STAGE}
