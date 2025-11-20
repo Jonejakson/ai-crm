@@ -4,16 +4,18 @@ import { useState, useEffect } from 'react'
 import SalesChart from './SalesChart'
 import FunnelChart from './FunnelChart'
 import ManagersReport from './ManagersReport'
+import DashboardBuilder from './DashboardBuilder'
 import Skeleton from '@/components/Skeleton'
 
 interface AnalyticsTabsProps {
   period: string
   selectedUserId: number | null
   selectedPipelineId: number | null
+  analyticsData?: any
 }
 
-export default function AnalyticsTabs({ period, selectedUserId, selectedPipelineId }: AnalyticsTabsProps) {
-  const [activeTab, setActiveTab] = useState<'sales' | 'funnel' | 'managers' | 'forecast' | 'compare'>('sales')
+export default function AnalyticsTabs({ period, selectedUserId, selectedPipelineId, analyticsData }: AnalyticsTabsProps) {
+  const [activeTab, setActiveTab] = useState<'sales' | 'funnel' | 'managers' | 'forecast' | 'compare' | 'builder'>('sales')
   const [salesData, setSalesData] = useState<any[]>([])
   const [funnelData, setFunnelData] = useState<any>(null)
   const [managersData, setManagersData] = useState<any[]>([])
@@ -127,6 +129,7 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
     { id: 'managers', label: 'Менеджеры', icon: '👥' },
     { id: 'forecast', label: 'Прогноз', icon: '🔮' },
     { id: 'compare', label: 'Сравнение', icon: '⚖️' },
+    { id: 'builder', label: 'Конструктор', icon: '🎨' },
   ]
 
   return (
@@ -298,6 +301,10 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeTab === 'builder' && analyticsData && (
+              <DashboardBuilder data={analyticsData} />
             )}
           </>
         )}

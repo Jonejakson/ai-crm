@@ -1,7 +1,32 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+
+interface RegressionResult {
+  slope: number;
+  intercept: number;
+}
+
+function linearRegression(points: Array<{ x: number; y: number }>): RegressionResult {
+  if (points.length === 0) {
+    return { slope: 0, intercept: 0 };
+  }
+  const n = points.length;
+  let sumX = 0;
+  let sumY = 0;
+  let sumXY = 0;
+  let sumXX = 0;
+  points.forEach(({ x, y }) => {
+    sumX += x;
+    sumY += y;
+    sumXY += x * y;
+    sumXX += x * x;
+  });
+  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX || 1);
+  const intercept = sumY / n - slope * (sumX / n);
+  return { slope, intercept };
+}
 
 // Получить аналитику для дашборда (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -14,9 +39,8 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'month'; // week, month, year
-    const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
+    const filterUserId = searchParams.get('userId');
 
-    // Вычисляем даты для периода
     const now = new Date();
     const startDate = new Date();
     
@@ -32,20 +56,29 @@ export async function GET(req: Request) {
         break;
     }
 
-    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    const daysInPeriod = Math.max(1, Math.round((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
+
     let whereCondition: any;
     
     if (user.role === 'admin' && filterUserId) {
-      // Админ может фильтровать по конкретному пользователю
       const targetUserId = parseInt(filterUserId);
       whereCondition = { userId: targetUserId };
     } else {
-      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
       whereCondition = await getDirectWhereCondition();
     }
 
-    // Получаем данные
-    const [contacts, tasks, deals, events] = await Promise.all([
+    const companyUsersPromise = prisma.user.findMany({
+      where: {
+        companyId: Number(user.companyId),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    const [contacts, tasks, deals, events, companyUsers] = await Promise.all([
       prisma.contact.findMany({
         where: whereCondition,
         select: {
@@ -77,7 +110,8 @@ export async function GET(req: Request) {
           currency: true,
           stage: true,
           createdAt: true,
-          expectedCloseDate: true
+          expectedCloseDate: true,
+          userId: true,
         }
       }),
       prisma.event.findMany({
@@ -88,7 +122,8 @@ export async function GET(req: Request) {
           startDate: true,
           createdAt: true
         }
-      })
+      }),
+      companyUsersPromise,
     ]);
 
     // Статистика по контактам
@@ -127,7 +162,6 @@ export async function GET(req: Request) {
       }, {} as Record<string, number>)
     };
 
-    // Статистика по событиям
     const eventsStats = {
       total: events.length,
       upcoming: events.filter(e => new Date(e.startDate) > now).length,
@@ -139,12 +173,68 @@ export async function GET(req: Request) {
       newThisPeriod: events.filter(e => new Date(e.createdAt) >= startDate).length
     };
 
+    const managerPerformance = deals.reduce((acc, deal) => {
+      if (!deal.userId) return acc;
+      const key = deal.userId;
+      if (!acc[key]) {
+        const manager = companyUsers.find((user) => user.id === deal.userId);
+        acc[key] = {
+          userId: deal.userId,
+          name: manager?.name || 'Без имени',
+          email: manager?.email || '',
+          totalDeals: 0,
+          wonDeals: 0,
+          revenue: 0,
+        };
+      }
+      acc[key].totalDeals += 1;
+      if (deal.stage === 'closed_won') {
+        acc[key].wonDeals += 1;
+        acc[key].revenue += deal.amount;
+      }
+      return acc;
+    }, {} as Record<number, { userId: number; name: string; email: string; totalDeals: number; wonDeals: number; revenue: number }>);
+
+    const managerPerformanceList = Object.values(managerPerformance)
+      .map((item) => ({
+        ...item,
+        conversion: item.totalDeals > 0 ? (item.wonDeals / item.totalDeals) * 100 : 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 8);
+
+    const pipelineSummary = Object.entries(dealsStats.byStage).map(([stage, count]) => {
+      const total = dealsStats.total || 1;
+      return {
+        stage,
+        count,
+        share: (count / total) * 100,
+      };
+    });
+
+    const planMultiplier = 1.15;
+    const kpi = {
+      revenue: {
+        plan: Math.round(dealsStats.wonAmount * planMultiplier || 0),
+        fact: dealsStats.wonAmount,
+      },
+      deals: {
+        plan: Math.round(dealsStats.total * 1.1),
+        fact: dealsStats.total,
+      },
+      tasks: {
+        plan: Math.round(tasksStats.total * 1.05),
+        fact: tasksStats.completed,
+      },
+    };
+
     // Динамика по дням (для графика)
     const daysData: Record<string, {
       contacts: number;
       tasks: number;
       deals: number;
       events: number;
+      wonAmount: number;
     }> = {};
 
     const daysToShow = period === 'week' ? 7 : period === 'month' ? 30 : 365;
@@ -159,7 +249,8 @@ export async function GET(req: Request) {
         contacts: 0,
         tasks: 0,
         deals: 0,
-        events: 0
+        events: 0,
+        wonAmount: 0,
       };
     }
 
@@ -188,6 +279,9 @@ export async function GET(req: Request) {
       const dateKey = dealDate.toISOString().split('T')[0];
       if (daysData[dateKey]) {
         daysData[dateKey].deals++;
+        if (deal.stage === 'closed_won') {
+          daysData[dateKey].wonAmount += deal.amount;
+        }
       }
     });
 
@@ -203,15 +297,38 @@ export async function GET(req: Request) {
     // Конвертируем в массив для графика (от старых к новым)
     const chartData = Object.entries(daysData)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, data]) => ({
+      .map(([date, data], index) => ({
         date,
+        index,
         contacts: data.contacts,
         tasks: data.tasks,
         deals: data.deals,
-        events: data.events
+        events: data.events,
+        wonAmount: data.wonAmount,
       }));
-    
-    console.log('Chart data:', chartData.slice(0, 5)); // Логируем первые 5 дней для отладки
+
+    const regressionPoints = chartData
+      .filter((point) => point.wonAmount > 0)
+      .map((point) => ({ x: point.index, y: point.wonAmount }));
+
+    const { slope, intercept } = linearRegression(regressionPoints);
+    const futureDays = 30;
+    const projection = Array.from({ length: futureDays }).map((_, idx) => {
+      const x = chartData.length + idx;
+      const predicted = Math.max(0, slope * x + intercept);
+      const date = new Date(now);
+      date.setDate(date.getDate() + idx + 1);
+      return {
+        date: date.toISOString().split('T')[0],
+        value: predicted,
+      };
+    });
+
+    const forecast = {
+      trendPerDay: slope,
+      next30DaysTotal: Math.round(projection.reduce((sum, item) => sum + item.value, 0)),
+      projection,
+    };
 
     return NextResponse.json({
       period,
@@ -219,7 +336,11 @@ export async function GET(req: Request) {
       tasks: tasksStats,
       deals: dealsStats,
       events: eventsStats,
-      chartData
+      chartData,
+      managerPerformance: managerPerformanceList,
+      pipelineSummary,
+      kpi,
+      forecast,
     });
   } catch (error: any) {
     console.error('Error fetching analytics:', error);

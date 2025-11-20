@@ -413,6 +413,7 @@ export default function AnalyticsPage() {
         period={period}
         selectedUserId={selectedUserId}
         selectedPipelineId={selectedPipelineId}
+        analyticsData={data}
       />
 
       {/* График динамики */}
