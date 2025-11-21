@@ -262,39 +262,57 @@ export default function Dashboard() {
     setSelectedFunnelMetrics([...DEFAULT_FUNNEL_METRICS])
   }
 
+  // Используем только примитивные значения в зависимостях, вычисляем все внутри useMemo
   const funnelMetricDefinitions = useMemo(() => {
-    if (!dealsArray || !Array.isArray(dealsArray)) {
+    const dealsArr = deals || []
+    if (!Array.isArray(dealsArr) || dealsArr.length === 0) {
       return FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' }))
     }
+    
+    // Вычисляем все метрики внутри useMemo
+    const activeCount = dealsArr.filter(deal => !deal.stage.startsWith('closed_')).length
+    const totalAmount = dealsArr.reduce((sum, deal) => sum + (deal.amount || 0), 0)
+    const won = dealsArr.filter(deal => deal.stage === 'closed_won')
+    const wonCount = won.length
+    const wonAmt = won.reduce((sum, deal) => sum + (deal.amount || 0), 0)
+    const openAmt = dealsArr
+      .filter(deal => !deal.stage.startsWith('closed_'))
+      .reduce((sum, deal) => sum + (deal.amount || 0), 0)
+    const lost = dealsArr.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
+    const lostCount = lost.length
+    const convRate = dealsArr.length ? Math.round((wonCount / dealsArr.length) * 100) : 0
+    const avgAmount = dealsArr.length ? Math.round(totalAmount / dealsArr.length) : 0
+    
     const formatNumber = (value: number) => value.toLocaleString('ru-RU')
     const formatCurrency = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
+    
     return FUNNEL_METRIC_META.map((meta) => {
       let value = '—'
       try {
         switch (meta.id) {
           case 'total':
-            value = formatNumber(dealsLength)
+            value = formatNumber(dealsArr.length)
             break
           case 'won-count':
-            value = formatNumber(wonDealsLength)
+            value = formatNumber(wonCount)
             break
           case 'won-amount':
-            value = formatCurrency(wonAmount)
+            value = formatCurrency(wonAmt)
             break
           case 'active-count':
-            value = formatNumber(activeDealsCount)
+            value = formatNumber(activeCount)
             break
           case 'open-amount':
-            value = formatCurrency(openDealsAmount)
+            value = formatCurrency(openAmt)
             break
           case 'conversion':
-            value = `${conversionRate}%`
+            value = `${convRate}%`
             break
           case 'average-check':
-            value = dealsLength ? formatCurrency(averageDealAmount) : '—'
+            value = dealsArr.length ? formatCurrency(avgAmount) : '—'
             break
           case 'lost-count':
-            value = formatNumber(lostDealsLength)
+            value = formatNumber(lostCount)
             break
           default:
             value = '—'
@@ -305,16 +323,7 @@ export default function Dashboard() {
       }
       return { ...meta, value }
     })
-  }, [
-    dealsLength,
-    wonDealsLength,
-    wonAmount,
-    activeDealsCount,
-    openDealsAmount,
-    conversionRate,
-    averageDealAmount,
-    lostDealsLength,
-  ])
+  }, [deals])
 
   const metricsToDisplay = useMemo(() => {
     const filtered = funnelMetricDefinitions.filter((metric) =>
