@@ -68,15 +68,23 @@ export default function PipelineManager({
       } else {
         const error = await response.json()
         if (error.error && error.error.includes('лимит')) {
-          toast.error(error.error, {
-            duration: 5000,
-            action: {
-              label: 'Выбрать тариф',
-              onClick: () => {
-                window.location.href = '/company'
-              }
-            }
-          })
+          toast.error(
+            (t) => (
+              <div className="flex items-center gap-3">
+                <span>{error.error}</span>
+                <button
+                  onClick={() => {
+                    toast.dismiss(t.id)
+                    window.location.href = '/company'
+                  }}
+                  className="px-3 py-1 bg-[var(--primary)] text-white rounded-lg text-sm hover:opacity-90 transition-opacity"
+                >
+                  Выбрать тариф
+                </button>
+              </div>
+            ),
+            { duration: 8000 }
+          )
         } else {
           toast.error(error.error || 'Ошибка при создании воронки')
         }
