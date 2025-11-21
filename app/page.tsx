@@ -225,16 +225,18 @@ export default function Dashboard() {
     return new Date(task.dueDate) < new Date()
   }).length
   const recentContacts = (contacts || []).slice(0, 5)
-  const activeDealsCount = (deals || []).filter(deal => !deal.stage.startsWith('closed_')).length
-  const totalDealsAmount = (deals || []).reduce((sum, deal) => sum + (deal.amount || 0), 0)
-  const wonDeals = (deals || []).filter(deal => deal.stage === 'closed_won')
-  const wonAmount = wonDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0)
-  const openDealsAmount = (deals || [])
+  
+  const dealsArray = useMemo(() => deals || [], [deals])
+  const activeDealsCount = useMemo(() => dealsArray.filter(deal => !deal.stage.startsWith('closed_')).length, [dealsArray])
+  const totalDealsAmount = useMemo(() => dealsArray.reduce((sum, deal) => sum + (deal.amount || 0), 0), [dealsArray])
+  const wonDeals = useMemo(() => dealsArray.filter(deal => deal.stage === 'closed_won'), [dealsArray])
+  const wonAmount = useMemo(() => wonDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0), [wonDeals])
+  const openDealsAmount = useMemo(() => dealsArray
     .filter(deal => !deal.stage.startsWith('closed_'))
-    .reduce((sum, deal) => sum + (deal.amount || 0), 0)
-  const lostDeals = (deals || []).filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
-  const conversionRate = deals?.length ? Math.round((wonDeals.length / deals.length) * 100) : 0
-  const averageDealAmount = deals?.length ? Math.round(totalDealsAmount / deals.length) : 0
+    .reduce((sum, deal) => sum + (deal.amount || 0), 0), [dealsArray])
+  const lostDeals = useMemo(() => dealsArray.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won'), [dealsArray])
+  const conversionRate = useMemo(() => dealsArray.length ? Math.round((wonDeals.length / dealsArray.length) * 100) : 0, [dealsArray.length, wonDeals.length])
+  const averageDealAmount = useMemo(() => dealsArray.length ? Math.round(totalDealsAmount / dealsArray.length) : 0, [dealsArray.length, totalDealsAmount])
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
   const newContactsCount = (contacts || []).filter(contact => new Date(contact.createdAt) >= weekAgo).length
@@ -256,7 +258,7 @@ export default function Dashboard() {
   }
 
   const funnelMetricDefinitions = useMemo(() => {
-    if (!deals || !Array.isArray(deals)) {
+    if (!dealsArray || !Array.isArray(dealsArray)) {
       return FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' }))
     }
     const formatNumber = (value: number) => value.toLocaleString('ru-RU')
@@ -266,7 +268,7 @@ export default function Dashboard() {
       try {
         switch (meta.id) {
           case 'total':
-            value = formatNumber(deals.length)
+            value = formatNumber(dealsArray.length)
             break
           case 'won-count':
             value = formatNumber(wonDeals.length)
@@ -284,7 +286,7 @@ export default function Dashboard() {
             value = `${conversionRate}%`
             break
           case 'average-check':
-            value = deals.length ? formatCurrency(averageDealAmount) : '—'
+            value = dealsArray.length ? formatCurrency(averageDealAmount) : '—'
             break
           case 'lost-count':
             value = formatNumber(lostDeals.length)
@@ -299,8 +301,7 @@ export default function Dashboard() {
       return { ...meta, value }
     })
   }, [
-    deals,
-    deals?.length,
+    dealsArray.length,
     wonDeals.length,
     wonAmount,
     activeDealsCount,
