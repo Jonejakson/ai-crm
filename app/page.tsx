@@ -341,20 +341,15 @@ export default function Dashboard() {
     }
   }, [dealsLength, dealsHash])
 
-  // Стабилизируем selectedFunnelMetrics через useMemo, чтобы избежать лишних перерендеров
-  const stableSelectedMetrics = useMemo(() => selectedFunnelMetrics, [selectedFunnelMetrics.join(',')])
-  
-  const metricsToDisplay = useMemo(() => {
-    const filtered = funnelMetricDefinitions.filter((metric) =>
-      stableSelectedMetrics.includes(metric.id)
-    )
-    if (filtered.length) {
-      return filtered
-    }
-    return funnelMetricDefinitions.filter((metric) =>
-      DEFAULT_FUNNEL_METRICS.includes(metric.id)
-    )
-  }, [funnelMetricDefinitions, stableSelectedMetrics])
+  // Вычисляем metricsToDisplay напрямую, без useMemo, чтобы избежать циклов
+  const filtered = funnelMetricDefinitions.filter((metric) =>
+    selectedFunnelMetrics.includes(metric.id)
+  )
+  const metricsToDisplay = filtered.length 
+    ? filtered 
+    : funnelMetricDefinitions.filter((metric) =>
+        DEFAULT_FUNNEL_METRICS.includes(metric.id)
+      )
 
   return (
     <div className="space-y-8">
