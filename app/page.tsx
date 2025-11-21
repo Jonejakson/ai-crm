@@ -98,6 +98,7 @@ export default function Dashboard() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
+  const [dealsHash, setDealsHash] = useState<string>('')
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -141,6 +142,16 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
+
+  // Вычисляем стабильный hash для deals через useEffect
+  useEffect(() => {
+    if (!deals || deals.length === 0) {
+      setDealsHash('')
+      return
+    }
+    const newHash = deals.map(d => `${d.id}-${d.stage}-${d.amount}`).join('|')
+    setDealsHash(newHash)
+  }, [deals])
 
   const checkNotifications = async () => {
     try {
@@ -246,18 +257,8 @@ export default function Dashboard() {
     setSelectedFunnelMetrics([...DEFAULT_FUNNEL_METRICS])
   }
 
-  // Вычисляем стабильный hash для deals через useEffect
-  const [dealsHash, setDealsHash] = useState<string>('')
+  // Вычисляем примитивные значения для зависимостей useMemo
   const dealsLength = (deals || []).length
-  
-  useEffect(() => {
-    if (!deals || deals.length === 0) {
-      setDealsHash('')
-      return
-    }
-    const newHash = deals.map(d => `${d.id}-${d.stage}-${d.amount}`).join('|')
-    setDealsHash(newHash)
-  }, [deals])
   
   // Вычисляем все метрики внутри одного useMemo с примитивными зависимостями
   const { funnelMetricDefinitions, activeDealsCount, totalDealsAmount, wonAmount, openDealsAmount, conversionRate, averageDealAmount } = useMemo(() => {
