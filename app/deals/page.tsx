@@ -785,19 +785,19 @@ export default function DealsPage() {
   return (
     <div className="space-y-7 relative">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-1">
+        <div className="space-y-1 flex-shrink min-w-0 lg:max-w-[45%]">
           <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
             Управление воронкой
           </p>
-          <h1 className="text-2xl font-semibold text-[var(--foreground)]">Сделки</h1>
-          <p className="text-sm text-[var(--muted)]">
+          <h1 className="text-xl lg:text-2xl font-semibold text-[var(--foreground)]">Сделки</h1>
+          <p className="text-xs lg:text-sm text-[var(--muted)] hidden md:block">
             Перетаскивайте карточки между этапами и контролируйте воронку в реальном времени.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-nowrap gap-1.5 flex-shrink-0 overflow-x-auto lg:overflow-visible">
           <button
             onClick={() => setIsFiltersModalOpen(true)}
-            className="btn-secondary text-sm flex items-center gap-2"
+            className="btn-secondary text-xs lg:text-sm flex items-center gap-1.5 px-3 py-2 whitespace-nowrap"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -808,13 +808,13 @@ export default function DealsPage() {
             onClick={() => {
               window.location.href = '/api/export/deals?format=excel'
             }}
-            className="btn-secondary text-sm"
+            className="btn-secondary text-xs lg:text-sm px-3 py-2 whitespace-nowrap"
           >
             📥 Экспорт CSV
           </button>
           <button
             onClick={() => setIsPipelineManagerOpen(true)}
-            className="btn-secondary text-sm flex items-center gap-2"
+            className="btn-secondary text-xs lg:text-sm flex items-center gap-1.5 px-3 py-2 whitespace-nowrap"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
@@ -826,7 +826,7 @@ export default function DealsPage() {
               if (!selectedPipeline) return
               setIsStagesEditorOpen(true)
             }}
-            className="btn-secondary text-sm flex items-center gap-2"
+            className="btn-secondary text-xs lg:text-sm flex items-center gap-1.5 px-3 py-2 whitespace-nowrap"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
