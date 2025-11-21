@@ -58,7 +58,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           <Sidebar currentContactId={currentContactId} />
           <div className="flex-1 flex flex-col min-w-0">
             <Header />
-            <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8">
+            <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 overflow-y-auto">
               {children}
             </main>
           </div>

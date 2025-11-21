@@ -52,9 +52,9 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
 
   const SidebarContent = () => (
     <>
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-col h-full">
         {/* Логотип */}
-        <div className="space-y-3 pb-6">
+        <div className="space-y-3 pb-6 flex-shrink-0">
           <Logo variant="full" size="md" />
           {currentContactId && (
             <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/70">
@@ -64,7 +64,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </div>
 
         {/* Навигация */}
-        <nav className="sidebar-nav space-y-1.5 flex-1 overflow-y-auto pr-1">
+        <nav className="sidebar-nav space-y-1.5 flex-1 overflow-y-auto pr-1 min-h-0">
           {menuItems.map((item) => {
             const isActive = activeSection === item.id
             return (
@@ -91,7 +91,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
         </nav>
 
         {/* Пользователь */}
-        <div className="mt-auto pt-4 border-t border-[var(--border)]">
+        <div className="mt-auto pt-4 border-t border-[var(--border)] flex-shrink-0">
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--background-soft)] hover:bg-[var(--panel-muted)] transition-all duration-300">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center text-white text-sm font-bold shadow-md">
               {userName.charAt(0).toUpperCase()}
@@ -114,7 +114,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   return (
     <>
       {/* Десктопный сайдбар */}
-      <div className="hidden md:flex w-64 h-screen self-start bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-sm backdrop-blur-xl bg-opacity-95">
+      <div className="hidden md:flex w-64 sticky top-0 h-screen bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-sm backdrop-blur-xl bg-opacity-95 overflow-y-auto">
         <SidebarContent />
       </div>
 
