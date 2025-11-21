@@ -813,12 +813,6 @@ export default function DealsPage() {
             📥 Экспорт CSV
           </button>
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="btn-primary text-sm"
-          >
-            + Новая сделка
-          </button>
-          <button
             onClick={() => setIsPipelineManagerOpen(true)}
             className="btn-secondary text-sm flex items-center gap-2"
           >
@@ -861,11 +855,19 @@ export default function DealsPage() {
 
       {/* Канбан-доска */}
       <div className="glass-panel p-6 rounded-3xl shadow-xl">
-        <div className="mb-4">
-          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">Активная воронка</p>
-          <p className="text-base font-semibold text-[var(--foreground)]">
-            {currentPipeline?.name || '—'}
-          </p>
+        <div className="mb-4 flex items-start justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">Активная воронка</p>
+            <p className="text-base font-semibold text-[var(--foreground)]">
+              {currentPipeline?.name || '—'}
+            </p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-primary text-sm"
+          >
+            + Новая сделка
+          </button>
         </div>
         <p className="text-sm text-[var(--muted)] mb-4">
           Перетаскивайте карточки между колонками, чтобы изменять этапы и держать воронку в актуальном состоянии.
