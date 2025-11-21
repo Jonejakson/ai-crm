@@ -18,7 +18,10 @@ export async function POST(request: Request) {
   }
 
   // В режиме разработки пропускаем проверку конфигурации YooKassa
-  if (process.env.NODE_ENV !== 'development' && !isYooKassaConfigured()) {
+  // Используем DEV_MODE для явного включения режима разработки (работает и в Vercel)
+  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  
+  if (!isDevMode && !isYooKassaConfigured()) {
     return NextResponse.json(
       { error: 'Payment system not configured' },
       { status: 500 }
@@ -45,7 +48,8 @@ export async function POST(request: Request) {
     }
 
     // В режиме разработки или если план бесплатный, сразу активируем подписку
-    if (plan.price === 0 || process.env.NODE_ENV === 'development') {
+    const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+    if (plan.price === 0 || isDevMode) {
       const now = new Date()
       const nextPeriod = new Date(now)
       if (billingInterval === 'YEARLY') {
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
       })
 
       // В режиме разработки также создаем счет как оплаченный
-      if (process.env.NODE_ENV === 'development' && plan.price > 0) {
+      if (isDevMode && plan.price > 0) {
         await prisma.invoice.create({
           data: {
             subscriptionId: subscription.id,

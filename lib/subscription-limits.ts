@@ -55,7 +55,9 @@ export async function checkUserLimit(companyId: number): Promise<{
   message?: string
 }> {
   // В режиме разработки отключаем все лимиты
-  if (process.env.NODE_ENV === 'development') {
+  // Используем DEV_MODE для явного включения режима разработки (работает и в Vercel)
+  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  if (isDevMode) {
     const userCount = await prisma.user.count({
       where: { companyId },
     })
@@ -111,7 +113,9 @@ export async function checkContactLimit(companyId: number): Promise<{
   message?: string
 }> {
   // В режиме разработки отключаем все лимиты
-  if (process.env.NODE_ENV === 'development') {
+  // Используем DEV_MODE для явного включения режима разработки (работает и в Vercel)
+  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  if (isDevMode) {
     const companyUsers = await prisma.user.findMany({
       where: { companyId },
       select: { id: true },
@@ -183,7 +187,9 @@ export async function checkPipelineLimit(companyId: number): Promise<{
   message?: string
 }> {
   // В режиме разработки отключаем все лимиты
-  if (process.env.NODE_ENV === 'development') {
+  // Используем DEV_MODE для явного включения режима разработки (работает и в Vercel)
+  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  if (isDevMode) {
     const pipelineCount = await prisma.pipeline.count({
       where: { companyId },
     })
@@ -237,7 +243,9 @@ export async function checkAutomationsAccess(companyId: number): Promise<{
   message?: string
 }> {
   // В режиме разработки разрешаем все
-  if (process.env.NODE_ENV === 'development') {
+  // Используем DEV_MODE для явного включения режима разработки (работает и в Vercel)
+  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  if (isDevMode) {
     return {
       allowed: true,
     }
