@@ -17,7 +17,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  if (!isYooKassaConfigured()) {
+  // В режиме разработки пропускаем проверку конфигурации YooKassa
+  if (process.env.NODE_ENV !== 'development' && !isYooKassaConfigured()) {
     return NextResponse.json(
       { error: 'Payment system not configured' },
       { status: 500 }
