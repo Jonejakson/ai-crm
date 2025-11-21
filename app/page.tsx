@@ -226,17 +226,22 @@ export default function Dashboard() {
   }).length
   const recentContacts = (contacts || []).slice(0, 5)
   
-  const dealsArray = useMemo(() => deals || [], [deals])
-  const activeDealsCount = useMemo(() => dealsArray.filter(deal => !deal.stage.startsWith('closed_')).length, [dealsArray])
-  const totalDealsAmount = useMemo(() => dealsArray.reduce((sum, deal) => sum + (deal.amount || 0), 0), [dealsArray])
-  const wonDeals = useMemo(() => dealsArray.filter(deal => deal.stage === 'closed_won'), [dealsArray])
-  const wonAmount = useMemo(() => wonDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0), [wonDeals])
-  const openDealsAmount = useMemo(() => dealsArray
+  const dealsArray = deals || []
+  const dealsLength = dealsArray.length
+  
+  // Вычисляем все значения напрямую, без лишних useMemo
+  const activeDealsCount = dealsArray.filter(deal => !deal.stage.startsWith('closed_')).length
+  const totalDealsAmount = dealsArray.reduce((sum, deal) => sum + (deal.amount || 0), 0)
+  const wonDeals = dealsArray.filter(deal => deal.stage === 'closed_won')
+  const wonDealsLength = wonDeals.length
+  const wonAmount = wonDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0)
+  const openDealsAmount = dealsArray
     .filter(deal => !deal.stage.startsWith('closed_'))
-    .reduce((sum, deal) => sum + (deal.amount || 0), 0), [dealsArray])
-  const lostDeals = useMemo(() => dealsArray.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won'), [dealsArray])
-  const conversionRate = useMemo(() => dealsArray.length ? Math.round((wonDeals.length / dealsArray.length) * 100) : 0, [dealsArray.length, wonDeals.length])
-  const averageDealAmount = useMemo(() => dealsArray.length ? Math.round(totalDealsAmount / dealsArray.length) : 0, [dealsArray.length, totalDealsAmount])
+    .reduce((sum, deal) => sum + (deal.amount || 0), 0)
+  const lostDeals = dealsArray.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
+  const lostDealsLength = lostDeals.length
+  const conversionRate = dealsLength ? Math.round((wonDealsLength / dealsLength) * 100) : 0
+  const averageDealAmount = dealsLength ? Math.round(totalDealsAmount / dealsLength) : 0
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
   const newContactsCount = (contacts || []).filter(contact => new Date(contact.createdAt) >= weekAgo).length
@@ -268,10 +273,10 @@ export default function Dashboard() {
       try {
         switch (meta.id) {
           case 'total':
-            value = formatNumber(dealsArray.length)
+            value = formatNumber(dealsLength)
             break
           case 'won-count':
-            value = formatNumber(wonDeals.length)
+            value = formatNumber(wonDealsLength)
             break
           case 'won-amount':
             value = formatCurrency(wonAmount)
@@ -286,10 +291,10 @@ export default function Dashboard() {
             value = `${conversionRate}%`
             break
           case 'average-check':
-            value = dealsArray.length ? formatCurrency(averageDealAmount) : '—'
+            value = dealsLength ? formatCurrency(averageDealAmount) : '—'
             break
           case 'lost-count':
-            value = formatNumber(lostDeals.length)
+            value = formatNumber(lostDealsLength)
             break
           default:
             value = '—'
@@ -301,14 +306,14 @@ export default function Dashboard() {
       return { ...meta, value }
     })
   }, [
-    dealsArray.length,
-    wonDeals.length,
+    dealsLength,
+    wonDealsLength,
     wonAmount,
     activeDealsCount,
     openDealsAmount,
     conversionRate,
     averageDealAmount,
-    lostDeals.length,
+    lostDealsLength,
   ])
 
   const metricsToDisplay = useMemo(() => {
