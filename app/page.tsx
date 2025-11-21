@@ -246,7 +246,13 @@ export default function Dashboard() {
     setSelectedFunnelMetrics([...DEFAULT_FUNNEL_METRICS])
   }
 
-  // Вычисляем все метрики внутри одного useMemo с deals как единственной зависимостью
+  // Вычисляем примитивные значения для зависимостей useMemo (без useMemo, чтобы избежать циклов)
+  const dealsLength = (deals || []).length
+  const dealsHash = !deals || deals.length === 0 
+    ? '' 
+    : deals.map(d => `${d.id}-${d.stage}-${d.amount}`).join('|')
+  
+  // Вычисляем все метрики внутри одного useMemo с примитивными зависимостями
   const { funnelMetricDefinitions, activeDealsCount, totalDealsAmount, wonAmount, openDealsAmount, conversionRate, averageDealAmount } = useMemo(() => {
     const dealsArr = deals || []
     const dealsLength = dealsArr.length
@@ -327,7 +333,7 @@ export default function Dashboard() {
       conversionRate: convRate,
       averageDealAmount: avgAmount
     }
-  }, [deals])
+  }, [dealsLength, dealsHash])
 
   const metricsToDisplay = useMemo(() => {
     const filtered = funnelMetricDefinitions.filter((metric) =>
