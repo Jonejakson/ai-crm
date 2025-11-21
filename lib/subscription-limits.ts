@@ -54,6 +54,18 @@ export async function checkUserLimit(companyId: number): Promise<{
   limit: number | null
   message?: string
 }> {
+  // В режиме разработки отключаем все лимиты
+  if (process.env.NODE_ENV === 'development') {
+    const userCount = await prisma.user.count({
+      where: { companyId },
+    })
+    return {
+      allowed: true,
+      current: userCount,
+      limit: null,
+    }
+  }
+
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
@@ -98,6 +110,25 @@ export async function checkContactLimit(companyId: number): Promise<{
   limit: number | null
   message?: string
 }> {
+  // В режиме разработки отключаем все лимиты
+  if (process.env.NODE_ENV === 'development') {
+    const companyUsers = await prisma.user.findMany({
+      where: { companyId },
+      select: { id: true },
+    })
+    const userIds = companyUsers.map(u => u.id)
+    const contactCount = await prisma.contact.count({
+      where: {
+        userId: { in: userIds },
+      },
+    })
+    return {
+      allowed: true,
+      current: contactCount,
+      limit: null,
+    }
+  }
+
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
@@ -151,6 +182,18 @@ export async function checkPipelineLimit(companyId: number): Promise<{
   limit: number | null
   message?: string
 }> {
+  // В режиме разработки отключаем все лимиты
+  if (process.env.NODE_ENV === 'development') {
+    const pipelineCount = await prisma.pipeline.count({
+      where: { companyId },
+    })
+    return {
+      allowed: true,
+      current: pipelineCount,
+      limit: null,
+    }
+  }
+
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
@@ -193,6 +236,13 @@ export async function checkAutomationsAccess(companyId: number): Promise<{
   allowed: boolean
   message?: string
 }> {
+  // В режиме разработки разрешаем все
+  if (process.env.NODE_ENV === 'development') {
+    return {
+      allowed: true,
+    }
+  }
+
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
