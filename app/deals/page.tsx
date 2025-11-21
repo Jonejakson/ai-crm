@@ -233,8 +233,15 @@ export default function DealsPage() {
       if (pipelinesData.length > 0) {
         const defaultPipeline = pipelinesData.find((p: Pipeline) => p.isDefault) || pipelinesData[0]
         if (defaultPipeline) {
-          setSelectedPipeline(defaultPipeline.id)
-          const pipelineStages = getStagesFromPipeline(defaultPipeline)
+          let currentPipelineId = pipelineIdToUse
+          if (!currentPipelineId) {
+            currentPipelineId = defaultPipeline.id
+            if (selectedPipeline !== defaultPipeline.id) {
+              setSelectedPipeline(defaultPipeline.id)
+            }
+          }
+          const activePipeline = pipelinesData.find((p: Pipeline) => p.id === currentPipelineId) || defaultPipeline
+          const pipelineStages = getStagesFromPipeline(activePipeline)
           
           // Перемещаем сделки с несуществующими этапами в "Неразобранные"
           const validStages = [...pipelineStages, UNASSIGNED_STAGE]
@@ -257,7 +264,7 @@ export default function DealsPage() {
                     stage: UNASSIGNED_STAGE,
                     probability: deal.probability,
                     expectedCloseDate: deal.expectedCloseDate,
-                    pipelineId: deal.pipeline?.id || defaultPipeline.id,
+                    pipelineId: deal.pipeline?.id || activePipeline.id,
                   }),
                 }).then((res) => {
                   if (res.ok) {
