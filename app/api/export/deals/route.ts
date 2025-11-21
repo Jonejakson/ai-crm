@@ -112,7 +112,8 @@ export async function GET(req: Request) {
 
         headers.forEach((header, colIndex) => {
           const x = margin + colIndex * colWidth;
-          const value = String(row[fields[colIndex]] || '');
+          const fieldKey = fields[colIndex] as keyof typeof row;
+          const value = String((row[fieldKey] as any) || '');
           // Обрезаем длинные значения
           const displayValue = value.length > 20 ? value.substring(0, 17) + '...' : value;
           doc.text(displayValue, x + 2, currentY + 5);
