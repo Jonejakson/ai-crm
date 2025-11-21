@@ -146,13 +146,15 @@ export default function DealsPage() {
     })
   )
 
-  const handlePipelineChange = (pipelineId: number) => {
+  const handlePipelineChange = async (pipelineId: number) => {
     setSelectedPipeline(pipelineId)
     const pipeline = pipelines.find((p) => p.id === pipelineId)
     if (pipeline) {
       const pipelineStages = getStagesFromPipeline(pipeline)
       setFormData(prev => ({ ...prev, stage: pipelineStages[0] || '' }))
     }
+    // Перезагружаем данные с новой воронкой, чтобы показать сделки выбранной воронки
+    await fetchData(pipelineId)
   }
 
   const fetchUsers = async () => {
@@ -180,7 +182,7 @@ export default function DealsPage() {
       }
     }
 
-  }, [selectedUserId])
+  }, [selectedUserId, selectedPipeline])
 
   useEffect(() => {
     fetchUsers()
@@ -196,11 +198,23 @@ export default function DealsPage() {
     },
   ])
 
-  const fetchData = async () => {
+  const fetchData = async (pipelineIdOverride?: number | null) => {
     try {
-      const dealsUrl = selectedUserId 
-        ? `/api/deals?userId=${selectedUserId}` 
+      // Используем переданный pipelineId или текущий selectedPipeline
+      const pipelineIdToUse = pipelineIdOverride !== undefined ? pipelineIdOverride : selectedPipeline
+      
+      // Формируем URL для загрузки сделок с учетом фильтров
+      const dealsParams = new URLSearchParams()
+      if (selectedUserId) {
+        dealsParams.append('userId', selectedUserId.toString())
+      }
+      if (pipelineIdToUse) {
+        dealsParams.append('pipelineId', pipelineIdToUse.toString())
+      }
+      const dealsUrl = dealsParams.toString() 
+        ? `/api/deals?${dealsParams.toString()}` 
         : '/api/deals'
+      
       const contactsUrl = selectedUserId 
         ? `/api/contacts?userId=${selectedUserId}` 
         : '/api/contacts'
