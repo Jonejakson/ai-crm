@@ -152,7 +152,7 @@ export default function DealsPage() {
 
       const sorted = collisionsToSort
         .map((collision) => {
-          const droppable = args.droppableContainers.get(collision.id)
+          const droppable = args.droppableContainers.find((container) => container.id === collision.id)
           const rect = droppable?.rect.current
           if (!rect || !pointer) {
             return { collision, distance: Number.POSITIVE_INFINITY }
