@@ -341,9 +341,12 @@ export default function Dashboard() {
     }
   }, [dealsLength, dealsHash])
 
+  // Стабилизируем selectedFunnelMetrics через useMemo, чтобы избежать лишних перерендеров
+  const stableSelectedMetrics = useMemo(() => selectedFunnelMetrics, [selectedFunnelMetrics.join(',')])
+  
   const metricsToDisplay = useMemo(() => {
     const filtered = funnelMetricDefinitions.filter((metric) =>
-      selectedFunnelMetrics.includes(metric.id)
+      stableSelectedMetrics.includes(metric.id)
     )
     if (filtered.length) {
       return filtered
@@ -351,7 +354,7 @@ export default function Dashboard() {
     return funnelMetricDefinitions.filter((metric) =>
       DEFAULT_FUNNEL_METRICS.includes(metric.id)
     )
-  }, [funnelMetricDefinitions, selectedFunnelMetrics])
+  }, [funnelMetricDefinitions, stableSelectedMetrics])
 
   return (
     <div className="space-y-8">
