@@ -99,6 +99,7 @@ export default function Dashboard() {
   const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
+  const prevDealsHashRef = useRef<string>('')
 
   useEffect(() => {
     fetchData()
@@ -246,11 +247,16 @@ export default function Dashboard() {
     setSelectedFunnelMetrics([...DEFAULT_FUNNEL_METRICS])
   }
 
-  // Вычисляем примитивные значения для зависимостей useMemo (без useMemo, чтобы избежать циклов)
+  // Вычисляем примитивные значения для зависимостей useMemo
   const dealsLength = (deals || []).length
-  const dealsHash = !deals || deals.length === 0 
+  const currentDealsHash = !deals || deals.length === 0 
     ? '' 
     : deals.map(d => `${d.id}-${d.stage}-${d.amount}`).join('|')
+  
+  // Используем стабильный hash только если он изменился
+  const dealsHash = currentDealsHash !== prevDealsHashRef.current 
+    ? (prevDealsHashRef.current = currentDealsHash)
+    : prevDealsHashRef.current
   
   // Вычисляем все метрики внутри одного useMemo с примитивными зависимостями
   const { funnelMetricDefinitions, activeDealsCount, totalDealsAmount, wonAmount, openDealsAmount, conversionRate, averageDealAmount } = useMemo(() => {
