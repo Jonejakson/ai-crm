@@ -144,7 +144,7 @@ export default function DealsPage() {
       const pointer = args.pointerCoordinates
 
       const stageCollisions = pointerCollisions.filter((collision) => {
-        const droppable = args.droppableContainers.get(collision.id)
+        const droppable = args.droppableContainers.find((container) => container.id === collision.id)
         return droppable?.data?.current?.type === 'stage'
       })
 
