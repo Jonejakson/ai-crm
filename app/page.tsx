@@ -226,22 +226,6 @@ export default function Dashboard() {
   }).length
   const recentContacts = (contacts || []).slice(0, 5)
   
-  const dealsArray = deals || []
-  const dealsLength = dealsArray.length
-  
-  // Вычисляем все значения напрямую, без лишних useMemo
-  const activeDealsCount = dealsArray.filter(deal => !deal.stage.startsWith('closed_')).length
-  const totalDealsAmount = dealsArray.reduce((sum, deal) => sum + (deal.amount || 0), 0)
-  const wonDeals = dealsArray.filter(deal => deal.stage === 'closed_won')
-  const wonDealsLength = wonDeals.length
-  const wonAmount = wonDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0)
-  const openDealsAmount = dealsArray
-    .filter(deal => !deal.stage.startsWith('closed_'))
-    .reduce((sum, deal) => sum + (deal.amount || 0), 0)
-  const lostDeals = dealsArray.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
-  const lostDealsLength = lostDeals.length
-  const conversionRate = dealsLength ? Math.round((wonDealsLength / dealsLength) * 100) : 0
-  const averageDealAmount = dealsLength ? Math.round(totalDealsAmount / dealsLength) : 0
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
   const newContactsCount = (contacts || []).filter(contact => new Date(contact.createdAt) >= weekAgo).length
@@ -262,14 +246,24 @@ export default function Dashboard() {
     setSelectedFunnelMetrics([...DEFAULT_FUNNEL_METRICS])
   }
 
-  // Используем только примитивные значения в зависимостях, вычисляем все внутри useMemo
-  const funnelMetricDefinitions = useMemo(() => {
+  // Вычисляем все метрики внутри одного useMemo с deals как единственной зависимостью
+  const { funnelMetricDefinitions, activeDealsCount, totalDealsAmount, wonAmount, openDealsAmount, conversionRate, averageDealAmount } = useMemo(() => {
     const dealsArr = deals || []
-    if (!Array.isArray(dealsArr) || dealsArr.length === 0) {
-      return FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' }))
+    const dealsLength = dealsArr.length
+    
+    if (!Array.isArray(dealsArr) || dealsLength === 0) {
+      return {
+        funnelMetricDefinitions: FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' })),
+        activeDealsCount: 0,
+        totalDealsAmount: 0,
+        wonAmount: 0,
+        openDealsAmount: 0,
+        conversionRate: 0,
+        averageDealAmount: 0
+      }
     }
     
-    // Вычисляем все метрики внутри useMemo
+    // Вычисляем все метрики один раз
     const activeCount = dealsArr.filter(deal => !deal.stage.startsWith('closed_')).length
     const totalAmount = dealsArr.reduce((sum, deal) => sum + (deal.amount || 0), 0)
     const won = dealsArr.filter(deal => deal.stage === 'closed_won')
@@ -280,18 +274,18 @@ export default function Dashboard() {
       .reduce((sum, deal) => sum + (deal.amount || 0), 0)
     const lost = dealsArr.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
     const lostCount = lost.length
-    const convRate = dealsArr.length ? Math.round((wonCount / dealsArr.length) * 100) : 0
-    const avgAmount = dealsArr.length ? Math.round(totalAmount / dealsArr.length) : 0
+    const convRate = dealsLength ? Math.round((wonCount / dealsLength) * 100) : 0
+    const avgAmount = dealsLength ? Math.round(totalAmount / dealsLength) : 0
     
     const formatNumber = (value: number) => value.toLocaleString('ru-RU')
     const formatCurrency = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
     
-    return FUNNEL_METRIC_META.map((meta) => {
+    const definitions = FUNNEL_METRIC_META.map((meta) => {
       let value = '—'
       try {
         switch (meta.id) {
           case 'total':
-            value = formatNumber(dealsArr.length)
+            value = formatNumber(dealsLength)
             break
           case 'won-count':
             value = formatNumber(wonCount)
@@ -309,7 +303,7 @@ export default function Dashboard() {
             value = `${convRate}%`
             break
           case 'average-check':
-            value = dealsArr.length ? formatCurrency(avgAmount) : '—'
+            value = dealsLength ? formatCurrency(avgAmount) : '—'
             break
           case 'lost-count':
             value = formatNumber(lostCount)
@@ -323,6 +317,16 @@ export default function Dashboard() {
       }
       return { ...meta, value }
     })
+    
+    return {
+      funnelMetricDefinitions: definitions,
+      activeDealsCount: activeCount,
+      totalDealsAmount: totalAmount,
+      wonAmount: wonAmt,
+      openDealsAmount: openAmt,
+      conversionRate: convRate,
+      averageDealAmount: avgAmount
+    }
   }, [deals])
 
   const metricsToDisplay = useMemo(() => {
