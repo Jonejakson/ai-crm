@@ -184,10 +184,14 @@ export default function CompanyPage() {
         throw new Error(paymentData.error || 'Не удалось создать платеж')
       }
 
-      // Если план бесплатный, подписка уже активирована
+      // Если план бесплатный или в режиме разработки, подписка уже активирована
       if (paymentData.subscription) {
         setSubscription(paymentData.subscription)
-        setBillingMessage(`План «${paymentData.subscription?.plan?.name ?? ''}» активирован`)
+        const planName = paymentData.subscription?.plan?.name ?? ''
+        setBillingMessage(`План «${planName}» успешно активирован! Лимиты обновлены.`)
+        // Обновляем данные
+        await fetchBilling()
+        await fetchUsers()
         return
       }
 

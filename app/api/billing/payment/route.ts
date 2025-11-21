@@ -43,8 +43,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
 
-    // Если план бесплатный, сразу активируем подписку
-    if (plan.price === 0) {
+    // В режиме разработки или если план бесплатный, сразу активируем подписку
+    if (plan.price === 0 || process.env.NODE_ENV === 'development') {
       const now = new Date()
       const nextPeriod = new Date(now)
       if (billingInterval === 'YEARLY') {
@@ -65,6 +65,19 @@ export async function POST(request: Request) {
           plan: true,
         },
       })
+
+      // В режиме разработки также создаем счет как оплаченный
+      if (process.env.NODE_ENV === 'development' && plan.price > 0) {
+        await prisma.invoice.create({
+          data: {
+            subscriptionId: subscription.id,
+            amount: plan.price,
+            currency: plan.currency,
+            status: 'PAID',
+            paidAt: new Date(),
+          },
+        })
+      }
 
       return NextResponse.json({ subscription, paymentUrl: null })
     }

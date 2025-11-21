@@ -67,7 +67,19 @@ export default function PipelineManager({
         onPipelinesChange()
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка при создании воронки')
+        if (error.error && error.error.includes('лимит')) {
+          toast.error(error.error, {
+            duration: 5000,
+            action: {
+              label: 'Выбрать тариф',
+              onClick: () => {
+                window.location.href = '/company'
+              }
+            }
+          })
+        } else {
+          toast.error(error.error || 'Ошибка при создании воронки')
+        }
       }
     } catch (error) {
       console.error('Error creating pipeline:', error)
