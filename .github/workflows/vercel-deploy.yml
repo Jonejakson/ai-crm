@@ -1,0 +1,39 @@
+name: Trigger Vercel Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Vercel Deploy Hook URL
+        run: |
+          if [ -z "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}" ]; then
+            echo "❌ VERCEL_DEPLOY_HOOK_URL не настроен в GitHub Secrets!"
+            echo "Добавьте secret: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          else
+            echo "✅ VERCEL_DEPLOY_HOOK_URL найден"
+          fi
+      
+      - name: Trigger Vercel Deploy Hook
+        run: |
+          echo "🚀 Запускаю деплой через Vercel Deploy Hook..."
+          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
+            echo "✅ Деплой успешно запущен! HTTP $http_code"
+            echo "Response: $body"
+          else
+            echo "❌ Ошибка при запуске деплоя. HTTP $http_code"
+            echo "Response: $body"
+            exit 1
+          fi
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+

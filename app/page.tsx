@@ -1,7 +1,7 @@
 // app/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import { UsersIcon, CheckCircleIcon, BriefcaseIcon, CurrencyIcon } from '@/components/Icons'
@@ -30,18 +30,117 @@ interface Deal {
   stage: string
 }
 
+interface FunnelMetricMeta {
+  id: string
+  label: string
+  color: string
+  description: string
+}
+
+const DEFAULT_FUNNEL_METRICS = ['total', 'won-count', 'won-amount']
+
+const FUNNEL_METRIC_META: FunnelMetricMeta[] = [
+  {
+    id: 'total',
+    label: 'Всего сделок',
+    color: 'from-blue-500 to-blue-600',
+    description: 'Количество всех сделок в CRM'
+  },
+  {
+    id: 'won-count',
+    label: 'Выиграно',
+    color: 'from-emerald-500 to-emerald-600',
+    description: 'Сделки со статусом успешно закрыто'
+  },
+  {
+    id: 'won-amount',
+    label: 'Сумма выигрышей',
+    color: 'from-purple-500 to-purple-600',
+    description: 'Общая сумма выигранных сделок'
+  },
+  {
+    id: 'active-count',
+    label: 'Активные сделки',
+    color: 'from-cyan-500 to-blue-500',
+    description: 'Сделки, которые еще находятся в работе'
+  },
+  {
+    id: 'open-amount',
+    label: 'Портфель в работе',
+    color: 'from-amber-500 to-orange-500',
+    description: 'Сумма всех активных сделок'
+  },
+  {
+    id: 'conversion',
+    label: 'Конверсия, %',
+    color: 'from-pink-500 to-rose-500',
+    description: 'Доля выигранных сделок от общего количества'
+  },
+  {
+    id: 'average-check',
+    label: 'Средний чек',
+    color: 'from-indigo-500 to-sky-500',
+    description: 'Средняя сумма сделки'
+  },
+  {
+    id: 'lost-count',
+    label: 'Проиграно',
+    color: 'from-red-500 to-orange-500',
+    description: 'Количество проигранных или отмененных сделок'
+  },
+]
+
 export default function Dashboard() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
+  const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
+  const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     fetchData()
     // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
     checkNotifications()
   }, [selectedUserId])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const saved = localStorage.getItem('dashboard_funnel_metrics')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length) {
+          const validIds = parsed.filter((id: string) =>
+            FUNNEL_METRIC_META.some((meta) => meta.id === id)
+          )
+          if (validIds.length) {
+            setSelectedFunnelMetrics(validIds)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading funnel metrics:', error)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
+  }, [selectedFunnelMetrics])
+
+  useEffect(() => {
+    if (!isMetricsMenuOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (metricsMenuRef.current && !metricsMenuRef.current.contains(event.target as Node)) {
+        setIsMetricsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isMetricsMenuOpen])
 
   const checkNotifications = async () => {
     try {
@@ -126,16 +225,93 @@ export default function Dashboard() {
     return new Date(task.dueDate) < new Date()
   }).length
   const recentContacts = contacts.slice(0, 5)
-  const activeDeals = deals.filter(deal => !deal.stage.startsWith('closed_')).length
+  const activeDealsCount = deals.filter(deal => !deal.stage.startsWith('closed_')).length
   const totalDealsAmount = deals.reduce((sum, deal) => sum + deal.amount, 0)
   const wonDeals = deals.filter(deal => deal.stage === 'closed_won')
   const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
   const openDealsAmount = deals
     .filter(deal => !deal.stage.startsWith('closed_'))
     .reduce((sum, deal) => sum + deal.amount, 0)
+  const lostDeals = deals.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
+  const conversionRate = deals.length ? Math.round((wonDeals.length / deals.length) * 100) : 0
+  const averageDealAmount = deals.length ? Math.round(totalDealsAmount / deals.length) : 0
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
   const newContactsCount = contacts.filter(contact => new Date(contact.createdAt) >= weekAgo).length
+
+  const handleMetricToggle = (metricId: string) => {
+    setSelectedFunnelMetrics((prev) => {
+      if (prev.includes(metricId)) {
+        if (prev.length === 1) {
+          return prev
+        }
+        return prev.filter((id) => id !== metricId)
+      }
+      return [...prev, metricId]
+    })
+  }
+
+  const handleMetricsReset = () => {
+    setSelectedFunnelMetrics([...DEFAULT_FUNNEL_METRICS])
+  }
+
+  const funnelMetricDefinitions = useMemo(() => {
+    const formatNumber = (value: number) => value.toLocaleString('ru-RU')
+    const formatCurrency = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
+    return FUNNEL_METRIC_META.map((meta) => {
+      let value = '—'
+      switch (meta.id) {
+        case 'total':
+          value = formatNumber(deals.length)
+          break
+        case 'won-count':
+          value = formatNumber(wonDeals.length)
+          break
+        case 'won-amount':
+          value = formatCurrency(wonAmount)
+          break
+        case 'active-count':
+          value = formatNumber(activeDealsCount)
+          break
+        case 'open-amount':
+          value = formatCurrency(openDealsAmount)
+          break
+        case 'conversion':
+          value = `${conversionRate}%`
+          break
+        case 'average-check':
+          value = deals.length ? formatCurrency(averageDealAmount) : '—'
+          break
+        case 'lost-count':
+          value = formatNumber(lostDeals.length)
+          break
+        default:
+          value = '—'
+      }
+      return { ...meta, value }
+    })
+  }, [
+    deals.length,
+    wonDeals.length,
+    wonAmount,
+    activeDealsCount,
+    openDealsAmount,
+    conversionRate,
+    averageDealAmount,
+    lostDeals.length,
+  ])
+
+  const metricsToDisplay = useMemo(() => {
+    const filtered = funnelMetricDefinitions.filter((metric) =>
+      selectedFunnelMetrics.includes(metric.id)
+    )
+    if (filtered.length) {
+      return filtered
+    }
+    return funnelMetricDefinitions.filter((metric) =>
+      DEFAULT_FUNNEL_METRICS.includes(metric.id)
+    )
+  }, [funnelMetricDefinitions, selectedFunnelMetrics])
 
   return (
     <div className="space-y-8">
@@ -166,7 +342,7 @@ export default function Dashboard() {
           },
           { 
             label: 'Активные сделки', 
-            value: activeDeals, 
+            value: activeDealsCount, 
             Icon: BriefcaseIcon, 
             note: `${openDealsAmount.toLocaleString('ru-RU')} ₽ в работе`, 
             accent: 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600',
@@ -196,21 +372,64 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="glass-panel rounded-3xl p-6 space-y-6 lg:col-span-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
               <h2 className="text-2xl font-bold text-[var(--foreground)] bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">Срез по воронке</h2>
             </div>
+            <div className="relative" ref={metricsMenuRef}>
+              <button
+                onClick={() => setIsMetricsMenuOpen((prev) => !prev)}
+                className="btn-secondary text-xs lg:text-sm flex items-center gap-1.5 px-3 py-2 whitespace-nowrap"
+              >
+                <span>⚙️</span>
+                <span>Настроить показатели</span>
+              </button>
+              {isMetricsMenuOpen && (
+                <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-4 space-y-3 z-50">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[var(--foreground)]">Какие показатели показывать?</p>
+                    <button
+                      className="text-xs text-[var(--primary)]"
+                      onClick={handleMetricsReset}
+                    >
+                      Сбросить
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {funnelMetricDefinitions.map((metric) => {
+                      const checked = selectedFunnelMetrics.includes(metric.id)
+                      const disableUncheck = checked && selectedFunnelMetrics.length === 1
+                      return (
+                        <label
+                          key={metric.id}
+                          className="flex items-start gap-2 text-sm cursor-pointer select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1 accent-[var(--primary)]"
+                            checked={checked}
+                            disabled={disableUncheck}
+                            onChange={() => handleMetricToggle(metric.id)}
+                          />
+                          <div>
+                            <p className="font-medium text-[var(--foreground)]">{metric.label}</p>
+                            <p className="text-xs text-[var(--muted)]">{metric.description}</p>
+                          </div>
+                        </label>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[10px] text-[var(--muted)]">Минимум один показатель должен быть выбран</p>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {[
-              { label: 'Всего сделок', value: deals.length, color: 'from-blue-500 to-blue-600' },
-              { label: 'Выиграно', value: wonDeals.length, color: 'from-emerald-500 to-emerald-600' },
-              { label: 'Сумма выигрышей', value: `${wonAmount.toLocaleString('ru-RU')} ₽`, color: 'from-purple-500 to-purple-600' },
-            ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--panel-muted)] to-[var(--surface)] p-5 hover:shadow-md transition-all duration-300 group">
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-3">{item.label}</p>
-                <p className={`text-3xl font-bold bg-gradient-to-r ${item.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{item.value}</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {metricsToDisplay.map((metric) => (
+              <div key={metric.id} className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--panel-muted)] to-[var(--surface)] p-5 hover:shadow-md transition-all duration-300 group">
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-3">{metric.label}</p>
+                <p className={`text-3xl font-bold bg-gradient-to-r ${metric.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{metric.value}</p>
               </div>
             ))}
           </div>

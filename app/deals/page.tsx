@@ -12,10 +12,12 @@ import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import FiltersModal from '@/components/FiltersModal'
 import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
+import type { CollisionDetection } from '@dnd-kit/core'
 import ExportButton from '@/components/ExportButton'
 import {
   DndContext,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -134,6 +136,40 @@ export default function DealsPage() {
   })
   const [searchTerm, setSearchTerm] = useState('')
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
+
+  const collisionDetectionStrategy: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args)
+
+    if (pointerCollisions.length > 0) {
+      const pointer = args.pointerCoordinates
+
+      const stageCollisions = pointerCollisions.filter((collision) => {
+        const droppable = args.droppableContainers.get(collision.id)
+        return droppable?.data?.current?.type === 'stage'
+      })
+
+      const collisionsToSort = stageCollisions.length > 0 ? stageCollisions : pointerCollisions
+
+      const sorted = collisionsToSort
+        .map((collision) => {
+          const droppable = args.droppableContainers.get(collision.id)
+          const rect = droppable?.rect.current
+          if (!rect || !pointer) {
+            return { collision, distance: Number.POSITIVE_INFINITY }
+          }
+          const centerX = rect.left + rect.width / 2
+          const centerY = rect.top + rect.height / 2
+          const distance = Math.hypot(pointer.x - centerX, pointer.y - centerY)
+          return { collision, distance }
+        })
+        .sort((a, b) => a.distance - b.distance)
+        .map((item) => item.collision)
+
+      return sorted
+    }
+
+    return rectIntersection(args)
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -538,12 +574,15 @@ export default function DealsPage() {
 
     let targetStage = activeDeal.stage
 
-    if (overData?.type === 'deal') {
-      targetStage = overData.stage || activeDeal.stage
-    } else if (overData?.type === 'stage') {
-      targetStage = overData.stage || activeDeal.stage
+    // Приоритет: сначала проверяем, является ли цель колонкой (stage)
+    if (overData?.type === 'stage' && overData.stage) {
+      targetStage = overData.stage
     } else if (typeof over.id === 'string' && stages.includes(over.id)) {
+      // Если ID совпадает с названием этапа
       targetStage = over.id
+    } else if (overData?.type === 'deal' && overData.stage) {
+      // Если перетащили на карточку, используем этап этой карточки
+      targetStage = overData.stage
     }
 
     const overDealId =
@@ -894,7 +933,7 @@ export default function DealsPage() {
 
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetectionStrategy}
           onDragEnd={handleDealDragEnd}
           onDragStart={(event) => {
             const deal = deals.find(d => d.id === parseInt(event.active.id as string))
@@ -1514,6 +1553,7 @@ function DealColumn({
       className={`kanban-column flex-shrink-0 w-72 ${color} ${
         isOver ? 'ring-2 ring-[var(--primary)]/40' : 'ring-0'
       }`}
+      style={{ minHeight: '200px' }}
     >
       <div className="flex items-center justify-between mb-4">
         <div>
