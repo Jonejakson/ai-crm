@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { jsPDF } from 'jspdf';
 
 // Экспорт сделок в CSV
 export async function GET(req: Request) {
@@ -62,6 +63,73 @@ export async function GET(req: Request) {
     });
 
     const csvContent = BOM + [csvHeaders, ...csvRows].join('\n');
+
+    if (format === 'pdf') {
+      // PDF экспорт
+      const doc = new jsPDF('l', 'mm', 'a4'); // landscape orientation
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 10;
+      const rowHeight = 7;
+      const startY = 20;
+      let currentY = startY;
+
+      // Заголовок
+      doc.setFontSize(16);
+      doc.text('Сделки', margin, currentY);
+      currentY += 10;
+
+      // Таблица
+      doc.setFontSize(10);
+      const numCols = headers.length;
+      const availableWidth = pageWidth - 2 * margin;
+      const colWidth = availableWidth / numCols;
+
+      // Заголовки таблицы
+      doc.setFillColor(63, 102, 241); // indigo-500
+      doc.setTextColor(255, 255, 255);
+      doc.rect(margin, currentY, availableWidth, rowHeight, 'F');
+      
+      headers.forEach((header, index) => {
+        const x = margin + index * colWidth;
+        doc.text(header, x + 2, currentY + 5);
+      });
+      currentY += rowHeight;
+
+      // Данные
+      doc.setTextColor(0, 0, 0);
+      csvData.forEach((row, rowIndex) => {
+        if (currentY + rowHeight > pageHeight - margin) {
+          doc.addPage();
+          currentY = margin;
+        }
+
+        // Чередование цветов строк
+        if (rowIndex % 2 === 0) {
+          doc.setFillColor(249, 250, 251);
+          doc.rect(margin, currentY, availableWidth, rowHeight, 'F');
+        }
+
+        headers.forEach((header, colIndex) => {
+          const x = margin + colIndex * colWidth;
+          const value = String(row[fields[colIndex]] || '');
+          // Обрезаем длинные значения
+          const displayValue = value.length > 20 ? value.substring(0, 17) + '...' : value;
+          doc.text(displayValue, x + 2, currentY + 5);
+        });
+
+        currentY += rowHeight;
+      });
+
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer') as ArrayBuffer);
+
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="deals_${new Date().toISOString().split('T')[0]}.pdf"`,
+        },
+      });
+    }
 
     const filename = `deals_${new Date().toISOString().split('T')[0]}.csv`;
     const mimeType = format === 'excel' ? 'application/vnd.ms-excel' : 'text/csv;charset=utf-8;';

@@ -7,6 +7,7 @@ import Modal from '@/components/Modal'
 import UserFilter from '@/components/UserFilter'
 import AdvancedFilters from '@/components/AdvancedFilters'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
+import ExportButton from '@/components/ExportButton'
 
 interface Contact {
   id: number
@@ -296,14 +297,11 @@ export default function ContactsPage() {
           <p className="text-sm text-[var(--muted)]">Быстрый поиск, фильтрация по менеджерам и создание карточек.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => {
-              window.location.href = '/api/export/contacts?format=excel'
-            }}
-            className="btn-secondary text-sm"
-          >
-            📥 Экспорт CSV
-          </button>
+          <ExportButton 
+            entityType="contacts" 
+            label="Экспорт CSV"
+            className="text-sm"
+          />
           <button 
             onClick={() => setIsModalOpen(true)}
             className="btn-primary text-sm"

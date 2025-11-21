@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
+import ExportButton from '@/components/ExportButton'
 
 interface Event {
   id: number
@@ -305,14 +306,11 @@ export default function CalendarClient() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button 
-            onClick={() => {
-              window.location.href = '/api/export/events?format=excel'
-            }}
-            className="btn-secondary text-sm"
-          >
-            📥 Экспорт CSV
-          </button>
+          <ExportButton 
+            entityType="events" 
+            label="Экспорт CSV"
+            className="text-sm"
+          />
           <button
             onClick={() => {
               window.open('/api/integrations/calendar/ics', '_blank')

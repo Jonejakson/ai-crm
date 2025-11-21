@@ -12,6 +12,7 @@ import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import FiltersModal from '@/components/FiltersModal'
 import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
+import ExportButton from '@/components/ExportButton'
 import {
   DndContext,
   closestCorners,
@@ -804,14 +805,11 @@ export default function DealsPage() {
             </svg>
             Фильтр
           </button>
-          <button
-            onClick={() => {
-              window.location.href = '/api/export/deals?format=excel'
-            }}
-            className="btn-secondary text-xs lg:text-sm px-3 py-2 whitespace-nowrap"
-          >
-            📥 Экспорт CSV
-          </button>
+          <ExportButton 
+            entityType="deals" 
+            label="Экспорт CSV"
+            className="text-xs lg:text-sm"
+          />
           <button
             onClick={() => setIsPipelineManagerOpen(true)}
             className="btn-secondary text-xs lg:text-sm flex items-center gap-1.5 px-3 py-2 whitespace-nowrap"

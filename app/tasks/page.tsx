@@ -9,6 +9,7 @@ import FilesManager from '@/components/FilesManager'
 import Comments from '@/components/Comments'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
+import ExportButton from '@/components/ExportButton'
 import {
   DndContext,
   closestCorners,
@@ -443,14 +444,11 @@ export default function TasksPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button 
-            onClick={() => {
-              window.location.href = '/api/export/tasks?format=excel'
-            }}
-            className="btn-secondary text-sm"
-          >
-            📥 Экспорт CSV
-          </button>
+          <ExportButton 
+            entityType="tasks" 
+            label="Экспорт CSV"
+            className="text-sm"
+          />
           <button 
             onClick={() => setIsModalOpen(true)}
             className="btn-primary text-sm"
