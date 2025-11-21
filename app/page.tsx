@@ -219,25 +219,25 @@ export default function Dashboard() {
     )
   }
 
-  const pendingTasks = tasks.filter(task => task.status === 'pending').length
-  const overdueTasks = tasks.filter(task => {
+  const pendingTasks = (tasks || []).filter(task => task.status === 'pending').length
+  const overdueTasks = (tasks || []).filter(task => {
     if (task.status !== 'pending' || !task.dueDate) return false
     return new Date(task.dueDate) < new Date()
   }).length
-  const recentContacts = contacts.slice(0, 5)
-  const activeDealsCount = deals.filter(deal => !deal.stage.startsWith('closed_')).length
-  const totalDealsAmount = deals.reduce((sum, deal) => sum + deal.amount, 0)
-  const wonDeals = deals.filter(deal => deal.stage === 'closed_won')
-  const wonAmount = wonDeals.reduce((sum, deal) => sum + deal.amount, 0)
-  const openDealsAmount = deals
+  const recentContacts = (contacts || []).slice(0, 5)
+  const activeDealsCount = (deals || []).filter(deal => !deal.stage.startsWith('closed_')).length
+  const totalDealsAmount = (deals || []).reduce((sum, deal) => sum + (deal.amount || 0), 0)
+  const wonDeals = (deals || []).filter(deal => deal.stage === 'closed_won')
+  const wonAmount = wonDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0)
+  const openDealsAmount = (deals || [])
     .filter(deal => !deal.stage.startsWith('closed_'))
-    .reduce((sum, deal) => sum + deal.amount, 0)
-  const lostDeals = deals.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
-  const conversionRate = deals.length ? Math.round((wonDeals.length / deals.length) * 100) : 0
-  const averageDealAmount = deals.length ? Math.round(totalDealsAmount / deals.length) : 0
+    .reduce((sum, deal) => sum + (deal.amount || 0), 0)
+  const lostDeals = (deals || []).filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
+  const conversionRate = deals?.length ? Math.round((wonDeals.length / deals.length) * 100) : 0
+  const averageDealAmount = deals?.length ? Math.round(totalDealsAmount / deals.length) : 0
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  const newContactsCount = contacts.filter(contact => new Date(contact.createdAt) >= weekAgo).length
+  const newContactsCount = (contacts || []).filter(contact => new Date(contact.createdAt) >= weekAgo).length
 
   const handleMetricToggle = (metricId: string) => {
     setSelectedFunnelMetrics((prev) => {
@@ -256,42 +256,51 @@ export default function Dashboard() {
   }
 
   const funnelMetricDefinitions = useMemo(() => {
+    if (!deals || !Array.isArray(deals)) {
+      return FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' }))
+    }
     const formatNumber = (value: number) => value.toLocaleString('ru-RU')
     const formatCurrency = (value: number) => `${value.toLocaleString('ru-RU')} ₽`
     return FUNNEL_METRIC_META.map((meta) => {
       let value = '—'
-      switch (meta.id) {
-        case 'total':
-          value = formatNumber(deals.length)
-          break
-        case 'won-count':
-          value = formatNumber(wonDeals.length)
-          break
-        case 'won-amount':
-          value = formatCurrency(wonAmount)
-          break
-        case 'active-count':
-          value = formatNumber(activeDealsCount)
-          break
-        case 'open-amount':
-          value = formatCurrency(openDealsAmount)
-          break
-        case 'conversion':
-          value = `${conversionRate}%`
-          break
-        case 'average-check':
-          value = deals.length ? formatCurrency(averageDealAmount) : '—'
-          break
-        case 'lost-count':
-          value = formatNumber(lostDeals.length)
-          break
-        default:
-          value = '—'
+      try {
+        switch (meta.id) {
+          case 'total':
+            value = formatNumber(deals.length)
+            break
+          case 'won-count':
+            value = formatNumber(wonDeals.length)
+            break
+          case 'won-amount':
+            value = formatCurrency(wonAmount)
+            break
+          case 'active-count':
+            value = formatNumber(activeDealsCount)
+            break
+          case 'open-amount':
+            value = formatCurrency(openDealsAmount)
+            break
+          case 'conversion':
+            value = `${conversionRate}%`
+            break
+          case 'average-check':
+            value = deals.length ? formatCurrency(averageDealAmount) : '—'
+            break
+          case 'lost-count':
+            value = formatNumber(lostDeals.length)
+            break
+          default:
+            value = '—'
+        }
+      } catch (error) {
+        console.error(`Error calculating metric ${meta.id}:`, error)
+        value = '—'
       }
       return { ...meta, value }
     })
   }, [
-    deals.length,
+    deals,
+    deals?.length,
     wonDeals.length,
     wonAmount,
     activeDealsCount,
