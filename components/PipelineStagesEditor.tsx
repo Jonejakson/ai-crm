@@ -31,7 +31,7 @@ interface PipelineStagesEditorProps {
   unassignedStage?: string // Этап, который нельзя удалить
 }
 
-// Палитра цветов для этапов
+// Палитра цветов для этапов (24 цвета)
 const COLOR_PALETTE = [
   { name: 'Синий', value: 'bg-gradient-to-b from-[#e6f0ff] via-[#edf4ff] to-[#f8fbff]', shadow: 'shadow-[0_25px_35px_-25px_rgba(47,111,237,0.55)]' },
   { name: 'Фиолетовый', value: 'bg-gradient-to-b from-[#f7ecff] via-[#fbf3ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(139,92,246,0.45)]' },
@@ -41,6 +41,22 @@ const COLOR_PALETTE = [
   { name: 'Розовый', value: 'bg-gradient-to-b from-[#fff0f2] via-[#fff7f8] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(239,68,68,0.35)]' },
   { name: 'Желтый', value: 'bg-gradient-to-b from-[#fffbeb] via-[#fef9c3] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(234,179,8,0.35)]' },
   { name: 'Бирюзовый', value: 'bg-gradient-to-b from-[#ecfeff] via-[#cffafe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(6,182,212,0.35)]' },
+  { name: 'Красный', value: 'bg-gradient-to-b from-[#fee2e2] via-[#fecaca] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(239,68,68,0.4)]' },
+  { name: 'Изумрудный', value: 'bg-gradient-to-b from-[#d1fae5] via-[#a7f3d0] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(16,185,129,0.4)]' },
+  { name: 'Индиго', value: 'bg-gradient-to-b from-[#e0e7ff] via-[#c7d2fe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(99,102,241,0.4)]' },
+  { name: 'Лавандовый', value: 'bg-gradient-to-b from-[#f3e8ff] via-[#e9d5ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(168,85,247,0.4)]' },
+  { name: 'Коралловый', value: 'bg-gradient-to-b from-[#ffe4e6] via-[#fecdd3] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(251,113,133,0.4)]' },
+  { name: 'Мятный', value: 'bg-gradient-to-b from-[#d1fae5] via-[#a7f3d0] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(5,150,105,0.4)]' },
+  { name: 'Небесный', value: 'bg-gradient-to-b from-[#e0f2fe] via-[#bae6fd] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(14,165,233,0.4)]' },
+  { name: 'Персиковый', value: 'bg-gradient-to-b from-[#fff1f2] via-[#ffe4e6] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(244,63,94,0.4)]' },
+  { name: 'Сливовый', value: 'bg-gradient-to-b from-[#faf5ff] via-[#f3e8ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(147,51,234,0.4)]' },
+  { name: 'Лаймовый', value: 'bg-gradient-to-b from-[#f7fee7] via-[#ecfccb] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(132,204,22,0.4)]' },
+  { name: 'Аквамарин', value: 'bg-gradient-to-b from-[#ecfeff] via-[#cffafe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(6,182,212,0.4)]' },
+  { name: 'Абрикосовый', value: 'bg-gradient-to-b from-[#fff7ed] via-[#ffedd5] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(249,115,22,0.4)]' },
+  { name: 'Сирень', value: 'bg-gradient-to-b from-[#faf5ff] via-[#f3e8ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(168,85,247,0.4)]' },
+  { name: 'Морской', value: 'bg-gradient-to-b from-[#f0f9ff] via-[#e0f2fe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(2,132,199,0.4)]' },
+  { name: 'Песочный', value: 'bg-gradient-to-b from-[#fffbeb] via-[#fef3c7] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(217,119,6,0.4)]' },
+  { name: 'Вишневый', value: 'bg-gradient-to-b from-[#fef2f2] via-[#fee2e2] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(220,38,38,0.4)]' },
 ]
 
 function SortableStageItem({ 
@@ -123,12 +139,14 @@ function SortableStageItem({
             title="Изменить цвет"
           >
             <div className={`w-5 h-5 rounded ${currentColor.value} ${currentColor.shadow}`} />
-            <span className="text-xs text-gray-600">🎨</span>
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
           </button>
           {isColorPickerOpen && (
             <div className="absolute right-0 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50 min-w-[200px]">
               <div className="text-xs font-semibold text-gray-700 mb-2">Выберите цвет:</div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
                 {COLOR_PALETTE.map((color) => (
                   <button
                     key={color.value}

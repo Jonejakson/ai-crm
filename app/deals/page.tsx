@@ -82,7 +82,7 @@ interface Contact {
   company?: string | null
 }
 
-// Палитра цветов (должна совпадать с PipelineStagesEditor)
+// Палитра цветов (должна совпадать с PipelineStagesEditor) - 24 цвета
 const COLOR_PALETTE = [
   { name: 'Синий', value: 'bg-gradient-to-b from-[#e6f0ff] via-[#edf4ff] to-[#f8fbff]', shadow: 'shadow-[0_25px_35px_-25px_rgba(47,111,237,0.55)]' },
   { name: 'Фиолетовый', value: 'bg-gradient-to-b from-[#f7ecff] via-[#fbf3ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(139,92,246,0.45)]' },
@@ -92,6 +92,22 @@ const COLOR_PALETTE = [
   { name: 'Розовый', value: 'bg-gradient-to-b from-[#fff0f2] via-[#fff7f8] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(239,68,68,0.35)]' },
   { name: 'Желтый', value: 'bg-gradient-to-b from-[#fffbeb] via-[#fef9c3] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(234,179,8,0.35)]' },
   { name: 'Бирюзовый', value: 'bg-gradient-to-b from-[#ecfeff] via-[#cffafe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(6,182,212,0.35)]' },
+  { name: 'Красный', value: 'bg-gradient-to-b from-[#fee2e2] via-[#fecaca] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(239,68,68,0.4)]' },
+  { name: 'Изумрудный', value: 'bg-gradient-to-b from-[#d1fae5] via-[#a7f3d0] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(16,185,129,0.4)]' },
+  { name: 'Индиго', value: 'bg-gradient-to-b from-[#e0e7ff] via-[#c7d2fe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(99,102,241,0.4)]' },
+  { name: 'Лавандовый', value: 'bg-gradient-to-b from-[#f3e8ff] via-[#e9d5ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(168,85,247,0.4)]' },
+  { name: 'Коралловый', value: 'bg-gradient-to-b from-[#ffe4e6] via-[#fecdd3] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(251,113,133,0.4)]' },
+  { name: 'Мятный', value: 'bg-gradient-to-b from-[#d1fae5] via-[#a7f3d0] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(5,150,105,0.4)]' },
+  { name: 'Небесный', value: 'bg-gradient-to-b from-[#e0f2fe] via-[#bae6fd] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(14,165,233,0.4)]' },
+  { name: 'Персиковый', value: 'bg-gradient-to-b from-[#fff1f2] via-[#ffe4e6] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(244,63,94,0.4)]' },
+  { name: 'Сливовый', value: 'bg-gradient-to-b from-[#faf5ff] via-[#f3e8ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(147,51,234,0.4)]' },
+  { name: 'Лаймовый', value: 'bg-gradient-to-b from-[#f7fee7] via-[#ecfccb] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(132,204,22,0.4)]' },
+  { name: 'Аквамарин', value: 'bg-gradient-to-b from-[#ecfeff] via-[#cffafe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(6,182,212,0.4)]' },
+  { name: 'Абрикосовый', value: 'bg-gradient-to-b from-[#fff7ed] via-[#ffedd5] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(249,115,22,0.4)]' },
+  { name: 'Сирень', value: 'bg-gradient-to-b from-[#faf5ff] via-[#f3e8ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(168,85,247,0.4)]' },
+  { name: 'Морской', value: 'bg-gradient-to-b from-[#f0f9ff] via-[#e0f2fe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(2,132,199,0.4)]' },
+  { name: 'Песочный', value: 'bg-gradient-to-b from-[#fffbeb] via-[#fef3c7] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(217,119,6,0.4)]' },
+  { name: 'Вишневый', value: 'bg-gradient-to-b from-[#fef2f2] via-[#fee2e2] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(220,38,38,0.4)]' },
 ]
 
 // Новые дефолтные этапы
