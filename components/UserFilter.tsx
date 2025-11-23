@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 
 interface User {
@@ -20,6 +21,8 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const isAdmin = session?.user?.role === 'admin'
 
@@ -31,15 +34,52 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
     }
   }, [isAdmin])
 
+  // Вычисляем позицию выпадающего меню
+  const updatePosition = () => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      setPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      updatePosition()
+      
+      const handleResize = () => updatePosition()
+      const handleScroll = () => updatePosition()
+      
+      window.addEventListener('resize', handleResize)
+      window.addEventListener('scroll', handleScroll, true)
+      
+      return () => {
+        window.removeEventListener('resize', handleResize)
+        window.removeEventListener('scroll', handleScroll, true)
+      }
+    }
+  }, [isOpen])
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false)
       }
     }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      // Небольшая задержка, чтобы не закрыть сразу после открытия
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside)
+      }, 0)
     }
 
     return () => {
@@ -77,71 +117,91 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
     setIsOpen(false)
   }
 
-  return (
-    <div className="mb-4 flex items-center gap-3">
-      <label className="text-sm font-medium text-[var(--foreground-soft)] whitespace-nowrap">
-        Фильтр по менеджеру:
-      </label>
-      <div className="relative" ref={dropdownRef}>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="btn-secondary text-sm flex items-center gap-2 min-w-[250px] justify-between"
-        >
-          <span className="flex items-center gap-2">
-            <span>👤</span>
-            <span className="truncate">{displayText}</span>
-          </span>
-          <span className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-        {isOpen && (
-          <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 z-[100] max-h-64 overflow-y-auto">
-            <button
-              onClick={() => handleSelect(null)}
-              className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-                !selectedUserId
-                  ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
-                  : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span>👥</span>
-                <span>Все менеджеры</span>
+  const handleToggle = () => {
+    if (!isOpen) {
+      updatePosition()
+    }
+    setIsOpen(!isOpen)
+  }
+
+  const dropdownContent = isOpen && (
+    <div
+      ref={dropdownRef}
+      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 z-[9999] max-h-64 overflow-y-auto"
+      style={{
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `${position.width}px`
+      }}
+    >
+      <button
+        onClick={() => handleSelect(null)}
+        className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+          !selectedUserId
+            ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
+            : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <span>👥</span>
+          <span>Все менеджеры</span>
+        </div>
+      </button>
+      {users.map((user) => {
+        const isSelected = selectedUserId === user.id
+        const isCurrentUser = user.id === currentUserId
+        return (
+          <button
+            key={user.id}
+            onClick={() => handleSelect(user.id)}
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+              isSelected
+                ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
+                : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span>👤</span>
+              <div className="flex-1 min-w-0">
+                <div className="truncate">
+                  {user.name}
+                  {isCurrentUser && <span className="text-[var(--primary)]"> (Вы)</span>}
+                </div>
+                <div className="text-xs text-[var(--muted)] mt-0.5">
+                  {user.role === 'admin' ? '[Админ]' : user.role === 'manager' ? '[Менеджер]' : ''}
+                </div>
               </div>
-            </button>
-            {users.map((user) => {
-              const isSelected = selectedUserId === user.id
-              const isCurrentUser = user.id === currentUserId
-              return (
-                <button
-                  key={user.id}
-                  onClick={() => handleSelect(user.id)}
-                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-                    isSelected
-                      ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
-                      : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>👤</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate">
-                        {user.name}
-                        {isCurrentUser && <span className="text-[var(--primary)]"> (Вы)</span>}
-                      </div>
-                      <div className="text-xs text-[var(--muted)] mt-0.5">
-                        {user.role === 'admin' ? '[Админ]' : user.role === 'manager' ? '[Менеджер]' : ''}
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
+            </div>
+          </button>
+        )
+      })}
     </div>
+  )
+
+  return (
+    <>
+      <div className="mb-4 flex items-center gap-3">
+        <label className="text-sm font-medium text-[var(--foreground-soft)] whitespace-nowrap">
+          Фильтр по менеджеру:
+        </label>
+        <div className="relative">
+          <button
+            ref={buttonRef}
+            onClick={handleToggle}
+            className="btn-secondary text-sm flex items-center gap-2 min-w-[250px] justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <span>👤</span>
+              <span className="truncate">{displayText}</span>
+            </span>
+            <span className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
+          </button>
+        </div>
+      </div>
+      {typeof window !== 'undefined' && createPortal(dropdownContent, document.body)}
+    </>
   )
 }
 
