@@ -475,7 +475,7 @@ export default function DealsPage() {
       amount: '',
       currency: 'RUB',
       contactId: '',
-      stage: stages[0] || '',
+      stage: stages[0]?.name || '',
       probability: '0',
       expectedCloseDate: '',
       pipelineId: ''
