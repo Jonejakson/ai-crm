@@ -144,9 +144,9 @@ function SortableStageItem({
             </svg>
           </button>
           {isColorPickerOpen && (
-            <div className="absolute right-0 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50 min-w-[200px]">
-              <div className="text-xs font-semibold text-gray-700 mb-2">Выберите цвет:</div>
-              <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 min-w-[320px]">
+              <div className="text-xs font-semibold text-gray-700 mb-3">Выберите цвет:</div>
+              <div className="grid grid-cols-6 gap-3">
                 {COLOR_PALETTE.map((color) => (
                   <button
                     key={color.value}
@@ -155,7 +155,7 @@ function SortableStageItem({
                       onColorChange(color.value)
                       setIsColorPickerOpen(false)
                     }}
-                    className={`w-8 h-8 rounded ${color.value} ${color.shadow} border-2 transition-all ${
+                    className={`w-10 h-10 rounded ${color.value} ${color.shadow} border-2 transition-all ${
                       stage.color === color.value ? 'border-blue-500 scale-110' : 'border-transparent hover:scale-105'
                     }`}
                     title={color.name}
