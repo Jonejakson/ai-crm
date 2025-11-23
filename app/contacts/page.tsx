@@ -68,10 +68,22 @@ export default function ContactsPage() {
         ? `/api/contacts?userId=${selectedUserId}` 
         : '/api/contacts'
       const response = await fetch(url)
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Error fetching contacts:', error)
+        toast.error(error.error || 'Ошибка при загрузке контактов')
+        setContacts([])
+        return
+      }
+      
       const data = await response.json()
-      setContacts(data)
+      // Убеждаемся, что data - это массив
+      setContacts(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching contacts:', error)
+      toast.error('Ошибка при загрузке контактов')
+      setContacts([])
     } finally {
       setLoading(false)
     }

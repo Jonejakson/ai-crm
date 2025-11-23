@@ -28,20 +28,50 @@ export async function GET(req: Request) {
       whereCondition = await getDirectWhereCondition();
     }
 
-    const contacts = await prisma.contact.findMany({
-      where: whereCondition,
-      orderBy: { id: "desc" },
-      include: {
-        user: {
+    try {
+      const contacts = await prisma.contact.findMany({
+        where: whereCondition,
+        orderBy: { id: "desc" },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            }
+          }
+        }
+      });
+      return NextResponse.json(contacts);
+    } catch (error: any) {
+      console.error('Error in GET /api/contacts:', error);
+      // Если ошибка связана с отсутствующим полем position, возвращаем контакты без него
+      if (error.message?.includes('position') || error.code === 'P2021') {
+        const contacts = await prisma.contact.findMany({
+          where: whereCondition,
+          orderBy: { id: "desc" },
           select: {
             id: true,
             name: true,
             email: true,
+            phone: true,
+            company: true,
+            createdAt: true,
+            updatedAt: true,
+            userId: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              }
+            }
           }
-        }
+        });
+        return NextResponse.json(contacts);
       }
-    });
-    return NextResponse.json(contacts);
+      throw error;
+    }
   } catch (error: any) {
     console.error('Error fetching contacts:', error);
     console.error('Error details:', {
@@ -100,15 +130,21 @@ export async function POST(req: Request) {
       );
     }
 
+        const contactData: any = {
+          name: data.name,
+          email: data.email || null,
+          phone: data.phone || null,
+          company: data.company || null,
+          userId: userId,
+        };
+        
+        // Добавляем position только если поле существует в схеме
+        if (data.position !== undefined) {
+          contactData.position = data.position || null;
+        }
+        
         const newContact = await prisma.contact.create({
-          data: {
-            name: data.name,
-            email: data.email || null,
-            phone: data.phone || null,
-            company: data.company || null,
-            position: data.position || null,
-            userId: userId,
-          },
+          data: contactData,
         });
     return NextResponse.json(newContact);
   } catch (error: any) {
@@ -167,15 +203,21 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Contact not found or access denied" }, { status: 404 });
     }
 
+    const updateData: any = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone || null,
+      company: data.company || null,
+    };
+    
+    // Добавляем position только если поле существует в схеме
+    if (data.position !== undefined) {
+      updateData.position = data.position || null;
+    }
+    
     const updated = await prisma.contact.update({
       where: { id: data.id },
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone || null,
-        company: data.company || null,
-        position: data.position || null,
-      },
+      data: updateData,
     });
     return NextResponse.json(updated);
   } catch (error: any) {
