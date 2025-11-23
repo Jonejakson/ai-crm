@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -1288,7 +1289,7 @@ function DealSourcesManager({
         )}
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
@@ -1364,7 +1365,8 @@ function DealSourcesManager({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
@@ -1508,7 +1510,7 @@ function DealTypesManager({
         )}
       </div>
 
-      {isModalOpen && (
+      {isModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
@@ -1566,7 +1568,8 @@ function DealTypesManager({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )
