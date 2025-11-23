@@ -210,7 +210,8 @@ export default function DealsPage() {
     const pipeline = pipelines.find((p) => p.id === pipelineId)
     if (pipeline) {
       const pipelineStages = getStagesFromPipeline(pipeline)
-      setFormData(prev => ({ ...prev, stage: pipelineStages[0]?.name || '' }))
+      const firstStage = pipelineStages[0]
+      setFormData(prev => ({ ...prev, stage: firstStage?.name || '' }))
     }
     // Перезагружаем данные с новой воронкой, чтобы показать сделки выбранной воронки
     await fetchData(pipelineId)
@@ -350,9 +351,9 @@ export default function DealsPage() {
             dealsData = Array.isArray(updatedDealsRes) ? updatedDealsRes : []
           }
           
-          const stages = [...pipelineStages, UNASSIGNED_STAGE]
+          const stages = [...pipelineStages, { name: UNASSIGNED_STAGE, color: 'bg-gradient-to-b from-[#f6f7fb] to-white' }]
           if (stages.length > 0 && !formData.stage) {
-            setFormData(prev => ({ ...prev, stage: stages[0] }))
+            setFormData(prev => ({ ...prev, stage: stages[0]?.name || '' }))
           }
         }
       }
@@ -426,16 +427,28 @@ export default function DealsPage() {
     }
   }, [loading, pipelines.length, selectedPipeline])
 
-  const getStagesFromPipeline = (pipeline: Pipeline): string[] => {
+  const getStagesFromPipeline = (pipeline: Pipeline): Stage[] => {
     try {
-      return JSON.parse(pipeline.stages)
+      const parsed = JSON.parse(pipeline.stages)
+      // Если это массив строк (старый формат), преобразуем в массив объектов
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        if (typeof parsed[0] === 'string') {
+          return parsed.map((name: string, index: number) => ({
+            name,
+            color: COLOR_PALETTE[index % COLOR_PALETTE.length].value
+          }))
+        }
+        // Новый формат - массив объектов
+        return parsed as Stage[]
+      }
+      return DEFAULT_STAGES
     } catch {
       return DEFAULT_STAGES
     }
   }
 
-  const getStages = (): string[] => {
-    let stages: string[] = []
+  const getStages = (): Stage[] => {
+    let stages: Stage[] = []
     if (selectedPipeline) {
       const pipeline = pipelines.find(p => p.id === selectedPipeline)
       if (pipeline) {
@@ -448,8 +461,8 @@ export default function DealsPage() {
     }
     
     // Всегда добавляем "Неразобранные" в конец, если его еще нет
-    if (!stages.includes(UNASSIGNED_STAGE)) {
-      stages.push(UNASSIGNED_STAGE)
+    if (!stages.some(s => s.name === UNASSIGNED_STAGE)) {
+      stages.push({ name: UNASSIGNED_STAGE, color: 'bg-gradient-to-b from-[#f6f7fb] to-white' })
     }
     
     return stages
@@ -600,7 +613,7 @@ export default function DealsPage() {
     // Приоритет: сначала проверяем, является ли цель колонкой (stage)
     if (overData?.type === 'stage' && overData.stage) {
       targetStage = overData.stage
-    } else if (typeof over.id === 'string' && stages.includes(over.id)) {
+    } else if (typeof over.id === 'string' && stages.some(s => s.name === over.id)) {
       // Если ID совпадает с названием этапа
       targetStage = over.id
     } else if (overData?.type === 'deal' && overData.stage) {
@@ -1194,8 +1207,8 @@ export default function DealsPage() {
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Выберите этап</option>
-                    {stages.filter(s => s !== UNASSIGNED_STAGE).map(stage => (
-                      <option key={stage} value={stage}>{stage}</option>
+                    {stages.filter(s => s.name !== UNASSIGNED_STAGE).map(stage => (
+                      <option key={stage.name} value={stage.name}>{stage.name}</option>
                     ))}
                   </select>
                 </div>
