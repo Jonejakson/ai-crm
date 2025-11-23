@@ -203,20 +203,28 @@ export default function ContactsPage() {
 
     try {
       const response = await fetch(`/api/company/by-inn?inn=${cleanInn}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
+        setInnError(errorData.error || 'Ошибка при запросе к API')
+        return
+      }
+      
       const data = await response.json()
 
-      if (response.ok && data.name) {
+      if (data.name) {
         setFormData({
           ...formData,
           company: data.name,
           inn: cleanInn
         })
+        setInnError('')
       } else {
         setInnError(data.error || 'Компания не найдена')
       }
     } catch (error) {
       console.error('Error searching company by INN:', error)
-      setInnError('Ошибка при поиске компании')
+      setInnError('Ошибка при запросе к API')
     } finally {
       setInnLoading(false)
     }
@@ -304,8 +312,8 @@ export default function ContactsPage() {
   const filteredContacts = contacts.filter(contact => {
     // Поиск по тексту
     const matchesSearch = !search || 
-      contact.name.toLowerCase().includes(search.toLowerCase()) ||
-      contact.email.toLowerCase().includes(search.toLowerCase()) ||
+      contact.name?.toLowerCase().includes(search.toLowerCase()) ||
+      contact.email?.toLowerCase().includes(search.toLowerCase()) ||
       contact.company?.toLowerCase().includes(search.toLowerCase())
 
     if (!matchesSearch) return false

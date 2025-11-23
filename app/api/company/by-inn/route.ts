@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/get-session'
 
 // API для поиска компании по ИНН
 // Используем бесплатный API daData.ru или можно заменить на другой сервис
 export async function GET(request: Request) {
   try {
+    // Проверка авторизации
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const inn = searchParams.get('inn')
 
