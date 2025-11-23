@@ -96,7 +96,7 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
           </span>
         </button>
         {isOpen && (
-          <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 z-50 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 z-[100] max-h-64 overflow-y-auto">
             <button
               onClick={() => handleSelect(null)}
               className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
