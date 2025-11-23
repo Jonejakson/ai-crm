@@ -159,7 +159,7 @@ function CustomSelect({
   required?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, openUp: false })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -170,16 +170,47 @@ function CustomSelect({
     const updatePosition = () => {
       if (buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect()
+        const viewportHeight = window.innerHeight
+        const viewportWidth = window.innerWidth
+        const spaceBelow = viewportHeight - rect.bottom
+        const spaceAbove = rect.top
+        const dropdownHeight = 256 // max-h-64 = 256px
+        const gap = 8
+        
+        // Определяем, открывать ли список вверх
+        const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow
+        
+        let top: number
+        if (openUp) {
+          // Открываем вверх
+          top = rect.top - dropdownHeight - gap
+        } else {
+          // Открываем вниз
+          top = rect.bottom + gap
+        }
+        
+        // Ограничиваем позицию, чтобы не выходить за границы viewport
+        const maxTop = viewportHeight - dropdownHeight - 16
+        const minTop = 16
+        top = Math.max(minTop, Math.min(maxTop, top))
+        
+        // Ограничиваем left, чтобы не выходить за границы viewport
+        let left = rect.left
+        const maxLeft = viewportWidth - rect.width - 16
+        left = Math.max(16, Math.min(maxLeft, left))
+        
         setPosition({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX,
+          top,
+          left,
           width: rect.width,
+          openUp,
         })
       }
     }
 
     if (isOpen) {
-      updatePosition()
+      // Небольшая задержка для правильного расчета позиции
+      setTimeout(updatePosition, 0)
       window.addEventListener('resize', updatePosition)
       window.addEventListener('scroll', updatePosition, true)
     }
@@ -221,11 +252,14 @@ function CustomSelect({
   const dropdownContent = isOpen && typeof document !== 'undefined' && (
     <div
       ref={dropdownRef}
-      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 z-[9999] max-h-64 overflow-y-auto"
+      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 max-h-64 overflow-y-auto"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
-        width: `${position.width}px`
+        width: `${position.width}px`,
+        maxHeight: '256px',
+        zIndex: 99999,
+        position: 'fixed',
       }}
     >
       {options.map((option) => {
