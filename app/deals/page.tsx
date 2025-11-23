@@ -1052,8 +1052,12 @@ export default function DealsPage() {
           <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Новая сделка</p>
-                <h3 className="text-2xl font-bold text-[var(--foreground)]">Создать сделку</h3>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">
+                  {editingDeal ? 'Редактирование сделки' : 'Новая сделка'}
+                </p>
+                <h3 className="text-2xl font-bold text-[var(--foreground)]">
+                  {editingDeal ? 'Редактировать сделку' : 'Создать сделку'}
+                </h3>
               </div>
               <button
                 onClick={() => {
@@ -1079,12 +1083,11 @@ export default function DealsPage() {
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
                     required
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Клиент *
                   </label>
                   <div className="space-y-2">
@@ -1112,10 +1115,9 @@ export default function DealsPage() {
                           }
                         }}
                         placeholder="Введите имя или email для поиска..."
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       />
                       {contactSearch && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <div className="absolute z-10 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg max-h-60 overflow-y-auto">
                           {contacts
                             .filter(contact => 
                               contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
@@ -1130,14 +1132,14 @@ export default function DealsPage() {
                                   setFormData({...formData, contactId: contact.id.toString()})
                                   setContactSearch(contact.email ? `${contact.name} (${contact.email})` : contact.name)
                                 }}
-                                className="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                className="p-3 hover:bg-[var(--background-soft)] cursor-pointer border-b border-[var(--border)] last:border-b-0 transition-colors"
                               >
-                                <div className="font-medium text-gray-900">{contact.name}</div>
+                                <div className="font-medium text-[var(--foreground)]">{contact.name}</div>
                                 {contact.email && (
-                                  <div className="text-sm text-gray-600">{contact.email}</div>
+                                  <div className="text-sm text-[var(--muted)]">{contact.email}</div>
                                 )}
                                 {contact.company && (
-                                  <div className="text-xs text-gray-500">{contact.company}</div>
+                                  <div className="text-xs text-[var(--muted-soft)]">{contact.company}</div>
                                 )}
                               </div>
                             ))}
@@ -1145,7 +1147,7 @@ export default function DealsPage() {
                             contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
                             (contact.email && contact.email.toLowerCase().includes(contactSearch.toLowerCase()))
                           ).length === 0 && contactSearch && !formData.contactId && (
-                            <div className="p-2 text-gray-500 text-sm">
+                            <div className="p-3 text-[var(--muted)] text-sm">
                               Клиент не найден
                             </div>
                           )}
@@ -1164,7 +1166,7 @@ export default function DealsPage() {
                         setIsNewContactModalOpen(true)
                         setContactSearch('')
                       }}
-                      className="w-full px-4 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                      className="btn-secondary text-sm w-full"
                     >
                       + Создать нового клиента
                     </button>
@@ -1174,7 +1176,7 @@ export default function DealsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Сумма
                   </label>
                   <input
@@ -1182,18 +1184,16 @@ export default function DealsPage() {
                     step="0.01"
                     value={formData.amount}
                     onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Валюта
                   </label>
                   <select
                     value={formData.currency}
                     onChange={(e) => setFormData({...formData, currency: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="RUB">RUB</option>
                     <option value="USD">USD</option>
@@ -1204,7 +1204,7 @@ export default function DealsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Источник сделки
                   </label>
                   <select
@@ -1223,7 +1223,6 @@ export default function DealsPage() {
                         handlePipelineChange(selectedSource.pipelineId)
                       }
                     }}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Выберите источник</option>
                     {dealSources.map(source => (
@@ -1236,13 +1235,12 @@ export default function DealsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Тип сделки
                   </label>
                   <select
                     value={formData.dealTypeId}
                     onChange={(e) => setFormData({...formData, dealTypeId: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Выберите тип</option>
                     {dealTypes.map(type => (
@@ -1253,14 +1251,13 @@ export default function DealsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Этап
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  Этап *
                 </label>
                 <select
                   value={formData.stage}
                   onChange={(e) => setFormData({...formData, stage: e.target.value})}
                   required
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Выберите этап</option>
                   {stages.filter(s => s.name !== UNASSIGNED_STAGE).map(stage => (
@@ -1287,7 +1284,7 @@ export default function DealsPage() {
                   type="submit"
                   className="btn-primary text-sm btn-ripple"
                 >
-                  Создать сделку
+                  {editingDeal ? 'Сохранить изменения' : 'Создать сделку'}
                 </button>
               </div>
             </form>
@@ -1393,7 +1390,7 @@ export default function DealsPage() {
               className="space-y-4"
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Имя *
                 </label>
                 <input
@@ -1401,43 +1398,39 @@ export default function DealsPage() {
                   value={newContactData.name}
                   onChange={(e) => setNewContactData({...newContactData, name: e.target.value})}
                   required
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Email
                 </label>
                 <input
                   type="email"
                   value={newContactData.email}
                   onChange={(e) => setNewContactData({...newContactData, email: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Телефон
                 </label>
                 <input
                   type="tel"
                   value={newContactData.phone}
                   onChange={(e) => setNewContactData({...newContactData, phone: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Компания
                 </label>
                 <input
                   type="text"
                   value={newContactData.company}
                   onChange={(e) => setNewContactData({...newContactData, company: e.target.value})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -1448,13 +1441,13 @@ export default function DealsPage() {
                     setIsNewContactModalOpen(false)
                     setNewContactData({ name: '', email: '', phone: '', company: '' })
                   }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                  className="btn-secondary text-sm"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="btn-primary text-sm"
                 >
                   Создать клиента
                 </button>
@@ -1566,16 +1559,16 @@ export default function DealsPage() {
             <div className="p-6 border-t flex justify-end">
               <button
                 onClick={() => setViewingDeal(null)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                className="btn-secondary text-sm"
               >
                 Закрыть
               </button>
               <button
                 onClick={() => {
-                  setEditingDeal(viewingDeal)
+                  openEditModal(viewingDeal)
                   setViewingDeal(null)
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ml-3"
+                className="btn-primary text-sm ml-3"
               >
                 Редактировать
               </button>
