@@ -34,6 +34,7 @@ export default function ContactsPage() {
     email: '',
     phone: '',
     company: '',
+    position: '',
     inn: ''
   })
   const [innLoading, setInnLoading] = useState(false)
@@ -43,7 +44,8 @@ export default function ContactsPage() {
     name: '',
     email: '',
     phone: '',
-    company: ''
+    company: '',
+    position: ''
   })
 
   useEffect(() => {
@@ -82,7 +84,8 @@ export default function ContactsPage() {
       name: contact.name,
       email: contact.email,
       phone: contact.phone || '',
-      company: contact.company || ''
+      company: contact.company || '',
+      position: (contact as any).position || ''
     })
   }
 
@@ -153,7 +156,7 @@ export default function ContactsPage() {
       if (response.ok) {
         await fetchContacts() // Обновляем список
         setIsModalOpen(false)
-        setFormData({ name: '', email: '', phone: '', company: '', inn: '' })
+        setFormData({ name: '', email: '', phone: '', company: '', position: '', inn: '' })
         setInnError('')
         toast.success('Контакт успешно создан')
       } else {
@@ -507,12 +510,13 @@ export default function ContactsPage() {
       >
 
         <form onSubmit={handleSubmit} className="space-y-4">
-                  {['name', 'email', 'phone'].map((field) => (
+                  {['name', 'email', 'phone', 'position'].map((field) => (
                     <div key={field}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                         {field === 'name' ? 'Имя *' :
                          field === 'email' ? 'Email *' :
-                         'Телефон'}
+                         field === 'phone' ? 'Телефон' :
+                         'Должность'}
                       </label>
                       <input
                         type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
@@ -592,12 +596,13 @@ export default function ContactsPage() {
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="space-y-4">
-                  {['name', 'email', 'phone', 'company'].map((field) => (
+                  {['name', 'email', 'phone', 'company', 'position'].map((field) => (
                     <div key={field}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                         {field === 'name' ? 'Имя *' :
                          field === 'email' ? 'Email *' :
-                         field === 'phone' ? 'Телефон' : 'Компания'}
+                         field === 'phone' ? 'Телефон' :
+                         field === 'company' ? 'Компания' : 'Должность'}
                       </label>
                       <input
                         type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}

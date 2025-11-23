@@ -106,6 +106,7 @@ export async function POST(req: Request) {
             email: data.email || null,
             phone: data.phone || null,
             company: data.company || null,
+            position: data.position || null,
             userId: userId,
           },
         });
@@ -173,6 +174,7 @@ export async function PUT(req: Request) {
         email: data.email,
         phone: data.phone || null,
         company: data.company || null,
+        position: data.position || null,
       },
     });
     return NextResponse.json(updated);
