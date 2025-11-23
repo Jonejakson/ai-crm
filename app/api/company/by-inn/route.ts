@@ -63,9 +63,43 @@ export async function GET(request: Request) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('daData API error:', errorText)
+      let errorMessage = 'Ошибка при запросе к API'
+      
+      // Пытаемся распарсить ошибку от daData
+      try {
+        const errorData = JSON.parse(errorText)
+        errorMessage = errorData.message || errorData.detail || errorMessage
+      } catch {
+        // Если не удалось распарсить, используем текст ошибки
+        if (errorText) {
+          errorMessage = errorText
+        }
+      }
+      
+      console.error('daData API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        apiKeyLength: apiKey?.length,
+        apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + '...' : 'missing'
+      })
+      
+      // Специальная обработка для 403 - возможно проблема с ключом
+      if (response.status === 403) {
+        return NextResponse.json(
+          { 
+            error: 'Доступ запрещен. Проверьте правильность API ключа DADATA_API_KEY в настройках Vercel.',
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+          },
+          { status: 403 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: 'Ошибка при запросе к API' },
+        { 
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? errorText : undefined
+        },
         { status: response.status }
       )
     }

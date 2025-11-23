@@ -206,7 +206,18 @@ export default function ContactsPage() {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
-        setInnError(errorData.error || 'Ошибка при запросе к API')
+        let errorMessage = errorData.error || 'Ошибка при запросе к API'
+        
+        // Более понятное сообщение для пользователя
+        if (response.status === 403) {
+          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
+        } else if (response.status === 503) {
+          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
+        } else if (response.status === 404) {
+          errorMessage = 'Компания с таким ИНН не найдена'
+        }
+        
+        setInnError(errorMessage)
         return
       }
       
