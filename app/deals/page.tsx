@@ -1624,7 +1624,10 @@ function DealCard({
       {...attributes}
       className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur cursor-grab active:cursor-grabbing transition-all hover:shadow-2xl"
     >
-      <div className="absolute inset-x-4 top-2 h-1 rounded-full bg-[var(--primary)] group-hover:bg-[var(--primary)] transition-colors" />
+      <div 
+        className="absolute inset-x-4 top-2 h-1 rounded-full transition-all duration-300" 
+        style={{ background: 'var(--primary-gradient)' }}
+      />
       <div className="flex justify-between items-start mb-2">
         <h4 
           className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600"
