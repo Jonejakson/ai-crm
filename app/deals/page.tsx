@@ -41,8 +41,6 @@ interface Deal {
   amount: number
   currency: string
   stage: string
-  probability: number
-  expectedCloseDate: string | null
   createdAt?: string
   updatedAt?: string
   contact: {
@@ -55,6 +53,14 @@ interface Deal {
     id: number
     name: string
   } | null
+  source?: {
+    id: number
+    name: string
+  }
+  dealType?: {
+    id: number
+    name: string
+  }
   user?: {
     id: number
     name: string
@@ -169,10 +175,12 @@ export default function DealsPage() {
     currency: 'RUB',
     contactId: '',
     stage: '',
-    probability: '0',
-    expectedCloseDate: '',
+    sourceId: '',
+    dealTypeId: '',
     pipelineId: ''
   })
+  const [dealSources, setDealSources] = useState<Array<{id: number, name: string, pipelineId: number | null, pipeline: {id: number, name: string} | null}>>([])
+  const [dealTypes, setDealTypes] = useState<Array<{id: number, name: string}>>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
 
@@ -246,8 +254,34 @@ export default function DealsPage() {
     }
   }
 
+  const fetchDealSources = async () => {
+    try {
+      const response = await fetch('/api/deal-sources')
+      if (response.ok) {
+        const data = await response.json()
+        setDealSources(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching deal sources:', error)
+    }
+  }
+
+  const fetchDealTypes = async () => {
+    try {
+      const response = await fetch('/api/deal-types')
+      if (response.ok) {
+        const data = await response.json()
+        setDealTypes(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching deal types:', error)
+    }
+  }
+
   useEffect(() => {
     fetchData()
+    fetchDealSources()
+    fetchDealTypes()
     // Загружаем сохраненные фильтры из localStorage
     const saved = localStorage.getItem('savedFilters_deals')
     if (saved) {
@@ -338,8 +372,6 @@ export default function DealsPage() {
                     amount: deal.amount,
                     currency: deal.currency,
                     stage: UNASSIGNED_STAGE,
-                    probability: deal.probability,
-                    expectedCloseDate: deal.expectedCloseDate,
                     pipelineId: deal.pipeline?.id || activePipeline.id,
                   }),
                 }).then((res) => {
@@ -492,8 +524,8 @@ export default function DealsPage() {
       currency: 'RUB',
       contactId: '',
       stage: stages[0]?.name || '',
-      probability: '0',
-      expectedCloseDate: '',
+      sourceId: '',
+      dealTypeId: '',
       pipelineId: ''
     })
     setContactSearch('')
@@ -527,7 +559,8 @@ export default function DealsPage() {
           ...formData,
           contactId: Number(formData.contactId),
           amount: parseFloat(formData.amount) || 0,
-          probability: parseInt(formData.probability) || 0,
+          sourceId: formData.sourceId ? Number(formData.sourceId) : null,
+          dealTypeId: formData.dealTypeId ? Number(formData.dealTypeId) : null,
           pipelineId: formData.pipelineId ? Number(formData.pipelineId) : selectedPipeline,
         }),
       })
@@ -558,8 +591,8 @@ export default function DealsPage() {
           amount: parseFloat(formData.amount) || 0,
           currency: formData.currency,
           stage: formData.stage,
-          probability: parseInt(formData.probability) || 0,
-          expectedCloseDate: formData.expectedCloseDate || null,
+          sourceId: formData.sourceId ? Number(formData.sourceId) : null,
+          dealTypeId: formData.dealTypeId ? Number(formData.dealTypeId) : null,
           pipelineId: formData.pipelineId ? Number(formData.pipelineId) : selectedPipeline,
         }),
       })
@@ -581,19 +614,14 @@ export default function DealsPage() {
 
   const openEditModal = (deal: Deal) => {
     setEditingDeal(deal)
-    const expectedDate =
-      deal.expectedCloseDate && deal.expectedCloseDate.includes('T')
-        ? deal.expectedCloseDate.slice(0, 10)
-        : deal.expectedCloseDate || ''
-
     setFormData({
       title: deal.title,
       amount: deal.amount ? deal.amount.toString() : '',
       currency: deal.currency || 'RUB',
       contactId: deal.contact.id.toString(),
       stage: deal.stage,
-      probability: deal.probability !== undefined ? deal.probability.toString() : '0',
-      expectedCloseDate: expectedDate,
+      sourceId: deal.source?.id ? deal.source.id.toString() : '',
+      dealTypeId: deal.dealType?.id ? deal.dealType.id.toString() : '',
       pipelineId: deal.pipeline?.id ? deal.pipeline.id.toString() : ''
     })
     setContactSearch(
@@ -681,8 +709,6 @@ export default function DealsPage() {
           amount: activeDeal.amount,
           currency: activeDeal.currency,
           stage: targetStage,
-          probability: activeDeal.probability,
-          expectedCloseDate: activeDeal.expectedCloseDate,
           pipelineId: activeDeal.pipeline?.id || selectedPipeline,
         }),
       })
@@ -734,8 +760,6 @@ export default function DealsPage() {
             amount: deal.amount,
             currency: deal.currency,
             stage: UNASSIGNED_STAGE,
-            probability: deal.probability,
-            expectedCloseDate: deal.expectedCloseDate,
             pipelineId: deal.pipeline?.id || selectedPipeline,
           }),
         })
@@ -847,19 +871,6 @@ export default function DealsPage() {
       }
     }
 
-    // Фильтр по ожидаемой дате закрытия
-    if (filters.expectedCloseDateRange && deal.expectedCloseDate) {
-      const closeDate = new Date(deal.expectedCloseDate)
-      const startDate = filters.expectedCloseDateRange.start ? new Date(filters.expectedCloseDateRange.start) : null
-      const endDate = filters.expectedCloseDateRange.end ? new Date(filters.expectedCloseDateRange.end) : null
-      
-      if (startDate && closeDate < startDate) return false
-      if (endDate) {
-        const endDateEnd = new Date(endDate)
-        endDateEnd.setHours(23, 59, 59, 999)
-        if (closeDate > endDateEnd) return false
-      }
-    }
 
     return true
   })
@@ -876,14 +887,7 @@ export default function DealsPage() {
   const activeDealsCount = filteredDeals.filter(deal => !deal.stage.toLowerCase().includes('закрыто')).length
   const averageCheck = filteredDeals.length ? Math.round(totalAmount / filteredDeals.length) : 0
   const conversionRate = filteredDeals.length ? Math.round((wonDeals.length / filteredDeals.length) * 100) : 0
-  const upcomingClosings = filteredDeals.filter(deal => {
-    if (!deal.expectedCloseDate) return false
-    const closeDate = new Date(deal.expectedCloseDate)
-    const now = new Date()
-    const twoWeeks = new Date()
-    twoWeeks.setDate(now.getDate() + 14)
-    return closeDate >= now && closeDate <= twoWeeks
-  }).length
+  const upcomingClosings = 0 // Убрано, так как поле expectedCloseDate больше не используется
   const currentPipeline = selectedPipeline ? pipelines.find((p) => p.id === selectedPipeline) : null
 
   if (loading) {
@@ -1140,7 +1144,7 @@ export default function DealsPage() {
                           {contacts.filter(contact => 
                             contact.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
                             (contact.email && contact.email.toLowerCase().includes(contactSearch.toLowerCase()))
-                          ).length === 0 && (
+                          ).length === 0 && contactSearch && !formData.contactId && (
                             <div className="p-2 text-gray-500 text-sm">
                               Клиент не найден
                             </div>
@@ -1168,7 +1172,7 @@ export default function DealsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Сумма
@@ -1196,51 +1200,73 @@ export default function DealsPage() {
                     <option value="EUR">EUR</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Вероятность (%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.probability}
-                    onChange={(e) => setFormData({...formData, probability: e.target.value})}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Этап
+                    Источник сделки
                   </label>
                   <select
-                    value={formData.stage}
-                    onChange={(e) => setFormData({...formData, stage: e.target.value})}
-                    required
+                    value={formData.sourceId}
+                    onChange={(e) => {
+                      const sourceId = e.target.value
+                      const selectedSource = dealSources.find(s => s.id.toString() === sourceId)
+                      setFormData({
+                        ...formData, 
+                        sourceId,
+                        // Автоматически выбираем воронку, если источник привязан к воронке
+                        pipelineId: selectedSource?.pipelineId ? selectedSource.pipelineId.toString() : formData.pipelineId
+                      })
+                      // Если источник привязан к воронке, переключаемся на неё
+                      if (selectedSource?.pipelineId && selectedSource.pipelineId !== selectedPipeline) {
+                        handlePipelineChange(selectedSource.pipelineId)
+                      }
+                    }}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="">Выберите этап</option>
-                    {stages.filter(s => s.name !== UNASSIGNED_STAGE).map(stage => (
-                      <option key={stage.name} value={stage.name}>{stage.name}</option>
+                    <option value="">Выберите источник</option>
+                    {dealSources.map(source => (
+                      <option key={source.id} value={source.id}>
+                        {source.name}
+                        {source.pipeline && ` (${source.pipeline.name})`}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ожидаемая дата закрытия
+                    Тип сделки
                   </label>
-                  <input
-                    type="date"
-                    value={formData.expectedCloseDate}
-                    onChange={(e) => setFormData({...formData, expectedCloseDate: e.target.value})}
+                  <select
+                    value={formData.dealTypeId}
+                    onChange={(e) => setFormData({...formData, dealTypeId: e.target.value})}
                     className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Выберите тип</option>
+                    {dealTypes.map(type => (
+                      <option key={type.id} value={type.id}>{type.name}</option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Этап
+                </label>
+                <select
+                  value={formData.stage}
+                  onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Выберите этап</option>
+                  {stages.filter(s => s.name !== UNASSIGNED_STAGE).map(stage => (
+                    <option key={stage.name} value={stage.name}>{stage.name}</option>
+                  ))}
+                </select>
               </div>
 
                 </div>
@@ -1476,19 +1502,19 @@ export default function DealsPage() {
                     </p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Вероятность</label>
-                    <p className="text-gray-900">{viewingDeal.probability}%</p>
-                  </div>
-                  <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Этап</label>
                     <p className="text-gray-900">{viewingDeal.stage}</p>
                   </div>
-                  {viewingDeal.expectedCloseDate && (
+                  {viewingDeal.source && (
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Ожидаемая дата закрытия</label>
-                      <p className="text-gray-900">
-                        {new Date(viewingDeal.expectedCloseDate).toLocaleDateString('ru-RU')}
-                      </p>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Источник</label>
+                      <p className="text-gray-900">{viewingDeal.source.name}</p>
+                    </div>
+                  )}
+                  {viewingDeal.dealType && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Тип сделки</label>
+                      <p className="text-gray-900">{viewingDeal.dealType.name}</p>
                     </div>
                   )}
                   {viewingDeal.user && (
@@ -1748,7 +1774,8 @@ function DealCard({
         {deal.amount.toLocaleString('ru-RU')} {deal.currency}
       </div>
       <div className="flex items-center justify-between text-xs text-gray-500">
-        <span>Вероятность: {deal.probability}%</span>
+        {deal.source && <span>Источник: {deal.source.name}</span>}
+        {deal.dealType && <span>Тип: {deal.dealType.name}</span>}
         {deal.user && (
           <span className="text-gray-400">{deal.user.name}</span>
         )}

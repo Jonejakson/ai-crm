@@ -50,6 +50,18 @@ export async function GET(req: Request) {
           }
         },
         pipeline: true,
+        source: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
+        dealType: {
+          select: {
+            id: true,
+            name: true,
+          }
+        },
         user: {
           select: {
             id: true,
@@ -112,11 +124,11 @@ export async function POST(req: Request) {
         amount: data.amount ? parseFloat(data.amount) : 0,
         currency: data.currency || 'RUB',
         stage: data.stage || 'lead',
-        probability: data.probability ? parseInt(data.probability) : 0,
-        expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
         contactId: Number(data.contactId),
         userId: userId,
         pipelineId: data.pipelineId ? Number(data.pipelineId) : null,
+        sourceId: data.sourceId ? Number(data.sourceId) : null,
+        dealTypeId: data.dealTypeId ? Number(data.dealTypeId) : null,
       },
       include: {
         contact: {
@@ -241,9 +253,9 @@ export async function PUT(req: Request) {
         amount: newAmount !== undefined ? newAmount : undefined,
         currency: data.currency,
         stage: newStage,
-        probability: data.probability !== undefined ? parseInt(data.probability) : undefined,
-        expectedCloseDate: data.expectedCloseDate ? new Date(data.expectedCloseDate) : null,
         pipelineId: data.pipelineId ? Number(data.pipelineId) : null,
+        sourceId: data.sourceId !== undefined ? (data.sourceId ? Number(data.sourceId) : null) : undefined,
+        dealTypeId: data.dealTypeId !== undefined ? (data.dealTypeId ? Number(data.dealTypeId) : null) : undefined,
       },
       include: {
         contact: {

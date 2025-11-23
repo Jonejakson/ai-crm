@@ -76,6 +76,8 @@ model Company {
     activityLogs ActivityLog[]
     tags        Tag[]
     customFields CustomField[]
+    dealSources DealSource[]
+    dealTypes   DealType[]
 }
 
 model User {
@@ -150,6 +152,7 @@ model Pipeline {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     deals     Deal[]
+    dealSources DealSource[]
 }
 
 model Deal {
@@ -166,6 +169,10 @@ model Deal {
     userId          Int
     pipeline        Pipeline? @relation(fields: [pipelineId], references: [id])
     pipelineId      Int?
+    source          DealSource? @relation(fields: [sourceId], references: [id])
+    sourceId        Int?
+    dealType        DealType? @relation(fields: [dealTypeId], references: [id])
+    dealTypeId      Int?
     createdAt       DateTime  @default(now())
     updatedAt       DateTime  @updatedAt
     tags            DealTag[]
@@ -379,4 +386,32 @@ model CustomFieldValue {
 
     @@unique([customFieldId, entityType, entityId]) // одно значение поля на сущность
     @@index([entityType, entityId]) // для быстрого поиска значений сущности
+}
+
+model DealSource {
+    id        Int      @id @default(autoincrement())
+    name      String
+    company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId Int
+    pipeline  Pipeline? @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
+    pipelineId Int?
+    order     Int      @default(0)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    deals     Deal[]
+
+    @@unique([companyId, name])
+}
+
+model DealType {
+    id        Int      @id @default(autoincrement())
+    name      String
+    company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId Int
+    order     Int      @default(0)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    deals     Deal[]
+
+    @@unique([companyId, name])
 }

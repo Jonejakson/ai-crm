@@ -1037,7 +1037,520 @@ export default function CompanyPage() {
           </div>
         </div>
       )}
+
+      {/* Раздел управления источниками сделок */}
+      <section className="space-y-4">
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">Источники сделок</h2>
+              <p className="text-sm text-[var(--muted)]">Настройте источники сделок и привяжите их к воронкам</p>
+            </div>
+          </div>
+          <DealSourcesManager />
+        </div>
+      </section>
+
+      {/* Раздел управления типами сделок */}
+      <section className="space-y-4">
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">Типы сделок</h2>
+              <p className="text-sm text-[var(--muted)]">Настройте типы сделок для вашей компании</p>
+            </div>
+          </div>
+          <DealTypesManagerWithAddButton />
+        </div>
+      </section>
     </div>
+  )
+}
+
+// Обёртка для DealSourcesManager с кнопкой добавления
+function DealSourcesManagerWithAddButton() {
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingSource, setEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
+  const [formData, setFormData] = useState({ name: '', pipelineId: '' })
+
+  return (
+    <>
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            setEditingSource(null)
+            setFormData({ name: '', pipelineId: '' })
+            setModalOpen(true)
+          }}
+          className="btn-primary text-sm"
+        >
+          + Добавить источник
+        </button>
+      </div>
+      <DealSourcesManager 
+        modalOpen={modalOpen}
+        setModalOpen={setModalOpen}
+        editingSource={editingSource}
+        setEditingSource={setEditingSource}
+        formData={formData}
+        setFormData={setFormData}
+      />
+    </>
+  )
+}
+
+// Обёртка для DealTypesManager с кнопкой добавления
+function DealTypesManagerWithAddButton() {
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingType, setEditingType] = useState<{id: number, name: string} | null>(null)
+  const [formData, setFormData] = useState({ name: '' })
+
+  return (
+    <>
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            setEditingType(null)
+            setFormData({ name: '' })
+            setModalOpen(true)
+          }}
+          className="btn-primary text-sm"
+        >
+          + Добавить тип
+        </button>
+      </div>
+      <DealTypesManager 
+        modalOpen={modalOpen}
+        setModalOpen={setModalOpen}
+        editingType={editingType}
+        setEditingType={setEditingType}
+        formData={formData}
+        setFormData={setFormData}
+      />
+    </>
+  )
+}
+
+// Компонент для управления источниками сделок
+function DealSourcesManager({
+  modalOpen: externalModalOpen,
+  setModalOpen: setExternalModalOpen,
+  editingSource: externalEditingSource,
+  setEditingSource: setExternalEditingSource,
+  formData: externalFormData,
+  setFormData: setExternalFormData,
+}: {
+  modalOpen?: boolean
+  setModalOpen?: (open: boolean) => void
+  editingSource?: {id: number, name: string, pipelineId: number | null} | null
+  setEditingSource?: (source: {id: number, name: string, pipelineId: number | null} | null) => void
+  formData?: { name: string, pipelineId: string }
+  setFormData?: (data: { name: string, pipelineId: string }) => void
+}) {
+  const [sources, setSources] = useState<Array<{id: number, name: string, pipelineId: number | null, pipeline: {id: number, name: string} | null}>>([])
+  const [pipelines, setPipelines] = useState<Array<{id: number, name: string}>>([])
+  const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingSource, setEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
+  const [formData, setFormData] = useState({ name: '', pipelineId: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : modalOpen
+  const setIsModalOpen = setExternalModalOpen || setModalOpen
+  const currentEditingSource = externalEditingSource !== undefined ? externalEditingSource : editingSource
+  const setCurrentEditingSource = setExternalEditingSource || setEditingSource
+  const currentFormData = externalFormData || formData
+  const setCurrentFormData = setExternalFormData || setFormData
+  const [sources, setSources] = useState<Array<{id: number, name: string, pipelineId: number | null, pipeline: {id: number, name: string} | null}>>([])
+  const [pipelines, setPipelines] = useState<Array<{id: number, name: string}>>([])
+  const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingSource, setEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
+  const [formData, setFormData] = useState({ name: '', pipelineId: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchSources()
+    fetchPipelines()
+  }, [])
+
+  const fetchSources = async () => {
+    try {
+      const response = await fetch('/api/deal-sources')
+      if (response.ok) {
+        const data = await response.json()
+        setSources(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching sources:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchPipelines = async () => {
+    try {
+      const response = await fetch('/api/pipelines')
+      if (response.ok) {
+        const data = await response.json()
+        setPipelines(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching pipelines:', error)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!currentFormData.name.trim()) {
+      setError('Название обязательно')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      const url = '/api/deal-sources'
+      const method = currentEditingSource ? 'PUT' : 'POST'
+      const body = currentEditingSource
+        ? { id: currentEditingSource.id, name: currentFormData.name, pipelineId: currentFormData.pipelineId ? parseInt(currentFormData.pipelineId) : null }
+        : { name: currentFormData.name, pipelineId: currentFormData.pipelineId ? parseInt(currentFormData.pipelineId) : null }
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (response.ok) {
+        await fetchSources()
+        setIsModalOpen(false)
+        setCurrentEditingSource(null)
+        setCurrentFormData({ name: '', pipelineId: '' })
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Ошибка сохранения')
+      }
+    } catch (error) {
+      setError('Ошибка при сохранении')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот источник?')) return
+
+    try {
+      const response = await fetch(`/api/deal-sources?id=${id}`, { method: 'DELETE' })
+      if (response.ok) {
+        await fetchSources()
+      }
+    } catch (error) {
+      console.error('Error deleting source:', error)
+    }
+  }
+
+  const handleEdit = (source: {id: number, name: string, pipelineId: number | null}) => {
+    setCurrentEditingSource(source)
+    setCurrentFormData({ name: source.name, pipelineId: source.pipelineId ? source.pipelineId.toString() : '' })
+    setIsModalOpen(true)
+  }
+
+  if (loading) {
+    return <div className="text-center py-4 text-[var(--muted)]">Загрузка...</div>
+  }
+
+  return (
+    <>
+      <div className="space-y-2">
+        {sources.length === 0 ? (
+          <p className="text-sm text-[var(--muted)] text-center py-4">Нет источников. Добавьте первый источник.</p>
+        ) : (
+          sources.map((source) => (
+            <div key={source.id} className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg">
+              <div>
+                <p className="font-medium text-[var(--foreground)]">{source.name}</p>
+                {source.pipeline && (
+                  <p className="text-sm text-[var(--muted)]">Воронка: {source.pipeline.name}</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(source)}
+                  className="px-3 py-1 text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] rounded-lg transition-colors"
+                >
+                  Изменить
+                </button>
+                <button
+                  onClick={() => handleDelete(source.id)}
+                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Удалить
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              {currentEditingSource ? 'Изменить источник' : 'Добавить источник'}
+            </h2>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+                <input
+                  type="text"
+                  value={currentFormData.name}
+                  onChange={(e) => setCurrentFormData({ ...currentFormData, name: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Например: Авито, Сайт, Реклама"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Воронка (опционально)</label>
+                <select
+                  value={currentFormData.pipelineId}
+                  onChange={(e) => setCurrentFormData({ ...currentFormData, pipelineId: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Не привязывать</option>
+                  {pipelines.map((pipeline) => (
+                    <option key={pipeline.id} value={pipeline.id}>
+                      {pipeline.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">При выборе источника сделка автоматически попадёт в эту воронку</p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setCurrentEditingSource(null)
+                  setCurrentFormData({ name: '', pipelineId: '' })
+                  setError('')
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={saving}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
+// Компонент для управления типами сделок
+function DealTypesManager({
+  modalOpen: externalModalOpen,
+  setModalOpen: setExternalModalOpen,
+  editingType: externalEditingType,
+  setEditingType: setExternalEditingType,
+  formData: externalFormData,
+  setFormData: setExternalFormData,
+}: {
+  modalOpen?: boolean
+  setModalOpen?: (open: boolean) => void
+  editingType?: {id: number, name: string} | null
+  setEditingType?: (type: {id: number, name: string} | null) => void
+  formData?: { name: string }
+  setFormData?: (data: { name: string }) => void
+}) {
+  const [types, setTypes] = useState<Array<{id: number, name: string}>>([])
+  const [loading, setLoading] = useState(true)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingType, setEditingType] = useState<{id: number, name: string} | null>(null)
+  const [formData, setFormData] = useState({ name: '' })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : modalOpen
+  const setIsModalOpen = setExternalModalOpen || setModalOpen
+  const currentEditingType = externalEditingType !== undefined ? externalEditingType : editingType
+  const setCurrentEditingType = setExternalEditingType || setEditingType
+  const currentFormData = externalFormData || formData
+  const setCurrentFormData = setExternalFormData || setFormData
+
+  useEffect(() => {
+    fetchTypes()
+  }, [])
+
+  const fetchTypes = async () => {
+    try {
+      const response = await fetch('/api/deal-types')
+      if (response.ok) {
+        const data = await response.json()
+        setTypes(data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching types:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!currentFormData.name.trim()) {
+      setError('Название обязательно')
+      return
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      const url = '/api/deal-types'
+      const method = currentEditingType ? 'PUT' : 'POST'
+      const body = currentEditingType
+        ? { id: currentEditingType.id, name: currentFormData.name }
+        : { name: currentFormData.name }
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (response.ok) {
+        await fetchTypes()
+        setIsModalOpen(false)
+        setCurrentEditingType(null)
+        setCurrentFormData({ name: '' })
+      } else {
+        const errorData = await response.json()
+        setError(errorData.error || 'Ошибка сохранения')
+      }
+    } catch (error) {
+      setError('Ошибка при сохранении')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Вы уверены, что хотите удалить этот тип?')) return
+
+    try {
+      const response = await fetch(`/api/deal-types?id=${id}`, { method: 'DELETE' })
+      if (response.ok) {
+        await fetchTypes()
+      }
+    } catch (error) {
+      console.error('Error deleting type:', error)
+    }
+  }
+
+  const handleEdit = (type: {id: number, name: string}) => {
+    setCurrentEditingType(type)
+    setCurrentFormData({ name: type.name })
+    setIsModalOpen(true)
+  }
+
+  if (loading) {
+    return <div className="text-center py-4 text-[var(--muted)]">Загрузка...</div>
+  }
+
+  return (
+    <>
+      <div className="space-y-2">
+        {types.length === 0 ? (
+          <p className="text-sm text-[var(--muted)] text-center py-4">Нет типов. Добавьте первый тип.</p>
+        ) : (
+          types.map((type) => (
+            <div key={type.id} className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg">
+              <p className="font-medium text-[var(--foreground)]">{type.name}</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEdit(type)}
+                  className="px-3 py-1 text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] rounded-lg transition-colors"
+                >
+                  Изменить
+                </button>
+                <button
+                  onClick={() => handleDelete(type.id)}
+                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Удалить
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              {currentEditingType ? 'Изменить тип' : 'Добавить тип'}
+            </h2>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                {error}
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+              <input
+                type="text"
+                value={currentFormData.name}
+                onChange={(e) => setCurrentFormData({ ...currentFormData, name: e.target.value })}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Например: Продажа, Монтаж, Консультация"
+              />
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setCurrentEditingType(null)
+                  setCurrentFormData({ name: '' })
+                  setError('')
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={saving}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {saving ? 'Сохранение...' : 'Сохранить'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
