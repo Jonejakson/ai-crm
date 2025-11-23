@@ -1150,26 +1150,18 @@ function DealSourcesManager({
   const [sources, setSources] = useState<Array<{id: number, name: string, pipelineId: number | null, pipeline: {id: number, name: string} | null}>>([])
   const [pipelines, setPipelines] = useState<Array<{id: number, name: string}>>([])
   const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingSource, setEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
-  const [formData, setFormData] = useState({ name: '', pipelineId: '' })
+  const [internalModalOpen, setInternalModalOpen] = useState(false)
+  const [internalEditingSource, setInternalEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
+  const [internalFormData, setInternalFormData] = useState({ name: '', pipelineId: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : modalOpen
-  const setIsModalOpen = setExternalModalOpen || setModalOpen
-  const currentEditingSource = externalEditingSource !== undefined ? externalEditingSource : editingSource
-  const setCurrentEditingSource = setExternalEditingSource || setEditingSource
-  const currentFormData = externalFormData || formData
-  const setCurrentFormData = setExternalFormData || setFormData
-  const [sources, setSources] = useState<Array<{id: number, name: string, pipelineId: number | null, pipeline: {id: number, name: string} | null}>>([])
-  const [pipelines, setPipelines] = useState<Array<{id: number, name: string}>>([])
-  const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingSource, setEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
-  const [formData, setFormData] = useState({ name: '', pipelineId: '' })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen
+  const setIsModalOpen = setExternalModalOpen || setInternalModalOpen
+  const currentEditingSource = externalEditingSource !== undefined ? externalEditingSource : internalEditingSource
+  const setCurrentEditingSource = setExternalEditingSource || setInternalEditingSource
+  const currentFormData = externalFormData || internalFormData
+  const setCurrentFormData = setExternalFormData || setInternalFormData
 
   useEffect(() => {
     fetchSources()
@@ -1383,18 +1375,18 @@ function DealTypesManager({
 }) {
   const [types, setTypes] = useState<Array<{id: number, name: string}>>([])
   const [loading, setLoading] = useState(true)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingType, setEditingType] = useState<{id: number, name: string} | null>(null)
-  const [formData, setFormData] = useState({ name: '' })
+  const [internalModalOpen, setInternalModalOpen] = useState(false)
+  const [internalEditingType, setInternalEditingType] = useState<{id: number, name: string} | null>(null)
+  const [internalFormData, setInternalFormData] = useState({ name: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : modalOpen
-  const setIsModalOpen = setExternalModalOpen || setModalOpen
-  const currentEditingType = externalEditingType !== undefined ? externalEditingType : editingType
-  const setCurrentEditingType = setExternalEditingType || setEditingType
-  const currentFormData = externalFormData || formData
-  const setCurrentFormData = setExternalFormData || setFormData
+  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen
+  const setIsModalOpen = setExternalModalOpen || setInternalModalOpen
+  const currentEditingType = externalEditingType !== undefined ? externalEditingType : internalEditingType
+  const setCurrentEditingType = setExternalEditingType || setInternalEditingType
+  const currentFormData = externalFormData || internalFormData
+  const setCurrentFormData = setExternalFormData || setInternalFormData
 
   useEffect(() => {
     fetchTypes()
