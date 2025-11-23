@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import { useSession } from 'next-auth/react'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
@@ -141,6 +142,157 @@ interface User {
   name: string
   email: string
   role: string
+}
+
+// Кастомный выпадающий список в стиле CRM
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder = 'Выберите...',
+  required = false,
+}: {
+  value: string
+  onChange: (value: string) => void
+  options: Array<{ value: string; label: string }>
+  placeholder?: string
+  required?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const selectedOption = options.find(opt => opt.value === value)
+  const displayText = selectedOption ? selectedOption.label : placeholder
+
+  useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect()
+        setPosition({
+          top: rect.bottom + window.scrollY + 8,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        })
+      }
+    }
+
+    if (isOpen) {
+      updatePosition()
+      window.addEventListener('resize', updatePosition)
+      window.addEventListener('scroll', updatePosition, true)
+    }
+
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current && 
+        !dropdownRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside)
+      }, 0)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue)
+    setIsOpen(false)
+  }
+
+  const dropdownContent = isOpen && typeof document !== 'undefined' && (
+    <div
+      ref={dropdownRef}
+      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 z-[9999] max-h-64 overflow-y-auto"
+      style={{
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `${position.width}px`
+      }}
+    >
+      {options.map((option) => {
+        const isSelected = value === option.value
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => handleSelect(option.value)}
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+              isSelected
+                ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
+                : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
+            }`}
+          >
+            {option.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  return (
+    <>
+      <div className="relative">
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300 text-left flex items-center justify-between ${
+            !value ? 'text-[var(--muted-soft)]' : ''
+          }`}
+          style={{ boxShadow: 'var(--shadow-sm)' }}
+          onMouseEnter={() => {
+            if (buttonRef.current) {
+              buttonRef.current.style.boxShadow = 'var(--shadow)'
+            }
+          }}
+          onMouseLeave={() => {
+            if (buttonRef.current) {
+              buttonRef.current.style.boxShadow = 'var(--shadow-sm)'
+            }
+          }}
+        >
+          <span className="truncate">{displayText}</span>
+          <span className={`transition-transform duration-200 ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+        {required && (
+          <select
+            required
+            value={value}
+            onChange={() => {}}
+            className="absolute opacity-0 pointer-events-none w-0 h-0"
+            tabIndex={-1}
+            aria-hidden="true"
+          >
+            {options.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        )}
+      </div>
+      {typeof window !== 'undefined' && createPortal(dropdownContent, document.body)}
+    </>
+  )
 }
 
 export default function DealsPage() {
@@ -1191,14 +1343,16 @@ export default function DealsPage() {
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Валюта
                   </label>
-                  <select
+                  <CustomSelect
                     value={formData.currency}
-                    onChange={(e) => setFormData({...formData, currency: e.target.value})}
-                  >
-                    <option value="RUB">RUB</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                  </select>
+                    onChange={(value) => setFormData({...formData, currency: value})}
+                    options={[
+                      { value: 'RUB', label: 'RUB' },
+                      { value: 'USD', label: 'USD' },
+                      { value: 'EUR', label: 'EUR' },
+                    ]}
+                    placeholder="Выберите валюту"
+                  />
                 </div>
               </div>
 
@@ -1207,10 +1361,9 @@ export default function DealsPage() {
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Источник сделки
                   </label>
-                  <select
+                  <CustomSelect
                     value={formData.sourceId}
-                    onChange={(e) => {
-                      const sourceId = e.target.value
+                    onChange={(sourceId) => {
                       const selectedSource = dealSources.find(s => s.id.toString() === sourceId)
                       setFormData({
                         ...formData, 
@@ -1223,30 +1376,33 @@ export default function DealsPage() {
                         handlePipelineChange(selectedSource.pipelineId)
                       }
                     }}
-                  >
-                    <option value="">Выберите источник</option>
-                    {dealSources.map(source => (
-                      <option key={source.id} value={source.id}>
-                        {source.name}
-                        {source.pipeline && ` (${source.pipeline.name})`}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: '', label: 'Выберите источник' },
+                      ...dealSources.map(source => ({
+                        value: source.id.toString(),
+                        label: `${source.name}${source.pipeline ? ` (${source.pipeline.name})` : ''}`
+                      }))
+                    ]}
+                    placeholder="Выберите источник"
+                  />
                 </div>
 
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Тип сделки
                   </label>
-                  <select
+                  <CustomSelect
                     value={formData.dealTypeId}
-                    onChange={(e) => setFormData({...formData, dealTypeId: e.target.value})}
-                  >
-                    <option value="">Выберите тип</option>
-                    {dealTypes.map(type => (
-                      <option key={type.id} value={type.id}>{type.name}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setFormData({...formData, dealTypeId: value})}
+                    options={[
+                      { value: '', label: 'Выберите тип' },
+                      ...dealTypes.map(type => ({
+                        value: type.id.toString(),
+                        label: type.name
+                      }))
+                    ]}
+                    placeholder="Выберите тип"
+                  />
                 </div>
               </div>
 
@@ -1254,16 +1410,19 @@ export default function DealsPage() {
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Этап *
                 </label>
-                <select
+                <CustomSelect
                   value={formData.stage}
-                  onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                  onChange={(value) => setFormData({...formData, stage: value})}
+                  options={[
+                    { value: '', label: 'Выберите этап' },
+                    ...stages.filter(s => s.name !== UNASSIGNED_STAGE).map(stage => ({
+                      value: stage.name,
+                      label: stage.name
+                    }))
+                  ]}
+                  placeholder="Выберите этап"
                   required
-                >
-                  <option value="">Выберите этап</option>
-                  {stages.filter(s => s.name !== UNASSIGNED_STAGE).map(stage => (
-                    <option key={stage.name} value={stage.name}>{stage.name}</option>
-                  ))}
-                </select>
+                />
               </div>
 
                 </div>
