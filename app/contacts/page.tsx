@@ -5,7 +5,6 @@ import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import Modal from '@/components/Modal'
 import UserFilter from '@/components/UserFilter'
-import AdvancedFilters from '@/components/AdvancedFilters'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 import ExportButton from '@/components/ExportButton'
 
@@ -28,8 +27,8 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  const [dateFilter, setDateFilter] = useState<string | null>(null) // 'today', 'yesterday', 'week', 'month', 'quarter', 'year'
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -40,8 +39,6 @@ export default function ContactsPage() {
   const [innLoading, setInnLoading] = useState(false)
   const [innError, setInnError] = useState('')
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [filters, setFilters] = useState<any>({})
-  const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
@@ -51,15 +48,6 @@ export default function ContactsPage() {
 
   useEffect(() => {
     fetchContacts()
-    // Загружаем сохраненные фильтры из localStorage
-    const saved = localStorage.getItem('savedFilters_contacts')
-    if (saved) {
-      try {
-        setSavedFilters(JSON.parse(saved))
-      } catch (e) {
-        console.error('Error loading saved filters:', e)
-      }
-    }
   }, [selectedUserId])
 
   // Клавиатурные сокращения для страницы контактов
@@ -235,6 +223,68 @@ export default function ContactsPage() {
     }
   }
 
+  // Функция для получения диапазона дат по фильтру
+  const getDateRange = (filter: string | null): { start: Date | null; end: Date | null } => {
+    if (!filter) return { start: null, end: null }
+    
+    const now = new Date()
+    const start = new Date()
+    const end = new Date()
+    
+    switch (filter) {
+      case 'today':
+        start.setHours(0, 0, 0, 0)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      
+      case 'yesterday':
+        start.setDate(start.getDate() - 1)
+        start.setHours(0, 0, 0, 0)
+        end.setDate(end.getDate() - 1)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      
+      case 'week':
+        const dayOfWeek = now.getDay()
+        const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Понедельник = 0
+        start.setDate(now.getDate() - diff)
+        start.setHours(0, 0, 0, 0)
+        end.setDate(start.getDate() + 6)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      
+      case 'month':
+        start.setDate(1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth(end.getMonth() + 1)
+        end.setDate(0)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      
+      case 'quarter':
+        const quarter = Math.floor(now.getMonth() / 3)
+        start.setMonth(quarter * 3)
+        start.setDate(1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth((quarter + 1) * 3)
+        end.setDate(0)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      
+      case 'year':
+        start.setMonth(0)
+        start.setDate(1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth(11)
+        end.setDate(31)
+        end.setHours(23, 59, 59, 999)
+        return { start, end }
+      
+      default:
+        return { start: null, end: null }
+    }
+  }
+
   // Применяем фильтры
   const filteredContacts = contacts.filter(contact => {
     // Поиск по тексту
@@ -246,17 +296,12 @@ export default function ContactsPage() {
     if (!matchesSearch) return false
 
     // Фильтр по дате создания
-    if (filters.dateRange) {
+    if (dateFilter) {
+      const { start, end } = getDateRange(dateFilter)
       const contactDate = new Date(contact.createdAt)
-      const startDate = filters.dateRange.start ? new Date(filters.dateRange.start) : null
-      const endDate = filters.dateRange.end ? new Date(filters.dateRange.end) : null
       
-      if (startDate && contactDate < startDate) return false
-      if (endDate) {
-        const endDateEnd = new Date(endDate)
-        endDateEnd.setHours(23, 59, 59, 999)
-        if (contactDate > endDateEnd) return false
-      }
+      if (start && contactDate < start) return false
+      if (end && contactDate > end) return false
     }
 
     return true
@@ -325,23 +370,15 @@ export default function ContactsPage() {
         ))}
       </div>
 
-      <div className="glass-panel rounded-3xl space-y-4">
+      <div className="glass-panel rounded-3xl space-y-4 p-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Поиск по имени, email или компании..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <button
-              className="btn-secondary text-sm"
-              onClick={() => setIsFiltersOpen((prev) => !prev)}
-            >
-              {isFiltersOpen ? 'Скрыть фильтры' : 'Фильтры'}
-            </button>
+          <div className="relative flex-1 max-w-md">
+            <input
+              type="text"
+              placeholder="Поиск по имени, email или компании..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <div className="w-full sm:w-auto sm:min-w-[240px]">
             <UserFilter 
@@ -350,28 +387,45 @@ export default function ContactsPage() {
             />
           </div>
         </div>
-        {isFiltersOpen && (
-          <AdvancedFilters
-            entityType="contacts"
-            onFilterChange={setFilters}
-            savedFilters={savedFilters}
-            onSaveFilter={(name, filterData) => {
-              const newFilter = {
-                id: Date.now(),
-                name,
-                filters: filterData,
-              }
-              const updated = [...savedFilters, newFilter]
-              setSavedFilters(updated)
-              localStorage.setItem('savedFilters_contacts', JSON.stringify(updated))
-            }}
-            onDeleteFilter={(id) => {
-              const updated = savedFilters.filter(f => f.id !== id)
-              setSavedFilters(updated)
-              localStorage.setItem('savedFilters_contacts', JSON.stringify(updated))
-            }}
-          />
-        )}
+        
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setDateFilter(dateFilter === 'today' ? null : 'today')}
+            className={`btn-secondary text-sm ${dateFilter === 'today' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
+          >
+            Сегодня
+          </button>
+          <button
+            onClick={() => setDateFilter(dateFilter === 'yesterday' ? null : 'yesterday')}
+            className={`btn-secondary text-sm ${dateFilter === 'yesterday' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
+          >
+            Вчера
+          </button>
+          <button
+            onClick={() => setDateFilter(dateFilter === 'week' ? null : 'week')}
+            className={`btn-secondary text-sm ${dateFilter === 'week' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
+          >
+            Эта неделя
+          </button>
+          <button
+            onClick={() => setDateFilter(dateFilter === 'month' ? null : 'month')}
+            className={`btn-secondary text-sm ${dateFilter === 'month' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
+          >
+            Этот месяц
+          </button>
+          <button
+            onClick={() => setDateFilter(dateFilter === 'quarter' ? null : 'quarter')}
+            className={`btn-secondary text-sm ${dateFilter === 'quarter' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
+          >
+            Этот квартал
+          </button>
+          <button
+            onClick={() => setDateFilter(dateFilter === 'year' ? null : 'year')}
+            className={`btn-secondary text-sm ${dateFilter === 'year' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
+          >
+            Этот год
+          </button>
+        </div>
       </div>
 
       <div className="table-container">
