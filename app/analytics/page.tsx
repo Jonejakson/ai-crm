@@ -391,7 +391,7 @@ export default function AnalyticsPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--error-soft)]/30">
-                <span className="text-[var(--muted)] font-medium">Закрыто неуспешно:</span>
+                <span className="text-[var(--muted)] font-medium">Закрыто и не реализовано:</span>
                 <span className="font-semibold text-[var(--error)]">
                   {data.deals.lost} ({data.deals.lostAmount.toLocaleString('ru-RU')} ₽)
                 </span>

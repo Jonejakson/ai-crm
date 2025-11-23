@@ -84,9 +84,9 @@ const FUNNEL_METRIC_META: FunnelMetricMeta[] = [
   },
   {
     id: 'lost-count',
-    label: 'Закрыто неуспешно',
+    label: 'Закрыто и не реализовано',
     color: 'from-red-500 to-orange-500',
-    description: 'Количество закрытых неуспешно или отмененных сделок'
+    description: 'Количество закрытых и не реализованных или отмененных сделок'
   },
 ]
 
