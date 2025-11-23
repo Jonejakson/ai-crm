@@ -62,10 +62,15 @@ interface Deal {
   }
 }
 
+interface Stage {
+  name: string
+  color: string
+}
+
 interface Pipeline {
   id: number
   name: string
-  stages: string
+  stages: string // JSON массив Stage[]
   isDefault: boolean
 }
 
@@ -77,8 +82,20 @@ interface Contact {
   company?: string | null
 }
 
+// Палитра цветов (должна совпадать с PipelineStagesEditor)
+const COLOR_PALETTE = [
+  { name: 'Синий', value: 'bg-gradient-to-b from-[#e6f0ff] via-[#edf4ff] to-[#f8fbff]', shadow: 'shadow-[0_25px_35px_-25px_rgba(47,111,237,0.55)]' },
+  { name: 'Фиолетовый', value: 'bg-gradient-to-b from-[#f7ecff] via-[#fbf3ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(139,92,246,0.45)]' },
+  { name: 'Оранжевый', value: 'bg-gradient-to-b from-[#fff3e6] via-[#fff9f1] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(255,179,71,0.45)]' },
+  { name: 'Зеленый', value: 'bg-gradient-to-b from-[#e7fff7] via-[#f4fffb] to-white', shadow: 'shadow-[0_25px_30px_-25px_rgba(16,185,129,0.45)]' },
+  { name: 'Голубой', value: 'bg-gradient-to-b from-[#e9f5ff] via-[#f3f9ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(59,130,246,0.35)]' },
+  { name: 'Розовый', value: 'bg-gradient-to-b from-[#fff0f2] via-[#fff7f8] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(239,68,68,0.35)]' },
+  { name: 'Желтый', value: 'bg-gradient-to-b from-[#fffbeb] via-[#fef9c3] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(234,179,8,0.35)]' },
+  { name: 'Бирюзовый', value: 'bg-gradient-to-b from-[#ecfeff] via-[#cffafe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(6,182,212,0.35)]' },
+]
+
 // Новые дефолтные этапы
-const DEFAULT_STAGES = [
+const DEFAULT_STAGES_NAMES = [
   'Первичный контакт',
   'Коммерческое предложение',
   'Согласование',
@@ -87,6 +104,12 @@ const DEFAULT_STAGES = [
   'Закрыто и реализованное',
   'Закрыто пропала потребность'
 ]
+
+// Преобразуем имена в объекты Stage с цветами по умолчанию
+const DEFAULT_STAGES: Stage[] = DEFAULT_STAGES_NAMES.map((name, index) => ({
+  name,
+  color: COLOR_PALETTE[index % COLOR_PALETTE.length].value
+}))
 
 // Колонка для неразобранных сделок (всегда существует, не удаляется)
 const UNASSIGNED_STAGE = 'Неразобранные'
@@ -187,7 +210,7 @@ export default function DealsPage() {
     const pipeline = pipelines.find((p) => p.id === pipelineId)
     if (pipeline) {
       const pipelineStages = getStagesFromPipeline(pipeline)
-      setFormData(prev => ({ ...prev, stage: pipelineStages[0] || '' }))
+      setFormData(prev => ({ ...prev, stage: pipelineStages[0]?.name || '' }))
     }
     // Перезагружаем данные с новой воронкой, чтобы показать сделки выбранной воронки
     await fetchData(pipelineId)
@@ -280,7 +303,7 @@ export default function DealsPage() {
           const pipelineStages = getStagesFromPipeline(activePipeline)
           
           // Перемещаем сделки с несуществующими этапами в "Неразобранные"
-          const validStages = [...pipelineStages, UNASSIGNED_STAGE]
+          const validStages = [...pipelineStages.map(s => s.name), UNASSIGNED_STAGE]
           const dealsToUpdate: Promise<void>[] = []
           
           dealsData.forEach((deal: Deal) => {
@@ -374,7 +397,7 @@ export default function DealsPage() {
         if (pipeline) {
           const currentStages = getStagesFromPipeline(pipeline)
           const oldEnglishStages = ['lead', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost']
-          const hasOldStages = currentStages.some(stage => oldEnglishStages.includes(stage))
+          const hasOldStages = currentStages.some(stage => oldEnglishStages.includes(stage.name))
           
           if (hasOldStages) {
             // Обновляем этапы на русские
@@ -647,19 +670,31 @@ export default function DealsPage() {
     }
   }
 
-  const handleStagesUpdate = async (newStages: string[]) => {
+  const handleStagesUpdate = async (newStages: string[] | Stage[]) => {
     if (!selectedPipeline) return
 
+    // Преобразуем в массив Stage, если это строки
+    const stagesArray: Stage[] = newStages.map((stage, index) => {
+      if (typeof stage === 'string') {
+        return {
+          name: stage,
+          color: COLOR_PALETTE[index % COLOR_PALETTE.length].value
+        }
+      }
+      return stage
+    })
+
     // Убираем "Неразобранные" из списка перед сохранением (они всегда есть)
-    const stagesToSave = newStages.filter(s => s !== UNASSIGNED_STAGE)
+    const stagesToSave = stagesArray.filter(s => s.name !== UNASSIGNED_STAGE)
     
     // Находим удаленные этапы
-    const oldStages = getStages().filter(s => s !== UNASSIGNED_STAGE)
-    const removedStages = oldStages.filter(s => !stagesToSave.includes(s))
+    const oldStages = getStages().filter(s => s.name !== UNASSIGNED_STAGE)
+    const removedStages = oldStages.filter(s => !stagesToSave.some(newStage => newStage.name === s.name))
     
     // Перемещаем сделки из удаленных этапов в "Неразобранные"
     if (removedStages.length > 0) {
-      const dealsToMove = deals.filter(d => removedStages.includes(d.stage))
+      const removedStageNames = removedStages.map(s => s.name)
+      const dealsToMove = deals.filter(d => removedStageNames.includes(d.stage))
       const updatePromises = dealsToMove.map(deal =>
         fetch('/api/deals', {
           method: 'PUT',
@@ -686,7 +721,7 @@ export default function DealsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedPipeline,
-          stages: stagesToSave,
+          stages: JSON.stringify(stagesToSave),
         }),
       })
 
@@ -720,20 +755,27 @@ export default function DealsPage() {
     }
   }
 
-  const getStageColor = (stage: string, index: number): string => {
-    if (stage === UNASSIGNED_STAGE) {
+  const getStageColor = (stageName: string): string => {
+    if (stageName === UNASSIGNED_STAGE) {
       return 'bg-gradient-to-b from-[#f6f7fb] to-white border-white/60'
     }
 
-    const gradients = [
-      'bg-gradient-to-b from-[#e6f0ff] via-[#edf4ff] to-[#f8fbff] shadow-[0_25px_35px_-25px_rgba(47,111,237,0.55)]',
-      'bg-gradient-to-b from-[#f7ecff] via-[#fbf3ff] to-white shadow-[0_25px_35px_-25px_rgba(139,92,246,0.45)]',
-      'bg-gradient-to-b from-[#fff3e6] via-[#fff9f1] to-white shadow-[0_25px_35px_-25px_rgba(255,179,71,0.45)]',
-      'bg-gradient-to-b from-[#e7fff7] via-[#f4fffb] to-white shadow-[0_25px_30px_-25px_rgba(16,185,129,0.45)]',
-      'bg-gradient-to-b from-[#e9f5ff] via-[#f3f9ff] to-white shadow-[0_25px_35px_-25px_rgba(59,130,246,0.35)]',
-      'bg-gradient-to-b from-[#fff0f2] via-[#fff7f8] to-white shadow-[0_25px_35px_-25px_rgba(239,68,68,0.35)]',
-    ]
-    return `${gradients[index % gradients.length]} border-white/70`
+    const stages = getStages()
+    const stage = stages.find(s => s.name === stageName)
+    
+    if (stage) {
+      // Находим соответствующий shadow для цвета
+      const colorInfo = COLOR_PALETTE.find(c => c.value === stage.color)
+      if (colorInfo) {
+        return `${stage.color} ${colorInfo.shadow} border-white/70`
+      }
+      return `${stage.color} border-white/70`
+    }
+    
+    // Fallback на старый способ, если этап не найден
+    const index = stages.findIndex(s => s.name === stageName)
+    const defaultColor = COLOR_PALETTE[index % COLOR_PALETTE.length]
+    return `${defaultColor.value} ${defaultColor.shadow} border-white/70`
   }
 
   // Применяем фильтры к сделкам
@@ -795,7 +837,7 @@ export default function DealsPage() {
 
   const stages = getStages()
   const dealsByStage = stages.reduce((acc, stage) => {
-    acc[stage] = filteredDeals.filter(deal => deal.stage === stage)
+    acc[stage.name] = filteredDeals.filter(deal => deal.stage === stage.name)
     return acc
   }, {} as Record<string, Deal[]>)
 
@@ -945,14 +987,14 @@ export default function DealsPage() {
             <div className="flex space-x-4 min-w-max pb-4">
               {stages.map((stage, index) => (
                 <DealColumn
-                  key={stage}
-                  stage={stage}
-                  deals={dealsByStage[stage] || []}
+                  key={stage.name}
+                  stage={stage.name}
+                  deals={dealsByStage[stage.name] || []}
                   onDelete={handleDelete}
                   onEdit={(deal) => {
                     setViewingDeal(deal)
                   }}
-                  color={getStageColor(stage, index)}
+                  color={getStageColor(stage.name)}
                 />
               ))}
             </div>
@@ -1200,7 +1242,7 @@ export default function DealsPage() {
       {/* Редактор этапов */}
       {isStagesEditorOpen && selectedPipeline && (
         <PipelineStagesEditor
-          stages={getStages().filter(s => s !== UNASSIGNED_STAGE)}
+          stages={getStages().filter(s => s.name !== UNASSIGNED_STAGE)}
           onStagesChange={handleStagesUpdate}
           onClose={() => setIsStagesEditorOpen(false)}
           unassignedStage={UNASSIGNED_STAGE}

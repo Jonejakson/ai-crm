@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -19,24 +19,43 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
+interface Stage {
+  name: string
+  color: string
+}
+
 interface PipelineStagesEditorProps {
-  stages: string[]
-  onStagesChange: (stages: string[]) => void
+  stages: string[] | Stage[]
+  onStagesChange: (stages: string[] | Stage[]) => void
   onClose: () => void
   unassignedStage?: string // Этап, который нельзя удалить
 }
+
+// Палитра цветов для этапов
+const COLOR_PALETTE = [
+  { name: 'Синий', value: 'bg-gradient-to-b from-[#e6f0ff] via-[#edf4ff] to-[#f8fbff]', shadow: 'shadow-[0_25px_35px_-25px_rgba(47,111,237,0.55)]' },
+  { name: 'Фиолетовый', value: 'bg-gradient-to-b from-[#f7ecff] via-[#fbf3ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(139,92,246,0.45)]' },
+  { name: 'Оранжевый', value: 'bg-gradient-to-b from-[#fff3e6] via-[#fff9f1] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(255,179,71,0.45)]' },
+  { name: 'Зеленый', value: 'bg-gradient-to-b from-[#e7fff7] via-[#f4fffb] to-white', shadow: 'shadow-[0_25px_30px_-25px_rgba(16,185,129,0.45)]' },
+  { name: 'Голубой', value: 'bg-gradient-to-b from-[#e9f5ff] via-[#f3f9ff] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(59,130,246,0.35)]' },
+  { name: 'Розовый', value: 'bg-gradient-to-b from-[#fff0f2] via-[#fff7f8] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(239,68,68,0.35)]' },
+  { name: 'Желтый', value: 'bg-gradient-to-b from-[#fffbeb] via-[#fef9c3] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(234,179,8,0.35)]' },
+  { name: 'Бирюзовый', value: 'bg-gradient-to-b from-[#ecfeff] via-[#cffafe] to-white', shadow: 'shadow-[0_25px_35px_-25px_rgba(6,182,212,0.35)]' },
+]
 
 function SortableStageItem({ 
   stage, 
   index, 
   onDelete, 
   onEdit,
+  onColorChange,
   isUnremovable 
 }: { 
-  stage: string
+  stage: Stage
   index: number
   onDelete: () => void
   onEdit: () => void
+  onColorChange: (color: string) => void
   isUnremovable?: boolean 
 }) {
   const {
@@ -46,13 +65,34 @@ function SortableStageItem({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: stage })
+  } = useSortable({ id: stage.name })
+
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false)
+  const colorPickerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
+        setIsColorPickerOpen(false)
+      }
+    }
+
+    if (isColorPickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isColorPickerOpen])
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   }
+
+  const currentColor = COLOR_PALETTE.find(c => c.value === stage.color) || COLOR_PALETTE[0]
 
   return (
     <div
@@ -68,10 +108,45 @@ function SortableStageItem({
         ☰
       </div>
       <span className="flex-1 font-medium">
-        {stage}
+        {stage.name}
         {isUnremovable && <span className="ml-2 text-xs text-gray-500">(не удаляется)</span>}
       </span>
       <div className="flex items-center gap-2">
+        {/* Кнопка выбора цвета */}
+        <div className="relative" ref={colorPickerRef}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsColorPickerOpen(!isColorPickerOpen)
+            }}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+            title="Изменить цвет"
+          >
+            <div className={`w-5 h-5 rounded ${currentColor.value} ${currentColor.shadow}`} />
+            <span className="text-xs text-gray-600">🎨</span>
+          </button>
+          {isColorPickerOpen && (
+            <div className="absolute right-0 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-50 min-w-[200px]">
+              <div className="text-xs font-semibold text-gray-700 mb-2">Выберите цвет:</div>
+              <div className="grid grid-cols-4 gap-2">
+                {COLOR_PALETTE.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onColorChange(color.value)
+                      setIsColorPickerOpen(false)
+                    }}
+                    className={`w-8 h-8 rounded ${color.value} ${color.shadow} border-2 transition-all ${
+                      stage.color === color.value ? 'border-blue-500 scale-110' : 'border-transparent hover:scale-105'
+                    }`}
+                    title={color.name}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <button
           onClick={onEdit}
           className="text-[#10b981] hover:text-[#059669] transition-colors"
@@ -95,7 +170,19 @@ function SortableStageItem({
 }
 
 export default function PipelineStagesEditor({ stages, onStagesChange, onClose, unassignedStage }: PipelineStagesEditorProps) {
-  const [localStages, setLocalStages] = useState<string[]>(stages)
+  // Преобразуем старый формат (массив строк) в новый (массив объектов)
+  const normalizeStages = (stages: string[] | Stage[]): Stage[] => {
+    return stages.map((stage, index) => {
+      if (typeof stage === 'string') {
+        // Старый формат - используем цвет по умолчанию
+        const defaultColor = COLOR_PALETTE[index % COLOR_PALETTE.length]
+        return { name: stage, color: defaultColor.value }
+      }
+      return stage
+    })
+  }
+
+  const [localStages, setLocalStages] = useState<Stage[]>(normalizeStages(stages))
   const [newStageName, setNewStageName] = useState('')
   const [editingStage, setEditingStage] = useState<string | null>(null)
   const [editingStageName, setEditingStageName] = useState('')
@@ -112,34 +199,41 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
 
     if (over && active.id !== over.id) {
       setLocalStages((items) => {
-        const oldIndex = items.indexOf(active.id as string)
-        const newIndex = items.indexOf(over.id as string)
+        const oldIndex = items.findIndex(item => item.name === active.id)
+        const newIndex = items.findIndex(item => item.name === over.id)
         return arrayMove(items, oldIndex, newIndex)
       })
     }
   }
 
   const handleAddStage = () => {
-    if (newStageName.trim() && !localStages.includes(newStageName.trim())) {
-      setLocalStages([...localStages, newStageName.trim()])
+    if (newStageName.trim() && !localStages.some(s => s.name === newStageName.trim())) {
+      const defaultColor = COLOR_PALETTE[localStages.length % COLOR_PALETTE.length]
+      setLocalStages([...localStages, { name: newStageName.trim(), color: defaultColor.value }])
       setNewStageName('')
     }
   }
 
-  const handleDeleteStage = (stage: string) => {
-    setLocalStages(localStages.filter(s => s !== stage))
+  const handleDeleteStage = (stageName: string) => {
+    setLocalStages(localStages.filter(s => s.name !== stageName))
   }
 
-  const handleEditStage = (stage: string) => {
-    setEditingStage(stage)
-    setEditingStageName(stage)
+  const handleEditStage = (stageName: string) => {
+    setEditingStage(stageName)
+    const stage = localStages.find(s => s.name === stageName)
+    setEditingStageName(stage?.name || '')
   }
 
   const handleSaveEdit = () => {
     if (editingStage && editingStageName.trim()) {
+      const existingStage = localStages.find(s => s.name === editingStage)
       // Разрешаем сохранить, если имя не изменилось или если новое имя уникально
-      if (editingStageName.trim() === editingStage || !localStages.includes(editingStageName.trim())) {
-        setLocalStages(localStages.map(s => s === editingStage ? editingStageName.trim() : s))
+      if (editingStageName.trim() === editingStage || !localStages.some(s => s.name === editingStageName.trim())) {
+        setLocalStages(localStages.map(s => 
+          s.name === editingStage 
+            ? { ...s, name: editingStageName.trim() }
+            : s
+        ))
         setEditingStage(null)
         setEditingStageName('')
       }
@@ -149,6 +243,12 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
   const handleCancelEdit = () => {
     setEditingStage(null)
     setEditingStageName('')
+  }
+
+  const handleColorChange = (stageName: string, color: string) => {
+    setLocalStages(localStages.map(s => 
+      s.name === stageName ? { ...s, color } : s
+    ))
   }
 
   const handleSave = () => {
@@ -201,13 +301,13 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={localStages}
+              items={localStages.map(s => s.name)}
               strategy={verticalListSortingStrategy}
             >
               <div className="space-y-2">
                 {localStages.map((stage, index) => (
-                  editingStage === stage ? (
-                    <div key={`edit-${index}-${stage}`} className="flex items-center gap-2 p-3 bg-white border border-gray-300 rounded-lg mb-2">
+                  editingStage === stage.name ? (
+                    <div key={`edit-${index}-${stage.name}`} className="flex items-center gap-2 p-3 bg-white border border-gray-300 rounded-lg mb-2">
                       <input
                         type="text"
                         value={editingStageName}
@@ -237,12 +337,13 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
                     </div>
                   ) : (
                     <SortableStageItem
-                      key={`${index}-${stage}`}
+                      key={`${index}-${stage.name}`}
                       stage={stage}
                       index={index}
-                      onDelete={() => handleDeleteStage(stage)}
-                      onEdit={() => handleEditStage(stage)}
-                      isUnremovable={unassignedStage === stage}
+                      onDelete={() => handleDeleteStage(stage.name)}
+                      onEdit={() => handleEditStage(stage.name)}
+                      onColorChange={(color) => handleColorChange(stage.name, color)}
+                      isUnremovable={unassignedStage === stage.name}
                     />
                   )
                 ))}
@@ -269,4 +370,3 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
     </div>
   )
 }
-
