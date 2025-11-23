@@ -610,7 +610,7 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
                       </div>
                     </div>
                     <div className="p-4 rounded-xl bg-white/50 border border-[var(--border)]">
-                      <div className="text-xs text-[var(--muted)] mb-2">Выиграно (₽)</div>
+                      <div className="text-xs text-[var(--muted)] mb-2">Выручка (₽)</div>
                       <div className="text-2xl font-bold text-[var(--foreground)] mb-2">
                         {compareData.comparison.deals.current.wonAmount.toLocaleString('ru-RU')} ₽
                       </div>

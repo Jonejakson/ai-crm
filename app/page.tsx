@@ -48,15 +48,15 @@ const FUNNEL_METRIC_META: FunnelMetricMeta[] = [
   },
   {
     id: 'won-count',
-    label: 'Выиграно',
+    label: 'Закрыто успешно',
     color: 'from-emerald-500 to-emerald-600',
     description: 'Сделки со статусом успешно закрыто'
   },
   {
     id: 'won-amount',
-    label: 'Сумма выигрышей',
+    label: 'Сумма закрытых сделок',
     color: 'from-purple-500 to-purple-600',
-    description: 'Общая сумма выигранных сделок'
+    description: 'Общая сумма закрытых сделок'
   },
   {
     id: 'active-count',
@@ -364,7 +364,7 @@ export default function Dashboard() {
             label: 'Выручка', 
             value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, 
             Icon: CurrencyIcon, 
-            note: `${wonAmount.toLocaleString('ru-RU')} ₽ выиграно`, 
+            note: `${wonAmount.toLocaleString('ru-RU')} ₽ закрыто успешно`, 
             accent: 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600',
             gradient: 'from-emerald-500 to-emerald-600'
           },

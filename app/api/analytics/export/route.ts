@@ -221,8 +221,8 @@ export async function GET(req: Request) {
               'Менеджер': manager.name,
               'Email': manager.email,
               'Всего сделок': deals.length,
-              'Выиграно сделок': wonDeals.length,
-              'Сумма выигранных': wonAmount,
+              'Закрыто успешно сделок': wonDeals.length,
+              'Сумма закрытых сделок': wonAmount,
               'Конверсия (%)': deals.length > 0 ? ((wonDeals.length / deals.length) * 100).toFixed(1) : '0',
               'Всего задач': tasks.length,
               'Завершено задач': completedTasks.length,
@@ -233,7 +233,7 @@ export async function GET(req: Request) {
           })
         );
 
-        headers = ['Менеджер', 'Email', 'Всего сделок', 'Выиграно сделок', 'Сумма выигранных', 'Конверсия (%)', 'Всего задач', 'Завершено задач', 'Выполнение (%)', 'Контактов', 'Контактов со сделками'];
+        headers = ['Менеджер', 'Email', 'Всего сделок', 'Закрыто успешно сделок', 'Сумма закрытых сделок', 'Конверсия (%)', 'Всего задач', 'Завершено задач', 'Выполнение (%)', 'Контактов', 'Контактов со сделками'];
         data = managersStats;
 
         filename = `managers_${period}_${new Date().toISOString().split('T')[0]}`;

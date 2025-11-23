@@ -67,18 +67,18 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
           }}
           formatter={(value: number, name: string) => {
             if (name === 'wonAmount' || name === 'forecast') {
-              return [`${value.toLocaleString('ru-RU')} ₽`, name === 'wonAmount' ? 'Выиграно' : 'Прогноз']
+              return [`${value.toLocaleString('ru-RU')} ₽`, name === 'wonAmount' ? 'Выручка' : 'Прогноз']
             }
-            return [value, name === 'total' ? 'Всего' : name === 'won' ? 'Выиграно' : name === 'lost' ? 'Проиграно' : 'Активные']
+            return [value, name === 'total' ? 'Всего' : name === 'won' ? 'Закрыто успешно' : name === 'lost' ? 'Проиграно' : 'Активные']
           }}
         />
         <Legend 
           formatter={(value) => {
             const names: Record<string, string> = {
-              wonAmount: 'Выиграно (₽)',
+              wonAmount: 'Выручка (₽)',
               forecast: 'Прогноз (₽)',
               total: 'Всего сделок',
-              won: 'Выиграно',
+              won: 'Закрыто успешно',
               lost: 'Проиграно',
               active: 'Активные',
             }

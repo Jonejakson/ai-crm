@@ -74,18 +74,18 @@ export default function ManagersReport({ managers }: ManagersReportProps) {
               }}
               formatter={(value: number, name: string) => {
                 if (name === 'wonAmount' || name === 'totalAmount') {
-                  return [`${value.toLocaleString('ru-RU')} ₽`, name === 'wonAmount' ? 'Выиграно' : 'Всего']
+                  return [`${value.toLocaleString('ru-RU')} ₽`, name === 'wonAmount' ? 'Выручка' : 'Всего']
                 }
                 if (name === 'conversion') {
                   return [`${value.toFixed(1)}%`, 'Конверсия']
                 }
-                return [value, name === 'won' ? 'Выиграно' : 'Всего']
+                return [value, name === 'won' ? 'Закрыто успешно' : 'Всего']
               }}
             />
             <Legend 
               formatter={(value) => {
                 const names: Record<string, string> = {
-                  wonAmount: 'Выиграно (₽)',
+                  wonAmount: 'Выручка (₽)',
                   totalAmount: 'Всего (₽)',
                   conversion: 'Конверсия (%)',
                 }
@@ -108,7 +108,7 @@ export default function ManagersReport({ managers }: ManagersReportProps) {
             
             <div className="space-y-3">
               <div className="p-3 rounded-xl bg-[var(--success-soft)]/30">
-                <div className="text-xs text-[var(--muted)] mb-1">Выиграно</div>
+                <div className="text-xs text-[var(--muted)] mb-1">Выручка</div>
                 <div className="text-lg font-semibold text-[var(--success)]">
                   {manager.deals.wonAmount.toLocaleString('ru-RU')} ₽
                 </div>

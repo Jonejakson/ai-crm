@@ -344,7 +344,7 @@ export default function AnalyticsPage() {
             icon: '💵', 
             gradient: 'from-emerald-500 to-teal-500', 
             bg: 'bg-emerald-50',
-            subtitle: `Выиграно: ${data.deals.wonAmount.toLocaleString('ru-RU')} ₽`
+            subtitle: `Выручка: ${data.deals.wonAmount.toLocaleString('ru-RU')} ₽`
           },
         ].map((card) => (
           <div key={card.label} className="stat-card group relative overflow-hidden">
@@ -385,7 +385,7 @@ export default function AnalyticsPage() {
           <div className="p-6">
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
-                <span className="text-[var(--muted)] font-medium">Выиграно:</span>
+                <span className="text-[var(--muted)] font-medium">Закрыто успешно:</span>
                 <span className="font-semibold text-[var(--success)]">
                   {data.deals.won} ({data.deals.wonAmount.toLocaleString('ru-RU')} ₽)
                 </span>
