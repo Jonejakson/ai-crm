@@ -1047,7 +1047,7 @@ export default function CompanyPage() {
               <p className="text-sm text-[var(--muted)]">Настройте источники сделок и привяжите их к воронкам</p>
             </div>
           </div>
-          <DealSourcesManager />
+          <DealSourcesManagerWithAddButton />
         </div>
       </section>
 
@@ -1289,11 +1289,24 @@ function DealSourcesManager({
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {currentEditingSource ? 'Изменить источник' : 'Добавить источник'}
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {currentEditingSource ? 'Изменить источник' : 'Добавить источник'}
+              </h2>
+              <button
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setCurrentEditingSource(null)
+                  setCurrentFormData({ name: '', pipelineId: '' })
+                  setError('')
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
                 {error}
@@ -1327,7 +1340,7 @@ function DealSourcesManager({
                 <p className="text-xs text-gray-500 mt-1">При выборе источника сделка автоматически попадёт в эту воронку</p>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-6 justify-end">
               <button
                 type="button"
                 onClick={() => {
@@ -1336,7 +1349,7 @@ function DealSourcesManager({
                   setCurrentFormData({ name: '', pipelineId: '' })
                   setError('')
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={saving}
               >
                 Отмена
@@ -1345,7 +1358,7 @@ function DealSourcesManager({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>
@@ -1496,11 +1509,24 @@ function DealTypesManager({
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              {currentEditingType ? 'Изменить тип' : 'Добавить тип'}
-            </h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {currentEditingType ? 'Изменить тип' : 'Добавить тип'}
+              </h2>
+              <button
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setCurrentEditingType(null)
+                  setCurrentFormData({ name: '' })
+                  setError('')
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
                 {error}
@@ -1516,7 +1542,7 @@ function DealTypesManager({
                 placeholder="Например: Продажа, Монтаж, Консультация"
               />
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-6 justify-end">
               <button
                 type="button"
                 onClick={() => {
@@ -1525,7 +1551,7 @@ function DealTypesManager({
                   setCurrentFormData({ name: '' })
                   setError('')
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 disabled={saving}
               >
                 Отмена
@@ -1534,7 +1560,7 @@ function DealTypesManager({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>
