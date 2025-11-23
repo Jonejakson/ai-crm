@@ -289,7 +289,7 @@ export default function AdvancedFilters({
                          stage === 'proposal' ? 'Предложение' :
                          stage === 'negotiation' ? 'Переговоры' :
                          stage === 'closed_won' ? 'Закрыто успешно' :
-                         'Проиграно'}
+                         'Закрыто неуспешно'}
                       </button>
                     ))}
                   </>

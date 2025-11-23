@@ -69,7 +69,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
             if (name === 'wonAmount' || name === 'forecast') {
               return [`${value.toLocaleString('ru-RU')} ₽`, name === 'wonAmount' ? 'Выручка' : 'Прогноз']
             }
-            return [value, name === 'total' ? 'Всего' : name === 'won' ? 'Закрыто успешно' : name === 'lost' ? 'Проиграно' : 'Активные']
+            return [value, name === 'total' ? 'Всего' : name === 'won' ? 'Закрыто успешно' : name === 'lost' ? 'Закрыто неуспешно' : 'Активные']
           }}
         />
         <Legend 
@@ -79,7 +79,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
               forecast: 'Прогноз (₽)',
               total: 'Всего сделок',
               won: 'Закрыто успешно',
-              lost: 'Проиграно',
+              lost: 'Закрыто неуспешно',
               active: 'Активные',
             }
             return names[value] || value
