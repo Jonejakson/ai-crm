@@ -14,6 +14,8 @@ interface Contact {
   email: string
   phone: string | null
   company: string | null
+  inn?: string | null
+  position?: string | null
   createdAt: string
   user?: {
     id: number
@@ -45,8 +47,11 @@ export default function ContactsPage() {
     email: '',
     phone: '',
     company: '',
-    position: ''
+    position: '',
+    inn: ''
   })
+  const [editInnLoading, setEditInnLoading] = useState(false)
+  const [editInnError, setEditInnError] = useState('')
 
   useEffect(() => {
     fetchContacts()
@@ -97,8 +102,10 @@ export default function ContactsPage() {
       email: contact.email,
       phone: contact.phone || '',
       company: contact.company || '',
-      position: (contact as any).position || ''
+      position: (contact as any).position || '',
+      inn: (contact as any).inn || ''
     })
+    setEditInnError('')
   }
 
 // Функция сохранения изменений
@@ -241,6 +248,55 @@ export default function ContactsPage() {
     }
   }
 
+  const handleEditInnSearch = async (inn: string) => {
+    const cleanInn = inn.replace(/\D/g, '')
+
+    if (cleanInn.length < 10) {
+      setEditInnError('')
+      return
+    }
+
+    setEditInnLoading(true)
+    setEditInnError('')
+
+    try {
+      const response = await fetch(`/api/company/by-inn?inn=${cleanInn}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
+        let errorMessage = errorData.error || 'Ошибка при запросе к API'
+
+        if (response.status === 403) {
+          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
+        } else if (response.status === 503) {
+          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
+        } else if (response.status === 404) {
+          errorMessage = 'Компания с таким ИНН не найдена'
+        }
+
+        setEditInnError(errorMessage)
+        return
+      }
+
+      const data = await response.json()
+
+      if (data && data.name) {
+        setEditFormData(prev => ({
+          ...prev,
+          company: data.name,
+          inn: cleanInn
+        }))
+      } else {
+        setEditInnError('Компания не найдена')
+      }
+    } catch (error) {
+      console.error('Error searching company by INN:', error)
+      setEditInnError('Ошибка при поиске компании')
+    } finally {
+      setEditInnLoading(false)
+    }
+  }
+
   const handleInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setFormData({
@@ -254,6 +310,21 @@ export default function ContactsPage() {
       handleInnSearch(cleanInn)
     } else {
       setInnError('')
+    }
+  }
+
+  const handleEditInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setEditFormData(prev => ({
+      ...prev,
+      inn: value
+    }))
+
+    const cleanInn = value.replace(/\D/g, '')
+    if (cleanInn.length === 10 || cleanInn.length === 12) {
+      handleEditInnSearch(cleanInn)
+    } else {
+      setEditInnError('')
     }
   }
 
@@ -627,13 +698,13 @@ export default function ContactsPage() {
       >
         <form onSubmit={handleEditSubmit} className="space-y-4">
                 <div className="space-y-4">
-                  {['name', 'email', 'phone', 'company', 'position'].map((field) => (
+                  {['name', 'email', 'phone', 'position'].map((field) => (
                     <div key={field}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                         {field === 'name' ? 'Имя *' :
                          field === 'email' ? 'Email *' :
                          field === 'phone' ? 'Телефон' :
-                         field === 'company' ? 'Компания' : 'Должность'}
+                         'Должность'}
                       </label>
                       <input
                         type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
@@ -645,6 +716,45 @@ export default function ContactsPage() {
                       />
                     </div>
                   ))}
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      ИНН
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="inn"
+                        value={editFormData.inn}
+                        onChange={handleEditInnChange}
+                        placeholder="Введите ИНН (10 или 12 цифр)"
+                        maxLength={12}
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      />
+                      {editInnLoading && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <div className="loading-spinner"></div>
+                        </div>
+                      )}
+                    </div>
+                    {editInnError && (
+                      <p className="mt-1 text-xs text-red-500">{editInnError}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      Компания
+                    </label>
+                    <input
+                      type="text"
+                      name="company"
+                      value={editFormData.company}
+                      onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                      placeholder="Заполнится автоматически по ИНН"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    />
+                  </div>
                 </div>
 
           <div className="flex justify-end gap-3 pt-4">
