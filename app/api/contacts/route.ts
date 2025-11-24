@@ -56,6 +56,8 @@ export async function GET(req: Request) {
             email: true,
             phone: true,
             company: true,
+            position: true,
+            inn: true,
             createdAt: true,
             updatedAt: true,
             userId: true,
@@ -138,9 +140,11 @@ export async function POST(req: Request) {
           userId: userId,
         };
         
-        // Добавляем position только если поле существует в схеме
         if (data.position !== undefined) {
           contactData.position = data.position || null;
+        }
+        if (data.inn !== undefined) {
+          contactData.inn = data.inn || null;
         }
         
         const newContact = await prisma.contact.create({
@@ -210,9 +214,11 @@ export async function PUT(req: Request) {
       company: data.company || null,
     };
     
-    // Добавляем position только если поле существует в схеме
     if (data.position !== undefined) {
       updateData.position = data.position || null;
+    }
+    if (data.inn !== undefined) {
+      updateData.inn = data.inn || null;
     }
     
     const updated = await prisma.contact.update({
