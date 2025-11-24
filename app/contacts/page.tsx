@@ -392,13 +392,14 @@ export default function ContactsPage() {
 
   // Применяем фильтры
   const filteredContacts = contacts.filter(contact => {
-    const searchLower = search.toLowerCase()
+    const searchLower = (search || '').toLowerCase()
+    const hasSearch = searchLower.length > 0
 
     // Поиск по тексту
-    const matchesSearch = !search || 
-      contact.name?.toLowerCase().includes(searchLower) ||
-      contact.email?.toLowerCase()?.includes(searchLower) ||
-      contact.company?.toLowerCase()?.includes(searchLower)
+    const matchesSearch = !hasSearch || 
+      (contact.name || '').toLowerCase().includes(searchLower) ||
+      (contact.email || '').toLowerCase().includes(searchLower) ||
+      (contact.company || '').toLowerCase().includes(searchLower)
 
     if (!matchesSearch) return false
 
