@@ -392,55 +392,6 @@ export default function ContactDetailPage() {
             )}
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Связанные активности</p>
-              <div className="flex gap-3 text-xs text-[var(--primary)]">
-                <Link href="/deals" className="hover:underline">Все сделки</Link>
-                <Link href="/tasks" className="hover:underline">Все задачи</Link>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-slate-900">Сделки ({deals.length})</p>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {deals.length === 0 ? (
-                    <p className="text-sm text-slate-500">Сделок пока нет</p>
-                  ) : (
-                    deals.slice(0, 3).map((deal) => (
-                      <div key={deal.id} className="rounded-xl bg-white/90 p-3 border border-white/50">
-                        <p className="text-sm font-medium text-slate-900">{deal.title}</p>
-                        <p className="text-xs text-slate-500">
-                          {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-              <div className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-slate-900">Задачи ({tasks.length})</p>
-                </div>
-                <div className="mt-3 space-y-2">
-                  {tasks.length === 0 ? (
-                    <p className="text-sm text-slate-500">Нет активных задач</p>
-                  ) : (
-                    tasks.slice(0, 3).map((task) => (
-                      <div key={task.id} className="rounded-xl bg-white/90 p-3 border border-white/50">
-                        <p className="text-sm font-medium text-slate-900">{task.title}</p>
-                        <p className="text-xs text-slate-500">
-                          Статус: {task.status}{task.dueDate ? ` • до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : ''}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="glass-panel rounded-3xl p-6 space-y-6">
@@ -549,77 +500,6 @@ export default function ContactDetailPage() {
                       </div>
                       <span className="text-xs text-slate-400 whitespace-nowrap ml-4">
                         {new Date(log.createdAt).toLocaleString('ru-RU')}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Сделки */}
-          <div className="border-t pt-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Сделки ({deals.length})</h3>
-            {deals.length === 0 ? (
-              <p className="text-slate-500">Нет сделок для этого контакта</p>
-            ) : (
-              <div className="space-y-3">
-                {deals.map((deal) => (
-                  <div key={deal.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{deal.title}</h4>
-                        <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-500">
-                          <span>Сумма: {deal.amount.toLocaleString('ru-RU')} {deal.currency}</span>
-                          <span>•</span>
-                          <span>Этап: {deal.stage}</span>
-                          <span>•</span>
-                          <span>Вероятность: {deal.probability}%</span>
-                          {deal.expectedCloseDate && (
-                            <>
-                              <span>•</span>
-                              <span>До: {new Date(deal.expectedCloseDate).toLocaleDateString('ru-RU')}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <a href="/deals" className="text-[var(--primary)] hover:underline text-sm ml-4">
-                        →
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Задачи */}
-          <div className="border-t pt-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Задачи ({tasks.length})</h3>
-            {tasks.length === 0 ? (
-              <p className="text-slate-500">Нет задач для этого контакта</p>
-            ) : (
-              <div className="space-y-3">
-                {tasks.map((task) => (
-                  <div key={task.id} className="rounded-2xl border border-white/60 bg-white/90 p-4 shadow-sm">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold">{task.title}</h4>
-                        {task.description && (
-                          <p className="text-gray-600 mt-1 text-sm">{task.description}</p>
-                        )}
-                        <div className="flex flex-wrap gap-2 mt-2 text-sm text-gray-500">
-                          <span>Статус: {task.status}</span>
-                          {task.dueDate && (
-                            <>
-                              <span>•</span>
-                              <span>Срок: {new Date(task.dueDate).toLocaleDateString('ru-RU')}</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-400 ml-4">
-                        {new Date(task.createdAt).toLocaleDateString('ru-RU')}
                       </span>
                     </div>
                   </div>
