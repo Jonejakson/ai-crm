@@ -13,6 +13,17 @@ interface Contact {
   email: string
   phone: string | null
   company: string | null
+  position?: string | null
+  department?: string | null
+  inn?: string | null
+  kpp?: string | null
+  ogrn?: string | null
+  leadSource?: string | null
+  user?: {
+    id: number
+    name: string
+    email: string
+  } | null
   createdAt: string
 }
 
@@ -40,6 +51,10 @@ interface Deal {
   stage: string
   probability: number
   expectedCloseDate: string | null
+  source?: {
+    id: number
+    name: string
+  } | null
   createdAt: string
 }
 
@@ -79,6 +94,15 @@ export default function ContactDetailPage() {
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
+  const [companyDetails, setCompanyDetails] = useState<null | {
+    inn?: string
+    kpp?: string
+    ogrn?: string
+    address?: string
+    management?: string
+  }>(null)
+  const [companyDetailsLoading, setCompanyDetailsLoading] = useState(false)
+  const [companyDetailsError, setCompanyDetailsError] = useState('')
   // Убрали вкладки - все в одной прокручиваемой странице
   const [newMessage, setNewMessage] = useState('')
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
@@ -97,6 +121,15 @@ export default function ContactDetailPage() {
     }
   }, [contactId])
 
+  useEffect(() => {
+    if (contact?.inn) {
+      fetchCompanyDetails(contact.inn)
+    } else {
+      setCompanyDetails(null)
+      setCompanyDetailsError('')
+    }
+  }, [contact?.inn])
+
   const fetchContactData = async () => {
     try {
       const [contactRes, tasksRes, dialogsRes, dealsRes, emailsRes, activityRes] = await Promise.all([
@@ -108,9 +141,10 @@ export default function ContactDetailPage() {
         fetch(`/api/activity?entityType=contact&entityId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] }))
       ])
 
-      // Находим конкретный контакт
-      const foundContact = contactRes.find((c: Contact) => c.id === Number(contactId))
-      setContact(foundContact)
+      const foundContact = Array.isArray(contactRes) 
+        ? contactRes.find((c: Contact) => c.id === Number(contactId))
+        : contactRes
+      setContact(foundContact || null)
       
       // Фильтруем задачи этого контакта
       const contactTasks = tasksRes.filter((task: Task & { contactId: number }) => 
@@ -131,6 +165,31 @@ export default function ContactDetailPage() {
       console.error('Error fetching contact data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCompanyDetails = async (inn: string) => {
+    setCompanyDetailsLoading(true)
+    setCompanyDetailsError('')
+    try {
+      const response = await fetch(`/api/company/by-inn?inn=${inn}`)
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setCompanyDetails(null)
+        setCompanyDetailsError(
+          data?.error || 'Не удалось загрузить данные компании по ИНН'
+        )
+        return
+      }
+
+      setCompanyDetails(data)
+    } catch (error) {
+      console.error('Error fetching company details:', error)
+      setCompanyDetailsError('Ошибка при загрузке данных компании')
+      setCompanyDetails(null)
+    } finally {
+      setCompanyDetailsLoading(false)
     }
   }
 
@@ -275,9 +334,11 @@ export default function ContactDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="glass-panel rounded-3xl p-6 xl:col-span-2">
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Профиль</p>
-          <h2 className="text-2xl font-semibold text-slate-900 mt-1 mb-6">Контактная информация</h2>
+        <div className="glass-panel rounded-3xl p-6 xl:col-span-2 space-y-6">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Профиль</p>
+            <h2 className="text-2xl font-semibold text-slate-900 mt-1">Контактная информация</h2>
+          </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {[
               { label: 'Email', value: contact.email },
@@ -290,6 +351,95 @@ export default function ContactDetailPage() {
                 <p className="mt-2 text-sm font-semibold text-slate-900">{item.value}</p>
               </div>
             ))}
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Реквизиты и статус</p>
+                <h3 className="text-lg font-semibold text-slate-900 mt-1">Компания и контакт</h3>
+              </div>
+              {companyDetailsLoading && (
+                <span className="text-xs text-slate-400">Загрузка реквизитов...</span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {[
+                { label: 'ИНН', value: contact.inn || 'Не указан' },
+                { label: 'КПП', value: companyDetails?.kpp || 'Не указано' },
+                { label: 'ОГРН', value: companyDetails?.ogrn || 'Не указано' },
+                { label: 'Должность', value: contact.position || 'Не указана' },
+                { label: 'Отдел', value: contact.department || 'Не указан' },
+                { 
+                  label: 'Ответственный менеджер', 
+                  value: contact.user?.name || 'Не назначен',
+                  hint: contact.user?.email
+                },
+                { 
+                  label: 'Источник лида', 
+                  value: contact.leadSource || deals.find((deal) => deal.source)?.source?.name || 'Не указан' 
+                },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">{item.value}</p>
+                  {item.hint && <p className="text-xs text-slate-500 mt-1">{item.hint}</p>}
+                </div>
+              ))}
+            </div>
+            {companyDetailsError && (
+              <p className="text-xs text-red-500">{companyDetailsError}</p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Связанные активности</p>
+              <div className="flex gap-3 text-xs text-[var(--primary)]">
+                <Link href="/deals" className="hover:underline">Все сделки</Link>
+                <Link href="/tasks" className="hover:underline">Все задачи</Link>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-900">Сделки ({deals.length})</p>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {deals.length === 0 ? (
+                    <p className="text-sm text-slate-500">Сделок пока нет</p>
+                  ) : (
+                    deals.slice(0, 3).map((deal) => (
+                      <div key={deal.id} className="rounded-xl bg-white/90 p-3 border border-white/50">
+                        <p className="text-sm font-medium text-slate-900">{deal.title}</p>
+                        <p className="text-xs text-slate-500">
+                          {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-900">Задачи ({tasks.length})</p>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {tasks.length === 0 ? (
+                    <p className="text-sm text-slate-500">Нет активных задач</p>
+                  ) : (
+                    tasks.slice(0, 3).map((task) => (
+                      <div key={task.id} className="rounded-xl bg-white/90 p-3 border border-white/50">
+                        <p className="text-sm font-medium text-slate-900">{task.title}</p>
+                        <p className="text-xs text-slate-500">
+                          Статус: {task.status}{task.dueDate ? ` • до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : ''}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
