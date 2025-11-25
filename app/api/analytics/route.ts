@@ -256,12 +256,18 @@ export async function GET(req: Request) {
 
     const daysToShow = period === 'week' ? 7 : period === 'month' ? 30 : 365;
     
-    // Создаем структуру данных для всех дней периода
-    for (let i = daysToShow - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0); // Обнуляем время для точного сравнения
-      const dateKey = date.toISOString().split('T')[0];
+    // Создаем структуру данных для всех дней периода (центруем по текущей дате)
+    const halfWindow = Math.floor(daysToShow / 2);
+    const endDate = new Date(now);
+    const startWindow = new Date(now);
+    startWindow.setDate(startWindow.getDate() - (daysToShow - halfWindow - 1));
+    endDate.setDate(endDate.getDate() + halfWindow);
+
+    const tempDate = new Date(startWindow);
+    while (tempDate <= endDate) {
+      const current = new Date(tempDate);
+      current.setHours(0, 0, 0, 0);
+      const dateKey = current.toISOString().split('T')[0];
       daysData[dateKey] = {
         contacts: 0,
         tasks: 0,
@@ -269,6 +275,7 @@ export async function GET(req: Request) {
         events: 0,
         wonAmount: 0,
       };
+      tempDate.setDate(tempDate.getDate() + 1);
     }
 
     // Заполняем данные по дням
