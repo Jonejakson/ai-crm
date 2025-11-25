@@ -52,6 +52,17 @@ interface Contact {
   email: string
 }
 
+interface DateRange {
+  start?: string
+  end?: string
+}
+
+interface TaskFilters {
+  status?: string[]
+  dateRange?: DateRange
+  dueDateRange?: DateRange
+}
+
 // Определяем категории задач по датам
 const TASK_CATEGORIES = [
   { id: 'overdue', name: 'Просроченные', color: 'from-[#ffe7e7] via-[#fff1f1] to-white shadow-[0_25px_35px_-25px_rgba(239,68,68,0.45)]' },
@@ -121,7 +132,7 @@ export default function TasksPage() {
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   // Убрали вкладки - все в одной прокручиваемой странице
-  const [filters, setFilters] = useState<any>({})
+  const [filters, setFilters] = useState<TaskFilters>({})
   const [searchTerm, setSearchTerm] = useState('')
   const [quickDateFilter, setQuickDateFilter] = useState<string>('month')
   const [formData, setFormData] = useState({
@@ -191,7 +202,7 @@ export default function TasksPage() {
   useEffect(() => {
     if (!quickDateFilter) return
     const { start, end } = getQuickDateRange(quickDateFilter)
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       dateRange: {
         start: formatDateInput(start),
@@ -203,7 +214,7 @@ export default function TasksPage() {
   const handleQuickDateClick = (value: string) => {
     if (value === quickDateFilter) {
       setQuickDateFilter('')
-      setFilters(prev => {
+      setFilters((prev) => {
         if (!prev.dateRange) return prev
         const { dateRange, ...rest } = prev
         return rest
@@ -215,7 +226,7 @@ export default function TasksPage() {
 
   const handleDateInputChange = (field: 'start' | 'end', value: string) => {
     setQuickDateFilter('')
-    setFilters(prev => {
+    setFilters((prev) => {
       const nextRange = { ...(prev.dateRange || {}), [field]: value || undefined }
       if (!nextRange.start && !nextRange.end) {
         const { dateRange, ...rest } = prev
@@ -226,7 +237,7 @@ export default function TasksPage() {
   }
 
   const handleStatusToggle = (status: string) => {
-    setFilters(prev => {
+    setFilters((prev) => {
       const currentStatuses: string[] = prev.status || []
       const nextStatuses = currentStatuses.includes(status)
         ? currentStatuses.filter(s => s !== status)
