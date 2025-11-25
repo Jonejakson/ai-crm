@@ -173,12 +173,23 @@ export async function GET(req: Request) {
       newThisPeriod: events.filter(e => new Date(e.createdAt) >= startDate).length
     };
 
+    const initialManagerPerformance = companyUsers.reduce((acc, manager) => {
+      acc[manager.id] = {
+        userId: manager.id,
+        name: manager.name,
+        email: manager.email,
+        totalDeals: 0,
+        wonDeals: 0,
+        revenue: 0,
+      };
+      return acc;
+    }, {} as Record<number, { userId: number; name: string; email: string; totalDeals: number; wonDeals: number; revenue: number }>);
+
     const managerPerformance = deals.reduce((acc, deal) => {
       if (!deal.userId) return acc;
-      const key = deal.userId;
-      if (!acc[key]) {
+      if (!acc[deal.userId]) {
         const manager = companyUsers.find((user) => user.id === deal.userId);
-        acc[key] = {
+        acc[deal.userId] = {
           userId: deal.userId,
           name: manager?.name || 'Без имени',
           email: manager?.email || '',
@@ -187,21 +198,27 @@ export async function GET(req: Request) {
           revenue: 0,
         };
       }
-      acc[key].totalDeals += 1;
+      acc[deal.userId].totalDeals += 1;
       if (deal.stage === 'closed_won') {
-        acc[key].wonDeals += 1;
-        acc[key].revenue += deal.amount;
+        acc[deal.userId].wonDeals += 1;
+        acc[deal.userId].revenue += deal.amount;
       }
       return acc;
-    }, {} as Record<number, { userId: number; name: string; email: string; totalDeals: number; wonDeals: number; revenue: number }>);
+    }, initialManagerPerformance);
 
-    const managerPerformanceList = Object.values(managerPerformance)
+    let managerPerformanceList = Object.values(managerPerformance)
       .map((item) => ({
         ...item,
         conversion: item.totalDeals > 0 ? (item.wonDeals / item.totalDeals) * 100 : 0,
       }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 8);
+      .sort((a, b) => b.revenue - a.revenue);
+
+    if (user.role === 'admin' && filterUserId) {
+      const userIdFilter = parseInt(filterUserId);
+      managerPerformanceList = managerPerformanceList.filter(item => item.userId === userIdFilter);
+    } else {
+      managerPerformanceList = managerPerformanceList.slice(0, 8);
+    }
 
     const pipelineSummary = Object.entries(dealsStats.byStage).map(([stage, count]) => {
       const total = dealsStats.total || 1;
