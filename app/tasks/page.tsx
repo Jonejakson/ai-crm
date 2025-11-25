@@ -633,7 +633,7 @@ export default function TasksPage() {
 
           <div className="flex-1 space-y-3">
             <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Статусы</p>
-            <div className="flex flex-wrap gap-2 lg:justify-end">
+            <div className="flex flex-wrap gap-2">
               {statusOptions.map((status) => (
                 <button
                   key={status.value}
