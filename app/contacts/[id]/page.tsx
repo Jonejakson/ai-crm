@@ -112,7 +112,9 @@ export default function ContactDetailPage() {
   const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [taskFormData, setTaskFormData] = useState({
     title: '',
-    dueDate: ''
+    description: '',
+    dueDate: '',
+    dueTime: ''
   })
 
   useEffect(() => {
@@ -257,11 +259,18 @@ export default function ContactDetailPage() {
     }
   }
 
+  const buildContactTaskDueDate = (date: string, time: string) => {
+    if (!date) return null
+    if (!time) return date
+    return `${date}T${time}`
+  }
+
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!taskFormData.title.trim()) return
 
     try {
+      const dueDateValue = buildContactTaskDueDate(taskFormData.dueDate, taskFormData.dueTime)
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
@@ -269,15 +278,16 @@ export default function ContactDetailPage() {
         },
         body: JSON.stringify({
           title: taskFormData.title,
+          description: taskFormData.description || '',
           contactId: Number(contactId),
-          dueDate: taskFormData.dueDate || null,
+          dueDate: dueDateValue,
           status: 'pending'
         }),
       })
 
       if (response.ok) {
         setIsTaskModalOpen(false)
-        setTaskFormData({ title: '', dueDate: '' })
+        setTaskFormData({ title: '', description: '', dueDate: '', dueTime: '' })
         fetchContactData() // Обновляем задачи
       }
     } catch (error) {
@@ -647,7 +657,7 @@ export default function ContactDetailPage() {
               <button
                 onClick={() => {
                   setIsTaskModalOpen(false)
-                  setTaskFormData({ title: '', dueDate: '' })
+                  setTaskFormData({ title: '', description: '', dueDate: '', dueTime: '' })
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -672,14 +682,40 @@ export default function ContactDetailPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Когда должна быть исполнена
+                  Описание
                 </label>
-                <input
-                  type="date"
-                  value={taskFormData.dueDate}
-                  onChange={(e) => setTaskFormData({...taskFormData, dueDate: e.target.value})}
+                <textarea
+                  value={taskFormData.description}
+                  onChange={(e) => setTaskFormData({...taskFormData, description: e.target.value})}
+                  rows={3}
                   className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  placeholder="Опишите задачу"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Дата выполнения
+                  </label>
+                  <input
+                    type="date"
+                    value={taskFormData.dueDate}
+                    onChange={(e) => setTaskFormData({...taskFormData, dueDate: e.target.value})}
+                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Время
+                  </label>
+                  <input
+                    type="time"
+                    value={taskFormData.dueTime}
+                    onChange={(e) => setTaskFormData({...taskFormData, dueTime: e.target.value})}
+                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
@@ -687,7 +723,7 @@ export default function ContactDetailPage() {
                   type="button"
                   onClick={() => {
                     setIsTaskModalOpen(false)
-                    setTaskFormData({ title: '', dueDate: '' })
+                    setTaskFormData({ title: '', description: '', dueDate: '', dueTime: '' })
                   }}
                   className="btn-secondary text-sm"
                 >
