@@ -294,19 +294,19 @@ function PeriodDynamicsChart({ chartData }: { chartData: ChartPoint[] }) {
           </div>
           <div className="flex flex-wrap justify-center gap-4 mt-6 text-sm">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--primary)]"></div>
+              <div className="w-4 h-4 rounded-full bg-[#3b82f6]"></div>
               <span className="text-[var(--muted)]">Контакты</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--warning)]"></div>
+              <div className="w-4 h-4 rounded-full bg-[#f97316]"></div>
               <span className="text-[var(--muted)]">Задачи</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--accent)]"></div>
+              <div className="w-4 h-4 rounded-full bg-[#a855f7]"></div>
               <span className="text-[var(--muted)]">Сделки</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded-full bg-[var(--success)]"></div>
+              <div className="w-4 h-4 rounded-full bg-[#10b981]"></div>
               <span className="text-[var(--muted)]">События</span>
             </div>
           </div>
