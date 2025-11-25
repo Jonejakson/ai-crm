@@ -315,7 +315,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Основная статистика */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
           { 
             label: 'Всего клиентов', 
@@ -354,13 +354,13 @@ export default function AnalyticsPage() {
             <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
             <div className="relative flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] font-semibold mb-2">{card.label}</p>
-                <p className={`stat-card-value bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
+                <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)] font-semibold mb-1">{card.label}</p>
+                <p className={`text-2xl font-semibold bg-gradient-to-r ${card.gradient} bg-clip-text text-transparent`}>
                   {card.value}
                 </p>
-                <p className="text-sm text-[var(--muted)] mt-1">{card.subtitle}</p>
+                <p className="text-xs text-[var(--muted)] mt-1">{card.subtitle}</p>
               </div>
-              <div className={`rounded-2xl ${card.bg} p-4 text-3xl shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+              <div className={`rounded-2xl ${card.bg} p-3 text-2xl shadow-sm`}>
                 {card.icon}
               </div>
             </div>
@@ -378,15 +378,15 @@ export default function AnalyticsPage() {
       />
 
       {/* Детальная статистика */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Статистика по сделкам */}
-        <div className="glass-panel rounded-3xl">
-          <div className="p-6 border-b border-white/40">
+        <div className="glass-panel rounded-3xl p-4">
+          <div className="pb-4 border-b border-white/40">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Сделки</p>
             <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по сделкам</h2>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
+          <div className="pt-4">
+            <div className="space-y-3 text-sm">
               <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
                 <span className="text-[var(--muted)] font-medium">Закрыто успешно:</span>
                 <span className="font-semibold text-[var(--success)]">
@@ -407,13 +407,13 @@ export default function AnalyticsPage() {
                     : 0}%
                 </span>
               </div>
-              <div className="mt-4 pt-4 border-t border-white/40">
-                <h3 className="font-semibold text-[var(--foreground)] mb-3">По этапам:</h3>
-                <div className="space-y-2">
+              <div className="mt-3 pt-3 border-t border-white/40">
+                <h3 className="font-semibold text-[var(--foreground)] mb-2 text-sm">По этапам:</h3>
+                <div className="space-y-1">
                   {Object.entries(data.deals.byStage).map(([stage, count]) => (
-                    <div key={stage} className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors">
-                      <span className="text-sm text-[var(--muted)]">{getStageName(stage)}:</span>
-                      <span className="text-sm font-semibold text-[var(--foreground)]">{count}</span>
+                    <div key={stage} className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors text-sm">
+                      <span className="text-[var(--muted)]">{getStageName(stage)}:</span>
+                      <span className="font-semibold text-[var(--foreground)]">{count}</span>
                     </div>
                   ))}
                 </div>
@@ -423,14 +423,94 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Статистика по задачам */}
-        <div className="glass-panel rounded-3xl">
-          <div className="p-6 border-b border-white/40">
+        <div className="glass-panel rounded-3xl p-4">
+          <div className="pb-4 border-b border-white/40">
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Задачи</p>
             <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по задачам</h2>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+          <div className="pt-4 space-y-3 text-sm">
+            <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+              <span className="text-[var(--muted)] font-medium">Всего:</span>
+              <span className="font-semibold text-[var(--foreground)]">{data.tasks.total}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--warning-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">В работе:</span>
+              <span className="font-semibold text-[var(--warning)]">{data.tasks.pending}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">Завершено:</span>
+              <span className="font-semibold text-[var(--success)]">{data.tasks.completed}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--error-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">Просрочено:</span>
+              <span className="font-semibold text-[var(--error)]">{data.tasks.overdue}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">Выполнение:</span>
+              <span className="font-semibold text-[var(--primary)]">
+                {data.tasks.total > 0 
+                  ? ((data.tasks.completed / data.tasks.total) * 100).toFixed(1) 
+                  : 0}%
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Статистика по событиям */}
+        <div className="glass-panel rounded-3xl p-4">
+          <div className="pb-4 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">События</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по событиям</h2>
+          </div>
+          <div className="pt-4 space-y-3 text-sm">
+            <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+              <span className="text-[var(--muted)] font-medium">Всего:</span>
+              <span className="font-semibold text-[var(--foreground)]">{data.events.total}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">Предстоящие:</span>
+              <span className="font-semibold text-[var(--primary)]">{data.events.upcoming}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--background-soft)]">
+              <span className="text-[var(--muted)] font-medium">Прошедшие:</span>
+              <span className="font-semibold text-[var(--muted)]">{data.events.past}</span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-white/40">
+              <h3 className="font-semibold text-[var(--foreground)] mb-2 text-sm">По типам:</h3>
+              <div className="space-y-1">
+                {Object.entries(data.events.byType).map(([type, count]) => (
+                  <div key={type} className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors text-sm">
+                    <span className="text-[var(--muted)]">{getTypeName(type)}:</span>
+                    <span className="font-semibold text-[var(--foreground)]">{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Статистика по контактам */}
+        <div className="glass-panel rounded-3xl p-4">
+          <div className="pb-4 border-b border-white/40">
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Контакты</p>
+            <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по контактам</h2>
+          </div>
+          <div className="pt-4 space-y-3 text-sm">
+            <div className="flex justify-between items-center p-3 rounded-xl bg-white/50">
+              <span className="text-[var(--muted)] font-medium">Всего:</span>
+              <span className="font-semibold text-[var(--foreground)]">{data.contacts.total}</span>
+            </div>
+            <div className="flex justify-between items-center п-3 rounded-xl bg-[var(--success-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">С сделками:</span>
+              <span className="font-semibold text-[var(--success)]">{data.contacts.withDeals}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
+              <span className="text-[var(--muted)] font-medium">Новых за период:</span>
+              <span className="font-semibold text-[var(--primary)]">+{data.contacts.newThisPeriod}</span>
+            </div>
+          </div>
+        </div>
+      </div>
                 <span className="text-[var(--muted)] font-medium">Всего:</span>
                 <span className="font-semibold text-[var(--foreground)]">{data.tasks.total}</span>
               </div>
