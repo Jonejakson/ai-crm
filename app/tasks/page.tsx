@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import UserFilter from '@/components/UserFilter'
-import AdvancedFilters from '@/components/AdvancedFilters'
 import FilesManager from '@/components/FilesManager'
 import Comments from '@/components/Comments'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
@@ -123,9 +122,8 @@ export default function TasksPage() {
   const [viewingTask, setViewingTask] = useState<Task | null>(null)
   // Убрали вкладки - все в одной прокручиваемой странице
   const [filters, setFilters] = useState<any>({})
-  const [savedFilters, setSavedFilters] = useState<Array<{ id: number; name: string; filters: any }>>([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [quickDateFilter, setQuickDateFilter] = useState<string>('month')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -133,6 +131,115 @@ export default function TasksPage() {
     contactId: '',
     status: 'pending'
   })
+  const quickDateOptions = [
+    { value: 'today', label: 'Сегодня' },
+    { value: 'week', label: 'Эта неделя' },
+    { value: 'month', label: 'Этот месяц' },
+    { value: 'quarter', label: 'Этот квартал' },
+    { value: 'year', label: 'Этот год' },
+  ]
+  const statusOptions = [
+    { value: 'pending', label: 'В ожидании' },
+    { value: 'in_progress', label: 'В работе' },
+    { value: 'completed', label: 'Завершено' },
+    { value: 'cancelled', label: 'Отменено' },
+  ]
+
+  const formatDateInput = (date: Date) => date.toISOString().split('T')[0]
+
+  const getQuickDateRange = (value: string) => {
+    const now = new Date()
+    const start = new Date(now)
+    const end = new Date(now)
+
+    switch (value) {
+      case 'today':
+        start.setHours(0, 0, 0, 0)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'week':
+        const day = start.getDay()
+        start.setDate(start.getDate() - day)
+        start.setHours(0, 0, 0, 0)
+        end.setDate(start.getDate() + 6)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'month':
+        start.setDate(1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth(end.getMonth() + 1, 0)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'quarter':
+        const quarter = Math.floor(now.getMonth() / 3)
+        start.setMonth(quarter * 3, 1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth((quarter + 1) * 3, 0)
+        end.setHours(23, 59, 59, 999)
+        break
+      case 'year':
+        start.setMonth(0, 1)
+        start.setHours(0, 0, 0, 0)
+        end.setMonth(11, 31)
+        end.setHours(23, 59, 59, 999)
+        break
+    }
+
+    return { start, end }
+  }
+
+  useEffect(() => {
+    if (!quickDateFilter) return
+    const { start, end } = getQuickDateRange(quickDateFilter)
+    setFilters(prev => ({
+      ...prev,
+      dateRange: {
+        start: formatDateInput(start),
+        end: formatDateInput(end),
+      },
+    }))
+  }, [quickDateFilter])
+
+  const handleQuickDateClick = (value: string) => {
+    if (value === quickDateFilter) {
+      setQuickDateFilter('')
+      setFilters(prev => {
+        if (!prev.dateRange) return prev
+        const { dateRange, ...rest } = prev
+        return rest
+      })
+    } else {
+      setQuickDateFilter(value)
+    }
+  }
+
+  const handleDateInputChange = (field: 'start' | 'end', value: string) => {
+    setQuickDateFilter('')
+    setFilters(prev => {
+      const nextRange = { ...(prev.dateRange || {}), [field]: value || undefined }
+      if (!nextRange.start && !nextRange.end) {
+        const { dateRange, ...rest } = prev
+        return rest
+      }
+      return { ...prev, dateRange: nextRange }
+    })
+  }
+
+  const handleStatusToggle = (status: string) => {
+    setFilters(prev => {
+      const currentStatuses: string[] = prev.status || []
+      const nextStatuses = currentStatuses.includes(status)
+        ? currentStatuses.filter(s => s !== status)
+        : [...currentStatuses, status]
+
+      if (nextStatuses.length === 0) {
+        const { status: _removed, ...rest } = prev
+        return rest
+      }
+
+      return { ...prev, status: nextStatuses }
+    })
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -148,15 +255,6 @@ export default function TasksPage() {
   useEffect(() => {
     fetchData()
     checkNotifications()
-    // Загружаем сохраненные фильтры из localStorage
-    const saved = localStorage.getItem('savedFilters_tasks')
-    if (saved) {
-      try {
-        setSavedFilters(JSON.parse(saved))
-      } catch (e) {
-        console.error('Error loading saved filters:', e)
-      }
-    }
   }, [selectedUserId])
 
   // Клавиатурные сокращения для страницы задач
@@ -458,55 +556,89 @@ export default function TasksPage() {
         </div>
       </div>
       
-      <div className="glass-panel rounded-3xl p-6 space-y-4">
+      <div className="glass-panel rounded-3xl p-6 space-y-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg">🔍</span>
+          <div className="flex-1">
             <input
               type="text"
               placeholder="Быстрый поиск по названию, описанию или клиенту..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-12 pr-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+              className="w-full rounded-2xl border border-[var(--border)] bg-white/90 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="min-w-[220px]">
-              <UserFilter 
-                selectedUserId={selectedUserId} 
-                onUserChange={setSelectedUserId} 
-              />
-            </div>
-            <button
-              className="btn-secondary text-sm"
-              onClick={() => setFiltersOpen(prev => !prev)}
-            >
-              {filtersOpen ? 'Скрыть фильтры' : 'Доп. фильтры'}
-            </button>
+          <div className="w-full min-w-[220px] lg:w-auto">
+            <UserFilter 
+              selectedUserId={selectedUserId} 
+              onUserChange={setSelectedUserId} 
+            />
           </div>
         </div>
-        {filtersOpen && (
-          <AdvancedFilters
-            entityType="tasks"
-            onFilterChange={setFilters}
-            savedFilters={savedFilters}
-            onSaveFilter={(name, filterData) => {
-              const newFilter = {
-                id: Date.now(),
-                name,
-                filters: filterData,
-              }
-              const updated = [...savedFilters, newFilter]
-              setSavedFilters(updated)
-              localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
-            }}
-            onDeleteFilter={(id) => {
-              const updated = savedFilters.filter(f => f.id !== id)
-              setSavedFilters(updated)
-              localStorage.setItem('savedFilters_tasks', JSON.stringify(updated))
-            }}
-          />
-        )}
+
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex-1 space-y-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] mb-2">Быстрые фильтры</p>
+              <div className="flex flex-wrap gap-2">
+                {quickDateOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleQuickDateClick(option.value)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      quickDateFilter === option.value
+                        ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-md'
+                        : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] mb-2">Диапазон дат</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs text-[var(--muted)] mb-1 block">От</label>
+                  <input
+                    type="date"
+                    value={filters.dateRange?.start || ''}
+                    onChange={(e) => handleDateInputChange('start', e.target.value)}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-[var(--muted)] mb-1 block">До</label>
+                  <input
+                    type="date"
+                    value={filters.dateRange?.end || ''}
+                    onChange={(e) => handleDateInputChange('end', e.target.value)}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 space-y-3">
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Статусы</p>
+            <div className="flex flex-wrap gap-2 lg:justify-end">
+              {statusOptions.map((status) => (
+                <button
+                  key={status.value}
+                  onClick={() => handleStatusToggle(status.value)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    filters.status?.includes(status.value)
+                      ? 'bg-[var(--primary)] text-white shadow-md'
+                      : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                  }`}
+                >
+                  {status.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
