@@ -248,7 +248,7 @@ export default function AnalyticsPage() {
       
       {/* Фильтры */}
       <div className="glass-panel px-6 py-5 rounded-3xl">
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
           <div className="flex-1">
             <UserFilter 
               selectedUserId={selectedUserId} 
@@ -256,7 +256,7 @@ export default function AnalyticsPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)] mb-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.2ем] text-[var(--muted)] mb-2">
               Воронка
             </label>
             <select
