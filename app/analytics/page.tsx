@@ -458,8 +458,8 @@ export default function AnalyticsPage() {
 
         {/* Статистика по событиям */}
         <div className="glass-panel rounded-3xl p-4">
-          <div className="pb-4 border-b border-white/40">
-            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">События</p>
+          <div className="pb-4 border-б border-white/40">
+            <p className="text-xs uppercase tracking-[0.35ем] text-slate-400">События</p>
             <h2 className="text-xl font-semibold text-slate-900 mt-1">Статистика по событиям</h2>
           </div>
           <div className="pt-4 space-y-3 text-sm">
@@ -467,27 +467,15 @@ export default function AnalyticsPage() {
               <span className="text-[var(--muted)] font-medium">Всего:</span>
               <span className="font-semibold text-[var(--foreground)]">{data.events.total}</span>
             </div>
-            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--primary-soft)]/30">
-              <span className="text-[var(--muted)] font-medium">Предстоящие:</span>
-              <span className="font-semibold text-[var(--primary)]">{data.events.upcoming}</span>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[#3b82f610]">
+              <span className="text-[var(--muted)] font-medium">Организовано:</span>
+              <span className="text-[#3b82f6] font-semibold">{data.events.total}</span>
             </div>
-            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--background-soft)]">
-              <span className="text-[var(--muted)] font-medium">Прошедшие:</span>
-              <span className="font-semibold text-[var(--muted)]">{data.events.past}</span>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[#10b9811a]">
+              <span className="text-[var(--muted)] font-medium">Завершено:</span>
+              <span className="text-[#10b981] font-semibold">{data.events.past}</span>
             </div>
-            <div className="mt-3 pt-3 border-t border-white/40">
-              <h3 className="font-semibold text-[var(--foreground)] mb-2 text-sm">По типам:</h3>
-              <div className="space-y-1">
-                {Object.entries(data.events.byType).map(([type, count]) => (
-                  <div key={type} className="flex justify-between items-center p-2 rounded-lg hover:bg-white/50 transition-colors text-sm">
-                    <span className="text-[var(--muted)]">{getTypeName(type)}:</span>
-                    <span className="font-semibold text-[var(--foreground)]">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[#f973161a]:
 
         {/* Статистика по контактам */}
         <div className="glass-panel rounded-3xl p-4">
