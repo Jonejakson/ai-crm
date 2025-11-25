@@ -33,6 +33,7 @@ interface Task {
   status: string
   dueDate: string | null
   createdAt: string
+  updatedAt: string
   contactId: number | null
   contact?: {
     id: number
@@ -535,14 +536,20 @@ export default function TasksPage() {
     return true
   })
 
+  const archivedTasks = filteredTasks
+    .filter(task => task.status === 'completed')
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+  const activeTasks = filteredTasks.filter(task => task.status !== 'completed')
+
   // Распределяем задачи по категориям
   const tasksByCategory = TASK_CATEGORIES.reduce((acc, category) => {
-    acc[category.id] = filteredTasks.filter(task => getTaskCategory(task.dueDate) === category.id)
+    acc[category.id] = activeTasks.filter(task => getTaskCategory(task.dueDate) === category.id)
     return acc
   }, {} as Record<string, Task[]>)
 
   const totalTasks = filteredTasks.length
-  const completedTasks = filteredTasks.filter(task => task.status === 'completed').length
+  const activeTasksCount = activeTasks.length
+  const completedTasks = archivedTasks.length
   const inProgressTasks = filteredTasks.filter(task => task.status === 'in_progress').length
   const overdueTasks = tasksByCategory.overdue?.length || 0
   const todayTasks = tasksByCategory.today?.length || 0
@@ -679,7 +686,7 @@ export default function TasksPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
-          { label: 'Всего активных', value: totalTasks, note: `${completedTasks} завершено` },
+          { label: 'Всего активных', value: activeTasksCount, note: `${completedTasks} завершено` },
           { label: 'Просрочено', value: overdueTasks, note: `${todayTasks} на сегодня` },
           { label: 'В работе', value: inProgressTasks, note: `${upcomingTasks} на ближайшую неделю` },
           { label: 'Выполнение', value: `${completionRate}%`, note: 'Доля закрытых задач' },
@@ -733,6 +740,53 @@ export default function TasksPage() {
             ) : null}
           </DragOverlay>
         </DndContext>
+      </div>
+
+      <div className="glass-panel rounded-3xl p-6 space-y-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">Архив</p>
+            <h3 className="text-xl font-semibold text-[var(--foreground)]">Выполненные задачи</h3>
+            <p className="text-sm text-[var(--muted)]">Последние завершённые задачи остаются в истории.</p>
+          </div>
+          <span className="text-sm text-[var(--muted)]">Всего: {archivedTasks.length}</span>
+        </div>
+        {archivedTasks.length === 0 ? (
+          <p className="text-sm text-[var(--muted)]">В архиве пока нет задач.</p>
+        ) : (
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+            {archivedTasks.slice(0, 15).map(task => (
+              <div
+                key={task.id}
+                className="rounded-2xl border border-[var(--border)] bg-white/90 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                onClick={() => setViewingTask(task)}
+              >
+                <div className="flex justify-between items-start gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-[var(--foreground)]">{task.title}</p>
+                    {task.description && (
+                      <p className="text-xs text-[var(--muted)] mt-1 line-clamp-2">{task.description}</p>
+                    )}
+                    <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
+                      {task.dueDate && <span>📅 {formatDueDateTime(task.dueDate)}</span>}
+                      {task.contact && (
+                        <a
+                          href={`/contacts/${task.contact.id}`}
+                          className="text-[var(--primary)] hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          👤 {task.contact.name}
+                        </a>
+                      )}
+                      {task.user && <span>🧑 {task.user.name}</span>}
+                    </div>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-emerald-500">Завершена</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Модальное окно создания задачи */}
