@@ -429,6 +429,9 @@ export default function CalendarClient() {
             >
               →
             </button>
+            <div className="text-lg font-semibold text-[var(--foreground)] px-3">
+              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </div>
           </div>
           <div className="flex gap-2">
             <button
