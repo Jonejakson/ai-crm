@@ -493,12 +493,36 @@ export default function CalendarClient() {
                         {dayEvents.slice(0, 3).map(event => (
                           <div
                             key={event.id}
-                            className={`text-xs p-1.5 rounded-lg border cursor-pointer hover:shadow-md transition-all ${getEventTypeColor(event.type)}`}
-                            onClick={() => openEditModal(event)}
+                            className={`group text-xs p-1.5 rounded-lg border hover:shadow-md transition-all ${getEventTypeColor(event.type)}`}
                             title={event.title}
                           >
-                            <div className="font-medium truncate">
-                              {event.startDate && new Date(event.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} {event.title}
+                            <div className="flex items-center justify-between gap-2">
+                              <div
+                                className="font-medium truncate cursor-pointer"
+                                onClick={() => openEditModal(event)}
+                              >
+                                {event.startDate && new Date(event.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} {event.title}
+                              </div>
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openEditModal(event)
+                                  }}
+                                  className="text-[10px] px-1 py-0.5 rounded bg-white/60 hover:bg-white text-[var(--primary)]"
+                                >
+                                  ✏️
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handleDelete(event.id)
+                                  }}
+                                  className="text-[10px] px-1 py-0.5 rounded bg-white/60 hover:bg-white text-[var(--error)]"
+                                >
+                                  🗑
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
