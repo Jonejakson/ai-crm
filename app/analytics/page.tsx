@@ -475,7 +475,12 @@ export default function AnalyticsPage() {
               <span className="text-[var(--muted)] font-medium">Завершено:</span>
               <span className="text-[#10b981] font-semibold">{data.events.past}</span>
             </div>
-            <div className="flex justify-between items-center p-3 rounded-xl bg-[#f973161a]:
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[#f973161a]">
+              <span className="text-[var(--muted)] font-medium">Предстоят:</span>
+              <span className="text-[#f97316] font-semibold">{data.events.upcoming}</span>
+            </div>
+          </div>
+        </div>
 
         {/* Статистика по контактам */}
         <div className="glass-panel rounded-3xl p-4">
@@ -488,7 +493,7 @@ export default function AnalyticsPage() {
               <span className="text-[var(--muted)] font-medium">Всего:</span>
               <span className="font-semibold text-[var(--foreground)]">{data.contacts.total}</span>
             </div>
-            <div className="flex justify-between items-center п-3 rounded-xl bg-[var(--success-soft)]/30">
+            <div className="flex justify-between items-center p-3 rounded-xl bg-[var(--success-soft)]/30">
               <span className="text-[var(--muted)] font-medium">С сделками:</span>
               <span className="font-semibold text-[var(--success)]">{data.contacts.withDeals}</span>
             </div>
