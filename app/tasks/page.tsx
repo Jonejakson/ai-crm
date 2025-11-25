@@ -63,6 +63,21 @@ interface TaskFilters {
   dueDateRange?: DateRange
 }
 
+const formatDueDateTime = (value?: string | null) => {
+  if (!value) return ''
+  try {
+    return new Date(value).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return ''
+  }
+}
+
 // Определяем категории задач по датам
 const TASK_CATEGORIES = [
   { id: 'overdue', name: 'Просроченные', color: 'from-[#ffe7e7] via-[#fff1f1] to-white shadow-[0_25px_35px_-25px_rgba(239,68,68,0.45)]' },
@@ -139,6 +154,7 @@ export default function TasksPage() {
     title: '',
     description: '',
     dueDate: '',
+    dueTime: '',
     contactId: '',
     status: 'pending'
   })
@@ -308,18 +324,26 @@ export default function TasksPage() {
     }
   }
 
+  const buildDueDateValue = (date: string, time: string) => {
+    if (!date) return null
+    if (!time) return date
+    return `${date}T${time}`
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      const { dueTime, ...restFormData } = formData
+      const dueDateValue = buildDueDateValue(formData.dueDate, dueTime)
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
+          ...restFormData,
           contactId: formData.contactId ? Number(formData.contactId) : null,
-          dueDate: formData.dueDate || null
+          dueDate: dueDateValue
         }),
       })
 
@@ -330,6 +354,7 @@ export default function TasksPage() {
           title: '',
           description: '',
           dueDate: '',
+          dueTime: '',
           contactId: '',
           status: 'pending'
         })
@@ -701,7 +726,7 @@ export default function TasksPage() {
                 )}
                 {activeTask.dueDate && (
                   <div className="text-xs text-gray-500 mt-1">
-                    {new Date(activeTask.dueDate).toLocaleDateString('ru-RU')}
+                    {formatDueDateTime(activeTask.dueDate)}
                   </div>
                 )}
               </div>
@@ -757,7 +782,7 @@ export default function TasksPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                     Срок выполнения
@@ -767,6 +792,18 @@ export default function TasksPage() {
                     name="dueDate"
                     value={formData.dueDate}
                     onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Время
+                  </label>
+                  <input
+                    type="time"
+                    name="dueTime"
+                    value={formData.dueTime}
+                    onChange={(e) => setFormData({...formData, dueTime: e.target.value})}
                     className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                 </div>
@@ -851,7 +888,7 @@ export default function TasksPage() {
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Срок выполнения</label>
                       <p className="text-gray-900">
-                        {new Date(viewingTask.dueDate).toLocaleDateString('ru-RU')}
+                        {formatDueDateTime(viewingTask.dueDate)}
                       </p>
                     </div>
                   )}
@@ -1042,7 +1079,7 @@ function TaskCard({ task, onDelete, onStatusChange, onView }: { task: Task; onDe
 
       {task.dueDate && (
         <div className="text-xs text-gray-500 mb-2">
-          📅 {new Date(task.dueDate).toLocaleDateString('ru-RU')}
+          📅 {formatDueDateTime(task.dueDate)}
         </div>
       )}
 
