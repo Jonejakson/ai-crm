@@ -64,10 +64,14 @@ export async function POST(req: Request) {
     // Получаем chatId контакта
     const telegramChatId = contact.telegramChatId;
     if (!telegramChatId) {
+      // Если есть телефон, можно попробовать использовать его (но это не всегда работает)
+      // В Telegram нельзя отправлять сообщения по номеру телефона без предварительного контакта
       return NextResponse.json(
         { 
-          error: "Telegram chat ID not found for this contact. Ask the contact to send a message to the bot first.",
-          hint: "Контакт должен сначала написать боту, чтобы получить chat ID"
+          error: "У этого контакта нет Telegram chat ID. Попросите клиента написать боту, чтобы начать диалог.",
+          hint: contact.phone 
+            ? `У контакта есть телефон (${contact.phone}), но для отправки через Telegram нужно, чтобы клиент сначала написал боту.`
+            : "У контакта нет телефона. Добавьте телефон и попросите клиента написать боту."
         },
         { status: 400 }
       );

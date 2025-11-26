@@ -29,13 +29,28 @@ export default function DialogsPage() {
   const [selectedContact, setSelectedContact] = useState<string>('all')
   const [newMessage, setNewMessage] = useState('')
   const [selectedContactForMessage, setSelectedContactForMessage] = useState('')
+  const [messagePlatform, setMessagePlatform] = useState<'INTERNAL' | 'TELEGRAM' | 'WHATSAPP'>('INTERNAL')
+  const [availableIntegrations, setAvailableIntegrations] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     fetchData()
+    fetchIntegrations()
   }, [])
+
+  const fetchIntegrations = async () => {
+    try {
+      const response = await fetch('/api/messaging/integrations')
+      if (response.ok) {
+        const data = await response.json()
+        setAvailableIntegrations(data)
+      }
+    } catch (error) {
+      console.error('Error fetching integrations:', error)
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -66,39 +81,64 @@ export default function DialogsPage() {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/dialogs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-          contactId: parseInt(selectedContactForMessage),
-          sender: 'user'
+      // Если выбрана платформа Telegram или WhatsApp, отправляем через соответствующий API
+      if (messagePlatform === 'TELEGRAM' || messagePlatform === 'WHATSAPP') {
+        const response = await fetch(`/api/messaging/${messagePlatform.toLowerCase()}/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contactId: parseInt(selectedContactForMessage),
+            message: newMessage.trim(),
+          }),
         })
-      })
 
-      if (!response.ok) {
-        let errorMessage = 'Ошибка при отправке сообщения'
-        try {
+        if (!response.ok) {
           const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch (parseError) {
-          // Если не удалось распарсить JSON, используем текст ответа
-          const text = await response.text().catch(() => '')
-          errorMessage = text || `HTTP ${response.status}: ${response.statusText}`
+          setError(errorData.error || `Ошибка при отправке через ${messagePlatform}`)
+          setIsSubmitting(false)
+          return
         }
-        setError(errorMessage)
-        console.error('Error sending message:', errorMessage)
-        return
-      }
 
-      // Обновляем список диалогов с сервера
-      await fetchData()
+        // Сообщение уже сохранено через API отправки
+        await fetchData()
+      } else {
+        // Отправка как внутреннее сообщение
+        const response = await fetch('/api/dialogs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: newMessage.trim(),
+            contactId: parseInt(selectedContactForMessage),
+            sender: 'user',
+            platform: 'INTERNAL',
+          }),
+        })
+
+        if (!response.ok) {
+          let errorMessage = 'Ошибка при отправке сообщения'
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch (parseError) {
+            const text = await response.text().catch(() => '')
+            errorMessage = text || `HTTP ${response.status}: ${response.statusText}`
+          }
+          setError(errorMessage)
+          setIsSubmitting(false)
+          return
+        }
+
+        await fetchData()
+      }
       
       // Очищаем форму
       setNewMessage('')
       setSelectedContactForMessage('')
+      setMessagePlatform('INTERNAL')
       setError(null)
       
     } catch (error) {
@@ -237,7 +277,7 @@ export default function DialogsPage() {
             </div>
           )}
           <form onSubmit={handleSendMessage} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Клиент *
@@ -255,6 +295,32 @@ export default function DialogsPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  Платформа
+                </label>
+                <select
+                  value={messagePlatform}
+                  onChange={(e) => setMessagePlatform(e.target.value as 'INTERNAL' | 'TELEGRAM' | 'WHATSAPP')}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                >
+                  <option value="INTERNAL">Внутреннее сообщение</option>
+                  {availableIntegrations.find(i => i.platform === 'TELEGRAM' && i.isActive) && (
+                    <option value="TELEGRAM">📱 Telegram</option>
+                  )}
+                  {availableIntegrations.find(i => i.platform === 'WHATSAPP' && i.isActive) && (
+                    <option value="WHATSAPP">💬 WhatsApp</option>
+                  )}
+                </select>
+                {messagePlatform !== 'INTERNAL' && (
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    {messagePlatform === 'TELEGRAM' 
+                      ? 'Сообщение будет отправлено через Telegram бота'
+                      : 'Сообщение будет отправлено через WhatsApp'}
+                  </p>
+                )}
               </div>
               
               <div>
