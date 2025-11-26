@@ -1,15 +1,14 @@
 'use client'
 
 import {
-  Area,
-  AreaChart,
   CartesianGrid,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Line,
 } from 'recharts'
 
 interface SalesData {
@@ -46,17 +45,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={chartData} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="colorWonAmount" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-          </linearGradient>
-          <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-          </linearGradient>
-        </defs>
+      <LineChart data={chartData} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis 
           dataKey="dateFormatted" 
@@ -103,24 +92,22 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
             return names[value] || value
           }}
         />
-        <Area 
-          type="monotone" 
-          dataKey="wonAmount" 
+        <Line
+          type="monotone"
+          dataKey="wonAmount"
           yAxisId="amount"
-          stroke="#22c55e" 
-          fillOpacity={1} 
-          fill="url(#colorWonAmount)"
-          strokeWidth={2}
+          stroke="#22c55e"
+          strokeWidth={3}
+          dot={{ r: 4, fill: '#22c55e' }}
         />
-        <Area 
-          type="monotone" 
-          dataKey="forecast" 
+        <Line
+          type="monotone"
+          dataKey="forecast"
           yAxisId="amount"
-          stroke="#6366f1" 
-          fillOpacity={1} 
-          fill="url(#colorForecast)"
+          stroke="#6366f1"
           strokeWidth={2}
           strokeDasharray="5 5"
+          dot={{ r: 3, fill: '#6366f1' }}
         />
         <Line 
           type="monotone" 
