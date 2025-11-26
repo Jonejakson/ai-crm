@@ -128,30 +128,50 @@ export async function GET(req: Request) {
 
     const userId = getUserId(user);
     if (!userId) {
+      console.error('Invalid user ID:', { user, userId });
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    const accounts = await prisma.userMessagingAccount.findMany({
-      where: { userId: userId },
-      orderBy: { platform: 'asc' },
-    });
+    try {
+      const accounts = await prisma.userMessagingAccount.findMany({
+        where: { userId: userId },
+        orderBy: { platform: 'asc' },
+      });
 
-    // Не возвращаем чувствительные данные (API Hash, сессии)
-    const safeAccounts = accounts.map(acc => ({
-      id: acc.id,
-      platform: acc.platform,
-      isActive: acc.isActive,
-      phone: acc.phone,
-      lastSyncAt: acc.lastSyncAt,
-      createdAt: acc.createdAt,
-      updatedAt: acc.updatedAt,
-    }));
+      // Не возвращаем чувствительные данные (API Hash, сессии)
+      const safeAccounts = accounts.map(acc => ({
+        id: acc.id,
+        platform: acc.platform,
+        isActive: acc.isActive,
+        phone: acc.phone,
+        lastSyncAt: acc.lastSyncAt,
+        createdAt: acc.createdAt,
+        updatedAt: acc.updatedAt,
+      }));
 
-    return NextResponse.json(safeAccounts);
+      return NextResponse.json(safeAccounts);
+    } catch (prismaError: any) {
+      // Если таблица не существует, возвращаем пустой массив
+      if (prismaError.code === 'P2021' || prismaError.message?.includes('does not exist')) {
+        console.warn('UserMessagingAccount table does not exist yet, returning empty array');
+        return NextResponse.json([]);
+      }
+      throw prismaError; // Пробрасываем другие ошибки дальше
+    }
   } catch (error: any) {
     console.error('Error fetching personal accounts:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
     return NextResponse.json(
-      { error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' },
+      { 
+        error: process.env.NODE_ENV === 'development' 
+          ? `Error: ${error.message}` 
+          : 'Internal server error' 
+      },
       { status: 500 }
     );
   }

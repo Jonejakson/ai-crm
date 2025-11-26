@@ -20,19 +20,39 @@ export async function GET(req: Request) {
 
     const companyId = typeof user.companyId === 'string' ? parseInt(user.companyId) : user.companyId;
     if (!companyId || isNaN(companyId)) {
+      console.error('Invalid company ID:', { user, companyId, companyIdType: typeof user.companyId });
       return NextResponse.json({ error: "Invalid company ID" }, { status: 400 });
     }
     
-    const integrations = await prisma.messagingIntegration.findMany({
-      where: { companyId },
-      orderBy: { platform: 'asc' },
-    });
+    try {
+      const integrations = await prisma.messagingIntegration.findMany({
+        where: { companyId },
+        orderBy: { platform: 'asc' },
+      });
 
-    return NextResponse.json(integrations);
+      return NextResponse.json(integrations);
+    } catch (prismaError: any) {
+      // Если таблица не существует, возвращаем пустой массив
+      if (prismaError.code === 'P2021' || prismaError.message?.includes('does not exist')) {
+        console.warn('MessagingIntegration table does not exist yet, returning empty array');
+        return NextResponse.json([]);
+      }
+      throw prismaError; // Пробрасываем другие ошибки дальше
+    }
   } catch (error: any) {
     console.error('Error fetching integrations:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
     return NextResponse.json(
-      { error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' },
+      { 
+        error: process.env.NODE_ENV === 'development' 
+          ? `Error: ${error.message}` 
+          : 'Internal server error' 
+      },
       { status: 500 }
     );
   }
