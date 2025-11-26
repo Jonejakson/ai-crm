@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { isClosedWonStage } from "@/lib/dealStages";
 
 /**
  * Получить конверсию по воронкам продаж
@@ -126,7 +127,7 @@ export async function GET(req: Request) {
         funnelData[deal.pipelineId].total++;
       }
 
-      if (deal.stage === 'closed_won') {
+      if (isClosedWonStage(deal.stage)) {
         funnelData[deal.pipelineId].won++;
       }
     }

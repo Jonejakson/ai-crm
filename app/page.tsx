@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import { UsersIcon, CheckCircleIcon, BriefcaseIcon, CurrencyIcon } from '@/components/Icons'
+import { isClosedLostStage, isClosedStage, isClosedWonStage } from '@/lib/dealStages'
 
 interface Contact {
   id: number
@@ -260,15 +261,15 @@ export default function Dashboard() {
   
   if (Array.isArray(dealsArr) && dealsLength > 0) {
     // Вычисляем все метрики один раз
-    activeDealsCount = dealsArr.filter(deal => !deal.stage.startsWith('closed_')).length
+    activeDealsCount = dealsArr.filter(deal => !isClosedStage(deal.stage)).length
     totalDealsAmount = dealsArr.reduce((sum, deal) => sum + (deal.amount || 0), 0)
-    const won = dealsArr.filter(deal => deal.stage === 'closed_won')
+    const won = dealsArr.filter(deal => isClosedWonStage(deal.stage))
     const wonCount = won.length
     wonAmount = won.reduce((sum, deal) => sum + (deal.amount || 0), 0)
     openDealsAmount = dealsArr
-      .filter(deal => !deal.stage.startsWith('closed_'))
+      .filter(deal => !isClosedStage(deal.stage))
       .reduce((sum, deal) => sum + (deal.amount || 0), 0)
-    const lost = dealsArr.filter(deal => deal.stage.startsWith('closed_') && deal.stage !== 'closed_won')
+    const lost = dealsArr.filter(deal => isClosedLostStage(deal.stage))
     const lostCount = lost.length
     conversionRate = dealsLength ? Math.round((wonCount / dealsLength) * 100) : 0
     averageDealAmount = dealsLength ? Math.round(totalDealsAmount / dealsLength) : 0

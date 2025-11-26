@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import {
+  isClosedLostStage,
+  isClosedWonStage,
+} from "@/lib/dealStages";
 
 /**
  * Получить динамику продаж по периодам
@@ -111,10 +115,10 @@ export async function GET(req: Request) {
       salesData[dateKey].total++;
       salesData[dateKey].totalAmount += deal.amount;
       
-      if (deal.stage === 'closed_won') {
+      if (isClosedWonStage(deal.stage)) {
         salesData[dateKey].won++;
         salesData[dateKey].wonAmount += deal.amount;
-      } else if (deal.stage === 'closed_lost') {
+      } else if (isClosedLostStage(deal.stage)) {
         salesData[dateKey].lost++;
       } else {
         salesData[dateKey].active++;

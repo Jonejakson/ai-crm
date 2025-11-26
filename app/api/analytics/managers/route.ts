@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { isAdmin } from "@/lib/access-control";
+import {
+  isClosedLostStage,
+  isClosedStage,
+  isClosedWonStage,
+} from "@/lib/dealStages";
 
 /**
  * Получить отчет по эффективности менеджеров
@@ -90,9 +95,9 @@ export async function GET(req: Request) {
           }),
         ]);
 
-        const wonDeals = deals.filter(d => d.stage === 'closed_won');
-        const lostDeals = deals.filter(d => d.stage === 'closed_lost');
-        const activeDeals = deals.filter(d => !d.stage.startsWith('closed_'));
+        const wonDeals = deals.filter(d => isClosedWonStage(d.stage));
+        const lostDeals = deals.filter(d => isClosedLostStage(d.stage));
+        const activeDeals = deals.filter(d => !isClosedStage(d.stage));
 
         const wonAmount = wonDeals.reduce((sum, d) => sum + d.amount, 0);
         const totalAmount = deals.reduce((sum, d) => sum + d.amount, 0);

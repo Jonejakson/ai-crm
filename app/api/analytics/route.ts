@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import {
+  isClosedLostStage,
+  isClosedStage,
+  isClosedWonStage,
+} from "@/lib/dealStages";
 
 interface RegressionResult {
   slope: number;
@@ -149,12 +154,12 @@ export async function GET(req: Request) {
     // Статистика по сделкам
     const dealsStats = {
       total: deals.length,
-      active: deals.filter(d => !d.stage.startsWith('closed_')).length,
-      won: deals.filter(d => d.stage === 'closed_won').length,
-      lost: deals.filter(d => d.stage === 'closed_lost').length,
+      active: deals.filter(d => !isClosedStage(d.stage)).length,
+      won: deals.filter(d => isClosedWonStage(d.stage)).length,
+      lost: deals.filter(d => isClosedLostStage(d.stage)).length,
       totalAmount: deals.reduce((sum, d) => sum + d.amount, 0),
-      wonAmount: deals.filter(d => d.stage === 'closed_won').reduce((sum, d) => sum + d.amount, 0),
-      lostAmount: deals.filter(d => d.stage === 'closed_lost').reduce((sum, d) => sum + d.amount, 0),
+      wonAmount: deals.filter(d => isClosedWonStage(d.stage)).reduce((sum, d) => sum + d.amount, 0),
+      lostAmount: deals.filter(d => isClosedLostStage(d.stage)).reduce((sum, d) => sum + d.amount, 0),
       newThisPeriod: deals.filter(d => new Date(d.createdAt) >= startDate).length,
       byStage: deals.reduce((acc, deal) => {
         acc[deal.stage] = (acc[deal.stage] || 0) + 1;
@@ -199,7 +204,7 @@ export async function GET(req: Request) {
         };
       }
       acc[deal.userId].totalDeals += 1;
-      if (deal.stage === 'closed_won') {
+      if (isClosedWonStage(deal.stage)) {
         acc[deal.userId].wonDeals += 1;
         acc[deal.userId].revenue += deal.amount;
       }
@@ -303,7 +308,7 @@ export async function GET(req: Request) {
       const dateKey = dealDate.toISOString().split('T')[0];
       if (daysData[dateKey]) {
         daysData[dateKey].deals++;
-        if (deal.stage === 'closed_won') {
+        if (isClosedWonStage(deal.stage)) {
           daysData[dateKey].wonAmount += deal.amount;
         }
       }

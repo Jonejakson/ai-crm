@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import {
+  isClosedLostStage,
+  isClosedStage,
+  isClosedWonStage,
+} from "@/lib/dealStages";
 
 /**
  * Сравнение периодов (например, месяц к месяцу)
@@ -103,13 +108,13 @@ export async function GET(req: Request) {
 
     // Вычисляем статистику
     const calculateDealStats = (deals: any[]) => {
-      const won = deals.filter(d => d.stage === 'closed_won');
-      const lost = deals.filter(d => d.stage === 'closed_lost');
+      const won = deals.filter(d => isClosedWonStage(d.stage));
+      const lost = deals.filter(d => isClosedLostStage(d.stage));
       return {
         total: deals.length,
         won: won.length,
         lost: lost.length,
-        active: deals.filter(d => !d.stage.startsWith('closed_')).length,
+        active: deals.filter(d => !isClosedStage(d.stage)).length,
         totalAmount: deals.reduce((sum, d) => sum + d.amount, 0),
         wonAmount: won.reduce((sum, d) => sum + d.amount, 0),
         lostAmount: lost.reduce((sum, d) => sum + d.amount, 0),

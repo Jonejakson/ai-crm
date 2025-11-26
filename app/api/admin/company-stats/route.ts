@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { isAdmin } from "@/lib/access-control";
+import {
+  isClosedLostStage,
+  isClosedStage,
+  isClosedWonStage,
+} from "@/lib/dealStages";
 
 /**
  * Получить статистику всей компании (только для админа)
@@ -149,16 +154,16 @@ export async function GET(req: Request) {
     const dealsStats = {
       total: deals.length,
       totalAmount: deals.reduce((sum, d) => sum + d.amount, 0),
-      active: deals.filter(d => !d.stage.startsWith('closed_')).length,
-      won: deals.filter(d => d.stage === 'closed_won').length,
-      lost: deals.filter(d => d.stage === 'closed_lost').length,
-      wonAmount: deals.filter(d => d.stage === 'closed_won').reduce((sum, d) => sum + d.amount, 0),
+      active: deals.filter(d => !isClosedStage(d.stage)).length,
+      won: deals.filter(d => isClosedWonStage(d.stage)).length,
+      lost: deals.filter(d => isClosedLostStage(d.stage)).length,
+      wonAmount: deals.filter(d => isClosedWonStage(d.stage)).reduce((sum, d) => sum + d.amount, 0),
       byUser: companyUsers.map(u => ({
         userId: u.id,
         userName: u.name,
         total: deals.filter(d => d.userId === u.id).length,
         totalAmount: deals.filter(d => d.userId === u.id).reduce((sum, d) => sum + d.amount, 0),
-        active: deals.filter(d => d.userId === u.id && !d.stage.startsWith('closed_')).length,
+        active: deals.filter(d => d.userId === u.id && !isClosedStage(d.stage)).length,
       })),
       byStage: deals.reduce((acc, deal) => {
         acc[deal.stage] = (acc[deal.stage] || 0) + 1;

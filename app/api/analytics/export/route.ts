@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { isClosedWonStage } from "@/lib/dealStages";
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 
@@ -213,7 +214,7 @@ export async function GET(req: Request) {
               }),
             ]);
 
-            const wonDeals = deals.filter(d => d.stage === 'closed_won');
+            const wonDeals = deals.filter(d => isClosedWonStage(d.stage));
             const wonAmount = wonDeals.reduce((sum, d) => sum + d.amount, 0);
             const completedTasks = tasks.filter(t => t.status === 'completed');
 

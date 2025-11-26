@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { isClosedStage } from "@/lib/dealStages";
 
 /**
  * Получить прогноз продаж на основе вероятностей сделок
@@ -50,11 +51,10 @@ export async function GET(req: Request) {
       whereCondition.pipelineId = parseInt(pipelineId);
     }
 
-    // Получаем активные сделки (не закрытые)
-    const activeDeals = await prisma.deal.findMany({
+    // Получаем сделки и фильтруем закрытые на уровне приложения
+    const dealsWithForecast = await prisma.deal.findMany({
       where: {
         ...whereCondition,
-        stage: { not: { startsWith: 'closed_' } },
         expectedCloseDate: { lte: endDate },
       },
       select: {
@@ -76,6 +76,8 @@ export async function GET(req: Request) {
         },
       },
     });
+
+    const activeDeals = dealsWithForecast.filter((deal) => !isClosedStage(deal.stage));
 
     // Вычисляем прогноз
     const forecast = {
