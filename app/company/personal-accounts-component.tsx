@@ -168,11 +168,11 @@ export default function PersonalMessagingAccountsSection() {
                       <li>Перейдите в раздел <strong>"API development tools"</strong></li>
                       <li>Заполните форму создания приложения (все поля обязательны):
                         <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                          <li><strong>App title:</strong> любое название (например, "My CRM")</li>
-                          <li><strong>Short name:</strong> короткое название (например, "crm")</li>
+                          <li><strong>App title:</strong> полное описательное название (например, "My CRM Application" или "CRM Integration App") - <span className="text-red-600 font-semibold">не используйте короткие названия типа "crm"</span></li>
+                          <li><strong>Short name:</strong> короткое название без пробелов, 5-32 символа (например, "mycrm" или "crmapp")</li>
                           <li><strong>URL:</strong> можно указать любой URL (например, "https://example.com")</li>
                           <li><strong>Platform:</strong> выберите "Other (specify in description)"</li>
-                          <li><strong>Description:</strong> краткое описание (например, "CRM integration")</li>
+                          <li><strong>Description:</strong> краткое описание (например, "CRM integration for business")</li>
                         </ul>
                       </li>
                       <li>После создания вы получите <strong>api_id</strong> (число) и <strong>api_hash</strong> (строка)</li>
