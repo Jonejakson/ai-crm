@@ -51,6 +51,10 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
           dataKey="dateFormatted" 
           stroke="#6b7280"
           style={{ fontSize: '12px' }}
+          interval={period === 'year' ? 'preserveStartEnd' : period === 'month' ? 2 : 0}
+          angle={period === 'year' ? -45 : 0}
+          textAnchor={period === 'year' ? 'end' : 'middle'}
+          height={period === 'year' ? 60 : 30}
         />
         <YAxis
           yAxisId="amount"

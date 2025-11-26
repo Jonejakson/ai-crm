@@ -88,17 +88,25 @@ export async function GET(req: Request) {
 
     const getDateKey = (date: Date) => {
       const target = new Date(date);
+      // Используем локальное время для корректной работы с часовыми поясами
+      const year = target.getFullYear();
+      const month = String(target.getMonth() + 1).padStart(2, '0');
+      const day = String(target.getDate()).padStart(2, '0');
+      
       switch (groupBy) {
         case 'week': {
           const weekStart = new Date(target);
           weekStart.setDate(target.getDate() - target.getDay());
-          return weekStart.toISOString().split('T')[0];
+          const weekYear = weekStart.getFullYear();
+          const weekMonth = String(weekStart.getMonth() + 1).padStart(2, '0');
+          const weekDay = String(weekStart.getDate()).padStart(2, '0');
+          return `${weekYear}-${weekMonth}-${weekDay}`;
         }
         case 'month':
-          return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}`;
+          return `${year}-${month}`;
         case 'day':
         default:
-          return target.toISOString().split('T')[0];
+          return `${year}-${month}-${day}`;
       }
     };
 
@@ -146,10 +154,40 @@ export async function GET(req: Request) {
       }
     });
 
-    // Конвертируем в массив и сортируем
-    const result = Object.values(salesData).sort((a, b) => 
-      a.date.localeCompare(b.date)
-    );
+    // Генерируем все дни в периоде для заполнения пропусков
+    const allDays: string[] = [];
+    const currentDate = new Date(startDate);
+    currentDate.setHours(0, 0, 0, 0); // Устанавливаем начало дня
+    const endDate = new Date(now);
+    endDate.setHours(23, 59, 59, 999); // Устанавливаем конец дня
+    
+    while (currentDate <= endDate) {
+      const dateKey = getDateKey(currentDate);
+      if (!allDays.includes(dateKey)) {
+        allDays.push(dateKey);
+      }
+      
+      // Переходим к следующему дню
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Создаем полный массив данных со всеми днями
+    const result = allDays.map(dateKey => {
+      if (salesData[dateKey]) {
+        return salesData[dateKey];
+      }
+      // Если данных нет для этого дня, создаем запись с нулями
+      return {
+        date: dateKey,
+        total: 0,
+        won: 0,
+        lost: 0,
+        active: 0,
+        wonAmount: 0,
+        totalAmount: 0,
+        forecast: 0,
+      };
+    }).sort((a, b) => a.date.localeCompare(b.date));
 
     return NextResponse.json({
       data: result,
