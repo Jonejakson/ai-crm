@@ -15,7 +15,7 @@
     "db:create": "node scripts/create-postgres-db.js",
     "db:check": "node scripts/check-db.js",
     "db:seed": "prisma db seed",
-    "postinstall": "prisma generate && prisma migrate deploy",
+    "postinstall": "prisma generate",
     "build:check": "npm run db:generate && npm run build"
   },
   "dependencies": {
