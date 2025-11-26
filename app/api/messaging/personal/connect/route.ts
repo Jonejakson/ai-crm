@@ -155,10 +155,18 @@ export async function POST(req: Request) {
       }
 
       try {
+        console.log('Starting Telegram code sending process...', {
+          phone: phone?.substring(0, 3) + '***',
+          hasApiId: !!telegramApiId,
+          hasApiHash: !!telegramApiHash,
+        });
+
         // Импортируем библиотеку для работы с Telegram Client API
         const { TelegramClient } = await import('telegram');
         const { StringSession } = await import('telegram/sessions');
         const { Api } = await import('telegram/tl');
+
+        console.log('Telegram libraries imported successfully');
 
         // Создаем сессию (пока пустую, так как еще не авторизованы)
         const session = new StringSession('');
@@ -168,10 +176,15 @@ export async function POST(req: Request) {
           connectionRetries: 5,
         });
 
+        console.log('Telegram client created');
+
         // Подключаемся к Telegram
+        console.log('Connecting to Telegram...');
         await client.connect();
+        console.log('Connected to Telegram successfully');
 
         // Отправляем запрос на получение кода
+        console.log('Sending code request to Telegram...');
         const result = await client.invoke(
           new Api.auth.SendCode({
             phoneNumber: phone,
@@ -185,23 +198,36 @@ export async function POST(req: Request) {
           })
         );
 
+        console.log('Telegram response received:', {
+          resultType: result?.constructor?.name,
+          hasPhoneCodeHash: 'phoneCodeHash' in (result as any),
+          resultKeys: Object.keys(result as any),
+        });
+
         // Получаем phoneCodeHash из результата
         // Результат может быть типа SentCode или SentCodeSuccess
         let phoneCodeHash: string;
-        if ('phoneCodeHash' in result && typeof (result as any).phoneCodeHash === 'string') {
-          phoneCodeHash = (result as any).phoneCodeHash;
-        } else if ('phone_code_hash' in result && typeof (result as any).phone_code_hash === 'string') {
-          phoneCodeHash = (result as any).phone_code_hash;
+        const resultAny = result as any;
+        
+        if (resultAny.phoneCodeHash && typeof resultAny.phoneCodeHash === 'string') {
+          phoneCodeHash = resultAny.phoneCodeHash;
+        } else if (resultAny.phone_code_hash && typeof resultAny.phone_code_hash === 'string') {
+          phoneCodeHash = resultAny.phone_code_hash;
         } else {
           // Пытаемся получить из любого возможного поля
-          const resultAny = result as any;
           phoneCodeHash = resultAny.phoneCodeHash || resultAny.phone_code_hash || '';
+          console.warn('Phone code hash not found in expected fields, trying all fields:', {
+            allKeys: Object.keys(resultAny),
+            resultString: JSON.stringify(resultAny, null, 2).substring(0, 500),
+          });
         }
 
         if (!phoneCodeHash) {
-          console.error('Telegram result structure:', JSON.stringify(result, null, 2));
-          throw new Error('Failed to get phone code hash from Telegram response');
+          console.error('Failed to extract phoneCodeHash. Full result:', JSON.stringify(resultAny, null, 2));
+          throw new Error('Failed to get phone code hash from Telegram response. Please check your API credentials.');
         }
+
+        console.log('Phone code hash extracted successfully:', phoneCodeHash.substring(0, 10) + '...');
 
         // Сохраняем phone_code_hash для последующей проверки кода
         await prisma.userMessagingAccount.update({
@@ -213,8 +239,11 @@ export async function POST(req: Request) {
           },
         });
 
+        console.log('Phone code hash saved to database');
+
         // Отключаемся от клиента
         await client.disconnect();
+        console.log('Disconnected from Telegram');
 
         return NextResponse.json({
           account,
@@ -227,11 +256,28 @@ export async function POST(req: Request) {
         console.error('Error details:', {
           message: telegramError.message,
           stack: telegramError.stack,
+          name: telegramError.name,
+          code: telegramError.code,
+          error: telegramError.error,
         });
+        
+        // Более детальное сообщение об ошибке
+        let errorMessage = "Failed to send verification code";
+        if (telegramError.message) {
+          errorMessage = telegramError.message;
+        } else if (telegramError.error) {
+          errorMessage = telegramError.error;
+        }
+
         return NextResponse.json({
           account,
-          error: telegramError.message || "Failed to send verification code",
-          message: "Error sending code. Please check your API credentials and phone number.",
+          error: errorMessage,
+          message: `Error sending code: ${errorMessage}. Please check your API credentials and phone number.`,
+          debug: process.env.NODE_ENV === 'development' ? {
+            errorType: telegramError.constructor?.name,
+            errorMessage: telegramError.message,
+            errorStack: telegramError.stack,
+          } : undefined,
         }, { status: 400 });
       }
     }
