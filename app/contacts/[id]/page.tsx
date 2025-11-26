@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import FilesManager from '@/components/FilesManager'
@@ -83,9 +84,17 @@ interface ActivityLog {
   createdAt: string
 }
 
+interface ManagerUser {
+  id: number
+  name: string
+  email: string
+  role: string
+}
+
 export default function ContactDetailPage() {
   const params = useParams()
   const contactId = params.id
+  const { data: session } = useSession()
 
   const [contact, setContact] = useState<Contact | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -116,6 +125,15 @@ export default function ContactDetailPage() {
     dueDate: '',
     dueTime: ''
   })
+  const [managerModalOpen, setManagerModalOpen] = useState(false)
+  const [managerOptions, setManagerOptions] = useState<ManagerUser[]>([])
+  const [managersLoading, setManagersLoading] = useState(false)
+  const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null)
+  const [reassignState, setReassignState] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [reassignModalAlert, setReassignModalAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+  const [reassignSubmitting, setReassignSubmitting] = useState(false)
+
+  const isAdmin = session?.user?.role === 'admin'
 
   useEffect(() => {
     if (contactId) {
@@ -300,6 +318,89 @@ export default function ContactDetailPage() {
     setIsEmailModalOpen(true)
   }
 
+  const fetchManagers = async () => {
+    if (!isAdmin) return
+    setManagersLoading(true)
+    try {
+      const response = await fetch('/api/admin/users')
+      if (response.ok) {
+        const data = await response.json()
+        setManagerOptions(Array.isArray(data.users) ? data.users : [])
+      } else {
+        setReassignModalAlert({
+          type: 'error',
+          message: 'Не удалось загрузить список пользователей',
+        })
+      }
+    } catch (error) {
+      console.error('Error fetching managers list:', error)
+      setReassignModalAlert({
+        type: 'error',
+        message: 'Ошибка при загрузке списка пользователей',
+      })
+    } finally {
+      setManagersLoading(false)
+    }
+  }
+
+  const openManagerModal = () => {
+    if (!isAdmin || !contact) return
+    setReassignModalAlert(null)
+    setSelectedManagerId(contact.user?.id ?? null)
+    setManagerModalOpen(true)
+    if (!managerOptions.length) {
+      fetchManagers()
+    }
+  }
+
+  const closeManagerModal = () => {
+    setManagerModalOpen(false)
+    setReassignModalAlert(null)
+    setReassignSubmitting(false)
+  }
+
+  const handleReassignManager = async () => {
+    if (!contact) return
+    if (!selectedManagerId || selectedManagerId === contact.user?.id) {
+      setReassignModalAlert({ type: 'error', message: 'Выберите другого пользователя' })
+      return
+    }
+    setReassignSubmitting(true)
+    setReassignModalAlert(null)
+    try {
+      const response = await fetch('/api/contacts/reassign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contactId: contact.id,
+          targetUserId: selectedManagerId,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Не удалось сменить ответственного')
+      }
+
+      await fetchContactData()
+      closeManagerModal()
+      setReassignState({
+        type: 'success',
+        message: `Ответственный менеджер изменён на ${data?.targetUser?.name || 'нового пользователя'}. Перенесено задач: ${data?.tasksUpdated ?? 0}, сделок: ${data?.dealsUpdated ?? 0}, событий: ${data?.eventsUpdated ?? 0}.`,
+      })
+    } catch (error: any) {
+      console.error('Error reassigning manager:', error)
+      setReassignModalAlert({ type: 'error', message: error?.message || 'Ошибка при смене ответственного' })
+    } finally {
+      setReassignSubmitting(false)
+    }
+  }
+
+  const managerSelectValue = selectedManagerId ?? ''
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -318,6 +419,17 @@ export default function ContactDetailPage() {
 
   return (
     <div className="space-y-8">
+      {reassignState && (
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            reassignState.type === 'success'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+              : 'border-red-200 bg-red-50 text-red-800'
+          }`}
+        >
+          {reassignState.message}
+        </div>
+      )}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/contacts" className="text-[var(--primary)] hover:underline">
@@ -394,6 +506,14 @@ export default function ContactDetailPage() {
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
                   <p className="mt-2 text-sm font-semibold text-slate-900">{item.value}</p>
                   {item.hint && <p className="text-xs text-slate-500 mt-1">{item.hint}</p>}
+                  {item.label === 'Ответственный менеджер' && isAdmin && (
+                    <button
+                      onClick={openManagerModal}
+                      className="mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
+                    >
+                      Сменить ответственного
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -403,6 +523,73 @@ export default function ContactDetailPage() {
           </div>
 
         </div>
+
+        {managerModalOpen && isAdmin && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 space-y-5">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-semibold text-slate-900">Смена ответственного менеджера</h3>
+                <button
+                  onClick={closeManagerModal}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                  aria-label="Закрыть"
+                >
+                  ✕
+                </button>
+              </div>
+              <p className="text-sm text-slate-500">
+                Выберите пользователя, которому передать контакт. Связанные задачи, сделки и события будут
+                переназначены автоматически.
+              </p>
+              {reassignModalAlert && (
+                <div
+                  className={`rounded-xl border px-3 py-2 text-sm ${
+                    reassignModalAlert.type === 'success'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                      : 'border-red-200 bg-red-50 text-red-800'
+                  }`}
+                >
+                  {reassignModalAlert.message}
+                </div>
+              )}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-600">Новый ответственный</label>
+                {managersLoading ? (
+                  <div className="text-sm text-slate-500">Загрузка списка пользователей...</div>
+                ) : (
+                  <select
+                    value={managerSelectValue}
+                    onChange={(e) => setSelectedManagerId(e.target.value ? Number(e.target.value) : null)}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                  >
+                    <option value="">Выберите пользователя</option>
+                    {managerOptions.map((manager) => (
+                      <option key={manager.id} value={manager.id}>
+                        {manager.name}{' '}
+                        {manager.role === 'admin' ? '(Админ)' : manager.role === 'manager' ? '(Менеджер)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={closeManagerModal}
+                  className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={handleReassignManager}
+                  disabled={reassignSubmitting || !selectedManagerId || selectedManagerId === contact.user?.id}
+                  className="btn-primary text-sm disabled:opacity-60"
+                >
+                  {reassignSubmitting ? 'Перенос...' : 'Переназначить'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="glass-panel rounded-3xl p-6 space-y-6">
           <div>
