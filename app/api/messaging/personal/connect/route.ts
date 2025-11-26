@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/get-session";
+import { getCurrentUser, getUserId } from "@/lib/get-session";
 
 /**
  * Подключение личного аккаунта менеджера к мессенджеру
@@ -12,6 +12,11 @@ export async function POST(req: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = getUserId(user);
+    if (!userId) {
+      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
     const body = await req.json();
@@ -45,7 +50,7 @@ export async function POST(req: Request) {
     const existing = await prisma.userMessagingAccount.findUnique({
       where: {
         userId_platform: {
-          userId: parseInt(user.id),
+          userId: userId,
           platform: platform as 'TELEGRAM' | 'WHATSAPP',
         },
       },
@@ -62,7 +67,7 @@ export async function POST(req: Request) {
     const account = await prisma.userMessagingAccount.upsert({
       where: {
         userId_platform: {
-          userId: parseInt(user.id),
+          userId: userId,
           platform: platform as 'TELEGRAM' | 'WHATSAPP',
         },
       },
@@ -79,7 +84,7 @@ export async function POST(req: Request) {
         telegramApiId: telegramApiId || null,
         telegramApiHash: telegramApiHash || null,
         isActive: false,
-        userId: parseInt(user.id),
+        userId: userId,
       },
     });
 
@@ -121,8 +126,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId = getUserId(user);
+    if (!userId) {
+      return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
+    }
+
     const accounts = await prisma.userMessagingAccount.findMany({
-      where: { userId: parseInt(user.id) },
+      where: { userId: userId },
       orderBy: { platform: 'asc' },
     });
 

@@ -18,7 +18,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
 
-    const companyId = parseInt(user.companyId);
+    const companyId = typeof user.companyId === 'string' ? parseInt(user.companyId) : user.companyId;
+    if (!companyId || isNaN(companyId)) {
+      return NextResponse.json({ error: "Invalid company ID" }, { status: 400 });
+    }
     
     const integrations = await prisma.messagingIntegration.findMany({
       where: { companyId },
@@ -57,7 +60,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid platform" }, { status: 400 });
     }
 
-    const companyId = parseInt(user.companyId);
+    const companyId = typeof user.companyId === 'string' ? parseInt(user.companyId) : user.companyId;
+    if (!companyId || isNaN(companyId)) {
+      return NextResponse.json({ error: "Invalid company ID" }, { status: 400 });
+    }
 
     // Используем upsert для создания или обновления
     const integration = await prisma.messagingIntegration.upsert({

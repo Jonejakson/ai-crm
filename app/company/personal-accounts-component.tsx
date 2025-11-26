@@ -28,10 +28,16 @@ export default function PersonalMessagingAccountsSection() {
       const response = await fetch('/api/messaging/personal/connect')
       if (response.ok) {
         const data = await response.json()
-        setAccounts(data)
+        setAccounts(Array.isArray(data) ? data : [])
+      } else {
+        // Если ошибка, устанавливаем пустой массив
+        setAccounts([])
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error fetching accounts:', errorData.error || 'Unknown error')
       }
     } catch (error) {
       console.error('Error fetching accounts:', error)
+      setAccounts([])
     } finally {
       setLoading(false)
     }
