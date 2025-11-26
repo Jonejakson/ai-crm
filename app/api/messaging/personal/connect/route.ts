@@ -142,6 +142,18 @@ export async function POST(req: Request) {
 
     // Если это Telegram и есть номер телефона, API ID и Hash, но нет кода - отправляем код
     if (platform === 'TELEGRAM' && phone && telegramApiId && telegramApiHash && !code) {
+      // Проверяем, был ли уже отправлен код (есть ли phoneCodeHash в настройках)
+      const existingSettings = account.settings as any;
+      if (existingSettings?.phoneCodeHash) {
+        // Код уже был отправлен, просто возвращаем информацию что нужно ввести код
+        return NextResponse.json({
+          account,
+          message: "Send verification code to complete connection",
+          requiresCode: true,
+          codeAlreadySent: true,
+        });
+      }
+
       try {
         // Импортируем библиотеку для работы с Telegram Client API
         const { TelegramClient } = await import('telegram');
@@ -206,8 +218,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
           account,
-          message: "Verification code sent to your Telegram. Please check your phone.",
+          message: "Send verification code to complete connection",
           requiresCode: true,
+          codeSent: true,
         });
       } catch (telegramError: any) {
         console.error('Error sending Telegram code:', telegramError);

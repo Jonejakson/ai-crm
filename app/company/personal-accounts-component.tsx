@@ -79,14 +79,31 @@ export default function PersonalMessagingAccountsSection() {
 
       if (response.ok) {
         const data = await response.json()
-        if (data.message?.includes('verification code')) {
+        // Проверяем, требуется ли код подтверждения
+        if (data.requiresCode || data.codeSent || data.codeAlreadySent || data.message?.includes('verification code') || data.message?.includes('Send verification code')) {
           setWaitingForCode(true)
-          setSuccess('Код отправлен. Введите код подтверждения.')
-        } else {
+          if (data.codeSent) {
+            setSuccess('Код отправлен. Введите код подтверждения.')
+          } else if (data.codeAlreadySent) {
+            setSuccess('Введите код подтверждения, который был отправлен ранее.')
+          } else {
+            setSuccess('Введите код подтверждения.')
+          }
+        } else if (data.message?.includes('successfully') || data.message?.includes('успешно') || data.message?.includes('connected')) {
           setSuccess('Аккаунт успешно подключен')
           setConnectingPlatform(null)
+          setWaitingForCode(false)
           await fetchAccounts()
           setTimeout(() => setSuccess(''), 3000)
+        } else {
+          // Если не понятно, что делать, показываем сообщение от сервера
+          setSuccess(data.message || 'Запрос обработан')
+          if (!data.requiresCode && !data.codeSent && !data.codeAlreadySent) {
+            setConnectingPlatform(null)
+            setWaitingForCode(false)
+            await fetchAccounts()
+            setTimeout(() => setSuccess(''), 3000)
+          }
         }
       } else {
         const data = await response.json()
@@ -311,5 +328,6 @@ export default function PersonalMessagingAccountsSection() {
     </section>
   )
 }
+
 
 
