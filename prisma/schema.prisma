@@ -92,6 +92,7 @@ model User {
     email         String         @unique
     name          String
     password      String
+    phone         String?        // Номер телефона менеджера
     role          String         @default("user") // user, manager, admin
     company       Company        @relation(fields: [companyId], references: [id])
     companyId     Int
@@ -106,6 +107,7 @@ model User {
     activityLogs  ActivityLog[]
     files         File[]
     comments      Comment[]
+    messagingAccounts UserMessagingAccount[]
 }
 
 model Contact {
@@ -443,4 +445,24 @@ model MessagingIntegration {
     updatedAt   DateTime         @updatedAt
 
     @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
+}
+
+// Подключения менеджеров к их личным аккаунтам в мессенджерах
+model UserMessagingAccount {
+    id              Int              @id @default(autoincrement())
+    platform        MessagingPlatform
+    isActive        Boolean          @default(false)
+    phone           String?          // Номер телефона для WhatsApp
+    telegramApiId   String?          // Telegram API ID
+    telegramApiHash String?          // Telegram API Hash
+    telegramSession String?          // Сессия Telegram (зашифрованная)
+    whatsappSession String?          // Сессия WhatsApp (зашифрованная)
+    settings        Json?            // Дополнительные настройки
+    lastSyncAt      DateTime?        // Время последней синхронизации
+    user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId          Int
+    createdAt       DateTime         @default(now())
+    updatedAt       DateTime         @updatedAt
+
+    @@unique([userId, platform]) // Один аккаунт каждого типа на пользователя
 }

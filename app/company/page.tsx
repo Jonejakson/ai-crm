@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import PersonalMessagingAccountsSection from './personal-accounts-component'
 
 interface User {
   id: number
@@ -1067,6 +1068,9 @@ export default function CompanyPage() {
 
       {/* Раздел интеграций с мессенджерами */}
       <MessagingIntegrationsSection />
+
+      {/* Раздел личных аккаунтов менеджеров */}
+      <PersonalMessagingAccountsSection />
     </div>
   )
 }
