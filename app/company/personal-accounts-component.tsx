@@ -156,15 +156,54 @@ export default function PersonalMessagingAccountsSection() {
 
             {connectingPlatform === 'TELEGRAM' && (
               <form onSubmit={handleSubmit} className="mt-4 space-y-4 pt-4 border-t border-[var(--border)]">
+                {/* Инструкция по получению API данных */}
+                {!waitingForCode && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                      📋 Как получить API ID и API Hash:
+                    </h4>
+                    <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+                      <li>Перейдите на <a href="https://my.telegram.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">my.telegram.org</a></li>
+                      <li>Войдите в свой аккаунт Telegram (введите номер телефона и код подтверждения)</li>
+                      <li>Перейдите в раздел <strong>"API development tools"</strong></li>
+                      <li>Заполните форму создания приложения:
+                        <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                          <li><strong>App title:</strong> любое название (например, "My CRM")</li>
+                          <li><strong>Short name:</strong> короткое название (например, "crm")</li>
+                          <li><strong>Platform:</strong> выберите "Other"</li>
+                        </ul>
+                      </li>
+                      <li>После создания вы получите <strong>api_id</strong> (число) и <strong>api_hash</strong> (строка)</li>
+                      <li>Скопируйте эти значения в поля ниже</li>
+                    </ol>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                    API ID
+                    Номер телефона
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+79991234567"
+                    className="w-full px-4 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                    required={!waitingForCode}
+                    disabled={waitingForCode}
+                  />
+                  <p className="text-xs text-[var(--muted)] mt-1">Номер должен быть в международном формате с +</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                    API ID <span className="text-[var(--muted)] text-xs">(число, например: 12345678)</span>
                   </label>
                   <input
                     type="text"
                     value={formData.telegramApiId}
                     onChange={(e) => setFormData({ ...formData, telegramApiId: e.target.value })}
-                    placeholder="Получите на https://my.telegram.org"
+                    placeholder="12345678"
                     className="w-full px-4 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                     required={!waitingForCode}
                     disabled={waitingForCode}
@@ -173,13 +212,13 @@ export default function PersonalMessagingAccountsSection() {
 
                 <div>
                   <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                    API Hash
+                    API Hash <span className="text-[var(--muted)] text-xs">(строка, например: abc123def456...)</span>
                   </label>
                   <input
                     type="password"
                     value={formData.telegramApiHash}
                     onChange={(e) => setFormData({ ...formData, telegramApiHash: e.target.value })}
-                    placeholder="Получите на https://my.telegram.org"
+                    placeholder="Вставьте API Hash"
                     className="w-full px-4 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                     required={!waitingForCode}
                     disabled={waitingForCode}
@@ -199,6 +238,7 @@ export default function PersonalMessagingAccountsSection() {
                       className="w-full px-4 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                       required
                     />
+                    <p className="text-xs text-[var(--muted)] mt-1">Код придет в Telegram на указанный номер телефона</p>
                   </div>
                 )}
 
@@ -222,13 +262,6 @@ export default function PersonalMessagingAccountsSection() {
                     {saving ? 'Подключение...' : waitingForCode ? 'Подтвердить' : 'Отправить код'}
                   </button>
                 </div>
-
-                <p className="text-xs text-[var(--muted)]">
-                  📌 Получите API ID и Hash на{' '}
-                  <a href="https://my.telegram.org" target="_blank" rel="noopener noreferrer" className="text-[var(--primary)] hover:underline">
-                    my.telegram.org
-                  </a>
-                </p>
               </form>
             )}
           </div>
