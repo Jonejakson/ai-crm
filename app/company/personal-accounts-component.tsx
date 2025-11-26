@@ -166,11 +166,13 @@ export default function PersonalMessagingAccountsSection() {
                       <li>Перейдите на <a href="https://my.telegram.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">my.telegram.org</a></li>
                       <li>Войдите в свой аккаунт Telegram (введите номер телефона и код подтверждения)</li>
                       <li>Перейдите в раздел <strong>"API development tools"</strong></li>
-                      <li>Заполните форму создания приложения:
+                      <li>Заполните форму создания приложения (все поля обязательны):
                         <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
                           <li><strong>App title:</strong> любое название (например, "My CRM")</li>
                           <li><strong>Short name:</strong> короткое название (например, "crm")</li>
-                          <li><strong>Platform:</strong> выберите "Other"</li>
+                          <li><strong>URL:</strong> можно указать любой URL (например, "https://example.com")</li>
+                          <li><strong>Platform:</strong> выберите "Other (specify in description)"</li>
+                          <li><strong>Description:</strong> краткое описание (например, "CRM integration")</li>
                         </ul>
                       </li>
                       <li>После создания вы получите <strong>api_id</strong> (число) и <strong>api_hash</strong> (строка)</li>
