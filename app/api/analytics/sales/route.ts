@@ -52,16 +52,23 @@ export async function GET(req: Request) {
       whereCondition.pipelineId = parseInt(pipelineId);
     }
 
-    whereCondition.createdAt = { gte: startDate };
+    const baseCondition = { ...whereCondition };
 
-    // Получаем сделки
+    // Получаем сделки, у которых активность попадает в период (по созданию или обновлению)
     const deals = await prisma.deal.findMany({
-      where: whereCondition,
+      where: {
+        ...baseCondition,
+        OR: [
+          { createdAt: { gte: startDate } },
+          { updatedAt: { gte: startDate } },
+        ],
+      },
       select: {
         id: true,
         amount: true,
         stage: true,
         createdAt: true,
+        updatedAt: true,
         expectedCloseDate: true,
         probability: true,
       },
@@ -79,29 +86,26 @@ export async function GET(req: Request) {
       forecast: number; // Прогноз на основе вероятностей
     }> = {};
 
-    deals.forEach(deal => {
-      let dateKey: string;
-      const dealDate = new Date(deal.createdAt);
-      
+    const getDateKey = (date: Date) => {
+      const target = new Date(date);
       switch (groupBy) {
-        case 'day':
-          dateKey = dealDate.toISOString().split('T')[0];
-          break;
-        case 'week':
-          const weekStart = new Date(dealDate);
-          weekStart.setDate(dealDate.getDate() - dealDate.getDay());
-          dateKey = weekStart.toISOString().split('T')[0];
-          break;
+        case 'week': {
+          const weekStart = new Date(target);
+          weekStart.setDate(target.getDate() - target.getDay());
+          return weekStart.toISOString().split('T')[0];
+        }
         case 'month':
-          dateKey = `${dealDate.getFullYear()}-${String(dealDate.getMonth() + 1).padStart(2, '0')}`;
-          break;
+          return `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}`;
+        case 'day':
         default:
-          dateKey = dealDate.toISOString().split('T')[0];
+          return target.toISOString().split('T')[0];
       }
+    };
 
-      if (!salesData[dateKey]) {
-        salesData[dateKey] = {
-          date: dateKey,
+    const ensureBucket = (key: string) => {
+      if (!salesData[key]) {
+        salesData[key] = {
+          date: key,
           total: 0,
           won: 0,
           lost: 0,
@@ -111,19 +115,34 @@ export async function GET(req: Request) {
           forecast: 0,
         };
       }
+    };
 
-      salesData[dateKey].total++;
-      salesData[dateKey].totalAmount += deal.amount;
-      
+    deals.forEach(deal => {
+      const createdAt = new Date(deal.createdAt);
+      const updatedAt = new Date(deal.updatedAt ?? deal.createdAt);
+
+      // Учитываем создание сделки только если оно попадает в период
+      if (createdAt >= startDate) {
+        const creationKey = getDateKey(createdAt);
+        ensureBucket(creationKey);
+        salesData[creationKey].total++;
+        salesData[creationKey].totalAmount += deal.amount;
+
+        if (!isClosedWonStage(deal.stage) && !isClosedLostStage(deal.stage)) {
+          salesData[creationKey].active++;
+          salesData[creationKey].forecast += deal.amount * (deal.probability / 100);
+        }
+      }
+
       if (isClosedWonStage(deal.stage)) {
-        salesData[dateKey].won++;
-        salesData[dateKey].wonAmount += deal.amount;
+        const closeKey = getDateKey(updatedAt);
+        ensureBucket(closeKey);
+        salesData[closeKey].won++;
+        salesData[closeKey].wonAmount += deal.amount;
       } else if (isClosedLostStage(deal.stage)) {
-        salesData[dateKey].lost++;
-      } else {
-        salesData[dateKey].active++;
-        // Прогноз на основе вероятности
-        salesData[dateKey].forecast += deal.amount * (deal.probability / 100);
+        const closeKey = getDateKey(updatedAt);
+        ensureBucket(closeKey);
+        salesData[closeKey].lost++;
       }
     });
 
