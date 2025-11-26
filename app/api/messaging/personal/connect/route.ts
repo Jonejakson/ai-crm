@@ -140,6 +140,71 @@ export async function POST(req: Request) {
       });
     }
 
+    // Если это Telegram и есть номер телефона, API ID и Hash, но нет кода - отправляем код
+    if (platform === 'TELEGRAM' && phone && telegramApiId && telegramApiHash && !code) {
+      try {
+        // Импортируем библиотеку для работы с Telegram Client API
+        const { TelegramClient } = await import('telegram');
+        const { StringSession } = await import('telegram/sessions');
+        const { Api } = await import('telegram/tl');
+
+        // Создаем сессию (пока пустую, так как еще не авторизованы)
+        const session = new StringSession('');
+
+        // Создаем клиент Telegram
+        const client = new TelegramClient(session, parseInt(telegramApiId), telegramApiHash, {
+          connectionRetries: 5,
+        });
+
+        // Подключаемся к Telegram
+        await client.connect();
+
+        // Отправляем запрос на получение кода
+        const result = await client.invoke(
+          new Api.auth.SendCode({
+            phoneNumber: phone,
+            apiId: parseInt(telegramApiId),
+            apiHash: telegramApiHash,
+            settings: new Api.CodeSettings({
+              allowFlashCall: false,
+              currentNumber: false,
+              allowAppHash: false,
+            }),
+          })
+        );
+
+        // Сохраняем phone_code_hash для последующей проверки кода
+        await prisma.userMessagingAccount.update({
+          where: { id: account.id },
+          data: {
+            settings: {
+              phoneCodeHash: result.phoneCodeHash,
+            },
+          },
+        });
+
+        // Отключаемся от клиента
+        await client.disconnect();
+
+        return NextResponse.json({
+          account,
+          message: "Verification code sent to your Telegram. Please check your phone.",
+          requiresCode: true,
+        });
+      } catch (telegramError: any) {
+        console.error('Error sending Telegram code:', telegramError);
+        console.error('Error details:', {
+          message: telegramError.message,
+          stack: telegramError.stack,
+        });
+        return NextResponse.json({
+          account,
+          error: telegramError.message || "Failed to send verification code",
+          message: "Error sending code. Please check your API credentials and phone number.",
+        }, { status: 400 });
+      }
+    }
+
     return NextResponse.json({
       account,
       message: platform === 'TELEGRAM' 
