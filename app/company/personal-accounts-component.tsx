@@ -165,19 +165,31 @@ export default function PersonalMessagingAccountsSection() {
                     <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
                       <li>Перейдите на <a href="https://my.telegram.org" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">my.telegram.org</a></li>
                       <li>Войдите в свой аккаунт Telegram (введите номер телефона и код подтверждения)</li>
-                      <li>Перейдите в раздел <strong>"API development tools"</strong></li>
-                      <li>Заполните форму создания приложения (все поля обязательны):
+                      <li>Перейдите в раздел <strong>"API development tools"</strong> (или сразу на <a href="https://my.telegram.org/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">my.telegram.org/apps</a>)</li>
+                      <li><strong className="text-red-600">ВАЖНО:</strong> Сначала проверьте, есть ли у вас уже созданное приложение. Если на странице уже отображаются поля <strong>api_id</strong> и <strong>api_hash</strong> - используйте их, создавать новое не нужно!</li>
+                      <li>Если приложения нет, заполните форму создания (все поля обязательны):
                         <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                          <li><strong>App title:</strong> полное описательное название (например, "My CRM Application" или "CRM Integration App") - <span className="text-red-600 font-semibold">не используйте короткие названия типа "crm"</span></li>
-                          <li><strong>Short name:</strong> короткое название без пробелов, 5-32 символа (например, "mycrm" или "crmapp")</li>
-                          <li><strong>URL:</strong> можно указать любой URL (например, "https://example.com")</li>
-                          <li><strong>Platform:</strong> выберите "Other (specify in description)"</li>
-                          <li><strong>Description:</strong> краткое описание (например, "CRM integration for business")</li>
+                          <li><strong>App title:</strong> полное описательное название с пробелами (например, "My CRM Application" или "Business CRM System") - <span className="text-red-600 font-semibold">минимум 2-3 слова, не используйте одно слово!</span></li>
+                          <li><strong>Short name:</strong> короткое название БЕЗ пробелов, только латиница и цифры, 5-32 символа (например, "mycrm" или "crmapp123")</li>
+                          <li><strong>URL:</strong> укажите любой валидный URL (например, "https://example.com" или "https://yourcompany.com")</li>
+                          <li><strong>Platform:</strong> выберите <strong>"Other (specify in description)"</strong></li>
+                          <li><strong>Description:</strong> описание на английском (например, "CRM integration application for business management")</li>
                         </ul>
                       </li>
-                      <li>После создания вы получите <strong>api_id</strong> (число) и <strong>api_hash</strong> (строка)</li>
+                      <li>После успешного создания (или если приложение уже было) вы увидите на странице:
+                        <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                          <li><strong>api_id</strong> - число (например, 12345678)</li>
+                          <li><strong>api_hash</strong> - длинная строка символов (например, abc123def456...)</li>
+                        </ul>
+                      </li>
                       <li>Скопируйте эти значения в поля ниже</li>
                     </ol>
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800">
+                        <strong>Если возникают ошибки:</strong> Telegram обычно позволяет создать только одно приложение на аккаунт. 
+                        Если вы видите ошибку при создании, возможно приложение уже существует - обновите страницу и проверьте, не отображаются ли уже api_id и api_hash.
+                      </p>
+                    </div>
                   </div>
                 )}
 
