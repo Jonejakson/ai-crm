@@ -48,6 +48,18 @@ export async function POST(req: Request) {
     // В будущем можно добавить логику определения компании по chatId или другим параметрам
     const integration = integrations[0];
 
+    // Получаем пользователей компании
+    const companyUsers = await prisma.user.findMany({
+      where: { companyId: integration.companyId },
+    });
+
+    if (companyUsers.length === 0) {
+      console.error('No users found in company');
+      return NextResponse.json({ ok: false, error: "No users in company" }, { status: 500 });
+    }
+
+    const companyUserIds = companyUsers.map(u => u.id);
+
     // Ищем контакт по телефону или создаем новый
     // Telegram username может быть в формате @username или phone может быть в from.phone_number
     const telegramUsername = from.username ? `@${from.username}` : null;
@@ -62,7 +74,7 @@ export async function POST(req: Request) {
         where: {
           phone: phoneNumber,
           userId: {
-            in: integration.company.users.map(u => u.id),
+            in: companyUserIds,
           },
         },
       });
@@ -77,7 +89,7 @@ export async function POST(req: Request) {
             contains: from.first_name || '',
           },
           userId: {
-            in: integration.company.users.map(u => u.id),
+            in: companyUserIds,
           },
         },
       });
@@ -85,15 +97,6 @@ export async function POST(req: Request) {
 
     // Если контакт не найден, создаем новый
     if (!contact) {
-      // Получаем пользователей компании
-      const companyUsers = await prisma.user.findMany({
-        where: { companyId: integration.companyId },
-      });
-
-      if (companyUsers.length === 0) {
-        console.error('No users found in company');
-        return NextResponse.json({ ok: false, error: "No users in company" }, { status: 500 });
-      }
 
       // Назначаем контакт первому пользователю компании (можно улучшить логику)
       const firstUser = companyUsers[0];
