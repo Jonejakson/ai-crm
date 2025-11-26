@@ -166,7 +166,7 @@ export async function POST(req: Request) {
             apiId: parseInt(telegramApiId),
             apiHash: telegramApiHash,
             settings: new Api.CodeSettings({
-              allowFlashCall: false,
+              allowFlashcall: false,
               currentNumber: false,
               allowAppHash: false,
             }),
