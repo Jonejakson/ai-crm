@@ -173,12 +173,30 @@ export async function POST(req: Request) {
           })
         );
 
+        // Получаем phoneCodeHash из результата
+        // Результат может быть типа SentCode или SentCodeSuccess
+        let phoneCodeHash: string;
+        if ('phoneCodeHash' in result && typeof (result as any).phoneCodeHash === 'string') {
+          phoneCodeHash = (result as any).phoneCodeHash;
+        } else if ('phone_code_hash' in result && typeof (result as any).phone_code_hash === 'string') {
+          phoneCodeHash = (result as any).phone_code_hash;
+        } else {
+          // Пытаемся получить из любого возможного поля
+          const resultAny = result as any;
+          phoneCodeHash = resultAny.phoneCodeHash || resultAny.phone_code_hash || '';
+        }
+
+        if (!phoneCodeHash) {
+          console.error('Telegram result structure:', JSON.stringify(result, null, 2));
+          throw new Error('Failed to get phone code hash from Telegram response');
+        }
+
         // Сохраняем phone_code_hash для последующей проверки кода
         await prisma.userMessagingAccount.update({
           where: { id: account.id },
           data: {
             settings: {
-              phoneCodeHash: result.phoneCodeHash,
+              phoneCodeHash: phoneCodeHash,
             },
           },
         });
