@@ -1,6 +1,16 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from 'recharts'
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Line,
+} from 'recharts'
 
 interface SalesData {
   date: string
@@ -36,7 +46,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+      <AreaChart data={chartData} margin={{ top: 10, right: 50, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="colorWonAmount" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
@@ -53,10 +63,18 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
           stroke="#6b7280"
           style={{ fontSize: '12px' }}
         />
-        <YAxis 
-          stroke="#6b7280"
+        <YAxis
+          yAxisId="amount"
+          stroke="#22c55e"
           style={{ fontSize: '12px' }}
           tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+        />
+        <YAxis
+          yAxisId="count"
+          orientation="right"
+          stroke="#a855f7"
+          style={{ fontSize: '12px' }}
+          allowDecimals={false}
         />
         <Tooltip 
           contentStyle={{ 
@@ -88,6 +106,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
         <Area 
           type="monotone" 
           dataKey="wonAmount" 
+          yAxisId="amount"
           stroke="#22c55e" 
           fillOpacity={1} 
           fill="url(#colorWonAmount)"
@@ -96,6 +115,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
         <Area 
           type="monotone" 
           dataKey="forecast" 
+          yAxisId="amount"
           stroke="#6366f1" 
           fillOpacity={1} 
           fill="url(#colorForecast)"
@@ -105,6 +125,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
         <Line 
           type="monotone" 
           dataKey="total" 
+          yAxisId="count"
           stroke="#a855f7" 
           strokeWidth={2}
           dot={{ r: 4 }}
