@@ -333,17 +333,15 @@ interface AnalyticsTabsProps {
 }
 
 export default function AnalyticsTabs({ period, selectedUserId, selectedPipelineId, analyticsData, chartData = [] }: AnalyticsTabsProps) {
-  const [activeTab, setActiveTab] = useState<'sales' | 'funnel' | 'managers' | 'forecast' | 'compare' | 'builder'>('sales')
+  const [activeTab, setActiveTab] = useState<'sales' | 'funnel' | 'managers' | 'compare' | 'builder'>('sales')
   const [salesData, setSalesData] = useState<any[]>([])
   const [funnelData, setFunnelData] = useState<any>(null)
   const [managersData, setManagersData] = useState<any[]>([])
-  const [forecastData, setForecastData] = useState<any>(null)
   const [compareData, setCompareData] = useState<any>(null)
   const [loading, setLoading] = useState<Record<string, boolean>>({
     sales: false,
     funnel: false,
     managers: false,
-    forecast: false,
     compare: false,
   })
 
@@ -354,8 +352,6 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
       fetchFunnelData()
     } else if (activeTab === 'managers') {
       fetchManagersData()
-    } else if (activeTab === 'forecast') {
-      fetchForecastData()
     } else if (activeTab === 'compare') {
       fetchCompareData()
     }
@@ -409,22 +405,6 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
     }
   }
 
-  const fetchForecastData = async () => {
-    setLoading(prev => ({ ...prev, forecast: true }))
-    try {
-      const url = `/api/analytics/forecast?period=${period}${selectedUserId ? `&userId=${selectedUserId}` : ''}${selectedPipelineId ? `&pipelineId=${selectedPipelineId}` : ''}`
-      const response = await fetch(url)
-      if (response.ok) {
-        const data = await response.json()
-        setForecastData(data)
-      }
-    } catch (error) {
-      console.error('Error fetching forecast data:', error)
-    } finally {
-      setLoading(prev => ({ ...prev, forecast: false }))
-    }
-  }
-
   const fetchCompareData = async () => {
     setLoading(prev => ({ ...prev, compare: true }))
     try {
@@ -445,7 +425,6 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
     { id: 'sales', label: 'Продажи', icon: '📈' },
     { id: 'funnel', label: 'Воронка', icon: '🔽' },
     { id: 'managers', label: 'Менеджеры', icon: '👥' },
-    { id: 'forecast', label: 'Прогноз', icon: '🔮' },
     { id: 'compare', label: 'Сравнение', icon: '⚖️' },
     { id: 'builder', label: 'Конструктор', icon: '🎨' },
   ]
@@ -535,64 +514,6 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
                       Нет данных по менеджерам
                     </div>
                   )}
-                </div>
-              )}
-
-              {activeTab === 'forecast' && forecastData && (
-                <div className="space-y-6">
-                  <h2 className="text-xl font-semibold text-[var(--foreground)]">Прогноз продаж</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-xl bg-[var(--primary-soft)]/30">
-                      <div className="text-xs text-[var(--muted)] mb-1">Взвешенный прогноз</div>
-                      <div className="text-2xl font-bold text-[var(--primary)]">
-                        {forecastData.forecast.weightedForecast.toLocaleString('ru-RU')} ₽
-                      </div>
-                      <div className="text-xs text-[var(--muted)] mt-1">
-                        {forecastData.forecast.totalDeals} сделок
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[var(--success-soft)]/30">
-                      <div className="text-xs text-[var(--muted)] mb-1">Оптимистичный</div>
-                      <div className="text-2xl font-bold text-[var(--success)]">
-                        {forecastData.forecast.optimisticForecast.toLocaleString('ru-RU')} ₽
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-[var(--warning-soft)]/30">
-                      <div className="text-xs text-[var(--muted)] mb-1">Пессимистичный</div>
-                      <div className="text-2xl font-bold text-[var(--warning)]">
-                        {forecastData.forecast.pessimisticForecast.toLocaleString('ru-RU')} ₽
-                      </div>
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/50">
-                      <div className="text-xs text-[var(--muted)] mb-1">Общая сумма</div>
-                      <div className="text-2xl font-bold text-[var(--foreground)]">
-                        {forecastData.forecast.totalAmount.toLocaleString('ru-RU')} ₽
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4">Сделки в прогнозе</h3>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {forecastData.forecast.deals.slice(0, 10).map((deal: any) => (
-                        <div key={deal.id} className="p-3 rounded-lg bg-white/50 border border-[var(--border)]">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium text-[var(--foreground)]">{deal.title}</div>
-                              <div className="text-xs text-[var(--muted)]">{deal.contact}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-semibold text-[var(--foreground)]">
-                                {deal.forecast.toLocaleString('ru-RU')} ₽
-                              </div>
-                              <div className="text-xs text-[var(--muted)]">
-                                {deal.probability}% вероятность
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
 
