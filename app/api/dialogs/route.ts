@@ -108,6 +108,8 @@ export async function POST(req: Request) {
         data: {
           message: message.trim(),
           sender: sender || "user",
+          platform: body.platform || "INTERNAL", // По умолчанию INTERNAL
+          externalId: body.externalId || null,
           contactId: contactIdNum,
         },
         include: {

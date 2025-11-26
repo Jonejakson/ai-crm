@@ -63,6 +63,12 @@ enum CustomFieldType {
     TEXTAREA
 }
 
+enum MessagingPlatform {
+    TELEGRAM
+    WHATSAPP
+    INTERNAL
+}
+
 model Company {
     id        Int       @id @default(autoincrement())
     name      String
@@ -78,6 +84,7 @@ model Company {
     customFields CustomField[]
     dealSources DealSource[]
     dealTypes   DealType[]
+    messagingIntegrations MessagingIntegration[]
 }
 
 model User {
@@ -102,23 +109,25 @@ model User {
 }
 
 model Contact {
-    id        Int      @id @default(autoincrement())
-    name      String
-    email     String?
-    phone     String?
-    company   String?
-    position  String?
-    inn       String?
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    user      User?    @relation(fields: [userId], references: [id])
-    userId    Int?
-    tasks     Task[]
-    dialogs   Dialog[]
-    deals     Deal[]
-    events    Event[]
-    emailMessages EmailMessage[]
-    tags      ContactTag[]
+    id             Int      @id @default(autoincrement())
+    name           String
+    email          String?
+    phone          String?
+    company        String?
+    position       String?
+    inn            String?
+    telegramChatId String? // Chat ID для Telegram
+    whatsappId     String? // ID для WhatsApp
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+    user           User?    @relation(fields: [userId], references: [id])
+    userId         Int?
+    tasks          Task[]
+    dialogs        Dialog[]
+    deals          Deal[]
+    events         Event[]
+    emailMessages  EmailMessage[]
+    tags           ContactTag[]
 }
 
 model Task {
@@ -136,12 +145,14 @@ model Task {
 }
 
 model Dialog {
-    id        Int      @id @default(autoincrement())
-    message   String
-    sender    String   @default("user")
-    createdAt DateTime @default(now())
-    contact   Contact? @relation(fields: [contactId], references: [id])
-    contactId Int?
+    id          Int              @id @default(autoincrement())
+    message     String
+    sender      String           @default("user")
+    platform    MessagingPlatform @default(INTERNAL)
+    externalId  String?          // ID сообщения в мессенджере
+    createdAt   DateTime         @default(now())
+    contact     Contact?         @relation(fields: [contactId], references: [id])
+    contactId   Int?
 }
 
 model Pipeline {
@@ -416,4 +427,20 @@ model DealType {
     deals     Deal[]
 
     @@unique([companyId, name])
+}
+
+model MessagingIntegration {
+    id          Int              @id @default(autoincrement())
+    platform    MessagingPlatform
+    isActive    Boolean          @default(false)
+    botToken    String?          // Telegram bot token или WhatsApp API key
+    webhookUrl  String?          // URL для webhook'ов
+    webhookSecret String?        // Секрет для проверки webhook'ов
+    settings    Json?            // Дополнительные настройки (JSON)
+    company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId   Int
+    createdAt   DateTime         @default(now())
+    updatedAt   DateTime         @updatedAt
+
+    @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
 }

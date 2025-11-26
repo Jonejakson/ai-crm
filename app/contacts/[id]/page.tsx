@@ -41,6 +41,8 @@ interface Dialog {
   id: number
   message: string
   sender: string
+  platform?: 'TELEGRAM' | 'WHATSAPP' | 'INTERNAL'
+  externalId?: string | null
   createdAt: string
 }
 
@@ -730,8 +732,19 @@ export default function ContactDetailPage() {
                         })}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {dialog.sender === 'user' ? 'Вы' : 'Клиент'}
+                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+                      <span>{dialog.sender === 'user' ? 'Вы' : 'Клиент'}</span>
+                      {dialog.platform && dialog.platform !== 'INTERNAL' && (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                          dialog.platform === 'TELEGRAM' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : dialog.platform === 'WHATSAPP'
+                            ? 'bg-green-100 text-green-700'
+                            : ''
+                        }`}>
+                          {dialog.platform === 'TELEGRAM' ? '📱 Telegram' : dialog.platform === 'WHATSAPP' ? '💬 WhatsApp' : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))

@@ -6,6 +6,8 @@ interface Dialog {
   id: number
   message: string
   sender: string
+  platform?: 'TELEGRAM' | 'WHATSAPP' | 'INTERNAL'
+  externalId?: string | null
   createdAt: string
   contact: {
     id: number
@@ -342,9 +344,21 @@ export default function DialogsPage() {
                         })}
                       </span>
                     </div>
-                    <div className={`text-xs mt-2 ${dialog.sender === 'user' ? 'text-white/70' : 'text-[var(--muted)]'}`}>
-                      {dialog.sender === 'user' ? 'Вы' : 'Клиент'} • 
-                      {new Date(dialog.createdAt).toLocaleDateString('ru-RU')}
+                    <div className={`text-xs mt-2 flex items-center gap-2 ${dialog.sender === 'user' ? 'text-white/70' : 'text-[var(--muted)]'}`}>
+                      <span>{dialog.sender === 'user' ? 'Вы' : 'Клиент'}</span>
+                      {dialog.platform && dialog.platform !== 'INTERNAL' && (
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                          dialog.platform === 'TELEGRAM' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : dialog.platform === 'WHATSAPP'
+                            ? 'bg-green-100 text-green-700'
+                            : ''
+                        }`}>
+                          {dialog.platform === 'TELEGRAM' ? '📱 Telegram' : dialog.platform === 'WHATSAPP' ? '💬 WhatsApp' : ''}
+                        </span>
+                      )}
+                      <span>•</span>
+                      <span>{new Date(dialog.createdAt).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </div>
                 ))}

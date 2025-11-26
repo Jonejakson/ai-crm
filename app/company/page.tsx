@@ -1064,7 +1064,248 @@ export default function CompanyPage() {
           <DealTypesManagerWithAddButton />
         </div>
       </section>
+
+      {/* Раздел интеграций с мессенджерами */}
+      <MessagingIntegrationsSection />
     </div>
+  )
+}
+
+// Компонент для управления интеграциями с мессенджерами
+function MessagingIntegrationsSection() {
+  const [integrations, setIntegrations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editingPlatform, setEditingPlatform] = useState<'TELEGRAM' | 'WHATSAPP' | null>(null)
+  const [formData, setFormData] = useState({
+    botToken: '',
+    isActive: false,
+    webhookUrl: '',
+    webhookSecret: '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    fetchIntegrations()
+  }, [])
+
+  const fetchIntegrations = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/messaging/integrations')
+      if (response.ok) {
+        const data = await response.json()
+        setIntegrations(data)
+      }
+    } catch (error) {
+      console.error('Error fetching integrations:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEdit = (platform: 'TELEGRAM' | 'WHATSAPP') => {
+    const integration = integrations.find(i => i.platform === platform)
+    setFormData({
+      botToken: integration?.botToken || '',
+      isActive: integration?.isActive || false,
+      webhookUrl: integration?.webhookUrl || '',
+      webhookSecret: integration?.webhookSecret || '',
+    })
+    setEditingPlatform(platform)
+    setError('')
+    setSuccess('')
+  }
+
+  const handleSave = async () => {
+    if (!editingPlatform) return
+
+    setSaving(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const response = await fetch('/api/messaging/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform: editingPlatform,
+          ...formData,
+        }),
+      })
+
+      if (response.ok) {
+        setSuccess('Интеграция успешно сохранена')
+        setEditingPlatform(null)
+        await fetchIntegrations()
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Ошибка при сохранении')
+      }
+    } catch (error: any) {
+      setError(error.message || 'Ошибка при сохранении')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const getWebhookUrl = (platform: 'TELEGRAM' | 'WHATSAPP') => {
+    if (typeof window === 'undefined') return ''
+    const baseUrl = window.location.origin
+    return `${baseUrl}/api/messaging/${platform.toLowerCase()}/webhook`
+  }
+
+  if (loading) {
+    return (
+      <section className="space-y-4">
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="text-center py-4 text-[var(--muted)]">Загрузка...</div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="glass-panel rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Интеграции с мессенджерами</h2>
+            <p className="text-sm text-[var(--muted)]">Подключите Telegram или WhatsApp для общения с клиентами</p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm">
+            {success}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* Telegram */}
+          <div className="border border-[var(--border)] rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-xl">
+                  📱
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">Telegram</h3>
+                  <p className="text-sm text-[var(--muted)]">
+                    {integrations.find(i => i.platform === 'TELEGRAM')?.isActive ? 'Активна' : 'Не настроена'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleEdit('TELEGRAM')}
+                className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm"
+              >
+                {editingPlatform === 'TELEGRAM' ? 'Отмена' : 'Настроить'}
+              </button>
+            </div>
+
+            {editingPlatform === 'TELEGRAM' && (
+              <div className="mt-4 space-y-4 pt-4 border-t border-[var(--border)]">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                    Bot Token
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.botToken}
+                    onChange={(e) => setFormData({ ...formData, botToken: e.target.value })}
+                    placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+                    className="w-full px-4 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                  />
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    Получите токен у @BotFather в Telegram
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                    Webhook URL
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.webhookUrl || getWebhookUrl('TELEGRAM')}
+                      onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
+                      placeholder="URL для webhook"
+                      className="flex-1 px-4 py-2 border border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
+                      readOnly
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(getWebhookUrl('TELEGRAM'))
+                        setSuccess('URL скопирован в буфер обмена')
+                        setTimeout(() => setSuccess(''), 2000)
+                      }}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      Копировать
+                    </button>
+                  </div>
+                  <p className="text-xs text-[var(--muted)] mt-1">
+                    Используйте этот URL при настройке webhook в Telegram
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="telegram-active"
+                    checked={formData.isActive}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                    className="w-4 h-4 text-[var(--primary)] border-gray-300 rounded focus:ring-[var(--primary)]"
+                  />
+                  <label htmlFor="telegram-active" className="text-sm text-[var(--foreground)]">
+                    Активировать интеграцию
+                  </label>
+                </div>
+
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="w-full px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? 'Сохранение...' : 'Сохранить'}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* WhatsApp */}
+          <div className="border border-[var(--border)] rounded-xl p-4 opacity-60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-xl">
+                  💬
+                </div>
+                <div>
+                  <h3 className="font-semibold text-[var(--foreground)]">WhatsApp</h3>
+                  <p className="text-sm text-[var(--muted)]">Скоро будет доступно</p>
+                </div>
+              </div>
+              <button
+                disabled
+                className="px-4 py-2 bg-gray-200 text-gray-500 rounded-lg cursor-not-allowed text-sm"
+              >
+                Скоро
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
