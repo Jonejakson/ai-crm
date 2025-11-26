@@ -117,7 +117,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
           strokeWidth={2}
           dot={{ r: 4 }}
         />
-      </AreaChart>
+      </LineChart>
     </ResponsiveContainer>
   )
 }
