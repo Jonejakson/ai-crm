@@ -16,10 +16,18 @@ export async function POST(req: Request) {
 
     const userId = getUserId(user);
     if (!userId) {
+      console.error('Invalid user ID in POST:', { user, userId });
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
 
-    const body = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
     const { platform, phone, telegramApiId, telegramApiHash, code } = body;
 
     if (!platform || !['TELEGRAM', 'WHATSAPP'].includes(platform)) {
@@ -47,14 +55,30 @@ export async function POST(req: Request) {
     }
 
     // Проверяем, есть ли уже подключение
-    const existing = await prisma.userMessagingAccount.findUnique({
-      where: {
-        userId_platform: {
-          userId: userId,
-          platform: platform as 'TELEGRAM' | 'WHATSAPP',
+    let existing;
+    try {
+      existing = await prisma.userMessagingAccount.findUnique({
+        where: {
+          userId_platform: {
+            userId: userId,
+            platform: platform as 'TELEGRAM' | 'WHATSAPP',
+          },
         },
-      },
-    });
+      });
+    } catch (prismaError: any) {
+      // Если таблица не существует, возвращаем ошибку с инструкцией
+      if (prismaError.code === 'P2021' || prismaError.message?.includes('does not exist')) {
+        console.error('UserMessagingAccount table does not exist. Migration needed.');
+        return NextResponse.json(
+          { 
+            error: "Database migration required. Please run: npx prisma migrate deploy",
+            code: "MIGRATION_REQUIRED"
+          },
+          { status: 503 }
+        );
+      }
+      throw prismaError; // Пробрасываем другие ошибки дальше
+    }
 
     if (existing && existing.isActive) {
       return NextResponse.json(
@@ -64,29 +88,45 @@ export async function POST(req: Request) {
     }
 
     // Создаем или обновляем подключение
-    const account = await prisma.userMessagingAccount.upsert({
-      where: {
-        userId_platform: {
-          userId: userId,
-          platform: platform as 'TELEGRAM' | 'WHATSAPP',
+    let account;
+    try {
+      account = await prisma.userMessagingAccount.upsert({
+        where: {
+          userId_platform: {
+            userId: userId,
+            platform: platform as 'TELEGRAM' | 'WHATSAPP',
+          },
         },
-      },
-      update: {
-        phone: phone || undefined,
-        telegramApiId: telegramApiId || undefined,
-        telegramApiHash: telegramApiHash || undefined,
-        isActive: false, // Активируется после успешной авторизации
-        updatedAt: new Date(),
-      },
-      create: {
-        platform: platform as 'TELEGRAM' | 'WHATSAPP',
-        phone: phone || null,
-        telegramApiId: telegramApiId || null,
-        telegramApiHash: telegramApiHash || null,
-        isActive: false,
-        userId: userId,
-      },
-    });
+        update: {
+          phone: phone || undefined,
+          telegramApiId: telegramApiId || undefined,
+          telegramApiHash: telegramApiHash || undefined,
+          isActive: false, // Активируется после успешной авторизации
+          updatedAt: new Date(),
+        },
+        create: {
+          platform: platform as 'TELEGRAM' | 'WHATSAPP',
+          phone: phone || null,
+          telegramApiId: telegramApiId || null,
+          telegramApiHash: telegramApiHash || null,
+          isActive: false,
+          userId: userId,
+        },
+      });
+    } catch (prismaError: any) {
+      // Если таблица не существует, возвращаем ошибку с инструкцией
+      if (prismaError.code === 'P2021' || prismaError.message?.includes('does not exist')) {
+        console.error('UserMessagingAccount table does not exist. Migration needed.');
+        return NextResponse.json(
+          { 
+            error: "Database migration required. Please run: npx prisma migrate deploy",
+            code: "MIGRATION_REQUIRED"
+          },
+          { status: 503 }
+        );
+      }
+      throw prismaError; // Пробрасываем другие ошибки дальше
+    }
 
     // Если передан код подтверждения, пытаемся завершить авторизацию
     if (code && platform === 'TELEGRAM') {
@@ -108,8 +148,19 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error('Error connecting personal account:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+      name: error.name,
+    });
     return NextResponse.json(
-      { error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error' },
+      { 
+        error: process.env.NODE_ENV === 'development' 
+          ? `Error: ${error.message}${error.code ? ` (Code: ${error.code})` : ''}` 
+          : 'Internal server error' 
+      },
       { status: 500 }
     );
   }
