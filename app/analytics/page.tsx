@@ -378,7 +378,7 @@ export default function AnalyticsPage() {
       />
 
       {/* Детальная статистика */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         {/* Статистика по сделкам */}
         <div className="glass-panel rounded-3xl p-4">
           <div className="pb-4 border-b border-white/40">
