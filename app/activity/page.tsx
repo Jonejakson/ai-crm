@@ -37,6 +37,17 @@ const filters = [
   { id: 'event', label: 'События' },
 ]
 
+const METADATA_LABELS: Record<string, string> = {
+  newStage: 'Новый этап',
+  oldStage: 'Предыдущий этап',
+  newAmount: 'Новая сумма',
+  oldAmount: 'Предыдущая сумма',
+  reason: 'Причина',
+  comment: 'Комментарий',
+  dueDate: 'Срок',
+  status: 'Статус',
+}
+
 export default function ActivityPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(true)
@@ -372,17 +383,20 @@ function renderMetadata(metadata: Record<string, any>) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {items.map(([key, value]) => (
-        <span
-          key={key}
-          className="rounded-full bg-white/80 px-3 py-1 text-xs text-[var(--foreground-soft)] border border-[var(--border)]"
-        >
-          <span className="uppercase tracking-[0.3em] text-[10px] text-[var(--muted-soft)] mr-2">
-            {key}
+      {items.map(([key, value]) => {
+        const label = METADATA_LABELS[key] || key
+        return (
+          <span
+            key={key}
+            className="rounded-full bg-white/80 px-3 py-1 text-xs text-[var(--foreground-soft)] border border-[var(--border)]"
+          >
+            <span className="uppercase tracking-[0.3em] text-[10px] text-[var(--muted-soft)] mr-2">
+              {label}
+            </span>
+            <span>{String(value)}</span>
           </span>
-          <span>{String(value)}</span>
-        </span>
-      ))}
+        )
+      })}
     </div>
   )
 }
