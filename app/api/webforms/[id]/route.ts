@@ -96,7 +96,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       updateData.isActive = Boolean(body.isActive)
     }
     if (body.fields) {
-      updateData.fields = sanitizeFormFields(body.fields) as Prisma.InputJsonValue
+      updateData.fields = sanitizeFormFields(body.fields) as unknown as Prisma.InputJsonValue
     }
     if (body.sourceId !== undefined) {
       updateData.sourceId = body.sourceId ? Number(body.sourceId) : null

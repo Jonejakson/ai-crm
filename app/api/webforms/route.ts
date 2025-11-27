@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const companyId = parseInt(user!.companyId)
-    const fieldsConfig = sanitizeFormFields(body.fields) as Prisma.InputJsonValue
+    const fieldsConfig = sanitizeFormFields(body.fields) as unknown as Prisma.InputJsonValue
 
     const pipelineInfo = await resolvePipelineConfig(
       companyId,
