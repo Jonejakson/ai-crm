@@ -234,7 +234,7 @@ export default function ActivityPage() {
       </div>
 
       <div className="glass-panel p-6 rounded-3xl space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
           <div className="flex-1 min-w-[220px]">
             <input
               type="text"
@@ -244,7 +244,7 @@ export default function ActivityPage() {
               className="w-full rounded-2xl border border-[var(--border)] bg-white/90 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <select
               value={limit}
               onChange={(e) => setLimit(Number(e.target.value))}
