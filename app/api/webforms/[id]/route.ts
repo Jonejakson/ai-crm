@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { sanitizeFormFields, WebFormFieldsPayload } from "@/lib/webforms"
@@ -27,14 +27,17 @@ async function ensureAccess(formId: number, companyId: number) {
   })
 }
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+type RouteContext = { params: Promise<{ id: string }> }
+
+export async function GET(_request: NextRequest, context: RouteContext) {
   const user = await getCurrentUser()
   const authError = checkAdmin(user)
   if (authError) return authError
 
   try {
     const companyId = parseInt(user!.companyId)
-    const id = Number(params.id)
+    const { id: rawId } = await context.params
+    const id = Number(rawId)
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 })
     }
@@ -51,14 +54,15 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: RouteContext) {
   const user = await getCurrentUser()
   const authError = checkAdmin(user)
   if (authError) return authError
 
   try {
     const companyId = parseInt(user!.companyId)
-    const id = Number(params.id)
+    const { id: rawId } = await context.params
+    const id = Number(rawId)
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 })
     }
@@ -147,14 +151,15 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, context: RouteContext) {
   const user = await getCurrentUser()
   const authError = checkAdmin(user)
   if (authError) return authError
 
   try {
     const companyId = parseInt(user!.companyId)
-    const id = Number(params.id)
+    const { id: rawId } = await context.params
+    const id = Number(rawId)
     if (Number.isNaN(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 })
     }
