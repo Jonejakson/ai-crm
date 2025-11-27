@@ -1,13 +1,17 @@
+import { NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { sanitizeFormFields } from "@/lib/webforms"
 
+type RouteContext = { params: Promise<{ token: string }> }
+
 export async function GET(
-  request: Request,
-  { params }: { params: { token: string } }
+  request: NextRequest,
+  context: RouteContext
 ) {
   try {
+    const { token } = await context.params
     const form = await prisma.webForm.findUnique({
-      where: { token: params.token },
+      where: { token },
     })
 
     if (!form || !form.isActive) {

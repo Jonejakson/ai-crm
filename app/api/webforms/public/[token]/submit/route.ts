@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { sanitizeFormFields } from "@/lib/webforms"
 import { parsePipelineStages } from "@/lib/pipelines"
@@ -14,10 +14,13 @@ export async function OPTIONS() {
   return new Response(null, { headers: CORS_HEADERS })
 }
 
-export async function POST(request: Request, { params }: { params: { token: string } }) {
+type RouteContext = { params: Promise<{ token: string }> }
+
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
+    const { token } = await context.params
     const form = await prisma.webForm.findUnique({
-      where: { token: params.token },
+      where: { token },
       include: {
         pipeline: true,
         defaultAssignee: { select: { id: true, companyId: true } },
