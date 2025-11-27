@@ -234,7 +234,7 @@ export default function ActivityPage() {
       </div>
 
       <div className="glass-panel p-6 rounded-3xl space-y-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4">
           <div className="flex-1 min-w-[220px]">
             <input
               type="text"
