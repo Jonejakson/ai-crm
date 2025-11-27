@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from "next/server"
+import { Prisma } from "@prisma/client"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { sanitizeFormFields, WebFormFieldsPayload } from "@/lib/webforms"
@@ -76,17 +77,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     const body = (await request.json()) as WebFormRequestPayload
-    const updateData: {
-      name?: string
-      successMessage?: string | null
-      redirectUrl?: string | null
-      isActive?: boolean
-      fields?: WebFormFieldsPayload
-      sourceId?: number | null
-      pipelineId?: number | null
-      initialStage?: string | null
-      defaultAssigneeId?: number | null
-    } = {}
+    const updateData: Prisma.WebFormUncheckedUpdateInput = {}
 
     if (body.name) updateData.name = String(body.name)
     if (body.successMessage !== undefined) {
