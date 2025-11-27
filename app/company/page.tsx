@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import WebFormsSection from './WebFormsSection'
 
 interface User {
   id: number
@@ -1065,6 +1066,7 @@ export default function CompanyPage() {
         </div>
       </section>
 
+      <WebFormsSection />
     </div>
   )
 }

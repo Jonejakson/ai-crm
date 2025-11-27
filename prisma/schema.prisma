@@ -85,6 +85,7 @@ model Company {
     dealSources DealSource[]
     dealTypes   DealType[]
     messagingIntegrations MessagingIntegration[]
+  webForms   WebForm[]
 }
 
 model User {
@@ -107,7 +108,8 @@ model User {
     activityLogs  ActivityLog[]
     files         File[]
     comments      Comment[]
-    messagingAccounts UserMessagingAccount[]
+  messagingAccounts UserMessagingAccount[]
+  assignedWebForms WebForm[] @relation("WebFormAssignee")
 }
 
 model Contact {
@@ -168,6 +170,7 @@ model Pipeline {
     updatedAt DateTime @updatedAt
     deals     Deal[]
     dealSources DealSource[]
+  webForms  WebForm[]
 }
 
 model Deal {
@@ -190,7 +193,44 @@ model Deal {
     dealTypeId      Int?
     createdAt       DateTime  @default(now())
     updatedAt       DateTime  @updatedAt
-    tags            DealTag[]
+  tags            DealTag[]
+  webForm         WebForm?  @relation(fields: [webFormId], references: [id])
+  webFormId       Int?
+}
+
+model WebForm {
+  id                Int       @id @default(autoincrement())
+  name              String
+  token             String    @unique
+  isActive          Boolean   @default(true)
+  fields            Json
+  successMessage    String?
+  redirectUrl       String?
+  company           Company   @relation(fields: [companyId], references: [id])
+  companyId         Int
+  source            DealSource? @relation(fields: [sourceId], references: [id])
+  sourceId          Int?
+  pipeline          Pipeline? @relation(fields: [pipelineId], references: [id])
+  pipelineId        Int?
+  initialStage      String?
+  defaultAssignee   User?     @relation("WebFormAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultAssigneeId Int?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  submissions       WebFormSubmission[]
+  deals             Deal[]
+}
+
+model WebFormSubmission {
+  id           Int      @id @default(autoincrement())
+  webForm      WebForm  @relation(fields: [webFormId], references: [id])
+  webFormId    Int
+  payload      Json
+  ipAddress    String?
+  userAgent    String?
+  status       String   @default("success")
+  errorMessage String?
+  createdAt    DateTime @default(now())
 }
 
 model Event {
@@ -414,6 +454,7 @@ model DealSource {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     deals     Deal[]
+  webForms  WebForm[]
 
     @@unique([companyId, name])
 }
