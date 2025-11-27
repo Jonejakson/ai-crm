@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server"
 
 export async function middleware(request: NextRequest) {
   // Разрешаем доступ к публичным маршрутам
-  const publicPaths = ['/login', '/api/auth']
+  const publicPaths = ['/login', '/api/auth', '/api/webforms/public']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   if (isPublicPath) {
@@ -35,6 +35,6 @@ export const config = {
      * - _next/image (оптимизация изображений)
      * - favicon.ico
      */
-    "/((?!api/auth|login|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/webforms/public|login|_next/static|_next/image|favicon.ico).*)",
   ],
 }
