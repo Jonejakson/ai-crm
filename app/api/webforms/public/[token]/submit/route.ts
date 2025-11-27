@@ -216,7 +216,7 @@ async function upsertContact({
   return { contact, assignedUserId: assignedUserId!, isNew }
 }
 
-function resolveStage(form: { pipeline?: { stages: string | null }; initialStage: string | null }) {
+function resolveStage(form: { pipeline?: { stages: string | null } | null; initialStage: string | null }) {
   if (form.initialStage) return form.initialStage
   const stages = parsePipelineStages(form.pipeline?.stages)
   return stages[0]?.name || "Новый лид"
