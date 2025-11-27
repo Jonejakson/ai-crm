@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { sanitizeFormFields, WebFormFieldsPayload } from "@/lib/webforms"
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
     }
 
     const companyId = parseInt(user!.companyId)
-    const fieldsConfig = sanitizeFormFields(body.fields)
+    const fieldsConfig = sanitizeFormFields(body.fields) as unknown as Prisma.JsonValue
 
     const pipelineInfo = await resolvePipelineConfig(
       companyId,
