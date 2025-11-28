@@ -96,22 +96,32 @@ export async function fetchEmailsFromImap(
                       parsed.to.forEach((addr) => {
                         if (addr.value) {
                           if (Array.isArray(addr.value)) {
-                            addr.value.forEach((v) => {
-                              if (v.address) toAddresses.push(v.address)
+                            addr.value.forEach((v: any) => {
+                              if (v && typeof v === 'object' && 'address' in v && v.address) {
+                                toAddresses.push(v.address)
+                              }
                             })
-                          } else if (addr.value.address) {
-                            toAddresses.push(addr.value.address)
+                          } else if (typeof addr.value === 'object' && addr.value && 'address' in addr.value) {
+                            const addrValue = addr.value as { address?: string }
+                            if (addrValue.address) {
+                              toAddresses.push(addrValue.address)
+                            }
                           }
                         }
                       })
                     } else {
                       if (parsed.to.value) {
                         if (Array.isArray(parsed.to.value)) {
-                          parsed.to.value.forEach((v) => {
-                            if (v.address) toAddresses.push(v.address)
+                          parsed.to.value.forEach((v: any) => {
+                            if (v && typeof v === 'object' && 'address' in v && v.address) {
+                              toAddresses.push(v.address)
+                            }
                           })
-                        } else if (parsed.to.value.address) {
-                          toAddresses.push(parsed.to.value.address)
+                        } else if (typeof parsed.to.value === 'object' && parsed.to.value && 'address' in parsed.to.value) {
+                          const toValue = parsed.to.value as { address?: string }
+                          if (toValue.address) {
+                            toAddresses.push(toValue.address)
+                          }
                         }
                       }
                     }
