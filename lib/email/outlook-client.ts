@@ -1,26 +1,10 @@
 import { Client } from '@microsoft/microsoft-graph-client'
+import type { EmailMessage } from './types'
 
 export interface OutlookConfig {
   accessToken: string
   refreshToken: string
   email: string
-}
-
-export interface EmailMessage {
-  messageId: string
-  threadId?: string
-  from: string
-  fromEmail: string
-  to: string[]
-  subject: string
-  body: string
-  htmlBody?: string
-  date: Date
-  attachments?: Array<{
-    filename: string
-    contentType: string
-    content: Buffer
-  }>
 }
 
 export async function fetchEmailsFromOutlook(

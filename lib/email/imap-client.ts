@@ -1,5 +1,6 @@
 import Imap from 'imap'
 import { simpleParser } from 'mailparser'
+import type { EmailMessage } from './types'
 
 export interface ImapConfig {
   host: string
@@ -7,23 +8,6 @@ export interface ImapConfig {
   username: string
   password: string
   useSSL: boolean
-}
-
-export interface EmailMessage {
-  messageId: string
-  threadId?: string
-  from: string
-  fromEmail: string
-  to: string[]
-  subject: string
-  body: string
-  htmlBody?: string
-  date: Date
-  attachments?: Array<{
-    filename: string
-    contentType: string
-    content: Buffer
-  }>
 }
 
 export async function fetchEmailsFromImap(

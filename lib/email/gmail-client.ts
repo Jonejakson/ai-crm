@@ -1,26 +1,10 @@
 import { google } from 'googleapis'
+import type { EmailMessage } from './types'
 
 export interface GmailConfig {
   accessToken: string
   refreshToken: string
   email: string
-}
-
-export interface EmailMessage {
-  messageId: string
-  threadId: string
-  from: string
-  fromEmail: string
-  to: string[]
-  subject: string
-  body: string
-  htmlBody?: string
-  date: Date
-  attachments?: Array<{
-    filename: string
-    contentType: string
-    content: Buffer
-  }>
 }
 
 export async function fetchEmailsFromGmail(
