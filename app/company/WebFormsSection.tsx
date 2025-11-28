@@ -254,8 +254,21 @@ export default function WebFormsSection() {
 
   function getEmbedSnippet(form: WebFormDto) {
     const base = origin || 'https://your-domain.com'
-    return `<div class="pocketcrm-form" data-webform-token="${form.token}"></div>
-<script async src="${base}/api/webforms/public/${form.token}/embed"></script>`
+    let snippet = `<div class="pocketcrm-form" data-webform-token="${form.token}"`
+    
+    // Добавляем примеры кастомизации цветов в комментарии
+    snippet += `\n  <!-- Опционально: кастомизация цветов -->
+  <!-- data-primary-color="#10b981" -->
+  <!-- data-secondary-color="#0ea5e9" -->
+  <!-- data-overlay-color="rgba(0, 0, 0, 0.5)" -->
+  <!-- data-text-color="#111827" -->
+  <!-- data-border-color="#d1d5db" -->
+  <!-- data-success-color="#059669" -->
+  <!-- data-error-color="#b91c1c" -->
+  <!-- data-bg-color="#ffffff" -->`
+    
+    snippet += `></div>\n<script async src="${base}/api/webforms/public/${form.token}/embed"></script>`
+    return snippet
   }
 
   async function copySnippet(form: WebFormDto) {
@@ -356,10 +369,13 @@ export default function WebFormsSection() {
                   </div>
                 </div>
                 <div className="mt-4 rounded-xl bg-[var(--background-soft)] px-4 py-3 text-xs text-[var(--muted)]">
-                  <p className="font-semibold">Сниппет для сайта:</p>
-                  <pre className="mt-1 overflow-auto whitespace-pre-wrap break-all text-[11px]">
+                  <p className="font-semibold mb-2">Сниппет для сайта:</p>
+                  <pre className="mt-1 overflow-auto whitespace-pre-wrap break-all text-[11px] bg-gray-50 p-3 rounded-lg">
                     {getEmbedSnippet(form)}
                   </pre>
+                  <p className="mt-3 text-[10px] text-[var(--muted)]">
+                    💡 <strong>Совет:</strong> Раскомментируйте строки с data-атрибутами для кастомизации цветов под ваш сайт
+                  </p>
                 </div>
               </div>
             ))}
