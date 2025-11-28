@@ -50,7 +50,6 @@ export async function processIncomingEmail(
       data: {
         name,
         email: email.fromEmail,
-        companyId,
         userId: integration.defaultAssigneeId || null,
       },
     })
