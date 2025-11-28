@@ -86,6 +86,7 @@ export default function WebFormsSection() {
   const [origin, setOrigin] = useState('')
   const [copySuccessId, setCopySuccessId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [expandedSnippets, setExpandedSnippets] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -388,13 +389,44 @@ export default function WebFormsSection() {
                   </div>
                 </div>
                 <div className="mt-4 rounded-xl bg-[var(--background-soft)] px-4 py-3 text-xs text-[var(--muted)]">
-                  <p className="font-semibold mb-2">Сниппет для сайта:</p>
-                  <pre className="mt-1 overflow-auto whitespace-pre-wrap break-all text-[11px] bg-gray-50 p-3 rounded-lg">
-                    {getEmbedSnippet(form)}
-                  </pre>
-                  <p className="mt-3 text-[10px] text-[var(--muted)]">
-                    💡 <strong>Совет:</strong> Раскомментируйте строки с data-атрибутами для кастомизации цветов под ваш сайт
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold">Сниппет для сайта:</p>
+                    <button
+                      onClick={() => {
+                        setExpandedSnippets((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(form.id)) {
+                            next.delete(form.id)
+                          } else {
+                            next.add(form.id)
+                          }
+                          return next
+                        })
+                      }}
+                      className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors"
+                      title={expandedSnippets.has(form.id) ? 'Свернуть' : 'Развернуть'}
+                    >
+                      {expandedSnippets.has(form.id) ? (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {expandedSnippets.has(form.id) && (
+                    <>
+                      <pre className="mt-1 overflow-auto whitespace-pre-wrap break-all text-[11px] bg-gray-50 p-3 rounded-lg">
+                        {getEmbedSnippet(form)}
+                      </pre>
+                      <p className="mt-3 text-[10px] text-[var(--muted)]">
+                        💡 <strong>Совет:</strong> Раскомментируйте строки с data-атрибутами для кастомизации цветов под ваш сайт
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
