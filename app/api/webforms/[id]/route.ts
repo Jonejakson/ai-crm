@@ -15,6 +15,8 @@ type WebFormRequestPayload = {
   redirectUrl?: string | null
   fields?: WebFormFieldsPayload | { fields?: unknown }
   isActive?: boolean
+  displayType?: "inline" | "popup"
+  buttonText?: string | null
 }
 
 async function ensureAccess(formId: number, companyId: number) {
@@ -94,6 +96,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
     if (body.isActive !== undefined) {
       updateData.isActive = Boolean(body.isActive)
+    }
+    if (body.displayType !== undefined) {
+      updateData.displayType = body.displayType === "popup" ? "popup" : "inline"
+    }
+    if (body.buttonText !== undefined) {
+      updateData.buttonText =
+        body.displayType === "popup" && typeof body.buttonText === "string" && body.buttonText.trim().length > 0
+          ? body.buttonText.trim()
+          : null
     }
     if (body.fields) {
       updateData.fields = sanitizeFormFields(body.fields) as unknown as Prisma.InputJsonValue

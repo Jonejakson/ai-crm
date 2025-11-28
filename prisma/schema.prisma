@@ -203,6 +203,8 @@ model WebForm {
   name              String
   token             String    @unique
   isActive          Boolean   @default(true)
+  displayType       String    @default("inline") // "inline" | "popup"
+  buttonText        String?   // Текст кнопки для popup режима
   fields            Json
   successMessage    String?
   redirectUrl       String?

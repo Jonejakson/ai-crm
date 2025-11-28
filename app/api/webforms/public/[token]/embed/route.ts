@@ -29,6 +29,8 @@ export async function GET(
       fields: config.fields.filter((field) => field.enabled !== false),
       submitText: config.submitButtonLabel || "Отправить",
       successMessage: form.successMessage || "Спасибо! Мы свяжемся с вами в ближайшее время.",
+      displayType: (form.displayType === "popup" ? "popup" : "inline") as "inline" | "popup",
+      buttonText: form.buttonText || "Оставить заявку",
     })
 
     return new Response(script, {
@@ -52,8 +54,12 @@ function buildEmbedScript(config: {
   fields: Array<{ key: string; label: string; required: boolean; placeholder?: string }>
   submitText: string
   successMessage: string
+  displayType: "inline" | "popup"
+  buttonText: string
 }) {
   const serializedConfig = JSON.stringify(config)
+  const isPopup = config.displayType === "popup"
+  
   return `
 (function(){
   const CONFIG = ${serializedConfig};
@@ -64,96 +70,185 @@ function buildEmbedScript(config: {
     return;
   }
   target.innerHTML = '';
-  const form = document.createElement('form');
-  form.className = 'pocketcrm-form';
-  form.style.display = 'flex';
-  form.style.flexDirection = 'column';
-  form.style.gap = '12px';
-  form.style.fontFamily = 'Arial, sans-serif';
 
-  CONFIG.fields.forEach(function(field){
-    const wrapper = document.createElement('label');
-    wrapper.style.display = 'flex';
-    wrapper.style.flexDirection = 'column';
-    wrapper.style.fontSize = '14px';
-    wrapper.style.color = '#111827';
-    wrapper.textContent = field.label + (field.required ? ' *' : '');
+  function createForm() {
+    const form = document.createElement('form');
+    form.className = 'pocketcrm-form';
+    form.style.display = 'flex';
+    form.style.flexDirection = 'column';
+    form.style.gap = '12px';
+    form.style.fontFamily = 'Arial, sans-serif';
 
-    var input;
-    if (field.key === 'message') {
-      input = document.createElement('textarea');
-      input.rows = 4;
-    } else {
-      input = document.createElement('input');
-      input.type = field.key === 'email' ? 'email' : field.key === 'phone' ? 'tel' : 'text';
-    }
-    input.name = field.key;
-    input.placeholder = field.placeholder || '';
-    input.required = !!field.required;
-    input.style.marginTop = '4px';
-    input.style.padding = '10px 12px';
-    input.style.borderRadius = '10px';
-    input.style.border = '1px solid #d1d5db';
-    input.style.fontSize = '14px';
-    input.style.transition = 'border-color 0.2s';
-    input.addEventListener('focus', function(){ input.style.borderColor = '#10b981'; });
-    input.addEventListener('blur', function(){ input.style.borderColor = '#d1d5db'; });
-    wrapper.appendChild(input);
-    form.appendChild(wrapper);
-  });
+    CONFIG.fields.forEach(function(field){
+      const wrapper = document.createElement('label');
+      wrapper.style.display = 'flex';
+      wrapper.style.flexDirection = 'column';
+      wrapper.style.fontSize = '14px';
+      wrapper.style.color = '#111827';
+      wrapper.textContent = field.label + (field.required ? ' *' : '');
 
-  const button = document.createElement('button');
-  button.type = 'submit';
-  button.textContent = CONFIG.submitText || 'Отправить';
-  button.style.padding = '12px 16px';
-  button.style.borderRadius = '999px';
-  button.style.border = 'none';
-  button.style.background = 'linear-gradient(90deg, #10b981, #0ea5e9)';
-  button.style.color = '#fff';
-  button.style.fontWeight = '600';
-  button.style.cursor = 'pointer';
-  form.appendChild(button);
-
-  const messageEl = document.createElement('div');
-  messageEl.style.fontSize = '14px';
-  messageEl.style.color = '#059669';
-  messageEl.style.marginTop = '4px';
-
-  form.addEventListener('submit', async function(event){
-    event.preventDefault();
-    messageEl.textContent = '';
-    button.disabled = true;
-    button.style.opacity = '0.7';
-    const formData = new FormData(form);
-    formData.append('_origin', window.location.href);
-    try {
-      const response = await fetch(CONFIG.endpoint, {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        messageEl.textContent = data.message || CONFIG.successMessage;
-        messageEl.style.color = '#059669';
-        form.reset();
-        if (data.redirectUrl) {
-          window.location.href = data.redirectUrl;
-        }
+      var input;
+      if (field.key === 'message') {
+        input = document.createElement('textarea');
+        input.rows = 4;
       } else {
-        messageEl.textContent = (data && data.error) ? data.error : 'Не удалось отправить форму';
-        messageEl.style.color = '#b91c1c';
+        input = document.createElement('input');
+        input.type = field.key === 'email' ? 'email' : field.key === 'phone' ? 'tel' : 'text';
       }
-    } catch (error) {
-      messageEl.textContent = 'Ошибка соединения';
-      messageEl.style.color = '#b91c1c';
-    } finally {
-      button.disabled = false;
-      button.style.opacity = '1';
-    }
-  });
+      input.name = field.key;
+      input.placeholder = field.placeholder || '';
+      input.required = !!field.required;
+      input.style.marginTop = '4px';
+      input.style.padding = '10px 12px';
+      input.style.borderRadius = '10px';
+      input.style.border = '1px solid #d1d5db';
+      input.style.fontSize = '14px';
+      input.style.transition = 'border-color 0.2s';
+      input.addEventListener('focus', function(){ input.style.borderColor = '#10b981'; });
+      input.addEventListener('blur', function(){ input.style.borderColor = '#d1d5db'; });
+      wrapper.appendChild(input);
+      form.appendChild(wrapper);
+    });
 
-  target.appendChild(form);
-  target.appendChild(messageEl);
+    const submitBtn = document.createElement('button');
+    submitBtn.type = 'submit';
+    submitBtn.textContent = CONFIG.submitText || 'Отправить';
+    submitBtn.style.padding = '12px 16px';
+    submitBtn.style.borderRadius = '999px';
+    submitBtn.style.border = 'none';
+    submitBtn.style.background = 'linear-gradient(90deg, #10b981, #0ea5e9)';
+    submitBtn.style.color = '#fff';
+    submitBtn.style.fontWeight = '600';
+    submitBtn.style.cursor = 'pointer';
+    form.appendChild(submitBtn);
+
+    const messageEl = document.createElement('div');
+    messageEl.style.fontSize = '14px';
+    messageEl.style.color = '#059669';
+    messageEl.style.marginTop = '4px';
+
+    form.addEventListener('submit', async function(event){
+      event.preventDefault();
+      messageEl.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.7';
+      const formData = new FormData(form);
+      formData.append('_origin', window.location.href);
+      try {
+        const response = await fetch(CONFIG.endpoint, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+          messageEl.textContent = data.message || CONFIG.successMessage;
+          messageEl.style.color = '#059669';
+          form.reset();
+          if (data.redirectUrl) {
+            window.location.href = data.redirectUrl;
+          } else if (${isPopup ? 'true' : 'false'}) {
+            setTimeout(function() {
+              closeModal();
+            }, 2000);
+          }
+        } else {
+          messageEl.textContent = (data && data.error) ? data.error : 'Не удалось отправить форму';
+          messageEl.style.color = '#b91c1c';
+        }
+      } catch (error) {
+        messageEl.textContent = 'Ошибка соединения';
+        messageEl.style.color = '#b91c1c';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
+    });
+
+    return { form: form, messageEl: messageEl };
+  }
+
+  ${isPopup ? `
+  function openModal() {
+    if (document.getElementById('pocketcrm-modal-' + CONFIG.token)) return;
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'pocketcrm-modal-' + CONFIG.token;
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.right = '0';
+    overlay.style.bottom = '0';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '999999';
+    overlay.style.padding = '20px';
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) closeModal();
+    });
+
+    const modal = document.createElement('div');
+    modal.style.backgroundColor = '#fff';
+    modal.style.borderRadius = '16px';
+    modal.style.padding = '24px';
+    modal.style.maxWidth = '500px';
+    modal.style.width = '100%';
+    modal.style.maxHeight = '90vh';
+    modal.style.overflowY = 'auto';
+    modal.style.position = 'relative';
+    modal.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.top = '12px';
+    closeBtn.style.right = '12px';
+    closeBtn.style.background = 'none';
+    closeBtn.style.border = 'none';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.color = '#6b7280';
+    closeBtn.style.width = '32px';
+    closeBtn.style.height = '32px';
+    closeBtn.style.display = 'flex';
+    closeBtn.style.alignItems = 'center';
+    closeBtn.style.justifyContent = 'center';
+    closeBtn.addEventListener('click', closeModal);
+    modal.appendChild(closeBtn);
+
+    const formContainer = document.createElement('div');
+    const formData = createForm();
+    formContainer.appendChild(formData.form);
+    formContainer.appendChild(formData.messageEl);
+    modal.appendChild(formContainer);
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  }
+
+  function closeModal() {
+    const overlay = document.getElementById('pocketcrm-modal-' + CONFIG.token);
+    if (overlay) overlay.remove();
+  }
+
+  const triggerBtn = document.createElement('button');
+  triggerBtn.textContent = CONFIG.buttonText || 'Оставить заявку';
+  triggerBtn.type = 'button';
+  triggerBtn.style.padding = '12px 24px';
+  triggerBtn.style.borderRadius = '999px';
+  triggerBtn.style.border = 'none';
+  triggerBtn.style.background = 'linear-gradient(90deg, #10b981, #0ea5e9)';
+  triggerBtn.style.color = '#fff';
+  triggerBtn.style.fontWeight = '600';
+  triggerBtn.style.cursor = 'pointer';
+  triggerBtn.style.fontSize = '16px';
+  triggerBtn.addEventListener('click', openModal);
+  target.appendChild(triggerBtn);
+  ` : `
+  const formData = createForm();
+  target.appendChild(formData.form);
+  target.appendChild(formData.messageEl);
+  `}
 })();`
 }
 

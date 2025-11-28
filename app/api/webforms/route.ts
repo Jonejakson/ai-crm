@@ -15,6 +15,8 @@ type WebFormRequestPayload = {
   redirectUrl?: string | null
   fields?: WebFormFieldsPayload | { fields?: unknown }
   isActive?: boolean
+  displayType?: "inline" | "popup"
+  buttonText?: string | null
 }
 
 function ensureAdmin(user: { role?: string } | null) {
@@ -98,6 +100,11 @@ export async function POST(request: Request) {
             ? body.redirectUrl.trim()
             : null,
         isActive: body.isActive !== false,
+        displayType: body.displayType === "popup" ? "popup" : "inline",
+        buttonText:
+          body.displayType === "popup" && typeof body.buttonText === "string" && body.buttonText.trim().length > 0
+            ? body.buttonText.trim()
+            : null,
         sourceId: body.sourceId ? Number(body.sourceId) : null,
         pipelineId: pipelineInfo.pipelineId,
         initialStage: pipelineInfo.initialStage,

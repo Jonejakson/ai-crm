@@ -26,6 +26,8 @@ interface WebFormDto {
   name: string
   token: string
   isActive: boolean
+  displayType: string
+  buttonText: string | null
   successMessage: string | null
   redirectUrl: string | null
   initialStage: string | null
@@ -50,6 +52,8 @@ interface FormState {
   successMessage: string
   redirectUrl: string
   submitButtonLabel: string
+  displayType: "inline" | "popup"
+  buttonText: string
   fields: WebFormFieldConfig[]
   isActive: boolean
 }
@@ -63,6 +67,8 @@ const DEFAULT_STATE: FormState = {
   successMessage: 'Спасибо! Мы получили вашу заявку и свяжемся с вами в ближайшее время.',
   redirectUrl: '',
   submitButtonLabel: 'Отправить',
+  displayType: 'inline',
+  buttonText: 'Оставить заявку',
   fields: FIELD_LIBRARY.map((field, index) => ({ ...field, order: index })),
   isActive: true,
 }
@@ -148,6 +154,8 @@ export default function WebFormsSection() {
       successMessage: form.successMessage || DEFAULT_STATE.successMessage,
       redirectUrl: form.redirectUrl || '',
       submitButtonLabel: sanitized.submitButtonLabel || 'Отправить',
+      displayType: (form.displayType === "popup" ? "popup" : "inline") as "inline" | "popup",
+      buttonText: form.buttonText || DEFAULT_STATE.buttonText,
       fields: sanitized.fields.map((field, index) => ({ ...field, order: index })),
       isActive: form.isActive,
     })
@@ -184,6 +192,8 @@ export default function WebFormsSection() {
       successMessage: formState.successMessage,
       redirectUrl: formState.redirectUrl || null,
       isActive: formState.isActive,
+      displayType: formState.displayType,
+      buttonText: formState.displayType === "popup" ? formState.buttonText : null,
       fields: {
         fields: formState.fields.map((field, index) => ({ ...field, order: index })),
         submitButtonLabel: formState.submitButtonLabel,
@@ -499,6 +509,41 @@ export default function WebFormsSection() {
                     className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                   />
                 </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                    Тип отображения
+                  </label>
+                  <select
+                    value={formState.displayType}
+                    onChange={(e) =>
+                      setFormState((prev) => ({
+                        ...prev,
+                        displayType: e.target.value as "inline" | "popup",
+                      }))
+                    }
+                    className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                  >
+                    <option value="inline">Встроенная форма</option>
+                    <option value="popup">Кнопка с попапом</option>
+                  </select>
+                </div>
+                {formState.displayType === "popup" && (
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                      Текст кнопки
+                    </label>
+                    <input
+                      type="text"
+                      value={formState.buttonText}
+                      onChange={(e) => setFormState((prev) => ({ ...prev, buttonText: e.target.value }))}
+                      placeholder="Оставить заявку"
+                      className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
