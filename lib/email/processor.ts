@@ -80,7 +80,7 @@ export async function processIncomingEmail(
           currency: 'RUB',
           stage: initialStage,
           contactId: contact.id,
-          userId: integration.defaultAssigneeId || contact.userId || null,
+          userId: integration.defaultAssigneeId || contact.userId || undefined,
           pipelineId: integration.defaultPipelineId,
           sourceId: integration.defaultSourceId,
         },
