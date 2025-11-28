@@ -76,12 +76,33 @@ export async function fetchEmailsFromImap(
             msg.once('end', () => {
               simpleParser(emailData)
                 .then((parsed) => {
+                  // Обрабатываем from
+                  const fromAddress = Array.isArray(parsed.from)
+                    ? parsed.from[0]
+                    : parsed.from
+                  const fromEmail = fromAddress?.value
+                    ? (Array.isArray(fromAddress.value) ? fromAddress.value[0] : fromAddress.value).address || ''
+                    : ''
+
+                  // Обрабатываем to
+                  const toAddresses = parsed.to
+                    ? (Array.isArray(parsed.to)
+                        ? parsed.to.flatMap((addr) =>
+                            Array.isArray(addr.value)
+                              ? addr.value.map((v) => v.address || '')
+                              : [addr.value?.address || '']
+                          )
+                        : Array.isArray(parsed.to.value)
+                        ? parsed.to.value.map((v) => v.address || '')
+                        : [parsed.to.value?.address || ''])
+                    : []
+
                   const email: EmailMessage = {
                     messageId: parsed.messageId || `imap-${seqno}-${Date.now()}`,
                     threadId: parsed.inReplyTo || undefined,
-                    from: parsed.from?.text || '',
-                    fromEmail: parsed.from?.value[0]?.address || '',
-                    to: parsed.to?.value.map((addr) => addr.address || '') || [],
+                    from: fromAddress?.text || fromEmail,
+                    fromEmail,
+                    to: toAddresses.filter((addr) => addr),
                     subject: parsed.subject || '',
                     body: parsed.text || '',
                     htmlBody: parsed.html || undefined,
