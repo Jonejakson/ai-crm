@@ -35,7 +35,9 @@ export async function processIncomingEmail(
   // Находим или создаем контакт
   let contact = await prisma.contact.findFirst({
     where: {
-      companyId,
+      user: {
+        companyId,
+      },
       email: email.fromEmail,
     },
   })
