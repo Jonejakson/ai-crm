@@ -80,22 +80,42 @@ export async function fetchEmailsFromImap(
                   const fromAddress = Array.isArray(parsed.from)
                     ? parsed.from[0]
                     : parsed.from
-                  const fromEmail = fromAddress?.value
-                    ? (Array.isArray(fromAddress.value) ? fromAddress.value[0] : fromAddress.value).address || ''
-                    : ''
+                  let fromEmail = ''
+                  if (fromAddress?.value) {
+                    if (Array.isArray(fromAddress.value)) {
+                      fromEmail = fromAddress.value[0]?.address || ''
+                    } else {
+                      fromEmail = fromAddress.value.address || ''
+                    }
+                  }
 
                   // Обрабатываем to
-                  const toAddresses = parsed.to
-                    ? (Array.isArray(parsed.to)
-                        ? parsed.to.flatMap((addr) =>
-                            Array.isArray(addr.value)
-                              ? addr.value.map((v) => v.address || '')
-                              : [addr.value?.address || '']
-                          )
-                        : Array.isArray(parsed.to.value)
-                        ? parsed.to.value.map((v) => v.address || '')
-                        : [parsed.to.value?.address || ''])
-                    : []
+                  const toAddresses: string[] = []
+                  if (parsed.to) {
+                    if (Array.isArray(parsed.to)) {
+                      parsed.to.forEach((addr) => {
+                        if (addr.value) {
+                          if (Array.isArray(addr.value)) {
+                            addr.value.forEach((v) => {
+                              if (v.address) toAddresses.push(v.address)
+                            })
+                          } else if (addr.value.address) {
+                            toAddresses.push(addr.value.address)
+                          }
+                        }
+                      })
+                    } else {
+                      if (parsed.to.value) {
+                        if (Array.isArray(parsed.to.value)) {
+                          parsed.to.value.forEach((v) => {
+                            if (v.address) toAddresses.push(v.address)
+                          })
+                        } else if (parsed.to.value.address) {
+                          toAddresses.push(parsed.to.value.address)
+                        }
+                      }
+                    }
+                  }
 
                   const email: EmailMessage = {
                     messageId: parsed.messageId || `imap-${seqno}-${Date.now()}`,
