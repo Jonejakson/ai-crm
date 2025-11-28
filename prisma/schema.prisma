@@ -69,6 +69,13 @@ enum MessagingPlatform {
     INTERNAL
 }
 
+enum EmailProvider {
+    GMAIL
+    OUTLOOK
+    IMAP_SMTP
+    YANDEX
+}
+
 model Company {
     id        Int       @id @default(autoincrement())
     name      String
@@ -85,7 +92,8 @@ model Company {
     dealSources DealSource[]
     dealTypes   DealType[]
     messagingIntegrations MessagingIntegration[]
-  webForms   WebForm[]
+    webForms   WebForm[]
+    emailIntegrations EmailIntegration[]
 }
 
 model User {
@@ -110,6 +118,7 @@ model User {
     comments      Comment[]
   messagingAccounts UserMessagingAccount[]
   assignedWebForms WebForm[] @relation("WebFormAssignee")
+  assignedEmailIntegrations EmailIntegration[] @relation("EmailIntegrationAssignee")
 }
 
 model Contact {
@@ -170,7 +179,8 @@ model Pipeline {
     updatedAt DateTime @updatedAt
     deals     Deal[]
     dealSources DealSource[]
-  webForms  WebForm[]
+    webForms  WebForm[]
+    emailIntegrations EmailIntegration[]
 }
 
 model Deal {
@@ -196,6 +206,7 @@ model Deal {
   tags            DealTag[]
   webForm         WebForm?  @relation(fields: [webFormId], references: [id])
   webFormId       Int?
+  emailMessages   EmailMessage[]
 }
 
 model WebForm {
@@ -268,15 +279,23 @@ model EmailMessage {
     id         Int      @id @default(autoincrement())
     subject    String
     body       String
-    status     String   @default("pending")
+    status     String   @default("pending") // pending, sent, failed, received
     error      String?
-    providerId String?
-    toEmail    String
+    providerId String?  // ID сообщения у провайдера (Gmail messageId, Outlook id и т.д.)
+    toEmail    String?  // Для исходящих
+    fromEmail  String?  // Для входящих
+    messageId  String?  // Email Message-ID заголовок
+    threadId   String?  // ID треда (для группировки переписки)
+    isIncoming Boolean  @default(false) // true - входящее, false - исходящее
+    emailIntegration EmailIntegration? @relation(fields: [emailIntegrationId], references: [id])
+    emailIntegrationId Int?
     createdAt  DateTime @default(now())
     user       User?    @relation(fields: [userId], references: [id])
     userId     Int?
     contact    Contact? @relation(fields: [contactId], references: [id])
     contactId  Int?
+    deal       Deal?    @relation(fields: [dealId], references: [id])
+    dealId     Int?
 }
 
 model Plan {
@@ -456,7 +475,8 @@ model DealSource {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     deals     Deal[]
-  webForms  WebForm[]
+    webForms  WebForm[]
+    emailIntegrations EmailIntegration[]
 
     @@unique([companyId, name])
 }
@@ -508,4 +528,55 @@ model UserMessagingAccount {
     updatedAt       DateTime         @updatedAt
 
     @@unique([userId, platform]) // Один аккаунт каждого типа на пользователя
+}
+
+// Email интеграции для компании
+model EmailIntegration {
+    id                Int       @id @default(autoincrement())
+    provider          EmailProvider
+    email             String    // Email адрес
+    displayName       String?   // Отображаемое имя
+    isActive          Boolean   @default(true)
+    isIncomingEnabled Boolean  @default(true) // Получение входящих писем
+    isOutgoingEnabled Boolean  @default(true) // Отправка писем
+    
+    // Для IMAP/SMTP
+    imapHost          String?
+    imapPort          Int?
+    imapUsername      String?
+    imapPassword      String?  // Зашифрованный пароль
+    smtpHost          String?
+    smtpPort          Int?
+    smtpUsername      String?
+    smtpPassword      String?  // Зашифрованный пароль
+    useSSL            Boolean  @default(true)
+    
+    // Для OAuth (Gmail, Outlook)
+    accessToken       String?  // OAuth access token (зашифрованный)
+    refreshToken      String?  // OAuth refresh token (зашифрованный)
+    tokenExpiresAt    DateTime? // Время истечения токена
+    
+    // Настройки синхронизации
+    lastSyncAt        DateTime? // Время последней синхронизации
+    syncInterval      Int      @default(5) // Интервал синхронизации в минутах
+    autoCreateContact Boolean  @default(true) // Автоматически создавать контакты из писем
+    autoCreateDeal    Boolean  @default(false) // Автоматически создавать сделки из писем
+    defaultSourceId   Int?     // Источник сделки по умолчанию
+    defaultPipelineId  Int?     // Воронка по умолчанию
+    defaultAssigneeId Int?     // Ответственный по умолчанию
+    
+    settings          Json?    // Дополнительные настройки
+    
+    company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId         Int
+    defaultAssignee   User?    @relation("EmailIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+    defaultSource      DealSource? @relation(fields: [defaultSourceId], references: [id])
+    defaultPipeline    Pipeline? @relation(fields: [defaultPipelineId], references: [id])
+    
+    messages          EmailMessage[]
+    
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+    
+    @@unique([companyId, email, provider]) // Один email одного провайдера на компанию
 }

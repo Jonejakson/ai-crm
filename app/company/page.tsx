@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import WebFormsSection from './WebFormsSection'
+import EmailIntegrationsSection from './EmailIntegrationsSection'
 
 interface User {
   id: number
@@ -1067,6 +1068,7 @@ export default function CompanyPage() {
       </section>
 
       <WebFormsSection />
+      <EmailIntegrationsSection />
     </div>
   )
 }
