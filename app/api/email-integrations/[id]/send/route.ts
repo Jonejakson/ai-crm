@@ -88,7 +88,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           emailIntegrationId: integration.id,
           contactId: contactId ? Number(contactId) : null,
           dealId: dealId ? Number(dealId) : null,
-          userId: user.id,
+          userId: Number(user.id),
         },
       })
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           emailIntegrationId: integration.id,
           contactId: contactId ? Number(contactId) : null,
           dealId: dealId ? Number(dealId) : null,
-          userId: user.id,
+          userId: Number(user.id),
         },
       })
 
