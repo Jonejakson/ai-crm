@@ -633,8 +633,8 @@ export default function EmailIntegrationsSection() {
               </div>
             </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   )
 }
