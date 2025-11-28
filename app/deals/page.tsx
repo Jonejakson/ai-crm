@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import PipelineManager from '@/components/PipelineManager'
@@ -331,6 +332,7 @@ function CustomSelect({
 
 export default function DealsPage() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [deals, setDeals] = useState<Deal[]>([])
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -1213,6 +1215,9 @@ export default function DealsPage() {
                   onEdit={(deal) => {
                     setViewingDeal(deal)
                   }}
+                  onContactClick={(contactId) => {
+                    router.push(`/contacts/${contactId}`)
+                  }}
                   color={getStageColor(stage.name)}
                 />
               ))}
@@ -1815,12 +1820,14 @@ function DealColumn({
   deals,
   onDelete,
   onEdit,
+  onContactClick,
   color,
 }: {
   stage: string
   deals: Deal[]
   onDelete: (id: number) => void
   onEdit: (deal: Deal) => void
+  onContactClick?: (contactId: number) => void
   color: string
 }) {
   const { setNodeRef, isOver } = useDroppable({
@@ -1862,6 +1869,7 @@ function DealColumn({
               deal={deal}
               onDelete={onDelete}
               onEdit={onEdit}
+              onContactClick={onContactClick}
             />
           ))}
         </div>
@@ -1875,10 +1883,12 @@ function DealCard({
   deal,
   onDelete,
   onEdit,
+  onContactClick,
 }: {
   deal: Deal
   onDelete: (id: number) => void
   onEdit: (deal: Deal) => void
+  onContactClick?: (contactId: number) => void
 }) {
   const {
     attributes,
@@ -1916,7 +1926,13 @@ function DealCard({
       />
       <div className="flex justify-between items-start mb-2">
         <h4 
-          className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600"
+          className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation()
+            if (onContactClick) {
+              onContactClick(deal.contact.id)
+            }
+          }}
           onDoubleClick={(e) => {
             e.stopPropagation()
             onEdit(deal)
