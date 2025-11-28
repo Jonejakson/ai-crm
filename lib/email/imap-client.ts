@@ -159,7 +159,7 @@ export async function fetchEmailsFromImap(
       })
     })
 
-    imap.once('error', (err) => {
+    imap.once('error', (err: Error) => {
       reject(err)
     })
 
