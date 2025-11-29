@@ -8,6 +8,7 @@ import WebFormsSection from './WebFormsSection'
 import EmailIntegrationsSection from './EmailIntegrationsSection'
 import WebhookIntegrationsSection from './WebhookIntegrationsSection'
 import TelegramBotSection from './TelegramBotSection'
+import WhatsAppSection from './WhatsAppSection'
 
 interface User {
   id: number
@@ -1073,6 +1074,7 @@ export default function CompanyPage() {
       <EmailIntegrationsSection />
       <WebhookIntegrationsSection />
       <TelegramBotSection />
+      <WhatsAppSection />
     </div>
   )
 }
