@@ -74,21 +74,22 @@ export async function processIncomingEmail(
       const initialStage = stages[0]?.name || 'Новый лид'
 
       // Определяем userId: используем defaultAssigneeId, contact.userId или первого пользователя компании
-      let userId = integration.defaultAssigneeId || contact.userId
+      let userId: number | null = integration.defaultAssigneeId || contact.userId || null
       if (!userId) {
         const firstUser = await prisma.user.findFirst({
           where: { companyId },
           select: { id: true },
         })
-        userId = firstUser?.id
+        userId = firstUser?.id ?? null
       }
 
       // Если все еще нет userId, не создаем сделку
-      if (!userId) {
+      if (!userId || typeof userId !== 'number') {
         console.warn('Cannot create deal: no userId available')
         return result
       }
 
+      // После проверки TypeScript знает, что userId - это number
       const deal = await prisma.deal.create({
         data: {
           title: email.subject || `Заявка от ${email.from}`,
@@ -96,7 +97,7 @@ export async function processIncomingEmail(
           currency: 'RUB',
           stage: initialStage,
           contactId: contact.id,
-          userId: userId,
+          userId: userId, // TypeScript теперь знает, что это number
           pipelineId: integration.defaultPipelineId,
           sourceId: integration.defaultSourceId,
         },
