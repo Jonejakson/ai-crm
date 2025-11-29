@@ -213,7 +213,17 @@ export default function DealDetailPage() {
       })
       if (response.ok) {
         toast.success('Статус задачи обновлен')
+        // Обновляем локальное состояние задач сразу для мгновенной обратной связи
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId ? { ...task, status: newStatus } : task
+          )
+        )
+        // Затем обновляем все данные
         fetchDealData()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка обновления задачи')
       }
     } catch (error) {
       console.error('Error updating task:', error)
