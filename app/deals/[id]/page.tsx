@@ -126,34 +126,34 @@ export default function DealDetailPage() {
           sourceId: data.source?.id?.toString() || '',
           dealTypeId: data.dealType?.id?.toString() || '',
         })
+        
+        // Загружаем задачи по контакту сделки и активность только если сделка найдена
+        if (data && data.contact?.id) {
+          // Загружаем задачи по контакту сделки
+          const tasksResponse = await fetch(`/api/tasks`)
+          if (tasksResponse.ok) {
+            const tasksData = await tasksResponse.json()
+            // Фильтруем задачи по contactId
+            const filteredTasks = Array.isArray(tasksData) 
+              ? tasksData.filter((task: any) => task.contactId === data.contact.id)
+              : []
+            setTasks(filteredTasks)
+          }
+          
+          // Загружаем активность
+          try {
+            const activityResponse = await fetch(`/api/activity?entityType=deal&entityId=${dealId}`)
+            if (activityResponse.ok) {
+              const activityData = await activityResponse.json()
+              setActivityLogs(Array.isArray(activityData?.logs) ? activityData.logs : [])
+            }
+          } catch (error) {
+            console.error('Error fetching activity:', error)
+          }
+        }
       } else {
         toast.error('Сделка не найдена')
         router.push('/deals')
-      }
-      
-      // Загружаем задачи по контакту сделки и активность только если сделка найдена
-      if (data && data.contact?.id) {
-        // Загружаем задачи по контакту сделки
-        const tasksResponse = await fetch(`/api/tasks`)
-        if (tasksResponse.ok) {
-          const tasksData = await tasksResponse.json()
-          // Фильтруем задачи по contactId
-          const filteredTasks = Array.isArray(tasksData) 
-            ? tasksData.filter((task: any) => task.contactId === data.contact.id)
-            : []
-          setTasks(filteredTasks)
-        }
-        
-        // Загружаем активность
-        try {
-          const activityResponse = await fetch(`/api/activity?entityType=deal&entityId=${dealId}`)
-          if (activityResponse.ok) {
-            const activityData = await activityResponse.json()
-            setActivityLogs(Array.isArray(activityData?.logs) ? activityData.logs : [])
-          }
-        } catch (error) {
-          console.error('Error fetching activity:', error)
-        }
       }
     } catch (error) {
       console.error('Error fetching deal data:', error)
