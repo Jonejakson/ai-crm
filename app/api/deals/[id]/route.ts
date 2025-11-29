@@ -5,7 +5,7 @@ import { getDirectWhereCondition } from "@/lib/access-control";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser();
@@ -14,7 +14,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const dealId = parseInt(params.id);
+    const { id } = await params;
+    const dealId = parseInt(id);
     if (isNaN(dealId)) {
       return NextResponse.json({ error: "Invalid deal ID" }, { status: 400 });
     }
