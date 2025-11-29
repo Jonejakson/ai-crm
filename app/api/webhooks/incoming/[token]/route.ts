@@ -248,7 +248,9 @@ async function processWebhookData(
             select: { id: true },
             orderBy: { createdAt: "asc" },
           })
-          userId = fallbackUser?.id || null
+          if (fallbackUser?.id) {
+            userId = fallbackUser.id
+          }
         }
 
         if (!userId || typeof userId !== 'number') {
@@ -256,6 +258,7 @@ async function processWebhookData(
         }
 
         // После проверки TypeScript знает, что userId - это number
+        const finalUserId: number = userId
 
         const deal = await prisma.deal.create({
           data: {
@@ -264,7 +267,7 @@ async function processWebhookData(
             currency: data.currency || "RUB",
             stage: initialStage,
             contactId: contact.id,
-            userId: userId,
+            userId: finalUserId,
             pipelineId: webhook.defaultPipelineId,
             sourceId: webhook.defaultSourceId,
           },
