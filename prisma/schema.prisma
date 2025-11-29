@@ -121,6 +121,7 @@ model User {
   assignedWebForms WebForm[] @relation("WebFormAssignee")
   assignedEmailIntegrations EmailIntegration[] @relation("EmailIntegrationAssignee")
   assignedWebhookIntegrations WebhookIntegration[] @relation("WebhookIntegrationAssignee")
+  assignedMessagingIntegrations MessagingIntegration[] @relation("MessagingIntegrationAssignee")
 }
 
 model Contact {
@@ -184,6 +185,7 @@ model Pipeline {
     webForms  WebForm[]
     emailIntegrations EmailIntegration[]
     webhookIntegrations WebhookIntegration[]
+    messagingIntegrations MessagingIntegration[]
 }
 
 model Deal {
@@ -481,6 +483,7 @@ model DealSource {
     webForms  WebForm[]
     emailIntegrations EmailIntegration[]
     webhookIntegrations WebhookIntegration[]
+    messagingIntegrations MessagingIntegration[]
 
     @@unique([companyId, name])
 }
@@ -506,8 +509,20 @@ model MessagingIntegration {
     webhookUrl  String?          // URL для webhook'ов
     webhookSecret String?        // Секрет для проверки webhook'ов
     settings    Json?            // Дополнительные настройки (JSON)
+    
+    // Настройки автоматизации
+    autoCreateContact Boolean    @default(true) // Автоматически создавать контакты
+    autoCreateDeal    Boolean    @default(false) // Автоматически создавать сделки
+    defaultSourceId    Int?       // Источник сделки по умолчанию
+    defaultPipelineId Int?       // Воронка по умолчанию
+    defaultAssigneeId Int?       // Ответственный по умолчанию
+    
     company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
     companyId   Int
+    defaultAssignee User?        @relation("MessagingIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+    defaultSource   DealSource?  @relation(fields: [defaultSourceId], references: [id])
+    defaultPipeline  Pipeline?   @relation(fields: [defaultPipelineId], references: [id])
+    
     createdAt   DateTime         @default(now())
     updatedAt   DateTime         @updatedAt
 
