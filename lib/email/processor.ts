@@ -73,6 +73,22 @@ export async function processIncomingEmail(
       const stages = parsePipelineStages(pipeline.stages)
       const initialStage = stages[0]?.name || 'Новый лид'
 
+      // Определяем userId: используем defaultAssigneeId, contact.userId или первого пользователя компании
+      let userId = integration.defaultAssigneeId || contact.userId
+      if (!userId) {
+        const firstUser = await prisma.user.findFirst({
+          where: { companyId },
+          select: { id: true },
+        })
+        userId = firstUser?.id
+      }
+
+      // Если все еще нет userId, не создаем сделку
+      if (!userId) {
+        console.warn('Cannot create deal: no userId available')
+        return result
+      }
+
       const deal = await prisma.deal.create({
         data: {
           title: email.subject || `Заявка от ${email.from}`,
@@ -80,14 +96,14 @@ export async function processIncomingEmail(
           currency: 'RUB',
           stage: initialStage,
           contactId: contact.id,
-          userId: integration.defaultAssigneeId || contact.userId || undefined,
+          userId: userId,
           pipelineId: integration.defaultPipelineId,
           sourceId: integration.defaultSourceId,
         },
       })
       result.dealId = deal.id
       result.dealCreated = true
-      result.userId = deal.userId || undefined
+      result.userId = deal.userId
     }
   } else if (contact) {
     result.userId = contact.userId || undefined
