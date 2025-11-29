@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import WebFormsSection from './WebFormsSection'
 import EmailIntegrationsSection from './EmailIntegrationsSection'
+import WebhookIntegrationsSection from './WebhookIntegrationsSection'
 
 interface User {
   id: number
@@ -1069,6 +1070,7 @@ export default function CompanyPage() {
 
       <WebFormsSection />
       <EmailIntegrationsSection />
+      <WebhookIntegrationsSection />
     </div>
   )
 }

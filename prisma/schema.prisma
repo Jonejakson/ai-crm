@@ -94,6 +94,7 @@ model Company {
     messagingIntegrations MessagingIntegration[]
     webForms   WebForm[]
     emailIntegrations EmailIntegration[]
+    webhookIntegrations WebhookIntegration[]
 }
 
 model User {
@@ -119,6 +120,7 @@ model User {
   messagingAccounts UserMessagingAccount[]
   assignedWebForms WebForm[] @relation("WebFormAssignee")
   assignedEmailIntegrations EmailIntegration[] @relation("EmailIntegrationAssignee")
+  assignedWebhookIntegrations WebhookIntegration[] @relation("WebhookIntegrationAssignee")
 }
 
 model Contact {
@@ -181,6 +183,7 @@ model Pipeline {
     dealSources DealSource[]
     webForms  WebForm[]
     emailIntegrations EmailIntegration[]
+    webhookIntegrations WebhookIntegration[]
 }
 
 model Deal {
@@ -477,6 +480,7 @@ model DealSource {
     deals     Deal[]
     webForms  WebForm[]
     emailIntegrations EmailIntegration[]
+    webhookIntegrations WebhookIntegration[]
 
     @@unique([companyId, name])
 }
@@ -579,4 +583,54 @@ model EmailIntegration {
     updatedAt         DateTime  @updatedAt
     
     @@unique([companyId, email, provider]) // Один email одного провайдера на компанию
+}
+
+model WebhookIntegration {
+    id                Int       @id @default(autoincrement())
+    name              String    // Название интеграции
+    token             String    @unique // Уникальный токен для авторизации webhook'ов
+    isActive          Boolean   @default(true)
+    description       String?   // Описание интеграции
+    
+    // Настройки обработки данных
+    autoCreateContact Boolean   @default(true) // Автоматически создавать контакты
+    autoCreateDeal    Boolean   @default(false) // Автоматически создавать сделки
+    defaultSourceId   Int?      // Источник сделки по умолчанию
+    defaultPipelineId Int?      // Воронка по умолчанию
+    defaultAssigneeId Int?      // Ответственный по умолчанию
+    
+    // Маппинг полей (JSON: { "name": "full_name", "email": "email_address", ... })
+    fieldMapping      Json?     // Маппинг полей из внешней системы в поля CRM
+    
+    settings          Json?     // Дополнительные настройки
+    
+    company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId         Int
+    defaultAssignee   User?     @relation("WebhookIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+    defaultSource     DealSource? @relation(fields: [defaultSourceId], references: [id])
+    defaultPipeline   Pipeline? @relation(fields: [defaultPipelineId], references: [id])
+    
+    logs              WebhookLog[]
+    
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+    
+    @@index([token]) // Индекс для быстрого поиска по токену
+}
+
+model WebhookLog {
+    id                Int       @id @default(autoincrement())
+    webhook           WebhookIntegration @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+    webhookId         Int
+    payload           Json      // Входящие данные
+    response          Json?     // Ответ системы
+    status            String    @default("success") // success, error, warning
+    errorMessage      String?   // Сообщение об ошибке
+    contactId         Int?      // ID созданного/найденного контакта
+    dealId            Int?      // ID созданной сделки
+    ipAddress         String?   // IP адрес отправителя
+    userAgent         String?   // User-Agent заголовок
+    createdAt         DateTime  @default(now())
+    
+    @@index([webhookId, createdAt]) // Индекс для фильтрации по webhook и дате
 }
