@@ -1215,7 +1215,7 @@ export default function DealsPage() {
                   deals={dealsByStage[stage.name] || []}
                   onDelete={handleDelete}
                   onEdit={(deal) => {
-                    setViewingDeal(deal)
+                    router.push(`/deals/${deal.id}`)
                   }}
                   onContactClick={(contactId) => {
                     router.push(`/contacts/${contactId}`)
