@@ -76,6 +76,12 @@ enum EmailProvider {
     YANDEX
 }
 
+enum AdvertisingPlatform {
+    YANDEX_DIRECT
+    AVITO
+    GOOGLE_ADS
+}
+
 model Company {
     id        Int       @id @default(autoincrement())
     name      String
@@ -95,6 +101,7 @@ model Company {
     webForms   WebForm[]
     emailIntegrations EmailIntegration[]
     webhookIntegrations WebhookIntegration[]
+    advertisingIntegrations AdvertisingIntegration[]
 }
 
 model User {
@@ -122,6 +129,7 @@ model User {
   assignedEmailIntegrations EmailIntegration[] @relation("EmailIntegrationAssignee")
   assignedWebhookIntegrations WebhookIntegration[] @relation("WebhookIntegrationAssignee")
   assignedMessagingIntegrations MessagingIntegration[] @relation("MessagingIntegrationAssignee")
+  assignedAdvertisingIntegrations AdvertisingIntegration[] @relation("AdvertisingIntegrationAssignee")
 }
 
 model Contact {
@@ -186,6 +194,7 @@ model Pipeline {
     emailIntegrations EmailIntegration[]
     webhookIntegrations WebhookIntegration[]
     messagingIntegrations MessagingIntegration[]
+    advertisingIntegrations AdvertisingIntegration[]
 }
 
 model Deal {
@@ -484,6 +493,7 @@ model DealSource {
     emailIntegrations EmailIntegration[]
     webhookIntegrations WebhookIntegration[]
     messagingIntegrations MessagingIntegration[]
+    advertisingIntegrations AdvertisingIntegration[]
 
     @@unique([companyId, name])
 }
@@ -648,4 +658,61 @@ model WebhookLog {
     createdAt         DateTime  @default(now())
     
     @@index([webhookId, createdAt]) // Индекс для фильтрации по webhook и дате
+}
+
+model AdvertisingIntegration {
+    id                Int       @id @default(autoincrement())
+    platform          AdvertisingPlatform
+    name              String?   // Название интеграции (опционально)
+    isActive          Boolean   @default(true)
+    
+    // API credentials
+    apiToken          String?   // API токен или ключ
+    apiSecret         String?   // Секретный ключ (если нужен)
+    accountId         String?   // ID аккаунта в рекламной системе
+    
+    // Настройки автоматизации
+    autoCreateContact Boolean   @default(true) // Автоматически создавать контакты
+    autoCreateDeal    Boolean   @default(false) // Автоматически создавать сделки
+    defaultSourceId   Int?      // Источник сделки по умолчанию
+    defaultPipelineId Int?      // Воронка по умолчанию
+    defaultAssigneeId Int?      // Ответственный по умолчанию
+    
+    // Webhook настройки
+    webhookUrl        String?   // URL для webhook'ов
+    webhookSecret     String?   // Секрет для проверки webhook'ов
+    
+    // Дополнительные настройки
+    settings          Json?     // Дополнительные настройки (JSON)
+    
+    company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId         Int
+    defaultAssignee   User?     @relation("AdvertisingIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+    defaultSource     DealSource? @relation(fields: [defaultSourceId], references: [id])
+    defaultPipeline   Pipeline?  @relation(fields: [defaultPipelineId], references: [id])
+    
+    logs              AdvertisingLog[]
+    
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+    
+    @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
+    @@index([platform, isActive]) // Индекс для быстрого поиска активных интеграций
+}
+
+model AdvertisingLog {
+    id                Int       @id @default(autoincrement())
+    advertising       AdvertisingIntegration @relation(fields: [advertisingId], references: [id], onDelete: Cascade)
+    advertisingId     Int
+    payload           Json      // Входящие данные
+    response          Json?     // Ответ системы
+    status            String    @default("success") // success, error, warning
+    errorMessage      String?   // Сообщение об ошибке
+    contactId         Int?      // ID созданного/найденного контакта
+    dealId            Int?      // ID созданной сделки
+    leadId            String?   // ID лида в рекламной системе
+    campaignId        String?   // ID кампании
+    createdAt         DateTime  @default(now())
+    
+    @@index([advertisingId, createdAt]) // Индекс для фильтрации по интеграции и дате
 }
