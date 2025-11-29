@@ -43,6 +43,8 @@ interface Deal {
   amount: number
   currency: string
   stage: string
+  externalId?: string | null
+  syncedAt?: string | null
   createdAt?: string
   updatedAt?: string
   contact: {
@@ -1754,7 +1756,7 @@ export default function DealsPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t flex justify-end">
+            <div className="p-6 border-t flex justify-end gap-3">
               <button
                 onClick={() => setViewingDeal(null)}
                 className="btn-secondary text-sm"
@@ -1762,11 +1764,39 @@ export default function DealsPage() {
                 Закрыть
               </button>
               <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/accounting/moysklad/export', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dealId: viewingDeal.id }),
+                    })
+                    if (response.ok) {
+                      const data = await response.json()
+                      alert(data.message || 'Выгружено в МойСклад')
+                      setViewingDeal(null)
+                      fetchData()
+                    } else {
+                      const error = await response.json()
+                      alert(error.error || 'Ошибка при выгрузке в МойСклад')
+                    }
+                  } catch (error) {
+                    console.error('Error exporting to Moysklad:', error)
+                    alert('Ошибка при выгрузке в МойСклад')
+                  }
+                }}
+                className="btn-secondary text-sm"
+                disabled={viewingDeal.externalId ? true : false}
+                title={viewingDeal.externalId ? 'Уже выгружено в МойСклад' : 'Выгрузить контакт и заказ в МойСклад'}
+              >
+                {viewingDeal.externalId ? '✓ Выгружено в МойСклад' : 'Выгрузить в МойСклад'}
+              </button>
+              <button
                 onClick={() => {
                   openEditModal(viewingDeal)
                   setViewingDeal(null)
                 }}
-                className="btn-primary text-sm ml-3"
+                className="btn-primary text-sm"
               >
                 Редактировать
               </button>

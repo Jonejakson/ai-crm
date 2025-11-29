@@ -82,6 +82,12 @@ enum AdvertisingPlatform {
     GOOGLE_ADS
 }
 
+enum AccountingPlatform {
+    MOYSKLAD
+    ONE_C
+    BITRIX24
+}
+
 model Company {
     id        Int       @id @default(autoincrement())
     name      String
@@ -102,6 +108,7 @@ model Company {
     emailIntegrations EmailIntegration[]
     webhookIntegrations WebhookIntegration[]
     advertisingIntegrations AdvertisingIntegration[]
+    accountingIntegrations AccountingIntegration[]
 }
 
 model User {
@@ -142,6 +149,8 @@ model Contact {
     inn            String?
     telegramChatId String? // Chat ID для Telegram
     whatsappId     String? // ID для WhatsApp
+    externalId     String? // ID в системе учета (1С, МойСклад)
+    syncedAt       DateTime? // Время последней синхронизации
     createdAt      DateTime @default(now())
     updatedAt      DateTime @updatedAt
     user           User?    @relation(fields: [userId], references: [id])
@@ -221,6 +230,8 @@ model Deal {
   webForm         WebForm?  @relation(fields: [webFormId], references: [id])
   webFormId       Int?
   emailMessages   EmailMessage[]
+  externalId      String?   // ID в системе учета (1С, МойСклад)
+  syncedAt        DateTime? // Время последней синхронизации
 }
 
 model WebForm {
@@ -715,4 +726,61 @@ model AdvertisingLog {
     createdAt         DateTime  @default(now())
     
     @@index([advertisingId, createdAt]) // Индекс для фильтрации по интеграции и дате
+}
+
+model AccountingIntegration {
+    id                Int       @id @default(autoincrement())
+    platform          AccountingPlatform
+    name              String?   // Название интеграции
+    isActive          Boolean   @default(true)
+    
+    // API credentials
+    apiToken          String?   // API токен или ключ
+    apiSecret         String?   // Секретный ключ (если нужен)
+    baseUrl           String?   // Базовый URL API (для 1С)
+    accountId         String?   // ID аккаунта
+    
+    // Настройки синхронизации
+    syncContacts      Boolean   @default(true) // Синхронизировать контакты
+    syncDeals         Boolean   @default(true) // Синхронизировать сделки
+    syncProducts      Boolean   @default(false) // Синхронизировать товары
+    autoSync          Boolean   @default(false) // Автоматическая синхронизация
+    syncInterval      Int       @default(60) // Интервал синхронизации в минутах
+    
+    // Настройки маппинга
+    contactMapping    Json?     // Маппинг полей контакта
+    dealMapping       Json?     // Маппинг полей сделки
+    
+    // Дополнительные настройки
+    settings          Json?     // Дополнительные настройки (JSON)
+    lastSyncAt        DateTime? // Время последней синхронизации
+    
+    company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId         Int
+    
+    logs              AccountingLog[]
+    
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+    
+    @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
+    @@index([platform, isActive]) // Индекс для быстрого поиска активных интеграций
+}
+
+model AccountingLog {
+    id                Int       @id @default(autoincrement())
+    accounting        AccountingIntegration @relation(fields: [accountingId], references: [id], onDelete: Cascade)
+    accountingId      Int
+    action            String    // sync_contacts, sync_deals, create_contact, create_order, etc.
+    entityType        String?   // contact, deal, product
+    entityId          Int?      // ID сущности в CRM
+    externalId        String?   // ID в системе учета
+    payload           Json?     // Отправленные данные
+    response          Json?     // Ответ системы
+    status            String    @default("success") // success, error, warning
+    errorMessage      String?   // Сообщение об ошибке
+    createdAt         DateTime  @default(now())
+    
+    @@index([accountingId, createdAt]) // Индекс для фильтрации по интеграции и дате
+    @@index([entityType, entityId]) // Индекс для поиска по сущности
 }
