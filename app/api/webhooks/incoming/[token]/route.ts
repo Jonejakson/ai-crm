@@ -240,6 +240,21 @@ async function processWebhookData(
         // Определяем сумму, если есть
         const amount = data.amount || data.price || data.value || 0
 
+        // Убеждаемся, что userId - это number, не null
+        let userId: number = contact.userId || webhook.defaultAssigneeId
+        if (!userId) {
+          const fallbackUser = await prisma.user.findFirst({
+            where: { companyId: webhook.companyId },
+            select: { id: true },
+            orderBy: { createdAt: "asc" },
+          })
+          userId = fallbackUser?.id
+        }
+
+        if (!userId) {
+          throw new Error("Cannot create deal: no user available in company")
+        }
+
         const deal = await prisma.deal.create({
           data: {
             title: dealTitle,
@@ -247,7 +262,7 @@ async function processWebhookData(
             currency: data.currency || "RUB",
             stage: initialStage,
             contactId: contact.id,
-            userId: contact.userId,
+            userId: userId,
             pipelineId: webhook.defaultPipelineId,
             sourceId: webhook.defaultSourceId,
           },
