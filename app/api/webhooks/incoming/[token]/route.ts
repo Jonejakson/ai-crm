@@ -113,9 +113,12 @@ function applyFieldMapping(data: any, mapping: any): any {
 
   const result: any = {}
   for (const [crmField, externalField] of Object.entries(mapping)) {
+    if (externalField === null || externalField === undefined) {
+      continue
+    }
     if (typeof externalField === "string" && data[externalField] !== undefined) {
       result[crmField] = data[externalField]
-    } else if (typeof externalField === "object" && externalField.path) {
+    } else if (typeof externalField === "object" && externalField !== null && "path" in externalField && typeof externalField.path === "string") {
       // Поддержка вложенных путей: { "name": { "path": "user.full_name" } }
       const value = getNestedValue(data, externalField.path)
       if (value !== undefined) {
