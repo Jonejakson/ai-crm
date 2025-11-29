@@ -1813,12 +1813,6 @@ function DealCard({
           className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600 transition-colors"
           onClick={(e) => {
             e.stopPropagation()
-            if (onContactClick) {
-              onContactClick(deal.contact.id)
-            }
-          }}
-          onDoubleClick={(e) => {
-            e.stopPropagation()
             onEdit(deal)
           }}
         >
