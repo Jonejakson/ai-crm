@@ -12,6 +12,7 @@ import WhatsAppSection from './WhatsAppSection'
 import AdvertisingIntegrationsSection from './AdvertisingIntegrationsSection'
 import MoyskladSection from './MoyskladSection'
 import OneCSection from './OneCSection'
+import MigrationSection from './MigrationSection'
 
 interface User {
   id: number
@@ -1081,6 +1082,7 @@ export default function CompanyPage() {
       <AdvertisingIntegrationsSection />
       <MoyskladSection />
       <OneCSection />
+      <MigrationSection />
     </div>
   )
 }
