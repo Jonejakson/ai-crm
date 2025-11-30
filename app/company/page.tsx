@@ -11,6 +11,7 @@ import TelegramBotSection from './TelegramBotSection'
 import WhatsAppSection from './WhatsAppSection'
 import AdvertisingIntegrationsSection from './AdvertisingIntegrationsSection'
 import MoyskladSection from './MoyskladSection'
+import OneCSection from './OneCSection'
 
 interface User {
   id: number
@@ -1079,6 +1080,7 @@ export default function CompanyPage() {
       <WhatsAppSection />
       <AdvertisingIntegrationsSection />
       <MoyskladSection />
+      <OneCSection />
     </div>
   )
 }
