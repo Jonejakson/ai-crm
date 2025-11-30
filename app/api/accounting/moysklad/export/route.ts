@@ -31,12 +31,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (!integration) {
+    if (!integration || !integration.apiSecret || !integration.apiToken) {
       return NextResponse.json({ error: "МойСклад интеграция не настроена" }, { status: 404 })
     }
 
-    const apiSecret = decrypt(integration.apiSecret)
-    const authString = Buffer.from(`${integration.apiToken}:${apiSecret}`).toString('base64')
+    const apiSecret = await decrypt(integration.apiSecret)
+    const apiToken = integration.apiToken // Не шифруется, это публичный email
+    const authString = Buffer.from(`${apiToken}:${apiSecret}`).toString('base64')
     const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
 
     let contact = null

@@ -77,14 +77,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (integration.apiToken) {
-      const apiToken = decrypt(integration.apiToken)
+      const apiToken = await decrypt(integration.apiToken)
       headers['Authorization'] = `Bearer ${apiToken}`
     } else if (integration.apiSecret) {
       // Если есть логин и пароль, используем Basic авторизацию
       // Логин может быть в settings или в apiToken (если используется как логин)
       const login = (integration.settings as any)?.login || ''
       if (login) {
-        const apiSecret = decrypt(integration.apiSecret)
+        const apiSecret = await decrypt(integration.apiSecret)
         const authString = Buffer.from(`${login}:${apiSecret}`).toString('base64')
         headers['Authorization'] = `Basic ${authString}`
       }
