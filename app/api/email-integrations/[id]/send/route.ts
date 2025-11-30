@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { sendEmailViaSmtp } from "@/lib/email/smtp-client"
+import { decryptPassword } from "@/lib/encryption"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
               host: integration.smtpHost,
               port: integration.smtpPort || 465,
               username: integration.smtpUsername,
-              password: await decryptPassword(integration.smtpPassword),
+              password: decryptPassword(integration.smtpPassword),
               useSSL: integration.useSSL,
               fromEmail: integration.email,
               fromName: integration.displayName || undefined,
@@ -127,10 +128,4 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
-// Простое расшифровывание паролей (в продакшене использовать более надежное решение)
-async function decryptPassword(encrypted: string): Promise<string> {
-  // TODO: Использовать crypto для расшифровки
-  // Пока просто возвращаем как есть (в продакшене обязательно расшифровывать!)
-  return encrypted
-}
 

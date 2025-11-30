@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encrypt } from "@/lib/encryption"
 
 // Получить МойСклад интеграцию компании
 export async function GET() {
@@ -98,8 +99,8 @@ export async function POST(request: Request) {
       },
       update: {
         name: body.name?.trim() || null,
-        apiToken: body.login.trim(), // Сохраняем login как apiToken
-        apiSecret: passwordToUse, // Сохраняем password как apiSecret
+        apiToken: body.login.trim(), // Сохраняем login как apiToken (не шифруем, это публичный email)
+        apiSecret: encrypt(passwordToUse), // Шифруем пароль/API ключ
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,
         syncDeals: body.syncDeals !== false,
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
         platform: 'MOYSKLAD',
         name: body.name?.trim() || null,
         apiToken: body.login.trim(),
-        apiSecret: passwordToUse,
+        apiSecret: encrypt(passwordToUse),
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,
         syncDeals: body.syncDeals !== false,

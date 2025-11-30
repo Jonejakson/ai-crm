@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encrypt } from "@/lib/encryption"
 
 // Получить 1С интеграцию компании
 export async function GET() {
@@ -142,8 +143,8 @@ export async function POST(request: Request) {
       update: {
         name: body.name?.trim() || null,
         baseUrl: body.baseUrl.trim(),
-        apiToken: apiTokenToUse || null,
-        apiSecret: apiSecretToUse || null,
+        apiToken: apiTokenToUse ? encrypt(apiTokenToUse) : null,
+        apiSecret: apiSecretToUse ? encrypt(apiSecretToUse) : null,
         accountId: body.accountId?.trim() || null,
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,
@@ -159,8 +160,8 @@ export async function POST(request: Request) {
         platform: 'ONE_C',
         name: body.name?.trim() || null,
         baseUrl: body.baseUrl.trim(),
-        apiToken: apiTokenToUse || null,
-        apiSecret: apiSecretToUse || null,
+        apiToken: apiTokenToUse ? encrypt(apiTokenToUse) : null,
+        apiSecret: apiSecretToUse ? encrypt(apiSecretToUse) : null,
         accountId: body.accountId?.trim() || null,
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,

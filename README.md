@@ -102,6 +102,10 @@ NEXTAUTH_URL=http://localhost:3000
 # Получите ключ на https://platform.openai.com/api-keys
 OPENAI_API_KEY=your_openai_api_key_here
 
+# Encryption Key (обязательно для шифрования чувствительных данных)
+# Сгенерируйте: openssl rand -hex 32
+ENCRYPTION_KEY=your_encryption_key_64_chars_hex
+
 # Node Environment
 NODE_ENV=development
 ```

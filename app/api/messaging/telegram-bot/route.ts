@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encrypt, decrypt } from "@/lib/encryption"
 
 // Получить все Telegram Bot интеграции компании
 export async function GET() {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
         }
       },
       update: {
-        botToken: body.botToken.trim(),
+        botToken: encrypt(body.botToken.trim()),
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
@@ -88,7 +89,7 @@ export async function POST(request: Request) {
       },
       create: {
         platform: 'TELEGRAM',
-        botToken: body.botToken.trim(),
+        botToken: encrypt(body.botToken.trim()),
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,

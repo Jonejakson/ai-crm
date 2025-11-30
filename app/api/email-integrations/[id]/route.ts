@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encryptPassword } from "@/lib/encryption"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -85,22 +86,22 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     if (body.imapPort !== undefined) updateData.imapPort = body.imapPort || null
     if (body.imapUsername !== undefined) updateData.imapUsername = body.imapUsername || null
     if (body.imapPassword !== undefined) {
-      updateData.imapPassword = body.imapPassword ? await encryptPassword(body.imapPassword) : null
+      updateData.imapPassword = body.imapPassword ? encryptPassword(body.imapPassword) : null
     }
     if (body.smtpHost !== undefined) updateData.smtpHost = body.smtpHost || null
     if (body.smtpPort !== undefined) updateData.smtpPort = body.smtpPort || null
     if (body.smtpUsername !== undefined) updateData.smtpUsername = body.smtpUsername || null
     if (body.smtpPassword !== undefined) {
-      updateData.smtpPassword = body.smtpPassword ? await encryptPassword(body.smtpPassword) : null
+      updateData.smtpPassword = body.smtpPassword ? encryptPassword(body.smtpPassword) : null
     }
     if (body.useSSL !== undefined) updateData.useSSL = Boolean(body.useSSL)
     
     // OAuth
     if (body.accessToken !== undefined) {
-      updateData.accessToken = body.accessToken ? await encryptPassword(body.accessToken) : null
+      updateData.accessToken = body.accessToken ? encryptPassword(body.accessToken) : null
     }
     if (body.refreshToken !== undefined) {
-      updateData.refreshToken = body.refreshToken ? await encryptPassword(body.refreshToken) : null
+      updateData.refreshToken = body.refreshToken ? encryptPassword(body.refreshToken) : null
     }
     if (body.tokenExpiresAt !== undefined) {
       updateData.tokenExpiresAt = body.tokenExpiresAt ? new Date(body.tokenExpiresAt) : null
@@ -175,10 +176,4 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   }
 }
 
-// Простое шифрование паролей (в продакшене использовать более надежное решение)
-async function encryptPassword(password: string): Promise<string> {
-  // TODO: Использовать crypto для шифрования
-  // Пока просто возвращаем как есть (в продакшене обязательно шифровать!)
-  return password
-}
 

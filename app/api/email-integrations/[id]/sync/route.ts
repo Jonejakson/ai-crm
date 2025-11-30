@@ -5,6 +5,7 @@ import { fetchEmailsFromImap } from "@/lib/email/imap-client"
 import { fetchEmailsFromGmail } from "@/lib/email/gmail-client"
 import { fetchEmailsFromOutlook } from "@/lib/email/outlook-client"
 import { processIncomingEmail } from "@/lib/email/processor"
+import { decryptPassword } from "@/lib/encryption"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -55,8 +56,8 @@ export async function POST(_request: NextRequest, context: RouteContext) {
             throw new Error('Gmail integration requires OAuth tokens')
           }
           emails = await fetchEmailsFromGmail({
-            accessToken: await decryptPassword(integration.accessToken),
-            refreshToken: await decryptPassword(integration.refreshToken),
+            accessToken: decryptPassword(integration.accessToken),
+            refreshToken: decryptPassword(integration.refreshToken),
             email: integration.email,
           }, since)
           break
@@ -66,8 +67,8 @@ export async function POST(_request: NextRequest, context: RouteContext) {
             throw new Error('Outlook integration requires OAuth tokens')
           }
           emails = await fetchEmailsFromOutlook({
-            accessToken: await decryptPassword(integration.accessToken),
-            refreshToken: await decryptPassword(integration.refreshToken),
+            accessToken: decryptPassword(integration.accessToken),
+            refreshToken: decryptPassword(integration.refreshToken),
             email: integration.email,
           }, since)
           break
@@ -81,7 +82,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
             host: integration.imapHost,
             port: integration.imapPort || 993,
             username: integration.imapUsername,
-            password: await decryptPassword(integration.imapPassword),
+            password: decryptPassword(integration.imapPassword),
             useSSL: integration.useSSL,
           }, since)
           break
@@ -151,10 +152,4 @@ export async function POST(_request: NextRequest, context: RouteContext) {
   }
 }
 
-// Простое расшифровывание паролей (в продакшене использовать более надежное решение)
-async function decryptPassword(encrypted: string): Promise<string> {
-  // TODO: Использовать crypto для расшифровки
-  // Пока просто возвращаем как есть (в продакшене обязательно расшифровывать!)
-  return encrypted
-}
 

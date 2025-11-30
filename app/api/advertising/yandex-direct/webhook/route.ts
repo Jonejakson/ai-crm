@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
+import { decrypt } from "@/lib/encryption"
 import crypto from "crypto"
 
 // Webhook для получения лидов из Яндекс.Директ
@@ -42,9 +43,11 @@ export async function POST(request: NextRequest) {
     if (integration.webhookSecret) {
       const signature = request.headers.get('x-yandex-signature')
       if (signature) {
+        // Расшифровываем webhookSecret перед проверкой
+        const webhookSecret = decrypt(integration.webhookSecret)
         // Проверка подписи (упрощенная версия)
         const expectedSignature = crypto
-          .createHmac('sha256', integration.webhookSecret)
+          .createHmac('sha256', webhookSecret)
           .update(JSON.stringify(payload))
           .digest('hex')
         

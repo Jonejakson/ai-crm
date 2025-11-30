@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { decrypt } from "@/lib/encryption"
 
 // Установить webhook URL в Telegram
 export async function POST(request: NextRequest) {
@@ -35,8 +36,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Устанавливаем webhook в Telegram
+    const botToken = decrypt(integration.botToken)
     const setWebhookResponse = await fetch(
-      `https://api.telegram.org/bot${integration.botToken}/setWebhook`,
+      `https://api.telegram.org/bot${botToken}/setWebhook`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { decrypt } from "@/lib/encryption"
 
 // Выгрузить контакт/сделку в 1С
 export async function POST(request: NextRequest) {
@@ -76,13 +77,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (integration.apiToken) {
-      headers['Authorization'] = `Bearer ${integration.apiToken}`
+      const apiToken = decrypt(integration.apiToken)
+      headers['Authorization'] = `Bearer ${apiToken}`
     } else if (integration.apiSecret) {
       // Если есть логин и пароль, используем Basic авторизацию
       // Логин может быть в settings или в apiToken (если используется как логин)
-      const login = (integration.settings as any)?.login || integration.apiToken || ''
+      const login = (integration.settings as any)?.login || ''
       if (login) {
-        const authString = Buffer.from(`${login}:${integration.apiSecret}`).toString('base64')
+        const apiSecret = decrypt(integration.apiSecret)
+        const authString = Buffer.from(`${login}:${apiSecret}`).toString('base64')
         headers['Authorization'] = `Basic ${authString}`
       }
     }

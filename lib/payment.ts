@@ -130,15 +130,50 @@ export async function getYooKassaPayment(paymentId: string): Promise<YooKassaPay
 
 /**
  * Проверить подпись webhook от YooKassa
+ * YooKassa использует HMAC-SHA256 для подписи webhook'ов
+ * 
+ * @param body - Тело запроса (строка JSON)
+ * @param signature - Подпись из заголовка X-YooMoney-Signature
+ * @returns true если подпись валидна, false иначе
  */
 export function verifyYooKassaWebhook(
   body: string,
   signature: string
 ): boolean {
-  // YooKassa использует HMAC-SHA256 для подписи
-  // В production нужно реализовать проверку подписи
-  // Для упрощения пока возвращаем true (в production обязательно проверять!)
-  // TODO: Реализовать проверку HMAC-SHA256 подписи
-  return true
+  try {
+    // Получаем секретный ключ из переменных окружения
+    const secretKey = process.env.YOOKASSA_SECRET_KEY
+    if (!secretKey) {
+      console.warn('[payment] YOOKASSA_SECRET_KEY не установлен, пропускаем проверку подписи')
+      // В development можно пропустить проверку, но в production это небезопасно
+      return process.env.NODE_ENV !== 'production'
+    }
+
+    // YooKassa использует HMAC-SHA256
+    // Формат подписи: <algorithm>=<signature>
+    // Например: sha256=abc123...
+    const parts = signature.split('=')
+    if (parts.length !== 2 || parts[0] !== 'sha256') {
+      console.error('[payment] Неверный формат подписи YooKassa')
+      return false
+    }
+
+    const receivedSignature = parts[1]
+
+    // Создаем HMAC-SHA256 подпись
+    const crypto = require('crypto')
+    const hmac = crypto.createHmac('sha256', secretKey)
+    hmac.update(body)
+    const calculatedSignature = hmac.digest('hex')
+
+    // Сравниваем подписи безопасным способом (защита от timing attacks)
+    return crypto.timingSafeEqual(
+      Buffer.from(receivedSignature, 'hex'),
+      Buffer.from(calculatedSignature, 'hex')
+    )
+  } catch (error) {
+    console.error('[payment] Ошибка проверки подписи YooKassa:', error)
+    return false
+  }
 }
 

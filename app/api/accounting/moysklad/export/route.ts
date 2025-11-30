@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { decrypt } from "@/lib/encryption"
 
 // Выгрузить контакт в МойСклад
 export async function POST(request: NextRequest) {
@@ -34,7 +35,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "МойСклад интеграция не настроена" }, { status: 404 })
     }
 
-    const authString = Buffer.from(`${integration.apiToken}:${integration.apiSecret}`).toString('base64')
+    const apiSecret = decrypt(integration.apiSecret)
+    const authString = Buffer.from(`${integration.apiToken}:${apiSecret}`).toString('base64')
     const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
 
     let contact = null

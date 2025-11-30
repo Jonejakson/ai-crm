@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
+import { decrypt } from "@/lib/encryption"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
 

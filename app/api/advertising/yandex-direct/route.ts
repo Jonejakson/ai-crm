@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encrypt } from "@/lib/encryption"
 
 // Получить Яндекс.Директ интеграцию компании
 export async function GET() {
@@ -68,9 +69,9 @@ export async function POST(request: Request) {
       },
       update: {
         name: body.name?.trim() || null,
-        apiToken: body.apiToken.trim(),
+        apiToken: encrypt(body.apiToken.trim()),
         accountId: body.accountId?.trim() || null,
-        webhookSecret: body.webhookSecret?.trim() || null,
+        webhookSecret: body.webhookSecret ? encrypt(body.webhookSecret.trim()) : null,
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
@@ -82,9 +83,9 @@ export async function POST(request: Request) {
       create: {
         platform: 'YANDEX_DIRECT',
         name: body.name?.trim() || null,
-        apiToken: body.apiToken.trim(),
+        apiToken: encrypt(body.apiToken.trim()),
         accountId: body.accountId?.trim() || null,
-        webhookSecret: body.webhookSecret?.trim() || null,
+        webhookSecret: body.webhookSecret ? encrypt(body.webhookSecret.trim()) : null,
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,

@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
+import { decrypt } from "@/lib/encryption"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
 
@@ -12,17 +13,23 @@ export async function GET(request: NextRequest) {
     const token = searchParams.get('hub.verify_token')
     const challenge = searchParams.get('hub.challenge')
 
-    // Находим интеграцию по verify token
-    const integration = await prisma.messagingIntegration.findFirst({
+    // Находим все активные WhatsApp интеграции
+    const integrations = await prisma.messagingIntegration.findMany({
       where: {
         platform: 'WHATSAPP',
         isActive: true,
-        webhookSecret: token || undefined,
+        webhookSecret: { not: null },
       },
     })
 
-    if (mode === 'subscribe' && integration && token === integration.webhookSecret) {
-      return NextResponse.json(Number(challenge), { status: 200 })
+    // Проверяем каждую интеграцию (webhookSecret зашифрован)
+    for (const integration of integrations) {
+      if (integration.webhookSecret) {
+        const decryptedSecret = decrypt(integration.webhookSecret)
+        if (mode === 'subscribe' && token === decryptedSecret) {
+          return NextResponse.json(Number(challenge), { status: 200 })
+        }
+      }
     }
 
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })

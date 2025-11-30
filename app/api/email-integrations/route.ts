@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encryptPassword } from "@/lib/encryption"
 
 // Получить все email-интеграции компании
 export async function GET() {
@@ -62,15 +63,15 @@ export async function POST(request: Request) {
         imapHost: body.imapHost || null,
         imapPort: body.imapPort || null,
         imapUsername: body.imapUsername || null,
-        imapPassword: body.imapPassword ? await encryptPassword(body.imapPassword) : null,
+        imapPassword: body.imapPassword ? encryptPassword(body.imapPassword) : null,
         smtpHost: body.smtpHost || null,
         smtpPort: body.smtpPort || null,
         smtpUsername: body.smtpUsername || null,
-        smtpPassword: body.smtpPassword ? await encryptPassword(body.smtpPassword) : null,
+        smtpPassword: body.smtpPassword ? encryptPassword(body.smtpPassword) : null,
         useSSL: body.useSSL !== false,
         // OAuth токены (для Gmail/Outlook)
-        accessToken: body.accessToken ? await encryptPassword(body.accessToken) : null,
-        refreshToken: body.refreshToken ? await encryptPassword(body.refreshToken) : null,
+        accessToken: body.accessToken ? encryptPassword(body.accessToken) : null,
+        refreshToken: body.refreshToken ? encryptPassword(body.refreshToken) : null,
         tokenExpiresAt: body.tokenExpiresAt ? new Date(body.tokenExpiresAt) : null,
         // Настройки синхронизации
         syncInterval: body.syncInterval || 5,
@@ -96,10 +97,4 @@ export async function POST(request: Request) {
   }
 }
 
-// Простое шифрование паролей (в продакшене использовать более надежное решение)
-async function encryptPassword(password: string): Promise<string> {
-  // TODO: Использовать crypto для шифрования
-  // Пока просто возвращаем как есть (в продакшене обязательно шифровать!)
-  return password
-}
 

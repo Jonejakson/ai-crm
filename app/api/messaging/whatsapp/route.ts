@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encrypt } from "@/lib/encryption"
 
 // Получить WhatsApp интеграцию компании
 export async function GET() {
@@ -72,14 +73,14 @@ export async function POST(request: Request) {
         }
       },
       update: {
-        botToken: body.apiKey.trim(), // Используем botToken для хранения API Key
+        botToken: encrypt(body.apiKey.trim()), // Используем botToken для хранения API Key
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
         defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
-        webhookSecret: body.webhookVerifyToken ? body.webhookVerifyToken.trim() : null,
+        webhookSecret: body.webhookVerifyToken ? encrypt(body.webhookVerifyToken.trim()) : null,
         settings: {
           phoneNumberId: body.phoneNumberId.trim(),
           businessAccountId: body.businessAccountId?.trim() || null,
@@ -88,14 +89,14 @@ export async function POST(request: Request) {
       },
       create: {
         platform: 'WHATSAPP',
-        botToken: body.apiKey.trim(),
+        botToken: encrypt(body.apiKey.trim()),
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
         defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
-        webhookSecret: body.webhookVerifyToken ? body.webhookVerifyToken.trim() : null,
+        webhookSecret: body.webhookVerifyToken ? encrypt(body.webhookVerifyToken.trim()) : null,
         settings: {
           phoneNumberId: body.phoneNumberId.trim(),
           businessAccountId: body.businessAccountId?.trim() || null,

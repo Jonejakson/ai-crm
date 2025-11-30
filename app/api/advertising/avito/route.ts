@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
+import { encrypt } from "@/lib/encryption"
 
 // Получить Авито интеграцию компании
 export async function GET() {
@@ -72,10 +73,10 @@ export async function POST(request: Request) {
       },
       update: {
         name: body.name?.trim() || null,
-        apiToken: body.clientId.trim(),
-        apiSecret: body.clientSecret.trim(),
+        apiToken: encrypt(body.clientId.trim()),
+        apiSecret: encrypt(body.clientSecret.trim()),
         accountId: body.userId?.trim() || null,
-        webhookSecret: body.webhookSecret?.trim() || null,
+        webhookSecret: body.webhookSecret ? encrypt(body.webhookSecret.trim()) : null,
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
@@ -87,10 +88,10 @@ export async function POST(request: Request) {
       create: {
         platform: 'AVITO',
         name: body.name?.trim() || null,
-        apiToken: body.clientId.trim(),
-        apiSecret: body.clientSecret.trim(),
+        apiToken: encrypt(body.clientId.trim()),
+        apiSecret: encrypt(body.clientSecret.trim()),
         accountId: body.userId?.trim() || null,
-        webhookSecret: body.webhookSecret?.trim() || null,
+        webhookSecret: body.webhookSecret ? encrypt(body.webhookSecret.trim()) : null,
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
