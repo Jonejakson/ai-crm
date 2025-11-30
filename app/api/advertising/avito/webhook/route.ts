@@ -2,8 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
-import { decrypt } from "@/lib/encryption"
-import crypto from "crypto"
+import { verifyAvitoWebhookSignature } from "@/lib/webhook-security"
 
 // Webhook для получения заявок из Авито
 export async function POST(request: NextRequest) {
@@ -15,7 +14,9 @@ export async function POST(request: NextRequest) {
   let dealId: number | null = null
 
   try {
-    payload = await request.json()
+    // Получаем тело запроса как строку для проверки подписи
+    const bodyText = await request.text()
+    payload = JSON.parse(bodyText)
 
     // Авито отправляет заявки через Webhook API
     // Формат: { value: { id, phone, name, ... } }
@@ -42,18 +43,15 @@ export async function POST(request: NextRequest) {
     // Проверяем webhook secret, если он настроен
     if (integration.webhookSecret) {
       const signature = request.headers.get('x-avito-signature')
-      if (signature) {
-        // Расшифровываем webhookSecret перед проверкой
-        const webhookSecret = decrypt(integration.webhookSecret)
-        // Проверка подписи
-        const expectedSignature = crypto
-          .createHmac('sha256', webhookSecret)
-          .update(JSON.stringify(payload))
-          .digest('hex')
-        
-        if (signature !== expectedSignature) {
-          return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
-        }
+      const isValid = await verifyAvitoWebhookSignature(
+        bodyText,
+        signature,
+        integration.webhookSecret
+      )
+      
+      if (!isValid) {
+        console.error("[avito-webhook] Invalid signature")
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
       }
     }
 

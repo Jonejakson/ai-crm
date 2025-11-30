@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { decrypt } from "@/lib/encryption"
+import { verifyWhatsAppWebhookSignature } from "@/lib/webhook-security"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
 
@@ -42,7 +43,9 @@ export async function GET(request: NextRequest) {
 // POST - для получения сообщений
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    // Получаем тело запроса как строку для проверки подписи
+    const bodyText = await request.text()
+    const body = JSON.parse(bodyText)
 
     // WhatsApp Business API отправляет данные в формате:
     // { object: 'whatsapp_business_account', entry: [...] }
@@ -67,6 +70,21 @@ export async function POST(request: NextRequest) {
     if (!integration || !integration.botToken) {
       console.warn("[whatsapp-webhook] No active integration found")
       return NextResponse.json({ ok: true })
+    }
+
+    // Проверяем подпись webhook'а, если webhookSecret настроен
+    if (integration.webhookSecret) {
+      const signature = request.headers.get('x-hub-signature-256')
+      const isValid = await verifyWhatsAppWebhookSignature(
+        bodyText,
+        signature,
+        integration.webhookSecret
+      )
+      
+      if (!isValid) {
+        console.error("[whatsapp-webhook] Invalid signature")
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
+      }
     }
 
     // Обрабатываем каждую запись

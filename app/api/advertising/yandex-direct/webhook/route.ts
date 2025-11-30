@@ -2,8 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
-import { decrypt } from "@/lib/encryption"
-import crypto from "crypto"
+import { verifyYandexDirectWebhookSignature } from "@/lib/webhook-security"
 
 // Webhook для получения лидов из Яндекс.Директ
 export async function POST(request: NextRequest) {
@@ -15,7 +14,9 @@ export async function POST(request: NextRequest) {
   let dealId: number | null = null
 
   try {
-    payload = await request.json()
+    // Получаем тело запроса как строку для проверки подписи
+    const bodyText = await request.text()
+    payload = JSON.parse(bodyText)
 
     // Яндекс.Директ отправляет лиды через Call Tracking API
     // Формат: { leads: [{ id, phone, name, ... }] }
@@ -42,18 +43,15 @@ export async function POST(request: NextRequest) {
     // Проверяем webhook secret, если он настроен
     if (integration.webhookSecret) {
       const signature = request.headers.get('x-yandex-signature')
-      if (signature) {
-        // Расшифровываем webhookSecret перед проверкой
-        const webhookSecret = decrypt(integration.webhookSecret)
-        // Проверка подписи (упрощенная версия)
-        const expectedSignature = crypto
-          .createHmac('sha256', webhookSecret)
-          .update(JSON.stringify(payload))
-          .digest('hex')
-        
-        if (signature !== expectedSignature) {
-          return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
-        }
+      const isValid = await verifyYandexDirectWebhookSignature(
+        bodyText,
+        signature,
+        integration.webhookSecret
+      )
+      
+      if (!isValid) {
+        console.error("[yandex-direct-webhook] Invalid signature")
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
       }
     }
 

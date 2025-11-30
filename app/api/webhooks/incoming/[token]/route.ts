@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
+import { verifyWebhookSignature } from "@/lib/webhook-security"
 
 type RouteContext = { params: Promise<{ token: string }> }
 
@@ -36,11 +37,45 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Получаем данные из запроса
     const contentType = request.headers.get("content-type") || ""
+    let bodyText: string | null = null
+    
     if (contentType.includes("application/json")) {
-      payload = await request.json()
+      bodyText = await request.text()
+      payload = JSON.parse(bodyText)
     } else {
       const formData = await request.formData()
       payload = Object.fromEntries(formData.entries())
+      // Для form-data проверка подписи может быть сложнее, пропускаем пока
+    }
+
+    // Проверяем подпись webhook'а, если секрет настроен в settings
+    if (bodyText && webhook.settings && typeof webhook.settings === 'object') {
+      const settings = webhook.settings as any
+      const webhookSecret = settings.webhookSecret || settings.secret
+      
+      if (webhookSecret) {
+        // Пробуем разные форматы заголовков
+        const signature = request.headers.get('x-signature') || 
+                         request.headers.get('x-hub-signature-256') ||
+                         request.headers.get('x-webhook-signature')
+        
+        if (signature) {
+          const isValid = await verifyWebhookSignature(
+            bodyText,
+            signature,
+            webhookSecret,
+            {
+              headerFormat: settings.signatureFormat || 'plain',
+              isEncrypted: false, // Секрет в settings не зашифрован
+            }
+          )
+          
+          if (!isValid) {
+            console.error("[webhooks][incoming] Invalid signature")
+            return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
+          }
+        }
+      }
     }
 
     // Применяем маппинг полей, если он настроен
