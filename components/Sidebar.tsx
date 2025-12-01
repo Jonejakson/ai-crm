@@ -121,20 +121,20 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       {/* Мобильное меню кнопка */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-md"
-        aria-label="Открыть меню"
+        className="md:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-lg hover:shadow-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+        aria-label={isMobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
       >
-        {isMobileMenuOpen ? <CloseIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+        {isMobileMenuOpen ? <CloseIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
       </button>
 
       {/* Мобильный сайдбар */}
       {isMobileMenuOpen && (
         <>
           <div 
-            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="md:hidden fixed left-0 top-0 h-full w-64 bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-xl z-50">
+          <div className={`md:hidden fixed left-0 top-0 h-full w-72 bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-xl z-50 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
             <SidebarContent />
           </div>
         </>

@@ -263,6 +263,89 @@ body {
   @apply outline-none ring-2 ring-[var(--primary)] ring-offset-2 ring-offset-white;
 }
 
+/* Мобильная оптимизация */
+@media (max-width: 768px) {
+  /* Touch-friendly размеры для кнопок и интерактивных элементов */
+  button, a, input, select, textarea {
+    min-height: 44px; /* Минимальный размер для touch */
+  }
+  
+  /* Увеличенные отступы для мобильных */
+  .btn-primary, .btn-secondary, .btn-success, .btn-ghost {
+    padding: 12px 20px;
+    font-size: 16px; /* Предотвращает zoom на iOS */
+  }
+  
+  /* Увеличенные поля ввода */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  textarea,
+  select {
+    font-size: 16px; /* Предотвращает zoom на iOS */
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+  
+  /* Улучшенные модальные окна для мобильных */
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Улучшенная навигация */
+  .sidebar-nav a {
+    min-height: 48px;
+    padding: 12px 16px;
+  }
+  
+  /* Улучшенные карточки */
+  .card {
+    padding: 16px;
+  }
+  
+  /* Улучшенные модальные окна */
+  .modal-content {
+    margin: 16px;
+    max-width: calc(100vw - 32px);
+  }
+  
+  /* Улучшенные формы в модальных окнах */
+  .modal-content form {
+    padding: 0;
+  }
+  
+  .modal-content input,
+  .modal-content textarea,
+  .modal-content select {
+    width: 100%;
+    font-size: 16px; /* Предотвращает zoom на iOS */
+  }
+  
+  /* Улучшенные кнопки в модальных окнах */
+  .modal-content .btn-primary,
+  .modal-content .btn-secondary {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  /* Улучшенные карточки статистики */
+  .stat-card {
+    padding: 16px;
+  }
+  
+  /* Улучшенный поиск */
+  input[type="search"],
+  input[type="text"][placeholder*="Поиск"] {
+    font-size: 16px; /* Предотвращает zoom на iOS */
+    padding: 12px 16px;
+  }
+}
+
 /* Современные кнопки */
 .btn-primary {
   @apply text-white px-5 py-2.5 rounded-xl font-semibold transition-all duration-300 relative overflow-hidden;

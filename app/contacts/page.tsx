@@ -536,7 +536,8 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      <div className="table-container">
+      {/* Десктопная таблица */}
+      <div className="table-container hidden md:block">
         <table>
           <thead>
             <tr>
@@ -590,21 +591,90 @@ export default function ContactsPage() {
             ))}
           </tbody>
         </table>
-
-        {filteredContacts.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-state-icon">{search ? '🔍' : '👥'}</div>
-            <h3 className="empty-state-title">
-              {search ? 'Контакты не найдены' : 'Нет контактов'}
-            </h3>
-            <p className="empty-state-description">
-              {search 
-                ? 'Попробуйте изменить параметры поиска'
-                : 'Добавьте первый контакт, чтобы начать работу с клиентской базой'}
-            </p>
-          </div>
-        )}
       </div>
+
+      {/* Мобильные карточки */}
+      <div className="md:hidden space-y-3">
+        {filteredContacts.map((contact) => (
+          <div
+            key={contact.id}
+            className="card-hover p-4"
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary-soft)] text-lg font-semibold text-[var(--primary)] flex-shrink-0">
+                {contact.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <a 
+                  href={`/contacts/${contact.id}`} 
+                  className="block font-semibold text-[var(--foreground)] hover:text-[var(--primary)] mb-1"
+                >
+                  {contact.name}
+                </a>
+                {contact.user && (
+                  <p className="text-xs text-[var(--muted)] mb-2">Менеджер: {contact.user.name}</p>
+                )}
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--muted)]">📧</span>
+                    <a href={`mailto:${contact.email}`} className="text-[var(--foreground)] truncate">
+                      {contact.email}
+                    </a>
+                  </div>
+                  {contact.phone && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--muted)]">📞</span>
+                      <a href={`tel:${contact.phone}`} className="text-[var(--foreground)]">
+                        {contact.phone}
+                      </a>
+                    </div>
+                  )}
+                  {contact.company && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[var(--muted)]">🏢</span>
+                      <span className="text-[var(--foreground)] truncate">{contact.company}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[var(--muted)]">📅</span>
+                    <span className="text-[var(--muted)] text-xs">
+                      {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <button
+                    onClick={() => handleEdit(contact)}
+                    className="btn-secondary text-sm flex-1 py-2.5"
+                  >
+                    Редактировать
+                  </button>
+                  <button
+                    onClick={() => handleDelete(contact.id)}
+                    className="btn-ghost text-sm px-4 py-2.5 text-red-500 hover:text-red-600"
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredContacts.length === 0 && (
+        <div className="empty-state">
+          <div className="empty-state-icon">{search ? '🔍' : '👥'}</div>
+          <h3 className="empty-state-title">
+            {search ? 'Контакты не найдены' : 'Нет контактов'}
+          </h3>
+          <p className="empty-state-description">
+            {search 
+              ? 'Попробуйте изменить параметры поиска'
+              : 'Добавьте первый контакт, чтобы начать работу с клиентской базой'}
+          </p>
+        </div>
+      )}
 
       {/* Модальное окно добавления контакта */}
       <Modal
