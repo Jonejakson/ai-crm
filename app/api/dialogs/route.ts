@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/get-session";
+import { getCurrentUser, getUserId } from "@/lib/get-session";
+import { validateRequest, createDialogSchema } from "@/lib/validation";
 
 // GET - получить диалоги (все или по contactId) текущего пользователя
 export async function GET(req: Request) {
