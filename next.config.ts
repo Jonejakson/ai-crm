@@ -39,7 +39,7 @@ const sentryConfig = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DS
       sourcemaps: {
         assets: './.next/**',
         ignore: ['node_modules'],
-        filesToDeleteAfterUpload: './.next/**/*.map',
+        deleteSourcemapsAfterUpload: true,
       },
       disableLogger: true,
       
