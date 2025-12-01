@@ -13,11 +13,19 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url)
     const entityType = searchParams.get('entityType')
-    const entityId = searchParams.get('entityId')
+    const entityIdParam = searchParams.get('entityId')
 
-    if (!entityType || !entityId) {
+    if (!entityType || !entityIdParam) {
       return NextResponse.json(
         { error: 'entityType and entityId are required' },
+        { status: 400 }
+      )
+    }
+
+    const entityId = Number(entityIdParam)
+    if (isNaN(entityId)) {
+      return NextResponse.json(
+        { error: 'Invalid entityId format' },
         { status: 400 }
       )
     }
@@ -147,7 +155,7 @@ export async function POST(req: Request) {
       data: {
         text,
         entityType,
-        entityId: entityId,
+        entityId: Number(entityId),
         userId: userId,
       },
       include: {
