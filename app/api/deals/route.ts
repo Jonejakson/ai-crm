@@ -266,7 +266,7 @@ export async function PUT(req: Request) {
     const oldStage = existingDeal.stage
     const newStage = data.stage
     const oldAmount = existingDeal.amount
-    const newAmount = data.amount !== undefined ? parseFloat(data.amount) : undefined
+    const newAmount = data.amount !== undefined ? data.amount : undefined
 
     const deal = await prisma.deal.update({
       where: { id: data.id },
