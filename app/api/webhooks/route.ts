@@ -53,7 +53,9 @@ export async function POST(request: Request) {
     
     // Проверка доступа к Webhook API
     const webhookAccess = await checkWebhookAccess(companyId)
+    console.log('[webhooks][POST] Проверка доступа:', webhookAccess, 'companyId:', companyId)
     if (!webhookAccess.allowed) {
+      console.log('[webhooks][POST] Доступ запрещен:', webhookAccess.message)
       return NextResponse.json(
         { error: webhookAccess.message || "Webhook API недоступен для вашего тарифа" },
         { status: 403 }

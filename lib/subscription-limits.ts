@@ -409,19 +409,24 @@ export async function checkEmailIntegrationsAccess(companyId: number): Promise<{
   limit?: number | null
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkEmailIntegrationsAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkEmailIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Email интеграции доступны только в планах TEAM и PRO
   if (plan.slug === 'LITE') {
+    console.log('[checkEmailIntegrationsAccess] Доступ запрещен для тарифа LITE')
     return {
       allowed: false,
       message: 'Email интеграции доступны только в тарифах Team и Pro. Обновите тариф для использования этой функции.',
@@ -460,19 +465,27 @@ export async function checkMessagingIntegrationsAccess(companyId: number): Promi
   allowed: boolean
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkMessagingIntegrationsAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkMessagingIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Telegram/WhatsApp доступны только в плане PRO
   const allowed = plan.slug === 'PRO'
+  
+  if (!allowed) {
+    console.log('[checkMessagingIntegrationsAccess] Доступ запрещен для тарифа:', plan.slug)
+  }
 
   return {
     allowed,
@@ -489,19 +502,27 @@ export async function checkAdvertisingIntegrationsAccess(companyId: number): Pro
   allowed: boolean
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkAdvertisingIntegrationsAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkAdvertisingIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Рекламные интеграции доступны только в плане PRO
   const allowed = plan.slug === 'PRO'
+  
+  if (!allowed) {
+    console.log('[checkAdvertisingIntegrationsAccess] Доступ запрещен для тарифа:', plan.slug)
+  }
 
   return {
     allowed,
@@ -518,19 +539,27 @@ export async function checkAccountingIntegrationsAccess(companyId: number): Prom
   allowed: boolean
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkAccountingIntegrationsAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkAccountingIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Учетные системы доступны только в плане PRO
   const allowed = plan.slug === 'PRO'
+  
+  if (!allowed) {
+    console.log('[checkAccountingIntegrationsAccess] Доступ запрещен для тарифа:', plan.slug)
+  }
 
   return {
     allowed,
@@ -549,19 +578,24 @@ export async function checkWebhookAccess(companyId: number): Promise<{
   limit?: number | null
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkWebhookAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkWebhookAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Webhook API доступен только в планах TEAM и PRO
   if (plan.slug === 'LITE') {
+    console.log('[checkWebhookAccess] Доступ запрещен для тарифа LITE')
     return {
       allowed: false,
       message: 'Webhook API доступен только в тарифах Team и Pro. Обновите тариф для использования этой функции.',
@@ -600,19 +634,27 @@ export async function checkAIAssistantAccess(companyId: number): Promise<{
   allowed: boolean
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkAIAssistantAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkAIAssistantAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // AI Ассистент доступен только в плане PRO
   const allowed = plan.slug === 'PRO'
+  
+  if (!allowed) {
+    console.log('[checkAIAssistantAccess] Доступ запрещен для тарифа:', plan.slug)
+  }
 
   return {
     allowed,
@@ -629,19 +671,27 @@ export async function checkMigrationAccess(companyId: number): Promise<{
   allowed: boolean
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkMigrationAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkMigrationAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Миграция данных доступна только в плане PRO
   const allowed = plan.slug === 'PRO'
+  
+  if (!allowed) {
+    console.log('[checkMigrationAccess] Доступ запрещен для тарифа:', plan.slug)
+  }
 
   return {
     allowed,
