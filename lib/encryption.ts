@@ -11,15 +11,32 @@ const KEY_LENGTH = 32 // 32 bytes для AES-256
 
 /**
  * Получает ключ шифрования из ENCRYPTION_KEY
- * Если ключ не установлен, выдает предупреждение
+ * Если ключ не установлен, выдает предупреждение или ошибку (в production)
  */
 function getEncryptionKey(): Buffer {
   if (!process.env.ENCRYPTION_KEY) {
-    console.warn(
-      '⚠️  ENCRYPTION_KEY не установлен в переменных окружения! ' +
-      'Используется случайный ключ. Это небезопасно для продакшена! ' +
-      'Установите ENCRYPTION_KEY в .env файле.'
-    )
+    const isProduction = process.env.NODE_ENV === 'production'
+    
+    if (isProduction) {
+      // В production выбрасываем ошибку - это критично!
+      throw new Error(
+        '❌ КРИТИЧЕСКАЯ ОШИБКА: ENCRYPTION_KEY не установлен в переменных окружения!\n' +
+        'Это небезопасно для production окружения!\n' +
+        'Установите ENCRYPTION_KEY в настройках Vercel:\n' +
+        '1. Зайдите в Vercel → ваш проект → Settings → Environment Variables\n' +
+        '2. Добавьте ENCRYPTION_KEY (64 символа hex)\n' +
+        '3. Передеплойте проект\n' +
+        'Инструкция: см. ENCRYPTION_KEY_SETUP.md'
+      )
+    } else {
+      // В development только предупреждение
+      console.warn(
+        '⚠️  ENCRYPTION_KEY не установлен в переменных окружения! ' +
+        'Используется случайный ключ. Это небезопасно для продакшена! ' +
+        'Установите ENCRYPTION_KEY в .env файле. ' +
+        'Инструкция: см. ENCRYPTION_KEY_SETUP.md'
+      )
+    }
   }
 
   // Если ключ в hex формате, конвертируем в Buffer
