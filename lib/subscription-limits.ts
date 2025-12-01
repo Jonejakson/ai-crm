@@ -34,6 +34,7 @@ export async function getCompanyPlan(companyId: number) {
   const subscription = await getActiveSubscription(companyId)
   
   if (subscription?.plan) {
+    console.log('[getCompanyPlan] Найдена активная подписка:', subscription.plan.slug, 'для companyId:', companyId)
     return subscription.plan
   }
 
@@ -42,6 +43,7 @@ export async function getCompanyPlan(companyId: number) {
     where: { slug: 'LITE' },
   })
 
+  console.log('[getCompanyPlan] Активная подписка не найдена, возвращаем дефолтный план LITE для companyId:', companyId, 'defaultPlan:', defaultPlan?.slug || 'не найден')
   return defaultPlan
 }
 
@@ -349,19 +351,24 @@ export async function checkWebFormsAccess(companyId: number): Promise<{
   limit?: number | null
   message?: string
 }> {
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return { allowed: true }
-  }
+  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
+  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  // if (isDevMode) {
+  //   return { allowed: true }
+  // }
 
   const plan = await getCompanyPlan(companyId)
   
   if (!plan) {
+    console.log('[checkWebFormsAccess] План не найден для companyId:', companyId)
     return { allowed: false, message: 'План не найден' }
   }
 
+  console.log('[checkWebFormsAccess] План компании:', plan.slug, 'companyId:', companyId)
+
   // Веб-формы доступны только в планах TEAM и PRO
   if (plan.slug === 'LITE') {
+    console.log('[checkWebFormsAccess] Доступ запрещен для тарифа LITE')
     return {
       allowed: false,
       message: 'Веб-формы доступны только в тарифах Team и Pro. Обновите тариф для использования этой функции.',

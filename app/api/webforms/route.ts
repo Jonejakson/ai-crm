@@ -71,7 +71,9 @@ export async function POST(request: Request) {
     
     // Проверка доступа к веб-формам
     const webFormsAccess = await checkWebFormsAccess(companyId)
+    console.log('[webforms][POST] Проверка доступа:', webFormsAccess, 'companyId:', companyId)
     if (!webFormsAccess.allowed) {
+      console.log('[webforms][POST] Доступ запрещен:', webFormsAccess.message)
       return NextResponse.json(
         { error: webFormsAccess.message || "Веб-формы недоступны для вашего тарифа" },
         { status: 403 }
