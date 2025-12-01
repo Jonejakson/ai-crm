@@ -186,12 +186,8 @@ class SimpleLogger {
     
     const entry = this.createLogEntry(level, message, { statusCode, duration }, undefined, metadata);
     
+    // level может быть только INFO, WARN или ERROR (в зависимости от statusCode)
     switch (level) {
-      case LogLevel.DEBUG:
-        if (this.isDevelopment) {
-          console.debug(this.formatLog(entry));
-        }
-        break;
       case LogLevel.INFO:
         if (this.isDevelopment) {
           console.info(this.formatLog(entry));
@@ -205,9 +201,9 @@ class SimpleLogger {
       case LogLevel.ERROR:
         console.error(this.formatLog(entry));
         break;
-      case LogLevel.FATAL:
-        console.error(this.formatLog(entry));
-        break;
+      default:
+        // Этот case никогда не должен выполниться, но TypeScript требует его
+        console.log(this.formatLog(entry));
     }
   }
 }
