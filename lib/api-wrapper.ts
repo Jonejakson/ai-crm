@@ -95,7 +95,7 @@ export function withApiHandler<T = any>(
       // Отправляем в Sentry (если доступен)
       if (Sentry && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
         try {
-          Sentry.withScope((scope) => {
+          Sentry.withScope((scope: any) => {
             scope.setTag("method", method);
             scope.setTag("path", path);
             scope.setTag("requestId", requestId || "unknown");
