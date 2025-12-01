@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { getCurrentUser } from "@/lib/get-session"
 import crypto from "crypto"
 import { checkWebhookAccess } from "@/lib/subscription-limits"
@@ -88,8 +89,8 @@ export async function POST(request: Request) {
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
         defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
-        fieldMapping: body.fieldMapping || null,
-        settings: body.settings || null,
+        fieldMapping: body.fieldMapping ? (body.fieldMapping as unknown as Prisma.InputJsonValue) : null,
+        settings: body.settings ? (body.settings as unknown as Prisma.InputJsonValue) : null,
         companyId,
       },
       include: {

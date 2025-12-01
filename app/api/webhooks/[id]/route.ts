@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { getCurrentUser } from "@/lib/get-session"
 import crypto from "crypto"
 import { validateRequest, updateWebhookSchema } from "@/lib/validation"
@@ -104,8 +105,16 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     if (body.defaultAssigneeId !== undefined) {
       updateData.defaultAssigneeId = body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null
     }
-    if (body.fieldMapping !== undefined) updateData.fieldMapping = body.fieldMapping
-    if (body.settings !== undefined) updateData.settings = body.settings
+    if (body.fieldMapping !== undefined) {
+      updateData.fieldMapping = body.fieldMapping 
+        ? (body.fieldMapping as unknown as Prisma.InputJsonValue) 
+        : null
+    }
+    if (body.settings !== undefined) {
+      updateData.settings = body.settings 
+        ? (body.settings as unknown as Prisma.InputJsonValue) 
+        : null
+    }
 
     const updated = await prisma.webhookIntegration.update({
       where: { id },
