@@ -108,12 +108,12 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     if (body.fieldMapping !== undefined) {
       updateData.fieldMapping = body.fieldMapping 
         ? (body.fieldMapping as unknown as Prisma.InputJsonValue) 
-        : null
+        : Prisma.JsonNull
     }
     if (body.settings !== undefined) {
       updateData.settings = body.settings 
         ? (body.settings as unknown as Prisma.InputJsonValue) 
-        : null
+        : Prisma.JsonNull
     }
 
     const updated = await prisma.webhookIntegration.update({

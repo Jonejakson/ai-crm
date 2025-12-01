@@ -89,8 +89,8 @@ export async function POST(request: Request) {
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
         defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
-        fieldMapping: body.fieldMapping ? (body.fieldMapping as unknown as Prisma.InputJsonValue) : null,
-        settings: body.settings ? (body.settings as unknown as Prisma.InputJsonValue) : null,
+        fieldMapping: body.fieldMapping ? (body.fieldMapping as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+        settings: body.settings ? (body.settings as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
         companyId,
       },
       include: {
