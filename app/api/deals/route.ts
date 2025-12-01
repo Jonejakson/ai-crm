@@ -138,10 +138,10 @@ export async function POST(req: Request) {
     const deal = await prisma.deal.create({
       data: {
         title: data.title,
-        amount: data.amount ? parseFloat(data.amount) : 0,
+        amount: data.amount || 0,
         currency: data.currency || 'RUB',
         stage: data.stage || 'lead',
-        contactId: Number(data.contactId),
+        contactId: data.contactId,
         userId: userId,
         pipelineId: data.pipelineId ? Number(data.pipelineId) : null,
         sourceId: data.sourceId ? Number(data.sourceId) : null,
