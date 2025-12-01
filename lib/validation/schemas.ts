@@ -81,6 +81,7 @@ export const createWebFormSchema = z.object({
   pipelineId: z.number().int().positive().optional().nullable(),
   initialStage: z.string().max(100).optional().nullable(),
   defaultAssigneeId: z.number().int().positive().optional().nullable(),
+  isActive: z.boolean().optional().default(true),
 })
 
 export const updateWebFormSchema = createWebFormSchema.partial().extend({
