@@ -89,6 +89,34 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining))
   response.headers.set('X-RateLimit-Reset', String(rateLimitResult.reset))
   
+  // Security headers
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  // Content Security Policy
+  // Разрешаем только наш домен и необходимые внешние ресурсы
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-inline и unsafe-eval для Next.js
+    "style-src 'self' 'unsafe-inline'", // unsafe-inline для Tailwind CSS
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.openai.com https://*.vercel.app", // OpenAI API и Vercel
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ')
+  
+  response.headers.set('Content-Security-Policy', csp)
+  
+  // Strict Transport Security (только для HTTPS)
+  if (request.url.startsWith('https://')) {
+    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
+  }
+  
   return response
 }
 
