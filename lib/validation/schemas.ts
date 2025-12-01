@@ -201,7 +201,7 @@ export const sendEmailSchema = z.object({
 export const createDialogSchema = z.object({
   message: z.string().min(1, 'Сообщение обязательно').max(5000),
   sender: z.enum(['user', 'client']).optional().default('user'),
-  platform: z.enum(['INTERNAL', 'TELEGRAM', 'WHATSAPP', 'EMAIL']).optional().default('INTERNAL'),
+  platform: z.enum(['INTERNAL', 'TELEGRAM', 'WHATSAPP']).optional().default('INTERNAL'),
   contactId: z.number().int().positive('ID контакта обязателен'),
   externalId: z.string().max(255).optional().nullable(),
 })
