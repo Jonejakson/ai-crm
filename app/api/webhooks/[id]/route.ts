@@ -88,20 +88,28 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Webhook not found" }, { status: 404 })
     }
 
+    const updateData: any = {}
+    
+    if (body.name !== undefined) updateData.name = body.name
+    if (body.description !== undefined) updateData.description = body.description
+    if (body.isActive !== undefined) updateData.isActive = body.isActive
+    if (body.autoCreateContact !== undefined) updateData.autoCreateContact = body.autoCreateContact
+    if (body.autoCreateDeal !== undefined) updateData.autoCreateDeal = body.autoCreateDeal
+    if (body.defaultSourceId !== undefined) {
+      updateData.defaultSourceId = body.defaultSourceId ? Number(body.defaultSourceId) : null
+    }
+    if (body.defaultPipelineId !== undefined) {
+      updateData.defaultPipelineId = body.defaultPipelineId ? Number(body.defaultPipelineId) : null
+    }
+    if (body.defaultAssigneeId !== undefined) {
+      updateData.defaultAssigneeId = body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null
+    }
+    if (body.fieldMapping !== undefined) updateData.fieldMapping = body.fieldMapping
+    if (body.settings !== undefined) updateData.settings = body.settings
+
     const updated = await prisma.webhookIntegration.update({
       where: { id },
-      data: {
-        name: body.name !== undefined ? body.name : webhook.name,
-        description: body.description !== undefined ? body.description : webhook.description,
-        isActive: body.isActive !== undefined ? body.isActive : webhook.isActive,
-        autoCreateContact: body.autoCreateContact !== undefined ? body.autoCreateContact : webhook.autoCreateContact,
-        autoCreateDeal: body.autoCreateDeal !== undefined ? body.autoCreateDeal : webhook.autoCreateDeal,
-        defaultSourceId: body.defaultSourceId !== undefined ? (body.defaultSourceId ? Number(body.defaultSourceId) : null) : webhook.defaultSourceId,
-        defaultPipelineId: body.defaultPipelineId !== undefined ? (body.defaultPipelineId ? Number(body.defaultPipelineId) : null) : webhook.defaultPipelineId,
-        defaultAssigneeId: body.defaultAssigneeId !== undefined ? (body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null) : webhook.defaultAssigneeId,
-        fieldMapping: body.fieldMapping !== undefined ? body.fieldMapping : webhook.fieldMapping,
-        settings: body.settings !== undefined ? body.settings : webhook.settings,
-      },
+      data: updateData,
       include: {
         defaultAssignee: { select: { id: true, name: true, email: true } },
         defaultSource: { select: { id: true, name: true } },
