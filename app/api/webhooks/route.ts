@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import crypto from "crypto"
 import { checkWebhookAccess } from "@/lib/subscription-limits"
+import { validateRequest, createWebhookSchema } from "@/lib/validation"
 
 // Получить все webhook интеграции компании
 export async function GET() {
@@ -62,7 +63,16 @@ export async function POST(request: Request) {
       )
     }
 
-    const body = await request.json()
+    const rawBody = await request.json()
+    
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createWebhookSchema, rawBody)
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
+    }
+    
+    const body = validationResult
 
     // Генерируем уникальный токен
     const token = crypto.randomBytes(32).toString('hex')

@@ -5,6 +5,9 @@
 import { z } from 'zod'
 import { NextResponse } from 'next/server'
 
+// Экспортируем все схемы
+export * from './schemas'
+
 /**
  * Валидировать данные по схеме Zod
  * @param schema - Zod схема

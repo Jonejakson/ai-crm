@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encryptPassword } from "@/lib/encryption"
 import { checkEmailIntegrationsAccess } from "@/lib/subscription-limits"
+import { validateRequest, createEmailIntegrationSchema } from "@/lib/validation"
 
 // Получить все email-интеграции компании
 export async function GET() {
@@ -57,7 +58,16 @@ export async function POST(request: Request) {
       )
     }
 
-    const body = await request.json()
+    const rawBody = await request.json()
+    
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createEmailIntegrationSchema, rawBody)
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
+    }
+    
+    const body = validationResult
 
     const integration = await prisma.emailIntegration.create({
       data: {

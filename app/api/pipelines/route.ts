@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { checkPipelineLimit } from "@/lib/subscription-limits";
+import { validateRequest, createPipelineSchema, updatePipelineSchema } from "@/lib/validation";
 
 // Получить все воронки компании
 export async function GET() {
@@ -45,11 +46,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    if (!data.name || !data.stages) {
-      return NextResponse.json({ error: "Name and stages are required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createPipelineSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
+    
+    const data = validationResult;
 
     const companyId = parseInt(user.companyId);
 
@@ -91,11 +97,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    if (!data.id) {
-      return NextResponse.json({ error: "Pipeline ID is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(updatePipelineSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
+    
+    const data = validationResult;
 
     const companyId = parseInt(user.companyId);
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { validateRequest, updateTaskSchema } from "@/lib/validation";
+import { z } from "zod";
 
 export async function PATCH(
   req: Request,
@@ -20,7 +22,17 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid task ID" }, { status: 400 });
     }
 
-    const data = await req.json();
+    const rawBody = await req.json();
+    
+    // Валидация с помощью Zod (частичное обновление)
+    const partialSchema = updateTaskSchema.partial().extend({ id: z.number().int().positive() })
+    const validationResult = validateRequest(partialSchema, { ...rawBody, id: taskId })
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
+    }
+    
+    const data = validationResult;
     
     // Проверяем, что задача существует и принадлежит пользователю или компании
     const existingTask = await prisma.task.findUnique({

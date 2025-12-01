@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { sanitizeFormFields, WebFormFieldsPayload } from "@/lib/webforms"
 import { parsePipelineStages } from "@/lib/pipelines"
+import { validateRequest, updateWebFormSchema } from "@/lib/validation"
+import { z } from "zod"
 
 type WebFormRequestPayload = {
   name?: string
@@ -78,7 +80,17 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Form not found" }, { status: 404 })
     }
 
-    const body = (await request.json()) as WebFormRequestPayload
+    const rawBody = await request.json()
+    
+    // Валидация с помощью Zod (частичное обновление)
+    const partialSchema = updateWebFormSchema.partial().extend({ id: z.number().int().positive() })
+    const validationResult = validateRequest(partialSchema, { ...rawBody, id })
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
+    }
+    
+    const body = validationResult as WebFormRequestPayload
     const updateData: Prisma.WebFormUncheckedUpdateInput = {}
 
     if (body.name) updateData.name = String(body.name)

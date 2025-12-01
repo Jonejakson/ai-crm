@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { validateQuery, searchSchema } from "@/lib/validation";
 
 // Улучшенный универсальный поиск по всем сущностям с поддержкой тегов
 export async function GET(req: Request) {

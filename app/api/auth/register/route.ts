@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import { validateRequest, createUserSchema } from "@/lib/validation"
 
 // Загружаем переменные окружения ПЕРЕД импортом Prisma
 if (typeof window === 'undefined') {
@@ -24,22 +25,16 @@ export async function POST(req: Request) {
       )
     }
 
-    const { email, password, name, companyId } = await req.json()
+    const body = await req.json()
 
-    // Валидация
-    if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: "Все поля обязательны" },
-        { status: 400 }
-      )
+    // Валидация с помощью Zod
+    const validation = validateRequest(createUserSchema, body)
+    
+    if (validation instanceof NextResponse) {
+      return validation // Возвращаем ошибку валидации
     }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Пароль должен быть не менее 6 символов" },
-        { status: 400 }
-      )
-    }
+    
+    const { email, password, name, companyId } = validation
 
     // Проверка существования пользователя
     const existingUser = await prisma.user.findUnique({

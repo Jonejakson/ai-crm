@@ -68,21 +68,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Неверный формат данных. Ожидается JSON." }, { status: 400 });
     }
 
-    const { message, sender, contactId } = body;
+    // Валидация с помощью Zod
+    const validation = validateRequest(createDialogSchema, body);
     
-    // Валидация
-    if (!message || typeof message !== 'string' || !message.trim()) {
-      return NextResponse.json({ error: "Сообщение обязательно и должно быть непустой строкой" }, { status: 400 });
+    if (validation instanceof NextResponse) {
+      return validation; // Возвращаем ошибку валидации
     }
     
-    if (!contactId) {
-      return NextResponse.json({ error: "ID контакта обязателен" }, { status: 400 });
-    }
-
-    const contactIdNum = Number(contactId);
-    if (isNaN(contactIdNum) || contactIdNum <= 0) {
-      return NextResponse.json({ error: "Неверный формат ID контакта" }, { status: 400 });
-    }
+    const { message, sender, platform, contactId, externalId } = validation;
+    const contactIdNum = contactId;
 
     // Проверка существования контакта
     let contact;
@@ -108,8 +102,8 @@ export async function POST(req: Request) {
         data: {
           message: message.trim(),
           sender: sender || "user",
-          platform: body.platform || "INTERNAL", // По умолчанию INTERNAL
-          externalId: body.externalId || null,
+          platform: platform || "INTERNAL",
+          externalId: externalId || null,
           contactId: contactIdNum,
         },
         include: {

@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encryptPassword } from "@/lib/encryption"
+import { validateRequest, updateEmailIntegrationSchema } from "@/lib/validation"
+import { z } from "zod"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -72,7 +74,17 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Integration not found" }, { status: 404 })
     }
 
-    const body = await request.json()
+    const rawBody = await request.json()
+    
+    // Валидация с помощью Zod (частичное обновление)
+    const partialSchema = updateEmailIntegrationSchema.partial().extend({ id: z.number().int().positive() })
+    const validationResult = validateRequest(partialSchema, { ...rawBody, id })
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
+    }
+    
+    const body = validationResult
     const updateData: any = {}
 
     if (body.email !== undefined) updateData.email = body.email

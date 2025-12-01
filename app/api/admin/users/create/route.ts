@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { isAdmin } from "@/lib/access-control";
 import { checkUserLimit } from "@/lib/subscription-limits";
+import { validateRequest, createUserSchema } from "@/lib/validation";
 
 /**
  * Создать пользователя в компании (только для админа)
@@ -21,30 +22,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
 
-    const { email, password, name, role = 'manager' } = await req.json();
+    const rawBody = await req.json();
     const companyId = parseInt(user.companyId);
 
-    // Валидация
-    if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: "Все поля обязательны" },
-        { status: 400 }
-      );
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createUserSchema, { ...rawBody, companyId });
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Пароль должен быть не менее 6 символов" },
-        { status: 400 }
-      );
-    }
-
-    if (!['user', 'manager', 'admin'].includes(role)) {
-      return NextResponse.json(
-        { error: "Недопустимая роль. Допустимые: user, manager, admin" },
-        { status: 400 }
-      );
-    }
+    
+    const { email, password, name, role = 'manager' } = validationResult;
 
     // Проверка существования пользователя
     const existingUser = await prisma.user.findUnique({

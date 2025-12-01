@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/get-session"
 import { sanitizeFormFields, WebFormFieldsPayload } from "@/lib/webforms"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { checkWebFormsAccess } from "@/lib/subscription-limits"
+import { validateRequest, createWebFormSchema } from "@/lib/validation"
 
 type WebFormRequestPayload = {
   name?: string
@@ -62,10 +63,16 @@ export async function POST(request: Request) {
   if (authError) return authError
 
   try {
-    const body = (await request.json()) as WebFormRequestPayload
-    if (!body?.name || typeof body.name !== "string") {
-      return NextResponse.json({ error: "Название обязательно" }, { status: 400 })
+    const rawBody = await request.json()
+    
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createWebFormSchema, rawBody)
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
     }
+    
+    const body = validationResult as WebFormRequestPayload
 
     const companyId = parseInt(user!.companyId)
     

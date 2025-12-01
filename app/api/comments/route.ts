@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser, getUserId } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
+import { validateRequest, createCommentSchema } from '@/lib/validation'
 
 // GET /api/comments?entityType=deal&entityId=1
 export async function GET(req: Request) {
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
     // Проверяем доступ к сущности
     if (entityType === 'deal') {
       const deal = await prisma.deal.findUnique({
-        where: { id: parseInt(entityId) },
+        where: { id: entityId },
         include: {
           user: {
             select: { companyId: true },
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
       }
     } else if (entityType === 'task') {
       const task = await prisma.task.findUnique({
-        where: { id: parseInt(entityId) },
+        where: { id: entityId },
         include: {
           user: {
             select: { companyId: true },
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
     const comments = await prisma.comment.findMany({
       where: {
         entityType,
-        entityId: parseInt(entityId),
+        entityId: entityId,
       },
       include: {
         user: {
@@ -92,20 +93,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const { text, entityType, entityId } = body
-
-    if (!text || !entityType || !entityId) {
-      return NextResponse.json(
-        { error: 'text, entityType, and entityId are required' },
-        { status: 400 }
-      )
+    const rawBody = await req.json()
+    
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createCommentSchema, rawBody)
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
     }
+    
+    const { text, entityType, entityId } = validationResult
 
     // Проверяем доступ к сущности
     if (entityType === 'deal') {
       const deal = await prisma.deal.findUnique({
-        where: { id: parseInt(entityId) },
+        where: { id: entityId },
         include: {
           user: {
             select: { companyId: true },
@@ -118,7 +120,7 @@ export async function POST(req: Request) {
       }
     } else if (entityType === 'task') {
       const task = await prisma.task.findUnique({
-        where: { id: parseInt(entityId) },
+        where: { id: entityId },
         include: {
           user: {
             select: { companyId: true },
@@ -145,7 +147,7 @@ export async function POST(req: Request) {
       data: {
         text,
         entityType,
-        entityId: parseInt(entityId),
+        entityId: entityId,
         userId: userId,
       },
       include: {

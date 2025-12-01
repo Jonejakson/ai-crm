@@ -91,21 +91,32 @@ export const updateWebFormSchema = createWebFormSchema.partial().extend({
 export const createEmailIntegrationSchema = z.object({
   provider: z.enum(['GMAIL', 'OUTLOOK', 'IMAP_SMTP', 'YANDEX']),
   email: z.string().email('Неверный формат email'),
+  displayName: z.string().max(255).optional().nullable(),
   password: z.string().min(1, 'Пароль обязателен').optional(), // Для IMAP/SMTP
   imapHost: z.string().max(255).optional().nullable(),
   imapPort: z.number().int().min(1).max(65535).optional().nullable(),
+  imapUsername: z.string().max(255).optional().nullable(),
+  imapPassword: z.string().optional().nullable(),
   imapSecure: z.boolean().optional().default(true),
   smtpHost: z.string().max(255).optional().nullable(),
   smtpPort: z.number().int().min(1).max(65535).optional().nullable(),
+  smtpUsername: z.string().max(255).optional().nullable(),
+  smtpPassword: z.string().optional().nullable(),
   smtpSecure: z.boolean().optional().default(true),
+  useSSL: z.boolean().optional().default(true),
   accessToken: z.string().optional().nullable(), // Для OAuth
   refreshToken: z.string().optional().nullable(), // Для OAuth
+  tokenExpiresAt: z.string().datetime().optional().nullable(),
+  syncInterval: z.number().int().min(1).max(60).optional().default(5),
+  isIncomingEnabled: z.boolean().optional().default(true),
+  isOutgoingEnabled: z.boolean().optional().default(true),
   autoCreateContact: z.boolean().optional().default(true),
   autoCreateDeal: z.boolean().optional().default(false),
   defaultSourceId: z.number().int().positive().optional().nullable(),
   defaultPipelineId: z.number().int().positive().optional().nullable(),
   defaultAssigneeId: z.number().int().positive().optional().nullable(),
   isActive: z.boolean().optional().default(true),
+  settings: z.any().optional().nullable(),
 })
 
 export const updateEmailIntegrationSchema = createEmailIntegrationSchema.partial().extend({
@@ -175,5 +186,23 @@ export const paginationSchema = z.object({
 export const searchSchema = z.object({
   query: z.string().min(1, 'Поисковый запрос обязателен').max(255),
   type: z.enum(['all', 'contacts', 'deals', 'tasks', 'events']).optional().default('all'),
+})
+
+// Отправка email
+export const sendEmailSchema = z.object({
+  to: z.string().email('Неверный формат email получателя'),
+  subject: z.string().min(1, 'Тема обязательна').max(255),
+  body: z.string().min(1, 'Текст письма обязателен').max(10000),
+  contactId: z.number().int().positive().optional(),
+  dealId: z.number().int().positive().optional(),
+})
+
+// Отправка сообщения в диалог
+export const createDialogSchema = z.object({
+  message: z.string().min(1, 'Сообщение обязательно').max(5000),
+  sender: z.enum(['user', 'client']).optional().default('user'),
+  platform: z.enum(['INTERNAL', 'TELEGRAM', 'WHATSAPP', 'EMAIL']).optional().default('INTERNAL'),
+  contactId: z.number().int().positive('ID контакта обязателен'),
+  externalId: z.string().max(255).optional().nullable(),
 })
 

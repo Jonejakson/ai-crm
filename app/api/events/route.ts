@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { validateRequest, createEventSchema } from "@/lib/validation";
+import { validateRequest, createEventSchema, updateEventSchema } from "@/lib/validation";
 import { createNotification } from "@/lib/notifications";
 
 // Получить все события (с учетом роли и фильтра по пользователю для админа)
@@ -91,11 +93,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    if (!data.title || !data.startDate) {
-      return NextResponse.json({ error: "Title and start date are required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validation = validateRequest(createEventSchema, body);
+    
+    if (validation instanceof NextResponse) {
+      return validation; // Возвращаем ошибку валидации
     }
+    
+    const data = validation;
 
     // Если указан контакт, проверяем, что он принадлежит пользователю
     if (data.contactId) {
@@ -163,11 +170,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    if (!data.id) {
-      return NextResponse.json({ error: "Event ID is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(updateEventSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
+    
+    const data = validationResult;
 
     // Проверяем, что событие принадлежит пользователю
     const existingEvent = await prisma.event.findUnique({

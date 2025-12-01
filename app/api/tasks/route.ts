@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { createNotification, checkOverdueTasks } from "@/lib/notifications";
+import { validateRequest, createTaskSchema } from "@/lib/validation";
+import { validateRequest, createTaskSchema, updateTaskSchema } from "@/lib/validation";
 
 // 🔹 Получить все задачи (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -67,12 +69,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    // Валидация
-    if (!data.title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validation = validateRequest(createTaskSchema, body);
+    
+    if (validation instanceof NextResponse) {
+      return validation; // Возвращаем ошибку валидации
     }
+    
+    const data = validation;
 
     const userId = getUserId(user);
     if (!userId) {
@@ -123,16 +129,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    // Валидация
-    if (!data.id) {
-      return NextResponse.json({ error: "Task ID is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(updateTaskSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
     
-    if (!data.title) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
-    }
+    const data = validationResult;
 
     const userId = getUserId(user);
     if (!userId) {

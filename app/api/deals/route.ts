@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { validateRequest, createDealSchema } from "@/lib/validation";
+import { validateRequest, createDealSchema, updateDealSchema } from "@/lib/validation";
 
 // Получить все сделки (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -98,11 +100,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    if (!data.title || !data.contactId) {
-      return NextResponse.json({ error: "Title and contact ID are required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(createDealSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
+    
+    const data = validationResult;
 
     const userId = getUserId(user);
     if (!userId) {
@@ -211,11 +218,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    if (!data.id) {
-      return NextResponse.json({ error: "Deal ID is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validation = validateRequest(updateDealSchema, body);
+    
+    if (validation instanceof NextResponse) {
+      return validation; // Возвращаем ошибку валидации
     }
+    
+    const data = validation;
 
     const userId = getUserId(user);
     if (!userId) {

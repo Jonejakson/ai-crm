@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { validateRequest, updateDealSchema } from "@/lib/validation";
+import { z } from "zod";
 
 export async function GET(
   req: Request,

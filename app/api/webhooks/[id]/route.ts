@@ -2,6 +2,8 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import crypto from "crypto"
+import { validateRequest, updateWebhookSchema } from "@/lib/validation"
+import { z } from "zod"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -65,7 +67,17 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 })
     }
 
-    const body = await request.json()
+    const rawBody = await request.json()
+    
+    // Валидация с помощью Zod (частичное обновление)
+    const partialSchema = updateWebhookSchema.partial().extend({ id: z.number().int().positive() })
+    const validationResult = validateRequest(partialSchema, { ...rawBody, id })
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
+    }
+    
+    const body = validationResult
     const companyId = parseInt(user.companyId)
 
     const webhook = await prisma.webhookIntegration.findFirst({

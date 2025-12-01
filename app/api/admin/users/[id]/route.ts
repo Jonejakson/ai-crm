@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { isAdmin } from "@/lib/access-control";
+import { validateRequest, updateUserSchema } from "@/lib/validation";
+import { z } from "zod";
 
 /**
  * Обновить пользователя (только для админа)
@@ -25,7 +27,7 @@ export async function PUT(
 
     const { id } = await params;
     const userId = parseInt(id);
-    const { name, email, role, password } = await req.json();
+    const rawBody = await req.json();
     const adminCompanyId = parseInt(user.companyId);
 
     // Проверяем, что пользователь существует и принадлежит той же компании
@@ -42,13 +44,19 @@ export async function PUT(
       return NextResponse.json({ error: "Доступ запрещен" }, { status: 403 });
     }
 
-    // Валидация роли
-    if (role && !['user', 'manager', 'admin'].includes(role)) {
-      return NextResponse.json(
-        { error: "Недопустимая роль. Допустимые: user, manager, admin" },
-        { status: 400 }
-      );
+    // Валидация с помощью Zod (частичное обновление, пароль обрабатывается отдельно)
+    const bodyWithoutPassword = { ...rawBody }
+    delete bodyWithoutPassword.password // Пароль валидируем отдельно
+    
+    const partialSchema = updateUserSchema.partial().extend({ id: z.number().int().positive() })
+    const validationResult = validateRequest(partialSchema, { ...bodyWithoutPassword, id: userId })
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult
     }
+    
+    const { name, email, role } = validationResult
+    const password = rawBody.password // Пароль обрабатываем отдельно
 
     // Проверка email на уникальность (если изменяется)
     if (email && email !== existingUser.email) {

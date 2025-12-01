@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
+import { validateRequest, createContactSchema } from "@/lib/validation";
+import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
 import { checkContactLimit } from "@/lib/subscription-limits";
 
 // ❶ Получить все контакты (с учетом роли и фильтра по пользователю для админа)
@@ -98,12 +100,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    // Валидация
-    if (!data.name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const { validateRequest, createContactSchema } = await import("@/lib/validation");
+    const validationResult = validateRequest(createContactSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
+    
+    const data = validationResult;
 
     // Проверка формата email (если указан)
     if (data.email && data.email.trim()) {
@@ -172,22 +179,16 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const data = await req.json();
+    const body = await req.json();
     
-    // Валидация
-    if (!data.id) {
-      return NextResponse.json({ error: "Contact ID is required" }, { status: 400 });
+    // Валидация с помощью Zod
+    const validationResult = validateRequest(updateContactSchema, body);
+    
+    if (validationResult instanceof NextResponse) {
+      return validationResult;
     }
     
-    if (!data.name || !data.email) {
-      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
-    }
-
-    // Проверка формата email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(data.email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
-    }
+    const data = validationResult;
 
     const userId = getUserId(user);
     if (!userId) {
