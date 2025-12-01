@@ -29,7 +29,7 @@ export function validateData<T>(schema: z.ZodSchema<T>, data: unknown): {
   }
   
   // Форматируем ошибки для пользователя
-  const errorMessages = result.error.errors.map(err => {
+  const errorMessages = result.error.issues.map(err => {
     const path = err.path.join('.')
     return path ? `${path}: ${err.message}` : err.message
   })
@@ -57,7 +57,7 @@ export function validateRequest<T>(
         error: 'Validation Error',
         message: validation.error,
         details: process.env.NODE_ENV === 'development' 
-          ? validation.errors.errors 
+          ? validation.errors.issues 
           : undefined,
       },
       { status: 400 }
