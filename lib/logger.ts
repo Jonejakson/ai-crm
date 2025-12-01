@@ -122,7 +122,7 @@ class Logger {
       if (entry.level === LogLevel.ERROR || entry.level === LogLevel.FATAL) {
         const sentryLevel = entry.level === LogLevel.FATAL ? "fatal" : "error";
         
-        Sentry.withScope((scope) => {
+        Sentry.withScope((scope: any) => {
           // Установить уровень
           scope.setLevel(sentryLevel);
           
