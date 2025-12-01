@@ -102,7 +102,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     
     // Валидация с помощью Zod
-    const { validateRequest, createContactSchema } = await import("@/lib/validation");
     const validationResult = validateRequest(createContactSchema, body);
     
     if (validationResult instanceof NextResponse) {
