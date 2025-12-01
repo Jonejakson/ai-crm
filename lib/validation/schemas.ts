@@ -127,6 +127,7 @@ export const updateEmailIntegrationSchema = createEmailIntegrationSchema.partial
 // Webhook интеграции
 export const createWebhookSchema = z.object({
   name: z.string().min(1, 'Название обязательно').max(255),
+  description: z.string().max(500).optional().nullable(),
   url: urlSchema.optional().nullable(),
   method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).optional().default('POST'),
   autoCreateContact: z.boolean().optional().default(true),
