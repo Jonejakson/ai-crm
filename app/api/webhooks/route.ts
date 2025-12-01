@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import crypto from "crypto"
+import { checkWebhookAccess } from "@/lib/subscription-limits"
 
 // Получить все webhook интеграции компании
 export async function GET() {
@@ -48,8 +49,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const body = await request.json()
     const companyId = parseInt(user.companyId)
+    
+    // Проверка доступа к Webhook API
+    const webhookAccess = await checkWebhookAccess(companyId)
+    if (!webhookAccess.allowed) {
+      return NextResponse.json(
+        { error: webhookAccess.message || "Webhook API недоступен для вашего тарифа" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
 
     // Генерируем уникальный токен
     const token = crypto.randomBytes(32).toString('hex')

@@ -109,6 +109,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Проверка лимита сделок
+    const companyId = parseInt(user.companyId);
+    const { checkDealLimit } = await import("@/lib/subscription-limits");
+    const dealLimitCheck = await checkDealLimit(companyId);
+    if (!dealLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: dealLimitCheck.message || "Достигнут лимит открытых сделок" },
+        { status: 403 }
+      );
+    }
+
     // Проверяем, что контакт принадлежит пользователю
     const contact = await prisma.contact.findUnique({
       where: { id: Number(data.contactId) }

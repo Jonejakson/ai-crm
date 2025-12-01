@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encrypt } from "@/lib/encryption"
+import { checkAccountingIntegrationsAccess } from "@/lib/subscription-limits"
 
 // Получить 1С интеграцию компании
 export async function GET() {
@@ -42,8 +43,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const body = await request.json()
     const companyId = parseInt(user.companyId)
+    
+    // Проверка доступа к учетным системам
+    const accountingAccess = await checkAccountingIntegrationsAccess(companyId)
+    if (!accountingAccess.allowed) {
+      return NextResponse.json(
+        { error: accountingAccess.message || "Интеграции с учетными системами недоступны для вашего тарифа" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
 
     // Для 1С нужны:
     // - baseUrl (URL базы 1С, например: http://server:port/base)

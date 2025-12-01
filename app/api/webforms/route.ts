@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { sanitizeFormFields, WebFormFieldsPayload } from "@/lib/webforms"
 import { parsePipelineStages } from "@/lib/pipelines"
+import { checkWebFormsAccess } from "@/lib/subscription-limits"
 
 type WebFormRequestPayload = {
   name?: string
@@ -67,6 +68,15 @@ export async function POST(request: Request) {
     }
 
     const companyId = parseInt(user!.companyId)
+    
+    // Проверка доступа к веб-формам
+    const webFormsAccess = await checkWebFormsAccess(companyId)
+    if (!webFormsAccess.allowed) {
+      return NextResponse.json(
+        { error: webFormsAccess.message || "Веб-формы недоступны для вашего тарифа" },
+        { status: 403 }
+      )
+    }
     const fieldsConfig = sanitizeFormFields(body.fields) as unknown as Prisma.InputJsonValue
 
     const pipelineInfo = await resolvePipelineConfig(

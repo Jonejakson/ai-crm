@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encrypt } from "@/lib/encryption"
+import { checkAdvertisingIntegrationsAccess } from "@/lib/subscription-limits"
 
 // Получить Авито интеграцию компании
 export async function GET() {
@@ -47,8 +48,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const body = await request.json()
     const companyId = parseInt(user.companyId)
+    
+    // Проверка доступа к рекламным интеграциям
+    const advertisingAccess = await checkAdvertisingIntegrationsAccess(companyId)
+    if (!advertisingAccess.allowed) {
+      return NextResponse.json(
+        { error: advertisingAccess.message || "Рекламные интеграции недоступны для вашего тарифа" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
 
     // Для Авито нужны:
     // - Client ID (apiToken)

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encrypt } from "@/lib/encryption"
+import { checkMessagingIntegrationsAccess } from "@/lib/subscription-limits"
 
 // Получить WhatsApp интеграцию компании
 export async function GET() {
@@ -47,8 +48,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const body = await request.json()
     const companyId = parseInt(user.companyId)
+    
+    // Проверка доступа к WhatsApp интеграции
+    const messagingAccess = await checkMessagingIntegrationsAccess(companyId)
+    if (!messagingAccess.allowed) {
+      return NextResponse.json(
+        { error: messagingAccess.message || "WhatsApp интеграция недоступна для вашего тарифа" },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
 
     // Для WhatsApp Business API нужны:
     // - API Key (или Access Token)

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encryptPassword } from "@/lib/encryption"
+import { checkEmailIntegrationsAccess } from "@/lib/subscription-limits"
 
 // Получить все email-интеграции компании
 export async function GET() {
@@ -45,10 +46,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // TODO: Проверка платной подписки
+    const companyId = parseInt(user.companyId)
+    
+    // Проверка доступа к email интеграциям
+    const emailAccess = await checkEmailIntegrationsAccess(companyId)
+    if (!emailAccess.allowed) {
+      return NextResponse.json(
+        { error: emailAccess.message || "Email интеграции недоступны для вашего тарифа" },
+        { status: 403 }
+      )
+    }
 
     const body = await request.json()
-    const companyId = parseInt(user.companyId)
 
     const integration = await prisma.emailIntegration.create({
       data: {

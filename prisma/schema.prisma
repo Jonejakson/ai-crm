@@ -324,19 +324,25 @@ model EmailMessage {
 }
 
 model Plan {
-    id            Int         @id @default(autoincrement())
-    name          String
-    slug          PlanSlug    @unique
-    description   String?
-    price         Int         @default(0) // цена в минорных единицах (например, копейки)
-    currency      String      @default("RUB")
-    userLimit     Int?
-    contactLimit  Int?
-    pipelineLimit Int?
-    features      Json?
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
-    subscriptions Subscription[]
+    id                    Int         @id @default(autoincrement())
+    name                   String
+    slug                   PlanSlug    @unique
+    description            String?
+    price                  Int         @default(0) // цена в минорных единицах (например, копейки)
+    currency               String      @default("RUB")
+    userLimit              Int?
+    contactLimit           Int?
+    pipelineLimit          Int?
+    dealLimit              Int?        // Лимит открытых сделок
+    storageLimit           Int?        // Лимит хранилища в МБ
+    webFormLimit           Int?        // Лимит веб-форм (null = без ограничений)
+    emailIntegrationLimit  Int?        // Лимит email интеграций (null = без ограничений)
+    webhookLimit           Int?        // Лимит webhook'ов (null = без ограничений)
+    customFieldLimit       Int?        // Лимит кастомных полей (null = без ограничений)
+    features               Json?       // JSON с флагами доступных функций
+    createdAt              DateTime    @default(now())
+    updatedAt              DateTime    @updatedAt
+    subscriptions          Subscription[]
 }
 
 model Subscription {
