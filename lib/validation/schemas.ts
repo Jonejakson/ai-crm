@@ -135,6 +135,8 @@ export const createWebhookSchema = z.object({
   defaultSourceId: z.number().int().positive().optional().nullable(),
   defaultPipelineId: z.number().int().positive().optional().nullable(),
   defaultAssigneeId: z.number().int().positive().optional().nullable(),
+  fieldMapping: z.record(z.any()).optional().nullable(), // JSON объект для маппинга полей
+  settings: z.record(z.any()).optional().nullable(), // JSON объект для дополнительных настроек
   isActive: z.boolean().optional().default(true),
 })
 
