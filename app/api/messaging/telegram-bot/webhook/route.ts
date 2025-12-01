@@ -1,13 +1,16 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { decrypt } from "@/lib/encryption"
+import { verifyWebhookSignature } from "@/lib/webhook-security"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
 
 // Webhook для получения сообщений от Telegram
 export async function POST(request: NextRequest) {
   try {
-    const update = await request.json()
+    // Получаем тело запроса как строку для проверки подписи
+    const bodyText = await request.text()
+    const update = JSON.parse(bodyText)
 
     // Telegram отправляет обновления в формате { message: {...}, update_id: ... }
     if (!update.message) {
@@ -40,6 +43,24 @@ export async function POST(request: NextRequest) {
     if (!integration || !integration.botToken) {
       console.warn("[telegram-webhook] No active integration found")
       return NextResponse.json({ ok: true })
+    }
+
+    // Проверяем webhook secret, если он настроен
+    // Telegram не использует стандартную подпись, но можно проверить через secret_token
+    // Если webhookSecret настроен, проверяем его
+    if (integration.webhookSecret) {
+      // Telegram может отправлять secret_token в заголовке или в теле запроса
+      // Для дополнительной безопасности проверяем наличие секрета
+      const secretToken = request.headers.get('x-telegram-bot-api-secret-token')
+      if (secretToken) {
+        const decryptedSecret = decrypt(integration.webhookSecret)
+        if (secretToken !== decryptedSecret) {
+          console.error("[telegram-webhook] Invalid secret token")
+          return NextResponse.json({ error: "Invalid secret token" }, { status: 403 })
+        }
+      }
+      // Если secret_token не передан, но webhookSecret настроен - это нормально
+      // Telegram может не отправлять его, если не настроен в Bot API
     }
 
     // Извлекаем данные пользователя

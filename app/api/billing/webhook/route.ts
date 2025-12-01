@@ -12,7 +12,9 @@ export async function POST(request: Request) {
     const signature = request.headers.get('x-yookassa-signature') || ''
 
     // Проверяем подпись (в production обязательно!)
-    if (process.env.NODE_ENV === 'production') {
+    // В development тоже проверяем, если YOOKASSA_SECRET_KEY установлен
+    const shouldVerify = process.env.NODE_ENV === 'production' || !!process.env.YOOKASSA_SECRET_KEY
+    if (shouldVerify) {
       const isValid = verifyYooKassaWebhook(body, signature)
       if (!isValid) {
         console.error('[webhook] Invalid YooKassa signature')
