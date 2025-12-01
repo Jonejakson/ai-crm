@@ -106,7 +106,7 @@ export async function POST(request: Request) {
 
     const form = await prisma.webForm.create({
       data: {
-        name: body.name.trim(),
+        name: (body.name || '').trim(),
         token: crypto.randomUUID(),
         companyId,
         fields: fieldsConfig,
