@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
-import { validateRequest, createDealSchema } from "@/lib/validation";
 import { validateRequest, createDealSchema, updateDealSchema } from "@/lib/validation";
 
 // Получить все сделки (с учетом роли и фильтра по пользователю для админа)

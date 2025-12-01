@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
-import { validateRequest, createContactSchema } from "@/lib/validation";
 import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
 import { checkContactLimit } from "@/lib/subscription-limits";
 

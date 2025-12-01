@@ -3,7 +3,6 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { createNotification, checkOverdueTasks } from "@/lib/notifications";
-import { validateRequest, createTaskSchema } from "@/lib/validation";
 import { validateRequest, createTaskSchema, updateTaskSchema } from "@/lib/validation";
 
 // 🔹 Получить все задачи (с учетом роли и фильтра по пользователю для админа)
