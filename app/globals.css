@@ -500,6 +500,15 @@ body {
   @apply bg-[var(--surface)] min-w-[300px] p-4 border border-[var(--border)] rounded-lg;
 }
 
+/* Мобильная оптимизация для канбан-колонок */
+@media (max-width: 768px) {
+  .kanban-column {
+    width: calc(100vw - 2rem) !important; /* Полная ширина экрана минус отступы */
+    min-width: calc(100vw - 2rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+}
+
 /* Современный сайдбар */
 .sidebar-nav {
   scrollbar-width: none;

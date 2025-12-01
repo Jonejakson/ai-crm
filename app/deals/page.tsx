@@ -1727,7 +1727,7 @@ function DealColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`kanban-column flex-shrink-0 w-72 ${color} ${
+      className={`kanban-column flex-shrink-0 w-full md:w-72 snap-start ${color} ${
         isOver ? 'ring-2 ring-[var(--primary)]/40' : 'ring-0'
       }`}
       style={{ minHeight: '200px' }}
