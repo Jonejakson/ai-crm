@@ -1191,16 +1191,32 @@ export default function DealsPage() {
 
       {/* Канбан-доска */}
       <div className="glass-panel p-6 rounded-3xl shadow-xl">
-        <div className="mb-4 flex items-start justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-1">Активная воронка</p>
-            <p className="text-base font-semibold text-[var(--foreground)]">
-              {currentPipeline?.name || '—'}
-            </p>
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-2">Активная воронка</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="w-full md:w-auto md:min-w-[250px]">
+                <CustomSelect
+                  value={selectedPipeline?.toString() || ''}
+                  onChange={(value) => {
+                    if (value) {
+                      handlePipelineChange(parseInt(value))
+                    }
+                  }}
+                  options={[
+                    ...pipelines.map(pipeline => ({
+                      value: pipeline.id.toString(),
+                      label: pipeline.name
+                    }))
+                  ]}
+                  placeholder="Выберите воронку"
+                />
+              </div>
+            </div>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary text-sm"
+            className="btn-primary text-sm flex-shrink-0"
           >
             + Новая сделка
           </button>
@@ -1219,23 +1235,25 @@ export default function DealsPage() {
           }}
           onDragCancel={() => setActiveDeal(null)}
         >
-          <div className="overflow-x-auto -mx-4 md:mx-0 px-0 md:px-0 snap-x snap-mandatory scroll-smooth">
-            <div className="flex space-x-4 md:min-w-max pb-4 px-[10vw] md:px-0">
-              {stages.map((stage, index) => (
-                <DealColumn
-                  key={stage.name}
-                  stage={stage.name}
-                  deals={dealsByStage[stage.name] || []}
-                  onDelete={handleDelete}
-                  onEdit={(deal) => {
-                    router.push(`/deals/${deal.id}`)
-                  }}
-                  onContactClick={(contactId) => {
-                    router.push(`/contacts/${contactId}`)
-                  }}
-                  color={getStageColor(stage.name)}
-                />
-              ))}
+          <div className="kanban-scroll-container">
+            <div className="overflow-x-auto -mx-4 md:mx-0 px-0 md:px-0 snap-x snap-mandatory scroll-smooth kanban-scroll-content">
+              <div className="flex space-x-4 md:min-w-max pb-4 px-[10vw] md:px-0">
+                {stages.map((stage, index) => (
+                  <DealColumn
+                    key={stage.name}
+                    stage={stage.name}
+                    deals={dealsByStage[stage.name] || []}
+                    onDelete={handleDelete}
+                    onEdit={(deal) => {
+                      router.push(`/deals/${deal.id}`)
+                    }}
+                    onContactClick={(contactId) => {
+                      router.push(`/contacts/${contactId}`)
+                    }}
+                    color={getStageColor(stage.name)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
           <DragOverlay>

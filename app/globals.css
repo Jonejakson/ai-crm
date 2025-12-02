@@ -516,6 +516,39 @@ body {
   }
 }
 
+/* Scrollbar наверху для канбан-доски */
+.kanban-scroll-container {
+  position: relative;
+}
+
+.kanban-scroll-content {
+  direction: rtl; /* Размещаем scrollbar вверху */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) var(--background-soft);
+}
+
+.kanban-scroll-content > * {
+  direction: ltr; /* Возвращаем нормальное направление для содержимого */
+}
+
+.kanban-scroll-content::-webkit-scrollbar {
+  height: 8px;
+}
+
+.kanban-scroll-content::-webkit-scrollbar-track {
+  background: var(--background-soft);
+  border-radius: 10px;
+}
+
+.kanban-scroll-content::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+}
+
+.kanban-scroll-content::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
 /* Современный сайдбар */
 .sidebar-nav {
   scrollbar-width: none;
