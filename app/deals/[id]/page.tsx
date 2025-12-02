@@ -585,8 +585,8 @@ export default function DealDetailPage() {
               </p>
             </div>
             
-            {/* Кнопки: Назад и Редактировать на одном уровне */}
-            <div className="flex items-center justify-between">
+            {/* Кнопки: Назад и Редактировать на одном уровне (мобильная версия) */}
+            <div className="flex items-center justify-between md:hidden">
               <Link href="/deals" className="text-[var(--muted)] hover:text-[var(--foreground)] text-sm">
                 ← Назад к сделкам
               </Link>
@@ -598,8 +598,11 @@ export default function DealDetailPage() {
               </button>
             </div>
             
-            {/* Кнопки экспорта только на десктопе */}
-            <div className="hidden md:flex items-center gap-3 pt-2">
+            {/* Кнопки на десктопе: все в одну строку */}
+            <div className="hidden md:flex items-center gap-3">
+              <Link href="/deals" className="text-[var(--muted)] hover:text-[var(--foreground)] text-sm">
+                ← Назад к сделкам
+              </Link>
               <button
                 onClick={handleExportToMoysklad}
                 disabled={!!deal.externalId}
@@ -614,6 +617,12 @@ export default function DealDetailPage() {
                 title="Выгрузить контакт и заказ в 1С"
               >
                 Выгрузить в 1С
+              </button>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="btn-primary text-sm"
+              >
+                Редактировать
               </button>
             </div>
           </div>
