@@ -521,7 +521,17 @@ export default function DealsPage() {
       updateTopScrollbar()
     }
 
+    let isDragging = false
+    let startX = 0
+    let startScrollLeft = 0
+
     const handleTopScrollbarClick = (e: MouseEvent) => {
+      // Если клик был на ползунке, не обрабатываем (будет обработано drag)
+      const thumb = topScrollbar.querySelector('.kanban-scrollbar-thumb') as HTMLElement
+      if (thumb && thumb.contains(e.target as Node)) {
+        return
+      }
+
       const rect = topScrollbar.getBoundingClientRect()
       const clickX = e.clientX - rect.left
       const scrollWidth = scrollElement.scrollWidth
@@ -531,15 +541,69 @@ export default function DealsPage() {
       scrollElement.scrollLeft = scrollLeft
     }
 
+    const handleThumbMouseDown = (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      isDragging = true
+      startX = e.clientX
+      startScrollLeft = scrollElement.scrollLeft
+      document.body.style.cursor = 'grabbing'
+      document.body.style.userSelect = 'none'
+    }
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return
+      e.preventDefault()
+      
+      const scrollWidth = scrollElement.scrollWidth
+      const clientWidth = scrollElement.clientWidth
+      const maxScroll = scrollWidth - clientWidth
+      
+      if (maxScroll <= 0) return
+      
+      const deltaX = e.clientX - startX
+      const thumbWidth = (clientWidth / scrollWidth) * clientWidth
+      const trackWidth = clientWidth
+      const scrollRatio = maxScroll / (trackWidth - thumbWidth)
+      const newScrollLeft = startScrollLeft + deltaX * scrollRatio
+      
+      scrollElement.scrollLeft = Math.max(0, Math.min(maxScroll, newScrollLeft))
+    }
+
+    const handleMouseUp = () => {
+      if (!isDragging) return
+      isDragging = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+
     updateTopScrollbar()
     scrollElement.addEventListener('scroll', handleScroll)
     window.addEventListener('resize', updateTopScrollbar)
     topScrollbar.addEventListener('click', handleTopScrollbarClick)
+    
+    const thumb = topScrollbar.querySelector('.kanban-scrollbar-thumb') as HTMLElement
+    if (thumb) {
+      thumb.addEventListener('mousedown', handleThumbMouseDown)
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
 
     return () => {
       scrollElement.removeEventListener('scroll', handleScroll)
       window.removeEventListener('resize', updateTopScrollbar)
       topScrollbar.removeEventListener('click', handleTopScrollbarClick)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      const thumb = topScrollbar.querySelector('.kanban-scrollbar-thumb') as HTMLElement
+      if (thumb) {
+        thumb.removeEventListener('mousedown', handleThumbMouseDown)
+      }
+      if (isDragging) {
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
     }
   }, [deals, selectedPipeline, pipelines])
 

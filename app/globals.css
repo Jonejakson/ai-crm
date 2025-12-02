@@ -552,13 +552,18 @@ body {
   height: 100%;
   background: var(--border-strong);
   border-radius: 10px;
-  cursor: pointer;
+  cursor: grab;
   transition: background 0.2s;
   min-width: 20px;
+  user-select: none;
 }
 
 .kanban-scrollbar-thumb:hover {
   background: var(--muted);
+}
+
+.kanban-scrollbar-thumb:active {
+  cursor: grabbing;
 }
 
 /* Современный сайдбар */
