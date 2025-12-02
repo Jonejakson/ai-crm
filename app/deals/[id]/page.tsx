@@ -720,15 +720,7 @@ export default function DealDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Задачи */}
             <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Задачи</h2>
-                <button
-                  onClick={() => setIsTaskModalOpen(true)}
-                  className="btn-primary text-sm"
-                >
-                  + Создать задачу
-                </button>
-              </div>
+              <h2 className="text-lg font-semibold mb-4">Задачи</h2>
               <div className="space-y-3">
                 {tasks.length === 0 ? (
                   <p className="text-sm text-[var(--muted)]">Нет задач</p>
@@ -771,6 +763,16 @@ export default function DealDetailPage() {
                     </div>
                   ))
                 )}
+              </div>
+              {/* Кнопка создания задачи внизу по центру на 70% ширины */}
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => setIsTaskModalOpen(true)}
+                  className="btn-primary text-sm"
+                  style={{ width: '70%' }}
+                >
+                  + Создать задачу
+                </button>
               </div>
             </div>
 
