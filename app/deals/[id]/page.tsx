@@ -576,29 +576,30 @@ export default function DealDetailPage() {
       {/* Шапка */}
       <div className="bg-white border-b border-[var(--border)] sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Link href="/deals" className="text-[var(--muted)] hover:text-[var(--foreground)]">
+          <div className="space-y-3">
+            {/* Название сделки на всю ширину */}
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--foreground)]">{deal.title}</h1>
+              <p className="text-sm text-[var(--muted)]">
+                {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
+              </p>
+            </div>
+            
+            {/* Кнопки: Назад и Редактировать на одном уровне */}
+            <div className="flex items-center justify-between">
+              <Link href="/deals" className="text-[var(--muted)] hover:text-[var(--foreground)] text-sm">
                 ← Назад к сделкам
               </Link>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold text-[var(--foreground)]">{deal.title}</h1>
-                <p className="text-sm text-[var(--muted)]">
-                  {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
-                </p>
-                {/* Кнопка редактировать на мобильных под названием */}
-                <div className="mt-2 md:hidden">
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="btn-primary text-xs px-3 py-1.5 w-auto"
-                  >
-                    Редактировать
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="btn-primary text-xs px-3 py-1.5"
+              >
+                Редактировать
+              </button>
             </div>
-            {/* Кнопки на десктопе */}
-            <div className="hidden md:flex items-center gap-3">
+            
+            {/* Кнопки экспорта только на десктопе */}
+            <div className="hidden md:flex items-center gap-3 pt-2">
               <button
                 onClick={handleExportToMoysklad}
                 disabled={!!deal.externalId}
@@ -613,12 +614,6 @@ export default function DealDetailPage() {
                 title="Выгрузить контакт и заказ в 1С"
               >
                 Выгрузить в 1С
-              </button>
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="btn-primary text-sm"
-              >
-                Редактировать
               </button>
             </div>
           </div>
