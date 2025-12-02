@@ -521,31 +521,43 @@ body {
   position: relative;
 }
 
+/* Скрываем стандартный scrollbar снизу */
 .kanban-scroll-content {
-  direction: rtl; /* Размещаем scrollbar вверху */
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-strong) var(--background-soft);
-}
-
-.kanban-scroll-content > * {
-  direction: ltr; /* Возвращаем нормальное направление для содержимого */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE и Edge */
 }
 
 .kanban-scroll-content::-webkit-scrollbar {
-  height: 8px;
+  display: none; /* Chrome, Safari, Opera */
 }
 
-.kanban-scroll-content::-webkit-scrollbar-track {
+/* Кастомный scrollbar вверху */
+.kanban-scrollbar-top {
+  height: 8px;
+  width: 100%;
+  position: relative;
+}
+
+.kanban-scrollbar-track {
+  width: 100%;
+  height: 100%;
   background: var(--background-soft);
   border-radius: 10px;
+  position: relative;
+  cursor: pointer;
 }
 
-.kanban-scroll-content::-webkit-scrollbar-thumb {
+.kanban-scrollbar-thumb {
+  position: absolute;
+  height: 100%;
   background: var(--border-strong);
   border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  min-width: 20px;
 }
 
-.kanban-scroll-content::-webkit-scrollbar-thumb:hover {
+.kanban-scrollbar-thumb:hover {
   background: var(--muted);
 }
 

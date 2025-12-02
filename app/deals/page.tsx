@@ -373,6 +373,8 @@ export default function DealsPage() {
   const [dealTypes, setDealTypes] = useState<Array<{id: number, name: string}>>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
+  const kanbanScrollRef = useRef<HTMLDivElement>(null)
+  const topScrollbarRef = useRef<HTMLDivElement>(null)
 
   const collisionDetectionStrategy: CollisionDetection = (args) => {
     const pointerCollisions = pointerWithin(args)
@@ -487,6 +489,59 @@ export default function DealsPage() {
   useEffect(() => {
     fetchUsers()
   }, [session])
+
+  // Синхронизация scrollbar вверху с основным scrollbar
+  useEffect(() => {
+    const scrollElement = kanbanScrollRef.current
+    const topScrollbar = topScrollbarRef.current
+    
+    if (!scrollElement || !topScrollbar) return
+
+    const updateTopScrollbar = () => {
+      const scrollWidth = scrollElement.scrollWidth
+      const clientWidth = scrollElement.clientWidth
+      const scrollLeft = scrollElement.scrollLeft
+      const maxScroll = scrollWidth - clientWidth
+      
+      if (maxScroll > 0) {
+        const thumbWidth = (clientWidth / scrollWidth) * clientWidth
+        const thumbLeft = (scrollLeft / maxScroll) * (clientWidth - thumbWidth)
+        topScrollbar.style.display = 'block'
+        const thumb = topScrollbar.querySelector('.kanban-scrollbar-thumb') as HTMLElement
+        if (thumb) {
+          thumb.style.width = `${thumbWidth}px`
+          thumb.style.left = `${thumbLeft}px`
+        }
+      } else {
+        topScrollbar.style.display = 'none'
+      }
+    }
+
+    const handleScroll = () => {
+      updateTopScrollbar()
+    }
+
+    const handleTopScrollbarClick = (e: MouseEvent) => {
+      const rect = topScrollbar.getBoundingClientRect()
+      const clickX = e.clientX - rect.left
+      const scrollWidth = scrollElement.scrollWidth
+      const clientWidth = scrollElement.clientWidth
+      const maxScroll = scrollWidth - clientWidth
+      const scrollLeft = (clickX / clientWidth) * maxScroll
+      scrollElement.scrollLeft = scrollLeft
+    }
+
+    updateTopScrollbar()
+    scrollElement.addEventListener('scroll', handleScroll)
+    window.addEventListener('resize', updateTopScrollbar)
+    topScrollbar.addEventListener('click', handleTopScrollbarClick)
+
+    return () => {
+      scrollElement.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', updateTopScrollbar)
+      topScrollbar.removeEventListener('click', handleTopScrollbarClick)
+    }
+  }, [deals, stages])
 
   // Клавиатурные сокращения для страницы сделок
   useKeyboardShortcuts([
@@ -1236,7 +1291,22 @@ export default function DealsPage() {
           onDragCancel={() => setActiveDeal(null)}
         >
           <div className="kanban-scroll-container">
-            <div className="overflow-x-auto -mx-4 md:mx-0 px-0 md:px-0 snap-x snap-mandatory scroll-smooth kanban-scroll-content">
+            {/* Кастомный scrollbar вверху */}
+            <div 
+              ref={topScrollbarRef}
+              className="kanban-scrollbar-top mb-2"
+              style={{ display: 'none' }}
+            >
+              <div className="kanban-scrollbar-track">
+                <div className="kanban-scrollbar-thumb"></div>
+              </div>
+            </div>
+            {/* Основной контент с прокруткой */}
+            <div 
+              ref={kanbanScrollRef}
+              className="overflow-x-auto -mx-4 md:mx-0 px-0 md:px-0 snap-x snap-mandatory scroll-smooth kanban-scroll-content"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               <div className="flex space-x-4 md:min-w-max pb-4 px-[10vw] md:px-0">
                 {stages.map((stage, index) => (
                   <DealColumn
