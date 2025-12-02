@@ -625,7 +625,12 @@ export default function ContactDetailPage() {
                     <div key={deal.id} className="rounded-2xl border border-white/60 bg-white/90 p-3 shadow-sm">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{deal.title}</p>
+                          <Link 
+                            href={`/deals/${deal.id}`}
+                            className="text-sm font-semibold text-slate-900 hover:text-[var(--primary)] hover:underline transition-colors"
+                          >
+                            {deal.title}
+                          </Link>
                           <p className="text-xs text-slate-500">
                             {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
                           </p>

@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import Link from 'next/link'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import { UsersIcon, CheckCircleIcon, BriefcaseIcon, CurrencyIcon } from '@/components/Icons'
@@ -29,6 +30,12 @@ interface Deal {
   amount: number
   currency: string
   stage: string
+  updatedAt?: string
+  createdAt?: string
+  contact?: {
+    id: number
+    name: string
+  }
 }
 
 interface FunnelMetricMeta {
@@ -226,6 +233,12 @@ export default function Dashboard() {
     return new Date(task.dueDate) < new Date()
   }).length
   const recentContacts = (contacts || []).slice(0, 5)
+  const recentDeals = (deals || []).sort((a, b) => {
+    // Сортируем по дате обновления (новые сверху), если нет updatedAt, используем createdAt
+    const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+    const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0)
+    return dateB - dateA
+  }).slice(0, 5)
   
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
@@ -492,6 +505,91 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Секция со сделками и задачами */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Сделки */}
+          <div className="glass-panel rounded-3xl p-0 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
+              <div>
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
+                <h2 className="text-xl font-bold text-[var(--foreground)]">Последние сделки</h2>
+              </div>
+              <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{recentDeals.length} записей</span>
+            </div>
+            <div>
+              {recentDeals.length === 0 ? (
+                <div className="empty-state py-12">
+                  <div className="empty-state-icon flex items-center justify-center">
+                    <BriefcaseIcon className="w-16 h-16 text-[var(--muted-soft)]" />
+                  </div>
+                  <h3 className="empty-state-title">Нет сделок</h3>
+                  <p className="empty-state-description">
+                    Пока нет сделок — создайте первую сделку.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[var(--border-soft)]">
+                  {recentDeals.map((deal) => (
+                    <Link 
+                      key={deal.id} 
+                      href={`/deals/${deal.id}`}
+                      className="block px-6 py-4 hover:bg-[var(--background-soft)] transition-colors duration-200 group"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">{deal.title}</p>
+                          <p className="text-xs text-[var(--muted)] truncate">
+                            {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Задачи */}
+          <div className="glass-panel rounded-3xl p-0 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
+              <div>
+                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
+                <h2 className="text-xl font-bold text-[var(--foreground)]">Последние задачи</h2>
+              </div>
+              <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{(tasks || []).slice(0, 5).length} записей</span>
+            </div>
+            <div>
+              {(tasks || []).slice(0, 5).length === 0 ? (
+                <div className="empty-state py-12">
+                  <div className="empty-state-icon flex items-center justify-center">
+                    <CheckCircleIcon className="w-16 h-16 text-[var(--muted-soft)]" />
+                  </div>
+                  <h3 className="empty-state-title">Нет задач</h3>
+                  <p className="empty-state-description">
+                    Пока нет задач — создайте первую задачу.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[var(--border-soft)]">
+                  {(tasks || []).slice(0, 5).map((task) => (
+                    <div key={task.id} className="px-6 py-4 hover:bg-[var(--background-soft)] transition-colors duration-200">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[var(--foreground)] truncate">{task.title}</p>
+                          <p className="text-xs text-[var(--muted)] truncate">
+                            Статус: {task.status === 'completed' ? 'выполнено' : 'в работе'} • {task.dueDate ? `до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : 'без срока'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
