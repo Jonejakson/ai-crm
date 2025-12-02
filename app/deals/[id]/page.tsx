@@ -587,10 +587,10 @@ export default function DealDetailPage() {
                   {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
                 </p>
                 {/* Кнопка редактировать на мобильных под названием */}
-                <div className="mt-3 md:hidden">
+                <div className="mt-2 md:hidden">
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="btn-primary text-sm w-full"
+                    className="btn-primary text-xs px-3 py-1.5 w-auto"
                   >
                     Редактировать
                   </button>
