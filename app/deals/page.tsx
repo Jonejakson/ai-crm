@@ -1065,9 +1065,22 @@ export default function DealsPage() {
     return true
   })
 
+  // Функция для нормализации названия этапа (убирает различия в окончаниях)
+  const normalizeStageName = (name: string): string => {
+    return name.trim().toLowerCase()
+      .replace(/^закрыто и реализованн?ое?$/, 'закрыто и реализовано')
+      .replace(/^закрыто и реализованн?ая?$/, 'закрыто и реализовано')
+  }
+
   const stages = getStages()
   const dealsByStage = stages.reduce((acc, stage) => {
-    acc[stage.name] = filteredDeals.filter(deal => deal.stage === stage.name)
+    // Используем нормализованное сравнение для этапов "Закрыто и реализовано"
+    acc[stage.name] = filteredDeals.filter(deal => {
+      const dealStageNormalized = normalizeStageName(deal.stage)
+      const stageNameNormalized = normalizeStageName(stage.name)
+      // Сначала проверяем точное совпадение, затем нормализованное
+      return deal.stage === stage.name || dealStageNormalized === stageNameNormalized
+    })
     return acc
   }, {} as Record<string, Deal[]>)
 
