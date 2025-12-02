@@ -541,7 +541,7 @@ export default function DealsPage() {
       window.removeEventListener('resize', updateTopScrollbar)
       topScrollbar.removeEventListener('click', handleTopScrollbarClick)
     }
-  }, [deals, stages])
+  }, [deals, selectedPipeline, pipelines])
 
   // Клавиатурные сокращения для страницы сделок
   useKeyboardShortcuts([
