@@ -1206,8 +1206,8 @@ export default function DealsPage() {
           }}
           onDragCancel={() => setActiveDeal(null)}
         >
-          <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0 snap-x snap-mandatory scroll-smooth">
-            <div className="flex space-x-4 md:min-w-max pb-4">
+          <div className="overflow-x-auto -mx-4 md:mx-0 px-0 md:px-0 snap-x snap-mandatory scroll-smooth">
+            <div className="flex space-x-4 md:min-w-max pb-4 px-[10vw] md:px-0">
               {stages.map((stage, index) => (
                 <DealColumn
                   key={stage.name}

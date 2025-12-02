@@ -508,9 +508,11 @@ body {
 /* Мобильная оптимизация для канбан-колонок */
 @media (max-width: 768px) {
   .kanban-column {
-    width: calc(100vw - 2rem) !important; /* Полная ширина экрана минус отступы */
-    min-width: calc(100vw - 2rem) !important;
-    max-width: calc(100vw - 2rem) !important;
+    width: 80vw !important; /* 80% ширины экрана - по 10% отступ с каждой стороны */
+    min-width: 80vw !important;
+    max-width: 80vw !important;
+    margin-left: 0 !important; /* Убираем margin, так как padding на контейнере */
+    margin-right: 0 !important;
   }
 }
 
@@ -999,7 +1001,9 @@ textarea:disabled {
   }
   
   .kanban-column {
-    @apply w-full min-w-[260px];
+    width: 80vw !important; /* 80% ширины экрана на мобильных */
+    min-width: 80vw !important;
+    max-width: 80vw !important;
   }
 
   .table-container {
