@@ -1242,8 +1242,8 @@ export default function DealsPage() {
       {/* Модальное окно создания сделки */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => { setIsModalOpen(false); resetFormState(); }}>
-          <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+          <div className="modal-content max-w-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header flex-shrink-0">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">
                   {editingDeal ? 'Редактирование сделки' : 'Новая сделка'}
@@ -1263,8 +1263,8 @@ export default function DealsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="modal-body flex-1 overflow-y-auto">
                 <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1469,7 +1469,7 @@ export default function DealsPage() {
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div className="modal-footer flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => {
