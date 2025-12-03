@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { WarningIcon } from '@/components/Icons'
 
 export default function Error({
   error,
