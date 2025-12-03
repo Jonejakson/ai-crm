@@ -412,7 +412,7 @@ export default function Dashboard() {
                 <span>Настроить показатели</span>
               </button>
               {isMetricsMenuOpen && (
-                <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-4 space-y-3 z-50">
+                <div className="absolute left-0 md:right-0 md:left-auto mt-2 w-[calc(100vw-2rem)] md:w-72 max-w-72 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-4 space-y-3 z-50">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-[var(--foreground)]">Какие показатели показывать?</p>
                     <button
