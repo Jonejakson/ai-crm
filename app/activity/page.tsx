@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { LightningIcon, ChartBarIcon, UsersGroupIcon, PuzzleIcon, BriefcaseIcon, UserIcon, CalendarIcon, EmptyIcon, TasksIcon } from '@/components/Icons'
 
 interface ActivityUser {
   id: number
@@ -21,12 +22,12 @@ interface ActivityLog {
 
 const ENTITY_MAP: Record<
   string,
-  { label: string; icon: string; color: string }
+  { label: string; Icon: React.ComponentType<{ className?: string }>; color: string }
 > = {
-  deal: { label: 'Сделка', icon: '💼', color: 'text-emerald-500' },
-  contact: { label: 'Контакт', icon: '👤', color: 'text-blue-500' },
-  task: { label: 'Задача', icon: '🗓️', color: 'text-amber-500' },
-  event: { label: 'Событие', icon: '📅', color: 'text-purple-500' },
+  deal: { label: 'Сделка', Icon: BriefcaseIcon, color: 'text-emerald-500' },
+  contact: { label: 'Контакт', Icon: UserIcon, color: 'text-blue-500' },
+  task: { label: 'Задача', Icon: TasksIcon, color: 'text-amber-500' },
+  event: { label: 'Событие', Icon: CalendarIcon, color: 'text-purple-500' },
 }
 
 const filters = [
@@ -153,28 +154,28 @@ export default function ActivityPage() {
       value: summary.today,
       subtitle: 'За последние 24 часа',
       gradient: 'from-blue-500 to-cyan-500',
-      icon: '⚡',
+      Icon: LightningIcon,
     },
     {
       title: 'Событий в выборке',
       value: summary.total,
       subtitle: 'С учётом фильтров',
       gradient: 'from-purple-500 to-pink-500',
-      icon: '📊',
+      Icon: ChartBarIcon,
     },
     {
       title: 'Активных пользователей',
       value: uniqueUsers,
       subtitle: uniqueUsers > 0 ? `${avgPerUser} действий на человека` : 'Пока нет действий',
       gradient: 'from-emerald-500 to-teal-500',
-      icon: '👥',
+      Icon: UsersGroupIcon,
     },
     {
       title: 'Ведущая сущность',
       value: topEntity ? topEntity.count : '—',
       subtitle: topEntity ? topEntity.label : 'Нет данных',
       gradient: 'from-amber-500 to-orange-500',
-      icon: '🧩',
+      Icon: PuzzleIcon,
     },
   ]
 
@@ -224,7 +225,9 @@ export default function ActivityPage() {
                   </p>
                   <p className="text-sm text-[var(--muted)]">{card.title}</p>
                 </div>
-                <div className="text-3xl">{card.icon}</div>
+                <div className="text-3xl">
+                  <card.Icon className="w-8 h-8 text-[var(--muted)]" />
+                </div>
               </div>
               {card.title === 'Ведущая сущность' && (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs text-[var(--muted)]">
@@ -308,7 +311,9 @@ export default function ActivityPage() {
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon">📭</div>
+            <div className="empty-state-icon">
+              <EmptyIcon className="w-12 h-12 text-[var(--muted)]" />
+            </div>
             <h3 className="empty-state-title">Нет записей по текущим условиям</h3>
             <p className="empty-state-description">
               {searchTerm || filter !== 'all'
@@ -326,7 +331,11 @@ export default function ActivityPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">
-                      {ENTITY_MAP[log.entityType]?.icon || '📝'}
+                      {ENTITY_MAP[log.entityType]?.Icon ? (
+                        <ENTITY_MAP[log.entityType].Icon className="w-6 h-6" />
+                      ) : (
+                        <EmptyIcon className="w-6 h-6" />
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[var(--foreground)]">

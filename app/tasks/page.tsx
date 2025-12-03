@@ -768,7 +768,12 @@ export default function TasksPage() {
                       <p className="text-xs text-[var(--muted)] mt-1 line-clamp-2">{task.description}</p>
                     )}
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
-                      {task.dueDate && <span>📅 {formatDueDateTime(task.dueDate)}</span>}
+                      {task.dueDate && (
+                        <span className="flex items-center gap-1">
+                          <CalendarIcon className="w-4 h-4" />
+                          {formatDueDateTime(task.dueDate)}
+                        </span>
+                      )}
                       {task.contact && (
                         <a
                           href={`/contacts/${task.contact.id}`}
@@ -1133,7 +1138,10 @@ function TaskCard({ task, onDelete, onStatusChange, onView }: { task: Task; onDe
 
       {task.dueDate && (
         <div className="text-xs text-gray-500 mb-2">
-          📅 {formatDueDateTime(task.dueDate)}
+          <span className="flex items-center gap-1">
+            <CalendarIcon className="w-4 h-4" />
+            {formatDueDateTime(task.dueDate)}
+          </span>
         </div>
       )}
 

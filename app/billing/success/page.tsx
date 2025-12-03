@@ -94,7 +94,9 @@ export default function BillingSuccessPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--background-soft)] to-white px-4">
         <div className="glass-panel rounded-3xl p-8 max-w-md w-full text-center space-y-4">
-          <div className="text-5xl">❌</div>
+          <div>
+            <ErrorIcon className="w-16 h-16 text-[var(--error)]" />
+          </div>
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-[var(--foreground)]">Ошибка</h1>
             <p className="text-[var(--muted)]">{error}</p>
@@ -123,7 +125,7 @@ export default function BillingSuccessPage() {
           <div className="space-y-2">
             <div className="flex items-center gap-3 text-4xl">
               <span>🎉</span>
-              <span>✅</span>
+              <SuccessIcon className="w-5 h-5" />
             </div>
             <h1 className="text-3xl font-bold text-[var(--foreground)]">Оплата прошла успешно!</h1>
             <p className="text-[var(--muted)]">

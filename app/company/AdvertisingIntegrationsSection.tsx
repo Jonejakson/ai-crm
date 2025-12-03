@@ -193,7 +193,7 @@ export default function AdvertisingIntegrationsSection() {
   }
 
   function getPlatformIcon(platform: string) {
-    return platform === 'YANDEX_DIRECT' ? '🔍' : '🏠'
+    return platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
   }
 
   return (
@@ -501,7 +501,7 @@ function IntegrationCard({
   onToggle: () => void
 }) {
   const platformName = integration.platform === 'YANDEX_DIRECT' ? 'Яндекс.Директ' : 'Авито'
-  const platformIcon = integration.platform === 'YANDEX_DIRECT' ? '🔍' : '🏠'
+  const platformIcon = integration.platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
   const webhookPath = integration.platform === 'YANDEX_DIRECT' 
     ? '/api/advertising/yandex-direct/webhook'
     : '/api/advertising/avito/webhook'
@@ -570,7 +570,7 @@ function EmptyCard({
   onConnect: () => void
 }) {
   const platformName = platform === 'YANDEX_DIRECT' ? 'Яндекс.Директ' : 'Авито'
-  const platformIcon = platform === 'YANDEX_DIRECT' ? '🔍' : '🏠'
+  const platformIcon = platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
 
   return (
     <div className="rounded-2xl border border-[var(--border)] p-5 shadow-sm bg-white/80">

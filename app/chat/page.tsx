@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { EmptyIcon } from '@/components/Icons'
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([]);
@@ -35,7 +36,9 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto p-6 space-y-3">
           {messages.length === 0 ? (
             <div className="empty-state py-12">
-              <div className="empty-state-icon">💬</div>
+              <div className="empty-state-icon">
+                <EmptyIcon className="w-12 h-12 text-[var(--muted)]" />
+              </div>
               <h3 className="empty-state-title">Сообщений пока нет</h3>
               <p className="empty-state-description">Напишите первое сообщение, чтобы начать диалог.</p>
             </div>

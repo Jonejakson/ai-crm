@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { WarningIcon, ClockIcon } from '@/components/Icons'
 
 export default function BillingCancelPage() {
   return (
@@ -8,9 +9,9 @@ export default function BillingCancelPage() {
       <div className="glass-panel rounded-3xl p-8 max-w-2xl w-full space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-2">
-            <div className="flex items-center gap-3 text-4xl">
-              <span>⚠️</span>
-              <span>⌛</span>
+            <div className="flex items-center gap-3">
+              <WarningIcon className="w-10 h-10" />
+              <ClockIcon className="w-10 h-10" />
             </div>
             <h1 className="text-3xl font-semibold text-[var(--foreground)]">Оплата отменена</h1>
             <p className="text-[var(--muted)]">

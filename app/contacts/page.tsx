@@ -652,14 +652,14 @@ export default function ContactsPage() {
                 )}
                 <div className="space-y-1.5 text-sm">
                   <div className="flex items-center gap-2">
-                    <span className="text-[var(--muted)]">📧</span>
+                    <EmailIcon className="w-4 h-4 text-[var(--muted)]" />
                     <a href={`mailto:${contact.email}`} className="text-[var(--foreground)] truncate">
                       {contact.email}
                     </a>
                   </div>
                   {contact.phone && (
                     <div className="flex items-center gap-2">
-                      <span className="text-[var(--muted)]">📞</span>
+                      <PhoneIcon className="w-4 h-4 text-[var(--muted)]" />
                       <a href={`tel:${contact.phone}`} className="text-[var(--foreground)]">
                         {contact.phone}
                       </a>
@@ -667,12 +667,12 @@ export default function ContactsPage() {
                   )}
                   {contact.company && (
                     <div className="flex items-center gap-2">
-                      <span className="text-[var(--muted)]">🏢</span>
+                      <BuildingIcon className="w-4 h-4 text-[var(--muted)]" />
                       <span className="text-[var(--foreground)] truncate">{contact.company}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
-                    <span className="text-[var(--muted)]">📅</span>
+                    <CalendarIcon className="w-4 h-4 text-[var(--muted)]" />
                     <span className="text-[var(--muted)] text-xs">
                       {new Date(contact.createdAt).toLocaleDateString('ru-RU')}
                     </span>
@@ -700,7 +700,9 @@ export default function ContactsPage() {
 
       {filteredContacts.length === 0 && (
         <div className="empty-state">
-          <div className="empty-state-icon">{search ? '🔍' : '👥'}</div>
+          <div className="empty-state-icon">
+            {search ? <SearchIcon className="w-12 h-12 text-[var(--muted)]" /> : <UsersGroupIcon className="w-12 h-12 text-[var(--muted)]" />}
+          </div>
           <h3 className="empty-state-title">
             {search ? 'Контакты не найдены' : 'Нет контактов'}
           </h3>

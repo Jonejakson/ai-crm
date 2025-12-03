@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { EditIcon, TrashIcon } from '@/components/Icons'
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
@@ -427,13 +428,13 @@ export default function AutomationsPage() {
                       onClick={() => handleEdit(automation)}
                       className="btn-secondary text-sm"
                     >
-                      ✏️ Редактировать
+                      <EditIcon className="w-4 h-4" /> Редактировать
                     </button>
                     <button
                       onClick={() => handleDelete(automation.id)}
                       className="btn-secondary text-sm text-red-600 hover:text-red-800"
                     >
-                      🗑️ Удалить
+                      <TrashIcon className="w-4 h-4" /> Удалить
                     </button>
                   </div>
                 </div>

@@ -45,7 +45,9 @@ export default function Error({
     <div className="flex min-h-screen items-center justify-center bg-[var(--background)] p-4">
       <div className="max-w-md w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg">
         <div className="text-center mb-4">
-          <div className="text-6xl mb-4">⚠️</div>
+          <div className="mb-4">
+            <WarningIcon className="w-16 h-16 text-[var(--error)]" />
+          </div>
           <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">
             Произошла ошибка
           </h2>
@@ -59,7 +61,7 @@ export default function Error({
 
         {!isOnline && (
           <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ Нет подключения к интернету
+            <WarningIcon className="w-5 h-5" /> Нет подключения к интернету
           </div>
         )}
 

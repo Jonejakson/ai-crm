@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon } from '@/components/Icons'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -490,7 +491,7 @@ export default function CompanyPage() {
           href="/company/custom-fields"
           className="btn-secondary text-sm"
         >
-          🧩 Кастомные поля
+          <PuzzleIcon className="w-4 h-4" /> Кастомные поля
         </a>
       </div>
 
@@ -708,7 +709,7 @@ export default function CompanyPage() {
               </h2>
             </div>
             <div className="relative w-full md:w-72">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-[var(--muted)]">🔍</span>
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
               <input
                 type="text"
                 placeholder="Поиск по имени или email..."
@@ -724,7 +725,9 @@ export default function CompanyPage() {
 
           {filteredUsers.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">👥</div>
+              <div className="empty-state-icon">
+                <UsersGroupIcon className="w-12 h-12 text-[var(--muted)]" />
+              </div>
               <h3 className="empty-state-title">Пользователи не найдены</h3>
               <p className="empty-state-description">
                 {userSearch
@@ -765,7 +768,7 @@ export default function CompanyPage() {
                         className="px-3 py-2 text-sm rounded-xl bg-[var(--warning-soft)] text-[var(--warning)] hover:bg-[var(--warning-soft)]/70 transition-colors"
                         title="Изменить пароль"
                       >
-                        🔑
+                        <KeyIcon className="w-4 h-4" />
                       </button>
                       {user.id !== parseInt(session?.user?.id || '0') && (
                         <button
@@ -773,7 +776,7 @@ export default function CompanyPage() {
                           className="px-3 py-2 text-sm rounded-xl bg-[var(--error-soft)] text-[var(--error)] hover:bg-[var(--error-soft)]/70 transition-colors"
                           title="Удалить"
                         >
-                          🗑️
+                          <TrashIcon className="w-4 h-4" />
                         </button>
                       )}
                     </div>

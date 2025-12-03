@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import AnalyticsTabs from '@/components/analytics/AnalyticsTabs'
+import { WarningIcon, FilePdfIcon, FileExcelIcon, UsersGroupIcon, CheckCircleIcon, CurrencyIcon } from '@/components/Icons'
 
 interface AnalyticsData {
   period: string
@@ -124,7 +125,9 @@ export default function AnalyticsPage() {
   if (!data) {
     return (
       <div className="empty-state">
-        <div className="empty-state-icon">⚠️</div>
+        <div className="empty-state-icon">
+          <WarningIcon className="w-12 h-12 text-[var(--muted)]" />
+        </div>
         <h3 className="empty-state-title">Ошибка загрузки данных</h3>
         <p className="empty-state-description">
           Не удалось загрузить данные аналитики. Попробуйте обновить страницу.
@@ -145,101 +148,117 @@ export default function AnalyticsPage() {
         <div className="flex flex-wrap gap-3">
           <div className="relative group">
             <button className="btn-secondary flex items-center gap-2">
-              📊 Экспорт сделок
+              <ChartBarIcon className="w-4 h-4" />
+              Экспорт сделок
             </button>
             <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
               <a
                 href={`/api/analytics/export?type=deals&period=${period}&format=csv`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📄 CSV
+                <FilePdfIcon className="w-4 h-4" />
+                CSV
               </a>
               <a
                 href={`/api/analytics/export?type=deals&period=${period}&format=xlsx`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📊 Excel
+                <FileExcelIcon className="w-4 h-4" />
+                Excel
               </a>
               <a
                 href={`/api/analytics/export?type=deals&period=${period}&format=pdf`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📑 PDF
+                <FilePdfIcon className="w-4 h-4" />
+                PDF
               </a>
             </div>
           </div>
           <div className="relative group">
             <button className="btn-secondary flex items-center gap-2">
-              📋 Экспорт задач
+              <ChartBarIcon className="w-4 h-4" />
+              Экспорт задач
             </button>
             <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
               <a
                 href={`/api/analytics/export?type=tasks&period=${period}&format=csv`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📄 CSV
+                <FilePdfIcon className="w-4 h-4" />
+                CSV
               </a>
               <a
                 href={`/api/analytics/export?type=tasks&period=${period}&format=xlsx`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📊 Excel
+                <FileExcelIcon className="w-4 h-4" />
+                Excel
               </a>
               <a
                 href={`/api/analytics/export?type=tasks&period=${period}&format=pdf`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📑 PDF
+                <FilePdfIcon className="w-4 h-4" />
+                PDF
               </a>
             </div>
           </div>
           <div className="relative group">
             <button className="btn-secondary flex items-center gap-2">
-              👥 Экспорт контактов
+              <UsersGroupIcon className="w-4 h-4" />
+              Экспорт контактов
             </button>
             <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
               <a
                 href={`/api/analytics/export?type=contacts&period=${period}&format=csv`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📄 CSV
+                <FilePdfIcon className="w-4 h-4" />
+                CSV
               </a>
               <a
                 href={`/api/analytics/export?type=contacts&period=${period}&format=xlsx`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📊 Excel
+                <FileExcelIcon className="w-4 h-4" />
+                Excel
               </a>
               <a
                 href={`/api/analytics/export?type=contacts&period=${period}&format=pdf`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📑 PDF
+                <FilePdfIcon className="w-4 h-4" />
+                PDF
               </a>
             </div>
           </div>
           <div className="relative group">
             <button className="btn-secondary flex items-center gap-2">
-              👔 Экспорт менеджеров
+              <UsersGroupIcon className="w-4 h-4" />
+              Экспорт менеджеров
             </button>
             <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-10 min-w-[200px]">
               <a
                 href={`/api/analytics/export?type=managers&period=${period}&format=csv`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📄 CSV
+                <FilePdfIcon className="w-4 h-4" />
+                CSV
               </a>
               <a
                 href={`/api/analytics/export?type=managers&period=${period}&format=xlsx`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📊 Excel
+                <FileExcelIcon className="w-4 h-4" />
+                Excel
               </a>
               <a
                 href={`/api/analytics/export?type=managers&period=${period}&format=pdf`}
-                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm"
+                className="block px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm flex items-center gap-2"
               >
-                📑 PDF
+                <FilePdfIcon className="w-4 h-4" />
+                PDF
               </a>
             </div>
           </div>
@@ -320,7 +339,7 @@ export default function AnalyticsPage() {
           { 
             label: 'Всего клиентов', 
             value: data.contacts.total, 
-            icon: '👥', 
+            Icon: UsersGroupIcon, 
             gradient: 'from-blue-500 to-cyan-500', 
             bg: 'bg-blue-50',
             subtitle: `Новых за период: +${data.contacts.newThisPeriod}`
@@ -328,7 +347,7 @@ export default function AnalyticsPage() {
           { 
             label: 'Активные задачи', 
             value: data.tasks.pending, 
-            icon: '✅', 
+            Icon: CheckCircleIcon, 
             gradient: 'from-orange-500 to-amber-500', 
             bg: 'bg-orange-50',
             subtitle: `Просрочено: ${data.tasks.overdue}`
@@ -336,7 +355,7 @@ export default function AnalyticsPage() {
           { 
             label: 'Активные сделки', 
             value: data.deals.active, 
-            icon: '💰', 
+            Icon: CurrencyIcon, 
             gradient: 'from-purple-500 to-pink-500', 
             bg: 'bg-purple-50',
             subtitle: `Всего: ${data.deals.total}`
@@ -344,7 +363,7 @@ export default function AnalyticsPage() {
           { 
             label: 'Сумма сделок', 
             value: `${data.deals.totalAmount.toLocaleString('ru-RU')} ₽`, 
-            icon: '💵', 
+            Icon: CurrencyIcon, 
             gradient: 'from-emerald-500 to-teal-500', 
             bg: 'bg-emerald-50',
             subtitle: `Выручка: ${data.deals.wonAmount.toLocaleString('ru-RU')} ₽`
@@ -360,8 +379,8 @@ export default function AnalyticsPage() {
                 </p>
                 <p className="text-xs text-[var(--muted)] mt-1">{card.subtitle}</p>
               </div>
-              <div className={`rounded-2xl ${card.bg} p-3 text-2xl shadow-sm`}>
-                {card.icon}
+              <div className={`rounded-2xl ${card.bg} p-3 shadow-sm`}>
+                <card.Icon className="w-8 h-8" />
               </div>
             </div>
           </div>

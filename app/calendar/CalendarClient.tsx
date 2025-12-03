@@ -329,7 +329,7 @@ export default function CalendarClient() {
             }}
             className="btn-secondary text-sm"
           >
-            📅 iCal / Google
+            <CalendarIcon className="w-4 h-4" /> iCal / Google
           </button>
           <button
             onClick={() => {
@@ -466,7 +466,7 @@ export default function CalendarClient() {
               title="Недельный вид в разработке"
               disabled
             >
-              📅 Неделя
+              <CalendarIcon className="w-4 h-4" /> Неделя
             </button>
           </div>
         </div>
@@ -520,7 +520,7 @@ export default function CalendarClient() {
               title="Недельный вид в разработке"
               disabled
             >
-              📅 Неделя
+              <CalendarIcon className="w-4 h-4" /> Неделя
             </button>
           </div>
         </div>
@@ -582,7 +582,7 @@ export default function CalendarClient() {
                                   }}
                                   className="text-[10px] px-1 py-0.5 rounded bg-white/60 hover:bg-white text-[var(--primary)]"
                                 >
-                                  ✏️
+                                  <EditIcon className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -628,7 +628,9 @@ export default function CalendarClient() {
         <div className="p-6">
           {filteredEvents.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-state-icon">📅</div>
+              <div className="empty-state-icon">
+                <CalendarIcon className="w-12 h-12 text-[var(--muted)]" />
+              </div>
               <h3 className="empty-state-title">Нет событий</h3>
               <p className="empty-state-description">
                 {searchTerm || eventTypeFilter !== 'all'

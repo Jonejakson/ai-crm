@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CopyIcon, SuccessIcon, ErrorIcon } from '@/components/Icons'
 
 interface WebhookIntegration {
   id: number
@@ -294,7 +295,15 @@ export default function WebhookIntegrationsSection() {
                           onClick={() => copyWebhookUrl(webhook.token, webhook.id)}
                           className="ml-2 text-[var(--primary)] hover:underline text-xs"
                         >
-                          {copiedTokenId === webhook.id ? '✓ Скопировано' : '📋 Копировать URL'}
+                          {copiedTokenId === webhook.id ? (
+                            <>
+                              <SuccessIcon className="w-4 h-4" /> Скопировано
+                            </>
+                          ) : (
+                            <>
+                              <CopyIcon className="w-4 h-4" /> Копировать URL
+                            </>
+                          )}
                         </button>
                       </div>
                       <div>
@@ -306,12 +315,20 @@ export default function WebhookIntegrationsSection() {
                           onClick={() => copyToken(webhook.token, webhook.id)}
                           className="ml-2 text-[var(--primary)] hover:underline text-xs"
                         >
-                          {copiedTokenId === webhook.id ? '✓ Скопировано' : '📋 Копировать'}
+                          {copiedTokenId === webhook.id ? (
+                            <>
+                              <SuccessIcon className="w-4 h-4" /> Скопировано
+                            </>
+                          ) : (
+                            <>
+                              <CopyIcon className="w-4 h-4" /> Копировать
+                            </>
+                          )}
                         </button>
                       </div>
                       <div>
-                        Автосоздание контактов: {webhook.autoCreateContact ? '✓' : '✗'} • 
-                        Автосоздание сделок: {webhook.autoCreateDeal ? '✓' : '✗'}
+                        Автосоздание контактов: {webhook.autoCreateContact ? <SuccessIcon className="w-4 h-4 inline" /> : <ErrorIcon className="w-4 h-4 inline" />} • 
+                        Автосоздание сделок: {webhook.autoCreateDeal ? <SuccessIcon className="w-4 h-4 inline" /> : <ErrorIcon className="w-4 h-4 inline" />}
                       </div>
                       {webhook._count && (
                         <div>
