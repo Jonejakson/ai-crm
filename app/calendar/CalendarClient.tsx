@@ -648,7 +648,7 @@ export default function CalendarClient() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
               <div className="modal-body">
                 <div className="space-y-4">
                   <div>
