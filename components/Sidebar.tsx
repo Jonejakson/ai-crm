@@ -131,10 +131,15 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       {isMobileMenuOpen && (
         <>
           <div 
-            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300"
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 cursor-pointer"
             onClick={() => setIsMobileMenuOpen(false)}
+            role="button"
+            aria-label="Закрыть меню"
           />
-          <div className={`md:hidden fixed left-0 top-0 h-full w-72 bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-xl z-50 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div 
+            className={`md:hidden fixed left-0 top-0 h-full w-72 bg-[var(--surface)] text-[var(--foreground)] px-4 py-6 border-r border-[var(--border)] shadow-xl z-50 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <SidebarContent />
           </div>
         </>
