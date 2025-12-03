@@ -426,10 +426,22 @@ export default function CalendarClient() {
               ←
             </button>
             <button
-              onClick={() => setCurrentDate(new Date())}
-              className="btn-secondary text-xs md:text-sm px-3 py-2"
+              onClick={() => {
+                const today = new Date()
+                setCurrentDate(today)
+                if (view === 'week') {
+                  // При переключении на сегодня в недельном виде, переключаемся на месячный
+                  setView('month')
+                }
+              }}
+              className={`text-xs md:text-sm px-3 py-2 rounded-xl font-medium transition-all ${
+                currentDate.toDateString() === new Date().toDateString()
+                  ? 'bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary)]'
+                  : 'btn-secondary hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] hover:border-[var(--primary)]'
+              }`}
+              title="Перейти к сегодняшней дате"
             >
-              Сегодня
+              📅 Сегодня
             </button>
             <button
               onClick={() => {
@@ -455,18 +467,19 @@ export default function CalendarClient() {
                   ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
                   : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
               }`}
+              title="Месячный вид календаря"
             >
-              Месяц
+              📆 Месяц
             </button>
             <button
-              onClick={() => setView('week')}
-              className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                view === 'week' 
-                  ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
-                  : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
-              }`}
+              onClick={() => {
+                toast.error('Недельный вид находится в разработке')
+              }}
+              className="bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)] px-4 py-2 rounded-xl font-medium transition-all opacity-50 cursor-not-allowed"
+              title="Недельный вид в разработке"
+              disabled
             >
-              Неделя
+              📅 Неделя
             </button>
           </div>
         </div>
