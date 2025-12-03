@@ -134,7 +134,7 @@ export default function SalesChart({ data, period, height = 400 }: SalesChartPro
             const names: Record<string, string> = {
               wonAmount: isMobile ? 'Выручка' : 'Выручка (₽)',
               forecast: isMobile ? 'Прогноз' : 'Прогноз (₽)',
-              total: isMobile ? 'Всего' : 'Всего сделок',
+              total: isMobile ? 'Сделок' : 'Всего сделок',
               won: isMobile ? 'Закрыто' : 'Закрыто успешно',
               lost: isMobile ? 'Не реализовано' : 'Закрыто и не реализовано',
               active: 'Активные',
