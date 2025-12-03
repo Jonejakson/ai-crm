@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { SuccessIcon, ErrorIcon, InfoIcon } from './Icons'
 
 interface Notification {
   id: number
