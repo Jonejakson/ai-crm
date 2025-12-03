@@ -30,7 +30,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
   const maxValue = Math.max(...chartData.map(d => d.count), 1)
   const chartHeight = 300
   const chartWidth = 800
-  const margin = { top: 20, right: 30, bottom: 50, left: 100 }
+  const margin = { top: 20, right: 30, bottom: 50, left: 150 }
   const barHeight = 30
   const barGap = 10
   const plotWidth = chartWidth - margin.left - margin.right
@@ -109,12 +109,12 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
             return (
               <text
                 key={stage.name}
-                x={margin.left - 10}
+                x={margin.left - 15}
                 y={y}
                 textAnchor="end"
                 fontSize="12"
                 fill="#6b7280"
-                alignmentBaseline="middle"
+                dominantBaseline="middle"
               >
                 {stage.name}
               </text>
