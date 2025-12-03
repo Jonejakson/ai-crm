@@ -454,16 +454,24 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
       {/* Контент вкладок */}
       {activeTab === 'sales' ? (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="glass-panel rounded-3xl p-6">
+          <div className="glass-panel rounded-3xl p-3 md:p-6">
             {loading.sales ? (
               <div className="flex items-center justify-center h-64">
                 <Skeleton variant="rectangular" width={400} height={220} className="mb-4" />
               </div>
             ) : (
               <div className="space-y-4">
-                <h2 className="text-xl font-semibold text-[var(--foreground)]">Динамика продаж</h2>
+                <div className="px-2 md:px-0">
+                  <h2 className="text-lg md:text-xl font-semibold text-[var(--foreground)]">Динамика продаж</h2>
+                </div>
                 {salesData.length > 0 ? (
-                  <SalesChart data={salesData} period={period} height={320} />
+                  <div className="w-full overflow-x-auto -mx-4 px-2 md:-mx-6 md:px-6 lg:mx-0 lg:px-0">
+                    <div className="min-w-0 md:min-w-0">
+                      <div className="w-full">
+                        <SalesChart data={salesData} period={period} height={320} />
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="text-center py-12 text-[var(--muted)]">
                     Нет данных за выбранный период
