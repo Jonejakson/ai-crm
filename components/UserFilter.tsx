@@ -180,15 +180,15 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-3">
-        <label className="text-sm font-medium text-[var(--foreground-soft)] whitespace-nowrap">
+      <div className="mb-4 flex flex-col md:flex-row md:items-center gap-3">
+        <label className="text-sm font-medium text-[var(--foreground-soft)] md:whitespace-nowrap">
           Фильтр по менеджеру:
         </label>
-        <div className="relative">
+        <div className="relative w-full md:w-auto">
           <button
             ref={buttonRef}
             onClick={handleToggle}
-            className="btn-secondary text-sm flex items-center gap-2 min-w-[250px] justify-between"
+            className="btn-secondary text-sm flex items-center gap-2 w-full md:min-w-[250px] justify-between"
           >
             <span className="flex items-center gap-2">
               <span>👤</span>
