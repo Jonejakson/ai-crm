@@ -7,6 +7,7 @@ import Modal from '@/components/Modal'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 import ExportButton from '@/components/ExportButton'
+import { EmailIcon, PhoneIcon, BuildingIcon, CalendarIcon, SearchIcon, UsersGroupIcon } from '@/components/Icons'
 
 interface Contact {
   id: number
