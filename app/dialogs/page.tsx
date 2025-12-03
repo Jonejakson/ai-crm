@@ -27,10 +27,6 @@ export default function DialogsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedContact, setSelectedContact] = useState<string>('all')
-  const [newMessage, setNewMessage] = useState('')
-  const [selectedContactForMessage, setSelectedContactForMessage] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
@@ -51,61 +47,6 @@ export default function DialogsPage() {
       setDialogs([])
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    
-    if (!newMessage.trim() || !selectedContactForMessage) {
-      setError('Заполните все поля')
-      return
-    }
-
-    setIsSubmitting(true)
-
-    try {
-      const response = await fetch('/api/dialogs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: newMessage.trim(),
-          contactId: parseInt(selectedContactForMessage),
-          sender: 'user',
-          platform: 'INTERNAL',
-        }),
-      })
-
-      if (!response.ok) {
-        let errorMessage = 'Ошибка при отправке сообщения'
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch (parseError) {
-          const text = await response.text().catch(() => '')
-          errorMessage = text || `HTTP ${response.status}: ${response.statusText}`
-        }
-        setError(errorMessage)
-        setIsSubmitting(false)
-        return
-      }
-
-      await fetchData()
-
-      // Очищаем форму
-      setNewMessage('')
-      setSelectedContactForMessage('')
-      setError(null)
-      
-    } catch (error) {
-      console.error('Error sending message:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка сети'
-      setError(errorMessage)
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -223,67 +164,6 @@ export default function DialogsPage() {
         ))}
       </div>
 
-      <div className="glass-panel rounded-3xl">
-        <div className="p-6 border-b border-white/40">
-          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Новое сообщение</p>
-          <h3 className="text-2xl font-semibold text-[var(--foreground)] mt-1">Отправить клиенту</h3>
-          <p className="text-sm text-[var(--muted)]">Выберите клиента и задайте тон диалога без переключения вкладок.</p>
-        </div>
-        <div className="p-6">
-          {error && (
-            <div className="mb-4 p-4 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-xl text-[var(--error)] text-sm">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSendMessage} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                  Клиент *
-                </label>
-                <select
-                  value={selectedContactForMessage}
-                  onChange={(e) => setSelectedContactForMessage(e.target.value)}
-                  required
-                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-                >
-                  <option value="">Выберите клиента</option>
-                  {contacts.map(contact => (
-                    <option key={contact.id} value={contact.id}>
-                      {contact.name} ({contact.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                  Сообщение *
-                </label>
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Введите сообщение..."
-                  required
-                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-                />
-              </div>
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Отправка...' : 'Отправить'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-
       <div className="space-y-6">
         {Object.values(dialogsByContact).length === 0 ? (
           <div className="empty-state">
@@ -293,8 +173,8 @@ export default function DialogsPage() {
             </h3>
             <p className="empty-state-description">
               {selectedContact === 'all' 
-                ? 'Начните диалог с клиентом, отправив первое сообщение'
-                : 'Выберите другого клиента или отправьте новое сообщение'}
+                ? 'Нет сообщений для отображения'
+                : 'Нет сообщений с выбранным клиентом'}
             </p>
           </div>
         ) : (

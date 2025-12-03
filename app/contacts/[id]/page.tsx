@@ -115,7 +115,6 @@ export default function ContactDetailPage() {
   const [companyDetailsLoading, setCompanyDetailsLoading] = useState(false)
   const [companyDetailsError, setCompanyDetailsError] = useState('')
   // Убрали вкладки - все в одной прокручиваемой странице
-  const [newMessage, setNewMessage] = useState('')
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' })
@@ -250,32 +249,6 @@ export default function ContactDetailPage() {
       setEmailAlert({ type: 'error', message: error.message || 'Ошибка отправки письма' })
     } finally {
       setEmailSending(false)
-    }
-  }
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newMessage.trim()) return
-
-    try {
-      const response = await fetch('/api/dialogs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: newMessage,
-          contactId: Number(contactId),
-          sender: 'user'
-        }),
-      })
-
-      if (response.ok) {
-        setNewMessage('')
-        fetchContactData() // Обновляем диалоги
-      }
-    } catch (error) {
-      console.error('Error sending message:', error)
     }
   }
 
@@ -755,18 +728,6 @@ export default function ContactDetailPage() {
                 ))
               )}
             </div>
-            <form onSubmit={handleSendMessage} className="flex space-x-3">
-              <input
-                type="text"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Введите сообщение..."
-                className="flex-1 rounded-2xl border border-white/60 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
-              />
-              <button type="submit" className="btn-primary text-sm">
-                Отправить
-              </button>
-            </form>
           </div>
 
           {/* Письма */}
