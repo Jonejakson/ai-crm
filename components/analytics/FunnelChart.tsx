@@ -31,7 +31,12 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 30, left: 100, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis type="number" stroke="#6b7280" style={{ fontSize: '12px' }} />
+          <XAxis 
+            type="number" 
+            stroke="#6b7280" 
+            style={{ fontSize: '12px' }}
+            domain={[0, 'dataMax']}
+          />
           <YAxis 
             dataKey="name" 
             type="category" 
@@ -69,7 +74,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
               return names[value] || value
             }}
           />
-          <Bar dataKey="count" fill="#6366f1" radius={[0, 8, 8, 0]}>
+          <Bar dataKey="count" fill="#6366f1" radius={[0, 8, 8, 0]} baseValue={0}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
