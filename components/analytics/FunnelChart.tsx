@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
 
 interface FunnelStage {
   name: string
@@ -29,13 +29,21 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[var(--foreground)]">{pipelineName}</h3>
       <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData} layout="vertical" margin={{ top: 20, right: 30, left: 100, bottom: 5 }}>
+        <BarChart 
+          data={chartData} 
+          layout="vertical" 
+          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
+          barCategoryGap="10%"
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <ReferenceLine x={0} stroke="#e5e7eb" strokeWidth={1} />
           <XAxis 
             type="number" 
             stroke="#6b7280" 
             style={{ fontSize: '12px' }}
-            domain={[(dataMin: number) => 0, (dataMax: number) => Math.max(dataMax * 1.1, 1)]}
+            domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
+            allowDecimals={false}
+            tick={{ fontSize: '12px' }}
             allowDataOverflow={false}
           />
           <YAxis 
@@ -44,6 +52,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
             stroke="#6b7280"
             style={{ fontSize: '12px' }}
             width={90}
+            tick={{ fontSize: '12px' }}
           />
           <Tooltip 
             contentStyle={{ 
@@ -80,6 +89,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
             fill="#6366f1" 
             radius={[0, 8, 8, 0]}
             minPointSize={0}
+            isAnimationActive={false}
           >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
