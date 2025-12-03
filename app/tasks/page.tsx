@@ -8,6 +8,7 @@ import FilesManager from '@/components/FilesManager'
 import Comments from '@/components/Comments'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
+import { CalendarIcon } from '@/components/Icons'
 import ExportButton from '@/components/ExportButton'
 import {
   DndContext,
