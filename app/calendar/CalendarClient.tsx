@@ -412,8 +412,68 @@ export default function CalendarClient() {
 
       {/* Навигация календаря */}
       <div className="glass-panel p-4 md:p-6 rounded-3xl">
-        <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* Мобильная версия */}
+        <div className="flex flex-col gap-3 md:hidden">
+          {/* Месяц и год - первым */}
+          <div className="text-center">
+            <div className="text-lg font-semibold text-[var(--foreground)]">
+              {monthNames[currentDate.getMonth()].slice(0, 3)} {currentDate.getFullYear()}
+            </div>
+          </div>
+          {/* Кнопки навигации - в один ряд, каждая 45% */}
+          <div className="flex items-center justify-between gap-2">
+            <button
+              onClick={() => {
+                const newDate = new Date(currentDate)
+                newDate.setMonth(newDate.getMonth() - 1)
+                setCurrentDate(newDate)
+              }}
+              className="btn-secondary p-2 flex-1 max-w-[45%] min-h-[40px] flex items-center justify-center"
+              aria-label="Предыдущий месяц"
+            >
+              ←
+            </button>
+            <button
+              onClick={() => {
+                const newDate = new Date(currentDate)
+                newDate.setMonth(newDate.getMonth() + 1)
+                setCurrentDate(newDate)
+              }}
+              className="btn-secondary p-2 flex-1 max-w-[45%] min-h-[40px] flex items-center justify-center"
+              aria-label="Следующий месяц"
+            >
+              →
+            </button>
+          </div>
+          {/* Кнопки вида */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setView('month')}
+              className={`flex-1 px-4 py-2 rounded-xl font-medium transition-all ${
+                view === 'month' 
+                  ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-lg' 
+                  : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+              }`}
+              title="Месячный вид календаря"
+            >
+              📆 Месяц
+            </button>
+            <button
+              onClick={() => {
+                toast.error('Недельный вид находится в разработке')
+              }}
+              className="flex-1 bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)] px-4 py-2 rounded-xl font-medium transition-all opacity-50 cursor-not-allowed"
+              title="Недельный вид в разработке"
+              disabled
+            >
+              📅 Неделя
+            </button>
+          </div>
+        </div>
+        
+        {/* Десктопная версия */}
+        <div className="hidden md:flex md:items-center md:justify-between md:gap-4">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 const newDate = new Date(currentDate)
@@ -425,24 +485,9 @@ export default function CalendarClient() {
             >
               ←
             </button>
-            <button
-              onClick={() => {
-                const today = new Date()
-                setCurrentDate(today)
-                if (view === 'week') {
-                  // При переключении на сегодня в недельном виде, переключаемся на месячный
-                  setView('month')
-                }
-              }}
-              className={`text-xs md:text-sm px-3 py-2 rounded-xl font-medium transition-all ${
-                currentDate.toDateString() === new Date().toDateString()
-                  ? 'bg-[var(--primary-soft)] text-[var(--primary)] border border-[var(--primary)]'
-                  : 'btn-secondary hover:bg-[var(--primary-soft)] hover:text-[var(--primary)] hover:border-[var(--primary)]'
-              }`}
-              title="Перейти к сегодняшней дате"
-            >
-              📅 Сегодня
-            </button>
+            <div className="text-lg font-semibold text-[var(--foreground)] px-3">
+              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            </div>
             <button
               onClick={() => {
                 const newDate = new Date(currentDate)
@@ -454,10 +499,6 @@ export default function CalendarClient() {
             >
               →
             </button>
-            <div className="text-base md:text-lg font-semibold text-[var(--foreground)] px-2 md:px-3">
-              <span className="md:hidden">{monthNames[currentDate.getMonth()].slice(0, 3)} {currentDate.getFullYear()}</span>
-              <span className="hidden md:inline">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
-            </div>
           </div>
           <div className="flex gap-2">
             <button
