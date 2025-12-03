@@ -1310,8 +1310,8 @@ export default function DealsPage() {
 
       {/* Канбан-доска */}
       <div className="glass-panel p-6 rounded-3xl shadow-xl">
-        <div className="mb-4 flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0">
+        <div className="mb-4 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="flex-1 min-w-0 w-full">
             <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)] mb-2">Активная воронка</p>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="w-full md:w-auto md:min-w-[250px]">
@@ -1335,7 +1335,7 @@ export default function DealsPage() {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary text-sm flex-shrink-0"
+            className="btn-primary text-sm flex-shrink-0 w-full md:w-auto"
           >
             + Новая сделка
           </button>
