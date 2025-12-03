@@ -4,7 +4,6 @@
 export function getContactIdFromPath(pathname: string): number | undefined {
   // Обрабатываем пути типа:
   // /contacts/123
-  // /contacts/123/dialogs
   // /contacts/123/tasks
   const contactRouteMatch = pathname.match(/^\/contacts\/(\d+)/)
   if (contactRouteMatch) {
@@ -21,7 +20,6 @@ export function getActiveSection(pathname: string): string {
   if (pathname.startsWith('/tasks')) return 'tasks'
   if (pathname.startsWith('/calendar')) return 'calendar'
   if (pathname.startsWith('/analytics')) return 'analytics'
-  if (pathname.startsWith('/dialogs')) return 'dialogs'
   if (pathname.startsWith('/activity')) return 'activity'
   if (pathname.startsWith('/automations')) return 'automations'
   if (pathname.startsWith('/company')) return 'company'

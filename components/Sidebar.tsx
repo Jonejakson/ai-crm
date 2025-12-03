@@ -11,7 +11,6 @@ import {
   TasksIcon,
   CalendarIcon,
   AnalyticsIcon,
-  DialogsIcon,
   ActivityIcon,
   AutomationsIcon,
   CompanyIcon,
@@ -41,7 +40,6 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     { id: 'tasks', name: 'Задачи', href: '/tasks', Icon: TasksIcon },
     { id: 'calendar', name: 'Календарь', href: '/calendar', Icon: CalendarIcon },
     { id: 'analytics', name: 'Аналитика', href: '/analytics', Icon: AnalyticsIcon },
-    { id: 'dialogs', name: 'Диалоги', href: '/dialogs', Icon: DialogsIcon },
     { id: 'activity', name: 'Активность', href: '/activity', Icon: ActivityIcon },
     // Показываем админские разделы только для админов
     ...(isAdmin ? [

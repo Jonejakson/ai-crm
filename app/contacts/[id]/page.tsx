@@ -37,14 +37,6 @@ interface Task {
   createdAt: string
 }
 
-interface Dialog {
-  id: number
-  message: string
-  sender: string
-  platform?: 'TELEGRAM' | 'WHATSAPP' | 'INTERNAL'
-  externalId?: string | null
-  createdAt: string
-}
 
 interface Deal {
   id: number
@@ -100,7 +92,6 @@ export default function ContactDetailPage() {
 
   const [contact, setContact] = useState<Contact | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
-  const [dialogs, setDialogs] = useState<Dialog[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([])
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([])
@@ -153,10 +144,9 @@ export default function ContactDetailPage() {
 
   const fetchContactData = async () => {
     try {
-      const [contactRes, tasksRes, dialogsRes, dealsRes, emailsRes, activityRes] = await Promise.all([
+      const [contactRes, tasksRes, dealsRes, emailsRes, activityRes] = await Promise.all([
         fetch(`/api/contacts`).then(res => res.json()),
         fetch(`/api/tasks`).then(res => res.json()),
-        fetch(`/api/dialogs?contactId=${contactId}`).then(res => res.json()),
         fetch(`/api/deals`).then(res => res.json()),
         fetch(`/api/integrations/email/logs?contactId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] })),
         fetch(`/api/activity?entityType=contact&entityId=${contactId}`).then(res => (res.ok ? res.json() : { logs: [] }))
@@ -179,7 +169,6 @@ export default function ContactDetailPage() {
       )
       setDeals(contactDeals)
 
-      setDialogs(Array.isArray(dialogsRes) ? dialogsRes : [])
       setEmailLogs(Array.isArray(emailsRes.logs) ? emailsRes.logs : [])
       setActivityLogs(Array.isArray(activityRes.logs) ? activityRes.logs : [])
     } catch (error) {
@@ -576,7 +565,6 @@ export default function ContactDetailPage() {
               { label: 'Всего задач', value: tasks.length },
               { label: 'Активные задачи', value: tasks.filter(t => t.status === 'pending').length, accent: 'text-orange-500' },
               { label: 'Завершенные задачи', value: tasks.filter(t => t.status === 'completed').length, accent: 'text-emerald-500' },
-              { label: 'Сообщений', value: dialogs.length },
               { label: 'Сделок', value: deals.length },
               { label: 'Сумма сделок', value: `${deals.reduce((sum, d) => sum + d.amount, 0).toLocaleString('ru-RU')} ₽`, accent: 'text-emerald-600' },
             ].map((stat) => (
@@ -683,51 +671,6 @@ export default function ContactDetailPage() {
                 ))}
               </div>
             )}
-          </div>
-
-          {/* Диалог */}
-          <div className="border-t pt-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Диалог ({dialogs.length})</h3>
-            <div className="space-y-3 max-h-64 overflow-y-auto mb-4">
-              {dialogs.length === 0 ? (
-                <p className="text-slate-500">Нет сообщений</p>
-              ) : (
-                dialogs.map((dialog) => (
-                  <div
-                    key={dialog.id}
-                    className={`p-3 rounded-lg ${
-                      dialog.sender === 'user'
-                        ? 'bg-[var(--primary-soft)]/70 ml-8'
-                        : 'bg-white/80 mr-8'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <p className="text-gray-900 text-sm">{dialog.message}</p>
-                      <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                        {new Date(dialog.createdAt).toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
-                      <span>{dialog.sender === 'user' ? 'Вы' : 'Клиент'}</span>
-                      {dialog.platform && dialog.platform !== 'INTERNAL' && (
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
-                          dialog.platform === 'TELEGRAM' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : dialog.platform === 'WHATSAPP'
-                            ? 'bg-green-100 text-green-700'
-                            : ''
-                        }`}>
-                          {dialog.platform === 'TELEGRAM' ? '📱 Telegram' : dialog.platform === 'WHATSAPP' ? '💬 WhatsApp' : ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
           </div>
 
           {/* Письма */}
