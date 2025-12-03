@@ -121,7 +121,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       {/* Мобильное меню кнопка */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-lg hover:shadow-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+        className="md:hidden fixed top-4 right-4 z-50 p-3 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--foreground)] shadow-lg hover:shadow-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
         aria-label={isMobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
       >
         {isMobileMenuOpen ? <CloseIcon className="w-6 h-6" /> : <MenuIcon className="w-6 h-6" />}
