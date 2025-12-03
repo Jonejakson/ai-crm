@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import UserFilter from '@/components/UserFilter'
 import AnalyticsTabs from '@/components/analytics/AnalyticsTabs'
-import { WarningIcon, FilePdfIcon, FileExcelIcon, UsersGroupIcon, CheckCircleIcon, CurrencyIcon } from '@/components/Icons'
+import { WarningIcon, FilePdfIcon, FileExcelIcon, UsersGroupIcon, CheckCircleIcon, CurrencyIcon, ChartBarIcon } from '@/components/Icons'
 
 interface AnalyticsData {
   period: string
