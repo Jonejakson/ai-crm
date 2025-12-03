@@ -50,7 +50,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
   const maxValue = Math.max(...chartData.map(d => d.count), 1)
   const chartHeight = 250
   const chartWidth = 800
-  const margin = { top: 20, right: 30, bottom: 50, left: 180 }
+  const margin = { top: 10, right: 30, bottom: 60, left: 180 }
   const barHeight = 28
   const barGap = 8
   const plotWidth = chartWidth - margin.left - margin.right
@@ -92,7 +92,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
                 x1={x}
                 y1={margin.top}
                 x2={x}
-                y2={margin.top + plotHeight}
+                y2={margin.top + plotHeight + 5}
                 stroke="#e5e7eb"
                 strokeDasharray="3 3"
                 strokeWidth={1}
@@ -153,9 +153,9 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
           {/* X-axis */}
           <line
             x1={margin.left}
-            y1={margin.top + plotHeight}
+            y1={margin.top + plotHeight + 5}
             x2={margin.left + plotWidth}
-            y2={margin.top + plotHeight}
+            y2={margin.top + plotHeight + 5}
             stroke="#6b7280"
             strokeWidth={1}
           />
@@ -168,15 +168,15 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
               <g key={tick}>
                 <line
                   x1={x}
-                  y1={margin.top + plotHeight}
+                  y1={margin.top + plotHeight + 5}
                   x2={x}
-                  y2={margin.top + plotHeight + 5}
+                  y2={margin.top + plotHeight + 10}
                   stroke="#6b7280"
                   strokeWidth={1}
                 />
                 <text
                   x={x}
-                  y={margin.top + plotHeight + 20}
+                  y={margin.top + plotHeight + 25}
                   textAnchor="middle"
                   fontSize="12"
                   fill="#6b7280"
@@ -190,7 +190,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
           {/* X-axis label */}
           <text
             x={margin.left + plotWidth / 2}
-            y={chartHeight - 5}
+            y={chartHeight - 10}
             textAnchor="middle"
             fontSize="12"
             fill="#6b7280"
