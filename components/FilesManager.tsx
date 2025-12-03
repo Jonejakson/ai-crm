@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { FilePdfIcon, FileExcelIcon, TrashIcon } from './Icons'
 
 interface File {
   id: number
