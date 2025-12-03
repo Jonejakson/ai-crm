@@ -331,11 +331,10 @@ export default function ActivityPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">
-                      {ENTITY_MAP[log.entityType]?.Icon ? (
-                        <ENTITY_MAP[log.entityType].Icon className="w-6 h-6" />
-                      ) : (
-                        <EmptyIcon className="w-6 h-6" />
-                      )}
+                      {(() => {
+                        const EntityIcon = ENTITY_MAP[log.entityType]?.Icon || EmptyIcon
+                        return <EntityIcon className="w-6 h-6" />
+                      })()}
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[var(--foreground)]">
