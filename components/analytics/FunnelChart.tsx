@@ -48,14 +48,22 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
   }
 
   const maxValue = Math.max(...chartData.map(d => d.count), 1)
-  const chartHeight = 250
   const chartWidth = 800
-  const margin = { top: 5, right: 30, bottom: 80, left: 180 }
+  // Уменьшаем отступы сверху, увеличиваем снизу для оси X
+  const margin = { top: 5, right: 30, bottom: 0, left: 180 }
   const barHeight = 28
   const barGap = 8
   const plotWidth = chartWidth - margin.left - margin.right
-  const plotHeight = chartHeight - margin.top - margin.bottom
-  const xAxisY = margin.top + plotHeight + 15 // X-axis вынесена за пределы графика
+  
+  // Вычисляем высоту области для баров (без оси X)
+  const barsAreaHeight = chartData.length * (barHeight + barGap) - barGap
+  const plotHeight = barsAreaHeight
+  
+  // X-axis размещаем на 15px ниже области баров
+  const xAxisY = margin.top + plotHeight + 15
+  
+  // Общая высота SVG = область баров + отступ сверху + место для оси X
+  const chartHeight = margin.top + plotHeight + 50 // 50px для оси X и подписей
 
   const handleBarMouseEnter = (e: React.MouseEvent<SVGRectElement>, stage: typeof chartData[0]) => {
     if (svgRef.current) {
