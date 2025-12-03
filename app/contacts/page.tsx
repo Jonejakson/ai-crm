@@ -498,37 +498,73 @@ export default function ContactsPage() {
         
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={() => setDateFilter(dateFilter === 'today' ? null : 'today')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const newFilter = dateFilter === 'today' ? null : 'today'
+              setDateFilter(newFilter)
+            }}
             className={`btn-secondary text-sm ${dateFilter === 'today' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
           >
             Сегодня
           </button>
           <button
-            onClick={() => setDateFilter(dateFilter === 'yesterday' ? null : 'yesterday')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const newFilter = dateFilter === 'yesterday' ? null : 'yesterday'
+              setDateFilter(newFilter)
+            }}
             className={`btn-secondary text-sm ${dateFilter === 'yesterday' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
           >
             Вчера
           </button>
           <button
-            onClick={() => setDateFilter(dateFilter === 'week' ? null : 'week')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const newFilter = dateFilter === 'week' ? null : 'week'
+              setDateFilter(newFilter)
+            }}
             className={`btn-secondary text-sm ${dateFilter === 'week' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
           >
             Эта неделя
           </button>
           <button
-            onClick={() => setDateFilter(dateFilter === 'month' ? null : 'month')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const newFilter = dateFilter === 'month' ? null : 'month'
+              setDateFilter(newFilter)
+            }}
             className={`btn-secondary text-sm ${dateFilter === 'month' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
           >
             Этот месяц
           </button>
           <button
-            onClick={() => setDateFilter(dateFilter === 'quarter' ? null : 'quarter')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const newFilter = dateFilter === 'quarter' ? null : 'quarter'
+              setDateFilter(newFilter)
+            }}
             className={`btn-secondary text-sm ${dateFilter === 'quarter' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
           >
             Этот квартал
           </button>
           <button
-            onClick={() => setDateFilter(dateFilter === 'year' ? null : 'year')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              const newFilter = dateFilter === 'year' ? null : 'year'
+              setDateFilter(newFilter)
+            }}
             className={`btn-secondary text-sm ${dateFilter === 'year' ? 'bg-[var(--primary-soft)] text-[var(--primary)] border-[var(--primary)]' : ''}`}
           >
             Этот год
