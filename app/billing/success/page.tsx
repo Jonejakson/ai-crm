@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { ErrorIcon, SuccessIcon } from '@/components/Icons'
 
 interface InvoiceInfo {
   id?: string
