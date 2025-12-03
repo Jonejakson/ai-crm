@@ -233,7 +233,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
           )}
         </svg>
       </div>
-      <div className="space-y" style={{ height: '150px' }}>
+      <div className="space-y h-[150px] md:h-auto overflow-y-auto md:overflow-visible">
         <div className="grid grid-cols-2 gap-4 mt-4">
           {chartData.map((stage, index) => (
             <div key={stage.name} className="p-3 rounded-lg bg-white/50 border border-[var(--border)]">
