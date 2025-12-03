@@ -83,12 +83,12 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[var(--foreground)]">{pipelineName}</h3>
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-x-auto" style={{ height: `${chartHeight}px` }}>
         <svg 
           ref={svgRef}
           width={chartWidth} 
           height={chartHeight}
-          className="w-full"
+          className="w-full h-full"
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           preserveAspectRatio="xMidYMid meet"
         >
