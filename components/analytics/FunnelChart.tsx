@@ -74,7 +74,7 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
               return names[value] || value
             }}
           />
-          <Bar dataKey="count" fill="#6366f1" radius={[0, 8, 8, 0]} baseValue={0}>
+          <Bar dataKey="count" fill="#6366f1" radius={[0, 8, 8, 0]}>
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
