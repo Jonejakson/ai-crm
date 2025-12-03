@@ -27,12 +27,32 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
     color: colors[index % colors.length],
   }))
 
+  // Функция для разбиения длинных названий на две строки
+  const splitLabel = (text: string, maxLength: number = 20): string[] => {
+    if (text.length <= maxLength) return [text]
+    const words = text.split(' ')
+    const lines: string[] = []
+    let currentLine = ''
+    
+    for (const word of words) {
+      if ((currentLine + ' ' + word).length <= maxLength) {
+        currentLine = currentLine ? currentLine + ' ' + word : word
+      } else {
+        if (currentLine) lines.push(currentLine)
+        currentLine = word
+      }
+    }
+    if (currentLine) lines.push(currentLine)
+    
+    return lines.length > 0 ? lines : [text]
+  }
+
   const maxValue = Math.max(...chartData.map(d => d.count), 1)
-  const chartHeight = 300
+  const chartHeight = 250
   const chartWidth = 800
-  const margin = { top: 20, right: 30, bottom: 50, left: 150 }
-  const barHeight = 30
-  const barGap = 10
+  const margin = { top: 20, right: 30, bottom: 50, left: 180 }
+  const barHeight = 28
+  const barGap = 8
   const plotWidth = chartWidth - margin.left - margin.right
   const plotHeight = chartHeight - margin.top - margin.bottom
 
@@ -106,18 +126,27 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
           {/* Y-axis labels */}
           {chartData.map((stage, index) => {
             const y = margin.top + index * (barHeight + barGap) + barHeight / 2
+            const labelLines = splitLabel(stage.name, 18)
+            const lineHeight = 14
+            const startY = y - ((labelLines.length - 1) * lineHeight) / 2
+            
             return (
-              <text
-                key={stage.name}
-                x={margin.left - 15}
-                y={y}
-                textAnchor="end"
-                fontSize="12"
-                fill="#6b7280"
-                dominantBaseline="middle"
-              >
-                {stage.name}
-              </text>
+              <g key={stage.name}>
+                {labelLines.map((line, lineIndex) => (
+                  <text
+                    key={lineIndex}
+                    x={margin.left - 15}
+                    y={startY + lineIndex * lineHeight}
+                    textAnchor="end"
+                    fontSize="13"
+                    fill="#374151"
+                    fontWeight="500"
+                    dominantBaseline="middle"
+                  >
+                    {line}
+                  </text>
+                ))}
+              </g>
             )
           })}
 
