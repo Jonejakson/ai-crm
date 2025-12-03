@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { FilePdfIcon, FileExcelIcon, TrashIcon } from './Icons'
 
 interface FileUploadProps {
   entityType: 'contact' | 'deal' | 'task' | 'event'
