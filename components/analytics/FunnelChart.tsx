@@ -1,6 +1,6 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine } from 'recharts'
+import { useState, useRef } from 'react'
 
 interface FunnelStage {
   name: string
@@ -16,6 +16,8 @@ interface FunnelChartProps {
 
 export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) {
   const colors = ['#6366f1', '#8b5cf6', '#a855f7', '#c084fc', '#d946ef', '#ec4899']
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
   
   const chartData = stages.map((stage, index) => ({
     name: stage.name,
@@ -25,78 +27,174 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
     color: colors[index % colors.length],
   }))
 
+  const maxValue = Math.max(...chartData.map(d => d.count), 1)
+  const chartHeight = 300
+  const chartWidth = 800
+  const margin = { top: 20, right: 30, bottom: 50, left: 100 }
+  const barHeight = 30
+  const barGap = 10
+  const plotWidth = chartWidth - margin.left - margin.right
+  const plotHeight = chartHeight - margin.top - margin.bottom
+
+  const handleBarMouseEnter = (e: React.MouseEvent<SVGRectElement>, stage: typeof chartData[0]) => {
+    if (svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect()
+      setTooltip({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        text: `Количество сделок: ${stage.count}`
+      })
+    }
+  }
+
+  const handleBarMouseLeave = () => {
+    setTooltip(null)
+  }
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[var(--foreground)]">{pipelineName}</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart 
-          data={chartData} 
-          layout="vertical" 
-          margin={{ top: 20, right: 30, left: 100, bottom: 5 }}
-          barCategoryGap="10%"
+      <div className="w-full overflow-x-auto">
+        <svg 
+          ref={svgRef}
+          width={chartWidth} 
+          height={chartHeight}
+          className="w-full"
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          preserveAspectRatio="xMidYMid meet"
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <ReferenceLine x={0} stroke="#e5e7eb" strokeWidth={1} />
-          <XAxis 
-            type="number" 
-            stroke="#6b7280" 
-            style={{ fontSize: '12px' }}
-            domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
-            allowDecimals={false}
-            tick={{ fontSize: '12px' }}
-            allowDataOverflow={false}
-          />
-          <YAxis 
-            dataKey="name" 
-            type="category" 
+          {/* Grid lines */}
+          {[0, 1, 2, 3, 4, 5].map(tick => {
+            const x = margin.left + (tick / 5) * plotWidth
+            return (
+              <line
+                key={tick}
+                x1={x}
+                y1={margin.top}
+                x2={x}
+                y2={margin.top + plotHeight}
+                stroke="#e5e7eb"
+                strokeDasharray="3 3"
+                strokeWidth={1}
+              />
+            )
+          })}
+
+          {/* Bars */}
+          {chartData.map((stage, index) => {
+            const y = margin.top + index * (barHeight + barGap)
+            const barWidth = (stage.count / maxValue) * plotWidth
+            const x = margin.left
+            
+            return (
+              <g key={stage.name}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barHeight}
+                  fill={stage.color}
+                  rx={8}
+                  onMouseEnter={(e) => handleBarMouseEnter(e, stage)}
+                  onMouseLeave={handleBarMouseLeave}
+                  className="cursor-pointer"
+                />
+              </g>
+            )
+          })}
+
+          {/* Y-axis labels */}
+          {chartData.map((stage, index) => {
+            const y = margin.top + index * (barHeight + barGap) + barHeight / 2
+            return (
+              <text
+                key={stage.name}
+                x={margin.left - 10}
+                y={y}
+                textAnchor="end"
+                fontSize="12"
+                fill="#6b7280"
+                alignmentBaseline="middle"
+              >
+                {stage.name}
+              </text>
+            )
+          })}
+
+          {/* X-axis */}
+          <line
+            x1={margin.left}
+            y1={margin.top + plotHeight}
+            x2={margin.left + plotWidth}
+            y2={margin.top + plotHeight}
             stroke="#6b7280"
-            style={{ fontSize: '12px' }}
-            width={90}
-            tick={{ fontSize: '12px' }}
+            strokeWidth={1}
           />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'white', 
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '8px'
-            }}
-            formatter={(value: number, name: string) => {
-              if (name === 'count') {
-                return [value, 'Количество сделок']
-              }
-              if (name === 'amount') {
-                return [`${value.toLocaleString('ru-RU')} ₽`, 'Сумма']
-              }
-              if (name === 'conversion') {
-                return [`${value.toFixed(1)}%`, 'Конверсия']
-              }
-              return [value, name]
-            }}
-          />
-          <Legend 
-            formatter={(value) => {
-              const names: Record<string, string> = {
-                count: 'Количество',
-                amount: 'Сумма (₽)',
-                conversion: 'Конверсия (%)',
-              }
-              return names[value] || value
-            }}
-          />
-          <Bar 
-            dataKey="count" 
-            fill="#6366f1" 
-            radius={[0, 8, 8, 0]}
-            minPointSize={0}
-            isAnimationActive={false}
+
+          {/* X-axis ticks and labels */}
+          {[0, 1, 2, 3, 4, 5].map(tick => {
+            const x = margin.left + (tick / 5) * plotWidth
+            const value = Math.round((tick / 5) * maxValue)
+            return (
+              <g key={tick}>
+                <line
+                  x1={x}
+                  y1={margin.top + plotHeight}
+                  x2={x}
+                  y2={margin.top + plotHeight + 5}
+                  stroke="#6b7280"
+                  strokeWidth={1}
+                />
+                <text
+                  x={x}
+                  y={margin.top + plotHeight + 20}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#6b7280"
+                >
+                  {value}
+                </text>
+              </g>
+            )
+          })}
+
+          {/* X-axis label */}
+          <text
+            x={margin.left + plotWidth / 2}
+            y={chartHeight - 5}
+            textAnchor="middle"
+            fontSize="12"
+            fill="#6b7280"
           >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            Количество
+          </text>
+
+          {/* Tooltip */}
+          {tooltip && (
+            <g>
+              <rect
+                x={tooltip.x - 60}
+                y={tooltip.y - 30}
+                width={120}
+                height={24}
+                fill="white"
+                stroke="#e5e7eb"
+                strokeWidth={1}
+                rx={8}
+              />
+              <text
+                x={tooltip.x}
+                y={tooltip.y - 12}
+                textAnchor="middle"
+                fontSize="11"
+                fill="#1f2937"
+              >
+                {tooltip.text}
+              </text>
+            </g>
+          )}
+        </svg>
+      </div>
       <div className="grid grid-cols-2 gap-4 mt-4">
         {chartData.map((stage, index) => (
           <div key={stage.name} className="p-3 rounded-lg bg-white/50 border border-[var(--border)]">
