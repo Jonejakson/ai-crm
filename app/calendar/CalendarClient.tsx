@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 import UserFilter from '@/components/UserFilter'
 import ExportButton from '@/components/ExportButton'
 
@@ -38,6 +39,7 @@ export default function CalendarClient() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [view, setView] = useState<'month' | 'week' | 'day'>('month')
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [formData, setFormData] = useState({
@@ -106,6 +108,8 @@ export default function CalendarClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
+    setIsSubmitting(true)
     try {
       const startDateTime = new Date(`${formData.startDate}T${formData.startTime || '09:00'}`)
       const endDateTime = formData.endDate && formData.endTime 
@@ -116,6 +120,7 @@ export default function CalendarClient() {
 
       const url = selectedEvent ? '/api/events' : '/api/events'
       const method = selectedEvent ? 'PUT' : 'POST'
+      const contactId = formData.contactId ? Number(formData.contactId) : null
       const body = selectedEvent
         ? {
             id: selectedEvent.id,
@@ -125,7 +130,7 @@ export default function CalendarClient() {
             endDate: endDateTime ? endDateTime.toISOString() : null,
             location: formData.location || null,
             type: formData.type,
-            contactId: formData.contactId || null,
+            contactId: contactId,
           }
         : {
             title: formData.title,
@@ -134,7 +139,7 @@ export default function CalendarClient() {
             endDate: endDateTime ? endDateTime.toISOString() : null,
             location: formData.location || null,
             type: formData.type,
-            contactId: formData.contactId || null,
+            contactId: contactId,
           }
 
       const response = await fetch(url, {
@@ -158,9 +163,16 @@ export default function CalendarClient() {
           type: 'meeting',
           contactId: ''
         })
+        toast.success(selectedEvent ? 'Событие успешно обновлено' : 'Событие успешно создано')
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Неизвестная ошибка' }))
+        toast.error(errorData.error || 'Ошибка при сохранении события')
       }
     } catch (error) {
       console.error('Error saving event:', error)
+      toast.error('Ошибка при сохранении события. Проверьте подключение к интернету.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -781,14 +793,16 @@ export default function CalendarClient() {
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="btn-secondary text-sm"
+                  disabled={isSubmitting}
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
                   className="btn-primary text-sm btn-ripple"
+                  disabled={isSubmitting}
                 >
-                  {selectedEvent ? 'Сохранить' : 'Создать'}
+                  {isSubmitting ? 'Сохранение...' : (selectedEvent ? 'Сохранить' : 'Создать')}
                 </button>
               </div>
             </form>
