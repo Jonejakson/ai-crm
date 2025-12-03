@@ -35,7 +35,8 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
             type="number" 
             stroke="#6b7280" 
             style={{ fontSize: '12px' }}
-            domain={[0, 'dataMax']}
+            domain={[(dataMin: number) => 0, (dataMax: number) => Math.max(dataMax * 1.1, 1)]}
+            allowDataOverflow={false}
           />
           <YAxis 
             dataKey="name" 
@@ -74,7 +75,12 @@ export default function FunnelChart({ stages, pipelineName }: FunnelChartProps) 
               return names[value] || value
             }}
           />
-          <Bar dataKey="count" fill="#6366f1" radius={[0, 8, 8, 0]}>
+          <Bar 
+            dataKey="count" 
+            fill="#6366f1" 
+            radius={[0, 8, 8, 0]}
+            minPointSize={0}
+          >
             {chartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
