@@ -162,7 +162,7 @@ function CustomSelect({
   required?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, openUp: false })
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, openUp: false, topViewport: 0 })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -218,6 +218,7 @@ function CustomSelect({
           left,
           width,
           openUp,
+          topViewport: rect.top, // Сохраняем позицию относительно viewport для расчета maxHeight
         })
       }
     }
@@ -263,19 +264,41 @@ function CustomSelect({
     setIsOpen(false)
   }
 
-  const dropdownContent = isOpen && typeof document !== 'undefined' && (
-    <div
-      ref={dropdownRef}
-      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto"
-      style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        width: `${position.width}px`,
-        maxHeight: `min(256px, calc(100vh - ${position.top}px - 16px))`,
-        zIndex: 99999,
-        position: 'fixed',
-      }}
-    >
+  const dropdownContent = isOpen && typeof document !== 'undefined' && (() => {
+    // Рассчитываем максимальную высоту на основе доступного пространства
+    if (typeof window === 'undefined') return null
+    
+    const viewportHeight = window.innerHeight
+    const topRelativeToViewport = position.topViewport || 0
+    const gap = 8
+    const padding = 16
+    
+    // Рассчитываем доступное пространство
+    let availableSpace: number
+    if (position.openUp) {
+      // Если открыт вверх, используем пространство сверху
+      availableSpace = topRelativeToViewport - padding
+    } else {
+      // Если открыт вниз, используем пространство снизу
+      availableSpace = viewportHeight - topRelativeToViewport - padding
+    }
+    
+    // Ограничиваем высоту: минимум 100px, максимум 256px или доступное пространство
+    const maxHeight = Math.min(256, Math.max(100, availableSpace))
+    
+    return (
+      <div
+        ref={dropdownRef}
+        className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto"
+        style={{
+          top: `${position.top}px`,
+          left: `${position.left}px`,
+          width: `${position.width}px`,
+          maxHeight: `${maxHeight}px`,
+          zIndex: 99999,
+          position: 'fixed',
+        }}
+      >
       {options.map((option) => {
         const isSelected = value === option.value
         return (
@@ -293,8 +316,9 @@ function CustomSelect({
           </button>
         )
       })}
-    </div>
-  )
+      </div>
+    )
+  })()
 
   return (
     <>
