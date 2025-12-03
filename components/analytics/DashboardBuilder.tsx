@@ -312,10 +312,18 @@ function WidgetCard({
 
 function KPIWidget({ data }: { data: AnalyticsData }) {
   const items = [
-    { label: 'Выручка', plan: data.kpi.revenue.plan, fact: data.kpi.revenue.fact, icon: '💰' },
-    { label: 'Сделки', plan: data.kpi.deals.plan, fact: data.kpi.deals.fact, icon: '📈' },
-    { label: 'Задачи', plan: data.kpi.tasks.plan, fact: data.kpi.tasks.fact, icon: '✅' },
+    { label: 'Выручка', plan: data.kpi.revenue.plan, fact: data.kpi.revenue.fact, icon: '💰', isCurrency: true },
+    { label: 'Сделки', plan: data.kpi.deals.plan, fact: data.kpi.deals.fact, icon: '📈', isCurrency: false },
+    { label: 'Задачи', plan: data.kpi.tasks.plan, fact: data.kpi.tasks.fact, icon: '✅', isCurrency: false },
   ]
+  
+  const formatValue = (value: number, isCurrency: boolean) => {
+    if (isCurrency) {
+      return formatCurrency(value)
+    }
+    return Math.round(value).toLocaleString('ru-RU')
+  }
+  
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
       {items.map((item) => {
@@ -325,11 +333,11 @@ function KPIWidget({ data }: { data: AnalyticsData }) {
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
-                <p className="text-2xl font-bold text-[var(--foreground)]">{formatCurrency(item.fact)}</p>
+                <p className="text-2xl font-bold text-[var(--foreground)]">{formatValue(item.fact, item.isCurrency)}</p>
               </div>
               <div className="text-3xl">{item.icon}</div>
             </div>
-            <div className="text-sm text-[var(--muted)] mb-2">План: {formatCurrency(item.plan)}</div>
+            <div className="text-sm text-[var(--muted)] mb-2">План: {formatValue(item.plan, item.isCurrency)}</div>
             <div className="h-2 rounded-full bg-white/40 overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]"
@@ -337,7 +345,7 @@ function KPIWidget({ data }: { data: AnalyticsData }) {
               ></div>
             </div>
             <div className="text-xs text-[var(--muted)] mt-1">
-              {progress >= 100 ? 'Цель выполнена' : `Осталось ${formatCurrency(Math.max(item.plan - item.fact, 0))}`}
+              {progress >= 100 ? 'Цель выполнена' : `Осталось ${formatValue(Math.max(item.plan - item.fact, 0), item.isCurrency)}`}
             </div>
           </div>
         )
