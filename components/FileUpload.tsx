@@ -126,12 +126,12 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
   }
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return '🖼️'
-    if (mimeType.includes('pdf')) return '📄'
-    if (mimeType.includes('word') || mimeType.includes('document')) return '📝'
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊'
-    if (mimeType.includes('zip') || mimeType.includes('archive')) return '📦'
-    return '📎'
+    if (mimeType.startsWith('image/')) return <FilePdfIcon className="w-6 h-6" />
+    if (mimeType.includes('pdf')) return <FilePdfIcon className="w-6 h-6" />
+    if (mimeType.includes('word') || mimeType.includes('document')) return <FilePdfIcon className="w-6 h-6" />
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <FileExcelIcon className="w-6 h-6" />
+    if (mimeType.includes('zip') || mimeType.includes('archive')) return <FilePdfIcon className="w-6 h-6" />
+    return <FilePdfIcon className="w-6 h-6" />
   }
 
   return (
@@ -173,7 +173,7 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <span className="text-2xl">{getFileIcon(file.mimeType)}</span>
+                <span className="flex items-center">{getFileIcon(file.mimeType)}</span>
                 <div className="flex-1 min-w-0">
                   <a
                     href={file.url}
@@ -195,7 +195,7 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
                 className="ml-4 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 title="Удалить"
               >
-                🗑️
+                <TrashIcon className="w-4 h-4" />
               </button>
             </div>
           ))}

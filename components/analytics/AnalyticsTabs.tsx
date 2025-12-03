@@ -6,6 +6,7 @@ import FunnelChart from './FunnelChart'
 import ManagersReport from './ManagersReport'
 import DashboardBuilder from './DashboardBuilder'
 import Skeleton from '@/components/Skeleton'
+import { ChartLineIcon, FunnelIcon, UsersGroupIcon, ScaleIcon, PaletteIcon, ChartBarIcon } from '@/components/Icons'
 
 interface ChartPoint {
   date: string
@@ -313,7 +314,9 @@ function PeriodDynamicsChart({ chartData }: { chartData: ChartPoint[] }) {
         </>
       ) : (
         <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
+          <div className="empty-state-icon">
+            <ChartBarIcon className="w-12 h-12 text-[var(--muted)]" />
+          </div>
           <h3 className="empty-state-title">Нет данных</h3>
           <p className="empty-state-description">
             Нет данных за выбранный период. Попробуйте выбрать другой период.
@@ -422,11 +425,11 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
   }
 
   const tabs = [
-    { id: 'sales', label: 'Продажи', icon: '📈' },
-    { id: 'funnel', label: 'Воронка', icon: '🔽' },
-    { id: 'managers', label: 'Менеджеры', icon: '👥' },
-    { id: 'compare', label: 'Сравнение', icon: '⚖️' },
-    { id: 'builder', label: 'Конструктор', icon: '🎨' },
+    { id: 'sales', label: 'Продажи', Icon: ChartLineIcon },
+    { id: 'funnel', label: 'Воронка', Icon: FunnelIcon },
+    { id: 'managers', label: 'Менеджеры', Icon: UsersGroupIcon },
+    { id: 'compare', label: 'Сравнение', Icon: ScaleIcon },
+    { id: 'builder', label: 'Конструктор', Icon: PaletteIcon },
   ]
 
   return (
@@ -444,7 +447,7 @@ export default function AnalyticsTabs({ period, selectedUserId, selectedPipeline
                   : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
               }`}
             >
-              <span>{tab.icon}</span>
+              <tab.Icon className="w-4 h-4" />
               <span>{tab.label}</span>
             </button>
           ))}

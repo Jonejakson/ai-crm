@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { UsersGroupIcon } from './Icons'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 
@@ -143,7 +144,7 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
         }`}
       >
         <div className="flex items-center gap-2">
-          <span>👥</span>
+          <UsersGroupIcon className="w-4 h-4" />
           <span>Все менеджеры</span>
         </div>
       </button>

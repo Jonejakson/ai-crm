@@ -6,6 +6,7 @@ import {
   DragEndEvent,
   closestCenter,
 } from '@dnd-kit/core'
+import { RevenueIcon, ChartLineIcon, CheckCircleIcon } from '@/components/Icons'
 import {
   SortableContext,
   useSortable,
@@ -312,9 +313,9 @@ function WidgetCard({
 
 function KPIWidget({ data }: { data: AnalyticsData }) {
   const items = [
-    { label: 'Выручка', plan: data.kpi.revenue.plan, fact: data.kpi.revenue.fact, icon: '💰', isCurrency: true },
-    { label: 'Сделки', plan: data.kpi.deals.plan, fact: data.kpi.deals.fact, icon: '📈', isCurrency: false },
-    { label: 'Задачи', plan: data.kpi.tasks.plan, fact: data.kpi.tasks.fact, icon: '✅', isCurrency: false },
+    { label: 'Выручка', plan: data.kpi.revenue.plan, fact: data.kpi.revenue.fact, Icon: RevenueIcon, isCurrency: true },
+    { label: 'Сделки', plan: data.kpi.deals.plan, fact: data.kpi.deals.fact, Icon: ChartLineIcon, isCurrency: false },
+    { label: 'Задачи', plan: data.kpi.tasks.plan, fact: data.kpi.tasks.fact, Icon: CheckCircleIcon, isCurrency: false },
   ]
   
   const formatValue = (value: number, isCurrency: boolean) => {
@@ -335,7 +336,9 @@ function KPIWidget({ data }: { data: AnalyticsData }) {
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
                 <p className="text-2xl font-bold text-[var(--foreground)]">{formatValue(item.fact, item.isCurrency)}</p>
               </div>
-              <div className="text-3xl">{item.icon}</div>
+              <div className="text-3xl">
+                <item.Icon className="w-8 h-8 text-[var(--primary)]" />
+              </div>
             </div>
             <div className="text-sm text-[var(--muted)] mb-2">План: {formatValue(item.plan, item.isCurrency)}</div>
             <div className="h-2 rounded-full bg-white/40 overflow-hidden">

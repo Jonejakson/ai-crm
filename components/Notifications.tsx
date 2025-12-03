@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import NotificationToast from './NotificationToast'
-import { BellIcon } from './Icons'
+import { BellIcon, SuccessIcon, ErrorIcon, InfoIcon } from './Icons'
 
 export default function Notifications() {
   const [isOpen, setIsOpen] = useState(false)
@@ -95,7 +95,7 @@ export default function Notifications() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-lg">{getTypeIcon(notification.type)}</span>
+                            <span className="text-lg flex items-center">{getTypeIcon(notification.type)}</span>
                             <h4 className={`font-medium ${!notification.isRead ? 'font-semibold' : ''}`}>
                               {notification.title}
                             </h4>

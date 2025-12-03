@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { SearchIcon } from './Icons'
 
 interface FilterOptions {
   dateRange?: {
@@ -166,7 +167,7 @@ export default function AdvancedFilters({
               : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
           }`}
         >
-          <span>🔍</span>
+          <SearchIcon className="w-4 h-4" />
           <span>Расширенные фильтры</span>
           {hasActiveFilters && (
             <span className="ml-1 px-2 py-0.5 bg-white/20 rounded-full text-xs">

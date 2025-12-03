@@ -38,14 +38,14 @@ export default function NotificationToast({
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return '✅'
+        return <SuccessIcon className="w-6 h-6" />
       case 'warning':
-        return '⚠️'
+        return <InfoIcon className="w-6 h-6" />
       case 'error':
-        return '❌'
+        return <ErrorIcon className="w-6 h-6" />
       case 'info':
       default:
-        return 'ℹ️'
+        return <InfoIcon className="w-6 h-6" />
     }
   }
 
@@ -75,7 +75,7 @@ export default function NotificationToast({
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3 flex-1">
-            <span className="text-2xl">{getTypeIcon(notification.type)}</span>
+            <span className="flex items-center">{getTypeIcon(notification.type)}</span>
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-gray-900 text-sm mb-1">
                 {notification.title}

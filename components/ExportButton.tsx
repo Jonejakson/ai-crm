@@ -1,19 +1,18 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { DownloadIcon, FilePdfIcon, FileExcelIcon } from './Icons'
 
 interface ExportButtonProps {
   entityType: 'deals' | 'contacts' | 'tasks' | 'events'
   label?: string
   className?: string
-  icon?: string
 }
 
 export default function ExportButton({ 
   entityType, 
   label = 'Экспорт',
-  className = '',
-  icon = '📥'
+  className = ''
 }: ExportButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -52,7 +51,7 @@ export default function ExportButton({
         onClick={() => setIsOpen(!isOpen)}
         className="btn-secondary text-xs lg:text-sm flex items-center gap-1.5 px-3 py-2 whitespace-nowrap"
       >
-        <span>{icon}</span>
+        <DownloadIcon className="w-4 h-4" />
         <span>{label}</span>
         <svg 
           className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -70,21 +69,21 @@ export default function ExportButton({
             onClick={() => handleExport('csv')}
             className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors"
           >
-            <span>📄</span>
+            <FilePdfIcon className="w-4 h-4" />
             <span>CSV</span>
           </button>
           <button
             onClick={() => handleExport('excel')}
             className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors"
           >
-            <span>📊</span>
+            <FileExcelIcon className="w-4 h-4" />
             <span>Excel</span>
           </button>
           <button
             onClick={() => handleExport('pdf')}
             className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors"
           >
-            <span>📑</span>
+            <FilePdfIcon className="w-4 h-4" />
             <span>PDF</span>
           </button>
         </div>

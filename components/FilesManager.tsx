@@ -116,12 +116,12 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
   }
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return '🖼️'
-    if (mimeType.includes('pdf')) return '📄'
-    if (mimeType.includes('word') || mimeType.includes('document')) return '📝'
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊'
-    if (mimeType.includes('zip') || mimeType.includes('archive')) return '📦'
-    return '📎'
+    if (mimeType.startsWith('image/')) return <FilePdfIcon className="w-6 h-6" />
+    if (mimeType.includes('pdf')) return <FilePdfIcon className="w-6 h-6" />
+    if (mimeType.includes('word') || mimeType.includes('document')) return <FilePdfIcon className="w-6 h-6" />
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return <FileExcelIcon className="w-6 h-6" />
+    if (mimeType.includes('zip') || mimeType.includes('archive')) return <FilePdfIcon className="w-6 h-6" />
+    return <FilePdfIcon className="w-6 h-6" />
   }
 
   const isImage = (mimeType: string) => {
@@ -229,13 +229,14 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
                       onError={(e) => {
                         // Если изображение не загрузилось, показываем иконку
                         e.currentTarget.style.display = 'none'
-                        e.currentTarget.parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center text-2xl">${getFileIcon(file.mimeType)}</div>`
+                        const icon = getFileIcon(file.mimeType)
+                        e.currentTarget.parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center">${icon}</div>`
                       }}
                     />
                   </div>
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-[var(--background-soft)] flex items-center justify-center text-3xl">
-                    {getFileIcon(file.mimeType)}
+                    <span className="flex items-center">{getFileIcon(file.mimeType)}</span>
                   </div>
                 )}
               </div>
@@ -284,7 +285,7 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
                   className="px-3 py-2 rounded-lg text-sm text-[var(--error)] hover:bg-[var(--error-soft)] transition-colors opacity-0 group-hover:opacity-100"
                   title="Удалить"
                 >
-                  🗑️
+                  <TrashIcon className="w-4 h-4" />
                 </button>
               </div>
             </div>
