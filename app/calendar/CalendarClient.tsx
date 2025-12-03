@@ -411,22 +411,23 @@ export default function CalendarClient() {
       </div>
 
       {/* Навигация календаря */}
-      <div className="glass-panel p-6 rounded-3xl">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
+      <div className="glass-panel p-4 md:p-6 rounded-3xl">
+        <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => {
                 const newDate = new Date(currentDate)
                 newDate.setMonth(newDate.getMonth() - 1)
                 setCurrentDate(newDate)
               }}
-              className="btn-secondary p-2"
+              className="btn-secondary p-2 min-w-[40px] min-h-[40px] flex items-center justify-center"
+              aria-label="Предыдущий месяц"
             >
               ←
             </button>
             <button
               onClick={() => setCurrentDate(new Date())}
-              className="btn-secondary"
+              className="btn-secondary text-xs md:text-sm px-3 py-2"
             >
               Сегодня
             </button>
@@ -436,12 +437,14 @@ export default function CalendarClient() {
                 newDate.setMonth(newDate.getMonth() + 1)
                 setCurrentDate(newDate)
               }}
-              className="btn-secondary p-2"
+              className="btn-secondary p-2 min-w-[40px] min-h-[40px] flex items-center justify-center"
+              aria-label="Следующий месяц"
             >
               →
             </button>
-            <div className="text-lg font-semibold text-[var(--foreground)] px-3">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            <div className="text-base md:text-lg font-semibold text-[var(--foreground)] px-2 md:px-3">
+              <span className="md:hidden">{monthNames[currentDate.getMonth()].slice(0, 3)} {currentDate.getFullYear()}</span>
+              <span className="hidden md:inline">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</span>
             </div>
           </div>
           <div className="flex gap-2">
@@ -474,8 +477,9 @@ export default function CalendarClient() {
         <div className="glass-panel rounded-3xl overflow-hidden">
           <div className="grid grid-cols-7 gap-px bg-[var(--border-soft)]">
             {dayNames.map(day => (
-              <div key={day} className="bg-gradient-to-r from-[var(--background-soft)] to-white/80 p-3 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                {day}
+              <div key={day} className="bg-gradient-to-r from-[var(--background-soft)] to-white/80 p-2 md:p-3 text-center text-[10px] md:text-xs font-semibold uppercase tracking-[0.1em] md:tracking-[0.2em] text-[var(--muted)]">
+                <span className="hidden md:inline">{day}</span>
+                <span className="md:hidden">{day.slice(0, 2)}</span>
               </div>
             ))}
             {days.map((date, index) => {
@@ -485,13 +489,17 @@ export default function CalendarClient() {
               return (
                 <div
                   key={index}
-                  className={`min-h-32 bg-white p-2 transition-all hover:bg-[var(--primary-soft)]/20 ${
-                    isToday ? 'bg-gradient-to-br from-[var(--primary-soft)]/30 to-white border-2 border-[var(--primary)]' : ''
+                  className={`min-h-[60px] md:min-h-32 bg-white p-1.5 md:p-2 transition-all hover:bg-[var(--primary-soft)]/20 ${
+                    isToday 
+                      ? 'bg-gradient-to-br from-[var(--primary-soft)]/30 to-white border-2 border-[var(--primary)] shadow-sm' 
+                      : date 
+                        ? 'hover:shadow-sm' 
+                        : 'bg-[var(--background-soft)]'
                   }`}
                 >
                   {date && (
                     <>
-                      <div className={`text-sm font-semibold mb-2 ${
+                      <div className={`text-xs md:text-sm font-semibold mb-1 md:mb-2 ${
                         isToday 
                           ? 'text-[var(--primary)]' 
                           : date.toDateString() === new Date().toDateString() 
@@ -500,18 +508,16 @@ export default function CalendarClient() {
                       }`}>
                         {date.getDate()}
                       </div>
-                      <div className="space-y-1">
-                        {dayEvents.slice(0, 3).map(event => (
+                      <div className="space-y-0.5 md:space-y-1">
+                        {dayEvents.slice(0, 2).map(event => (
                           <div
                             key={event.id}
-                            className={`group text-xs p-1.5 rounded-lg border hover:shadow-md transition-all ${getEventTypeColor(event.type)}`}
+                            className={`group text-[9px] md:text-xs p-1 md:p-1.5 rounded md:rounded-lg border hover:shadow-md transition-all cursor-pointer ${getEventTypeColor(event.type)}`}
                             title={event.title}
+                            onClick={() => openEditModal(event)}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div
-                                className="font-medium truncate cursor-pointer"
-                                onClick={() => openEditModal(event)}
-                              >
+                            <div className="hidden md:flex items-center justify-between gap-2">
+                              <div className="font-medium truncate">
                                 {event.startDate && new Date(event.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} {event.title}
                               </div>
                               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -535,11 +541,17 @@ export default function CalendarClient() {
                                 </button>
                               </div>
                             </div>
+                            <div className="md:hidden truncate font-medium leading-tight">
+                              <span className="font-semibold">
+                                {event.startDate && new Date(event.startDate).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span className="ml-1 opacity-80">{event.title.length > 8 ? event.title.slice(0, 8) + '...' : event.title}</span>
+                            </div>
                           </div>
                         ))}
-                        {dayEvents.length > 3 && (
-                          <div className="text-xs text-[var(--muted)] font-medium px-1">
-                            +{dayEvents.length - 3} еще
+                        {dayEvents.length > 2 && (
+                          <div className="text-[9px] md:text-xs text-[var(--muted)] font-medium px-1 py-0.5">
+                            +{dayEvents.length - 2} еще
                           </div>
                         )}
                       </div>
