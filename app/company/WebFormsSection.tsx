@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getFieldLibraryList, sanitizeFormFields, WebFormFieldConfig, WebFormFieldKey } from '@/lib/webforms'
 import { parsePipelineStages } from '@/lib/pipelines'
+import { InfoIcon } from '@/components/Icons'
 
 interface DealSource {
   id: number
