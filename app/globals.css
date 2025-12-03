@@ -967,6 +967,25 @@ tbody tr:hover {
   background: var(--muted);
 }
 
+/* Скроллбары для выпадающих списков */
+.fixed.rounded-2xl.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.fixed.rounded-2xl.overflow-y-auto::-webkit-scrollbar-track {
+  background: var(--background-soft);
+  border-radius: 10px;
+}
+
+.fixed.rounded-2xl.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+}
+
+.fixed.rounded-2xl.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
 /* Улучшенные tooltips */
 .tooltip {
   @apply absolute z-50 px-3 py-2 text-sm text-white bg-[var(--foreground)] rounded-lg shadow-lg;

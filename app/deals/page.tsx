@@ -179,6 +179,7 @@ function CustomSelect({
         const spaceAbove = rect.top
         const dropdownHeight = 256 // max-h-64 = 256px
         const gap = 8
+        const padding = 16 // Отступ от краев экрана
         
         // Определяем, открывать ли список вверх
         const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow
@@ -186,26 +187,36 @@ function CustomSelect({
         let top: number
         if (openUp) {
           // Открываем вверх
-          top = rect.top - dropdownHeight - gap
+          top = rect.top + window.scrollY - dropdownHeight - gap
         } else {
           // Открываем вниз
-          top = rect.bottom + gap
+          top = rect.bottom + window.scrollY + gap
         }
         
         // Ограничиваем позицию, чтобы не выходить за границы viewport
-        const maxTop = viewportHeight - dropdownHeight - 16
-        const minTop = 16
+        const maxTop = viewportHeight + window.scrollY - dropdownHeight - padding
+        const minTop = window.scrollY + padding
         top = Math.max(minTop, Math.min(maxTop, top))
         
-        // Ограничиваем left, чтобы не выходить за границы viewport
-        let left = rect.left
-        const maxLeft = viewportWidth - rect.width - 16
-        left = Math.max(16, Math.min(maxLeft, left))
+        // На мобильных делаем список на всю ширину с отступами
+        const isMobile = viewportWidth < 768
+        let left = rect.left + window.scrollX
+        let width = rect.width
+        
+        if (isMobile) {
+          // На мобильных: список на всю ширину экрана с отступами
+          left = padding
+          width = viewportWidth - (padding * 2)
+        } else {
+          // На десктопе: ограничиваем left, чтобы не выходить за границы viewport
+          const maxLeft = viewportWidth - rect.width - padding
+          left = Math.max(padding, Math.min(maxLeft, left + window.scrollX))
+        }
         
         setPosition({
           top,
           left,
-          width: rect.width,
+          width,
           openUp,
         })
       }
@@ -255,12 +266,12 @@ function CustomSelect({
   const dropdownContent = isOpen && typeof document !== 'undefined' && (
     <div
       ref={dropdownRef}
-      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 max-h-64 overflow-y-auto"
+      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto"
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
         width: `${position.width}px`,
-        maxHeight: '256px',
+        maxHeight: `min(256px, calc(100vh - ${position.top}px - 16px))`,
         zIndex: 99999,
         position: 'fixed',
       }}
@@ -272,10 +283,10 @@ function CustomSelect({
             key={option.value}
             type="button"
             onClick={() => handleSelect(option.value)}
-            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 min-h-[44px] flex items-center ${
               isSelected
                 ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
-                : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
+                : 'hover:bg-[var(--background-soft)] text-[var(--foreground)] active:bg-[var(--primary-soft)]'
             }`}
           >
             {option.label}
@@ -292,23 +303,23 @@ function CustomSelect({
           ref={buttonRef}
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300 text-left flex items-center justify-between ${
+          className={`w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300 text-left flex items-center justify-between min-h-[44px] ${
             !value ? 'text-[var(--muted-soft)]' : ''
-          }`}
-          style={{ boxShadow: 'var(--shadow-sm)' }}
+          } ${isOpen ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''}`}
+          style={{ boxShadow: isOpen ? 'var(--shadow-md)' : 'var(--shadow-sm)' }}
           onMouseEnter={() => {
-            if (buttonRef.current) {
+            if (buttonRef.current && !isOpen) {
               buttonRef.current.style.boxShadow = 'var(--shadow)'
             }
           }}
           onMouseLeave={() => {
-            if (buttonRef.current) {
+            if (buttonRef.current && !isOpen) {
               buttonRef.current.style.boxShadow = 'var(--shadow-sm)'
             }
           }}
         >
-          <span className="truncate">{displayText}</span>
-          <span className={`transition-transform duration-200 ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>
+          <span className="truncate text-sm md:text-base">{displayText}</span>
+          <span className={`transition-transform duration-200 ml-2 flex-shrink-0 text-[var(--muted)] ${isOpen ? 'rotate-180' : ''}`}>
             ▼
           </span>
         </button>
