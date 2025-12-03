@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { SearchIcon, BuildingIcon } from '@/components/Icons'
 
 interface AdvertisingIntegration {
   id: number
