@@ -510,7 +510,7 @@ export default function Dashboard() {
       </div>
 
       {/* Секция со сделками и задачами */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Сделки */}
         <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
