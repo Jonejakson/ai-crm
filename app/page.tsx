@@ -510,17 +510,17 @@ export default function Dashboard() {
       </div>
 
       {/* Секция со сделками и задачами */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 min-w-0">
         {/* Сделки */}
-        <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1">
+        <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1 min-w-0">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
-              <div>
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
-                <h2 className="text-xl font-bold text-[var(--foreground)]">Последние сделки</h2>
-              </div>
-              <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{recentDeals.length} записей</span>
-            </div>
             <div>
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
+              <h2 className="text-xl font-bold text-[var(--foreground)]">Последние сделки</h2>
+            </div>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{recentDeals.length} записей</span>
+          </div>
+          <div className="overflow-y-auto max-h-[600px]">
               {recentDeals.length === 0 ? (
                 <div className="empty-state py-12">
                   <div className="empty-state-icon flex items-center justify-center">
@@ -555,15 +555,15 @@ export default function Dashboard() {
         </div>
 
         {/* Задачи */}
-        <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1">
+        <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1 min-w-0">
           <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
-              <div>
-                <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
-                <h2 className="text-xl font-bold text-[var(--foreground)]">Последние задачи</h2>
-              </div>
-              <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{(tasks || []).slice(0, 5).length} записей</span>
-            </div>
             <div>
+              <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
+              <h2 className="text-xl font-bold text-[var(--foreground)]">Последние задачи</h2>
+            </div>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{(tasks || []).slice(0, 5).length} записей</span>
+          </div>
+          <div className="overflow-y-auto max-h-[600px]">
               {(tasks || []).slice(0, 5).length === 0 ? (
                 <div className="empty-state py-12">
                   <div className="empty-state-icon flex items-center justify-center">
