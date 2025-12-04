@@ -184,23 +184,24 @@ function CustomSelect({
         // Определяем, открывать ли список вверх
         const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow
         
+        // Для fixed позиционирования используем координаты относительно viewport
         let top: number
         if (openUp) {
           // Открываем вверх
-          top = rect.top + window.scrollY - dropdownHeight - gap
+          top = rect.top - dropdownHeight - gap
         } else {
           // Открываем вниз
-          top = rect.bottom + window.scrollY + gap
+          top = rect.bottom + gap
         }
         
         // Ограничиваем позицию, чтобы не выходить за границы viewport
-        const maxTop = viewportHeight + window.scrollY - dropdownHeight - padding
-        const minTop = window.scrollY + padding
+        const maxTop = viewportHeight - dropdownHeight - padding
+        const minTop = padding
         top = Math.max(minTop, Math.min(maxTop, top))
         
         // На мобильных делаем список на всю ширину с отступами
         const isMobile = viewportWidth < 768
-        let left = rect.left + window.scrollX
+        let left = rect.left
         let width = rect.width
         
         if (isMobile) {
@@ -210,7 +211,7 @@ function CustomSelect({
         } else {
           // На десктопе: ограничиваем left, чтобы не выходить за границы viewport
           const maxLeft = viewportWidth - rect.width - padding
-          left = Math.max(padding, Math.min(maxLeft, left + window.scrollX))
+          left = Math.max(padding, Math.min(maxLeft, left))
         }
         
         setPosition({
