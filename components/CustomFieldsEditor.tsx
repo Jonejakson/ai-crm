@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 
 interface CustomField {
   id: number
@@ -90,17 +91,18 @@ export default function CustomFieldsEditor({
       })
 
       if (response.ok) {
+        toast.success('Кастомные поля сохранены')
         await fetchFields()
         if (onSave) {
           onSave()
         }
       } else {
         const error = await response.json()
-        alert(error.error || 'Ошибка при сохранении')
+        toast.error(error.error || 'Ошибка при сохранении')
       }
     } catch (error) {
       console.error('Error saving custom fields:', error)
-      alert('Ошибка при сохранении')
+      toast.error('Ошибка при сохранении')
     } finally {
       setSaving(false)
     }
@@ -133,7 +135,7 @@ export default function CustomFieldsEditor({
             value={currentValue || ''}
             onChange={(e) => updateValue(field.id, e.target.value)}
             required={field.isRequired}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             placeholder={field.defaultValue || ''}
           />
         )
@@ -145,7 +147,7 @@ export default function CustomFieldsEditor({
             onChange={(e) => updateValue(field.id, e.target.value)}
             required={field.isRequired}
             rows={3}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none"
             placeholder={field.defaultValue || ''}
           />
         )
@@ -157,7 +159,7 @@ export default function CustomFieldsEditor({
             value={currentValue || ''}
             onChange={(e) => updateValue(field.id, e.target.value ? parseFloat(e.target.value) : '')}
             required={field.isRequired}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             placeholder={field.defaultValue || ''}
           />
         )
@@ -169,7 +171,7 @@ export default function CustomFieldsEditor({
             value={currentValue || ''}
             onChange={(e) => updateValue(field.id, e.target.value)}
             required={field.isRequired}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
           />
         )
 
@@ -182,7 +184,7 @@ export default function CustomFieldsEditor({
               onChange={(e) => updateValue(field.id, e.target.checked)}
               className="w-4 h-4"
             />
-            <span className="text-sm text-gray-600">Да</span>
+                <span className="text-sm text-[var(--foreground)]">Да</span>
           </label>
         )
 
@@ -192,7 +194,7 @@ export default function CustomFieldsEditor({
             value={currentValue || ''}
             onChange={(e) => updateValue(field.id, e.target.value)}
             required={field.isRequired}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
           >
             <option value="">Выберите...</option>
             {field.options?.map((option, index) => (
@@ -220,7 +222,7 @@ export default function CustomFieldsEditor({
                   }}
                   className="w-4 h-4"
                 />
-                <span className="text-sm">{option}</span>
+                <span className="text-sm text-[var(--foreground)]">{option}</span>
               </label>
             ))}
           </div>
@@ -232,13 +234,21 @@ export default function CustomFieldsEditor({
   }
 
   if (loading) {
-    return <div className="text-center py-4">Загрузка полей...</div>
+    return (
+      <div className="text-center py-4">
+        <div className="animate-pulse space-y-2">
+          <div className="h-4 bg-gray-200 rounded w-1/3 mx-auto"></div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+    )
   }
 
   if (fields.length === 0) {
     return (
-      <div className="text-center py-4 text-gray-500 text-sm">
-        Нет кастомных полей для этого типа сущности
+      <div className="text-center py-8 text-[var(--muted)] text-sm">
+        <p>Нет кастомных полей для этого типа сущности</p>
+        <p className="text-xs mt-2">Создайте поля в разделе "Кастомные поля"</p>
       </div>
     )
   }
@@ -246,20 +256,23 @@ export default function CustomFieldsEditor({
   return (
     <div className="space-y-4">
       {fields.map((item) => (
-        <div key={item.field.id}>
-          <label className="block text-sm font-medium mb-1">
+        <div key={item.field.id} className="space-y-1">
+          <label className="block text-sm font-medium text-[var(--foreground)]">
             {item.field.name}
-            {item.field.isRequired && <span className="text-red-500"> *</span>}
+            {item.field.isRequired && <span className="text-red-500 ml-1">*</span>}
+            {item.field.isUnique && (
+              <span className="text-xs text-[var(--muted)] ml-2">(уникальное)</span>
+            )}
           </label>
           {renderField(item)}
         </div>
       ))}
 
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end pt-4 border-t border-[var(--border)]">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
         >
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>

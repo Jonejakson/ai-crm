@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import toast from 'react-hot-toast'
 
 interface CustomField {
   id: number
@@ -97,14 +98,15 @@ export default function CustomFieldsManager({
       })
 
       if (response.ok) {
+        toast.success('Поле удалено')
         await fetchFields()
       } else {
         const error = await response.json()
-        alert(error.error || 'Ошибка при удалении поля')
+        toast.error(error.error || 'Ошибка при удалении поля')
       }
     } catch (error) {
       console.error('Error deleting field:', error)
-      alert('Ошибка при удалении поля')
+      toast.error('Ошибка при удалении поля')
     }
   }
 
@@ -136,16 +138,17 @@ export default function CustomFieldsManager({
       })
 
       if (response.ok) {
+        toast.success(editingField ? 'Поле обновлено' : 'Поле создано')
         await fetchFields()
         setIsModalOpen(false)
         setEditingField(null)
       } else {
         const error = await response.json()
-        alert(error.error || 'Ошибка при сохранении поля')
+        toast.error(error.error || 'Ошибка при сохранении поля')
       }
     } catch (error) {
       console.error('Error saving field:', error)
-      alert('Ошибка при сохранении поля')
+      toast.error('Ошибка при сохранении поля')
     }
   }
 
@@ -191,44 +194,53 @@ export default function CustomFieldsManager({
         </h3>
         <button
           onClick={handleCreate}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm flex items-center gap-2"
         >
-          + Добавить поле
+          <span>+</span> Добавить поле
         </button>
       </div>
 
       {fields.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">
-          Нет кастомных полей. Создайте первое поле.
+        <div className="text-center py-12 bg-[var(--surface)] rounded-lg border border-[var(--border)]">
+          <p className="text-[var(--muted)] mb-4">Нет кастомных полей</p>
+          <p className="text-sm text-[var(--muted)] mb-4">Создайте первое поле для этого типа сущности</p>
+          <button
+            onClick={handleCreate}
+            className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm"
+          >
+            + Создать поле
+          </button>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {fields.map((field) => (
             <div
               key={field.id}
-              className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200"
+              className="flex items-center justify-between p-4 bg-[var(--surface)] rounded-lg border border-[var(--border)] hover:shadow-md transition-shadow"
             >
               <div className="flex-1">
-                <div className="font-medium">{field.name}</div>
-                <div className="text-sm text-gray-500">
+                <div className="font-semibold text-[var(--foreground)]">{field.name}</div>
+                <div className="text-sm text-[var(--muted)] mt-1">
                   {fieldTypes.find((t) => t.value === field.type)?.label || field.type}
-                  {field.isRequired && ' • Обязательное'}
-                  {field.isUnique && ' • Уникальное'}
-                  {field.options && ` • ${field.options.length} опций`}
+                  {field.isRequired && <span className="ml-2 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs">Обязательное</span>}
+                  {field.isUnique && <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs">Уникальное</span>}
+                  {field.options && <span className="ml-2 text-[var(--muted)]">{field.options.length} опций</span>}
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(field)}
-                  className="px-3 py-1 text-sm text-blue-600 hover:text-blue-700"
+                  className="px-3 py-1.5 text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] rounded-lg transition-colors"
+                  title="Редактировать"
                 >
-                  Редактировать
+                  ✏️
                 </button>
                 <button
                   onClick={() => handleDelete(field.id)}
-                  className="px-3 py-1 text-sm text-red-600 hover:text-red-700"
+                  className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                  title="Удалить"
                 >
-                  Удалить
+                  🗑️
                 </button>
               </div>
             </div>
@@ -238,11 +250,22 @@ export default function CustomFieldsManager({
 
       {/* Модальное окно создания/редактирования */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-4">
-              {editingField ? 'Редактировать поле' : 'Создать поле'}
-            </h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-[var(--foreground)]">
+                {editingField ? 'Редактировать поле' : 'Создать поле'}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsModalOpen(false)
+                  setEditingField(null)
+                }}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -256,7 +279,7 @@ export default function CustomFieldsManager({
                     setFormData({ ...formData, name: e.target.value })
                   }
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 />
               </div>
 
@@ -270,7 +293,7 @@ export default function CustomFieldsManager({
                     setFormData({ ...formData, type: e.target.value, options: [] })
                   }
                   required
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 >
                   {fieldTypes.map((type) => (
                     <option key={type.value} value={type.value}>
@@ -289,13 +312,13 @@ export default function CustomFieldsManager({
                     {formData.options.map((option, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                        className="flex items-center gap-2 p-2 bg-[var(--background-soft)] rounded-lg border border-[var(--border)]"
                       >
-                        <span className="flex-1">{option}</span>
+                        <span className="flex-1 text-[var(--foreground)]">{option}</span>
                         <button
                           type="button"
                           onClick={() => removeOption(index)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded px-2 py-1 transition-colors"
                         >
                           ×
                         </button>
@@ -313,12 +336,12 @@ export default function CustomFieldsManager({
                           }
                         }}
                         placeholder="Добавить вариант"
-                        className="flex-1 rounded-lg border border-gray-300 px-3 py-2"
+                        className="flex-1 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                       />
                       <button
                         type="button"
                         onClick={addOption}
-                        className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300"
+                        className="px-4 py-2 bg-[var(--background-soft)] text-[var(--foreground)] rounded-lg hover:bg-[var(--border)] transition-colors"
                       >
                         Добавить
                       </button>
@@ -346,7 +369,7 @@ export default function CustomFieldsManager({
                       onChange={(e) =>
                         setFormData({ ...formData, defaultValue: e.target.value })
                       }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                      className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                     />
                   </div>
                 )}
@@ -384,7 +407,7 @@ export default function CustomFieldsManager({
                   onChange={(e) =>
                     setFormData({ ...formData, order: parseInt(e.target.value) || 0 })
                   }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
                 />
               </div>
 
@@ -395,13 +418,13 @@ export default function CustomFieldsManager({
                     setIsModalOpen(false)
                     setEditingField(null)
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-[var(--border)] bg-[var(--background-soft)] text-[var(--foreground)] rounded-lg hover:bg-[var(--border)] transition-colors"
                 >
                   Отмена
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors"
                 >
                   {editingField ? 'Сохранить' : 'Создать'}
                 </button>
