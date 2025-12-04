@@ -109,6 +109,7 @@ model Company {
     webhookIntegrations WebhookIntegration[]
     advertisingIntegrations AdvertisingIntegration[]
     accountingIntegrations AccountingIntegration[]
+    emailTemplates EmailTemplate[]
 }
 
 model User {
@@ -789,4 +790,19 @@ model AccountingLog {
     
     @@index([accountingId, createdAt]) // Индекс для фильтрации по интеграции и дате
     @@index([entityType, entityId]) // Индекс для поиска по сущности
+}
+
+model EmailTemplate {
+    id          Int      @id @default(autoincrement())
+    name        String   // Название шаблона
+    subject     String   // Тема письма (может содержать переменные)
+    body        String   // Тело письма (может содержать переменные)
+    description String?  // Описание шаблона
+    company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId   Int
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@unique([companyId, name]) // Уникальное имя шаблона в рамках компании
+    @@index([companyId]) // Индекс для быстрого поиска шаблонов компании
 }

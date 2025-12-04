@@ -14,6 +14,7 @@ import {
   ActivityIcon,
   AutomationsIcon,
   CompanyIcon,
+  EmailTemplateIcon,
   MenuIcon,
   CloseIcon
 } from './Icons'
@@ -43,6 +44,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     { id: 'activity', name: 'Активность', href: '/activity', Icon: ActivityIcon },
     // Показываем админские разделы только для админов
     ...(isAdmin ? [
+      { id: 'email-templates', name: 'Шаблоны писем', href: '/email-templates', Icon: EmailTemplateIcon },
       { id: 'automations', name: 'Автоматизации', href: '/automations', Icon: AutomationsIcon },
       { id: 'company', name: 'Компания', href: '/company', Icon: CompanyIcon }
     ] : []),
