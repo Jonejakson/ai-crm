@@ -220,7 +220,7 @@ export default function FiltersModal({
         }}
       >
         <div
-          className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col z-[100000]"
+          className="bg-white dark:bg-[var(--surface)] w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col z-[100000]"
           onClick={(e) => e.stopPropagation()}
           style={{
             zIndex: 100000,
@@ -230,7 +230,7 @@ export default function FiltersModal({
         >
           {/* Modal Header */}
           <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
-            <h2 className="text-2xl font-bold text-[var(--foreground)]">Фильтры</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-[var(--foreground)]">Фильтры</h2>
             <button
               onClick={onClose}
               className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
@@ -257,7 +257,7 @@ export default function FiltersModal({
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                         quickFilter === filter.value
                           ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-md'
-                          : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                          : 'bg-white dark:bg-[var(--surface)] text-slate-700 dark:text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)]'
                       }`}
                     >
                       {filter.label}
@@ -278,7 +278,7 @@ export default function FiltersModal({
                       const value = e.target.value
                       onPipelineIdChange(value === '' ? null : parseInt(value))
                     }}
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   >
                     <option value="">Все воронки</option>
                     {pipelines.map((pipeline) => (
@@ -302,7 +302,7 @@ export default function FiltersModal({
                       const value = e.target.value
                       onUserIdChange(value === 'all' ? null : parseInt(value))
                     }}
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                    className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                     disabled={users.length === 0}
                   >
                     <option value="all">Все менеджеры</option>
@@ -331,7 +331,7 @@ export default function FiltersModal({
                       type="date"
                       value={filters.dateRange?.start || ''}
                       onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                     />
                   </div>
                   <div>
@@ -340,7 +340,7 @@ export default function FiltersModal({
                       type="date"
                       value={filters.dateRange?.end || ''}
                       onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                     />
                   </div>
                 </div>
@@ -362,7 +362,7 @@ export default function FiltersModal({
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                               filters.status?.includes(status)
                                 ? 'bg-[var(--primary)] text-white shadow-md'
-                                : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                                : 'bg-white dark:bg-[var(--surface)] text-slate-700 dark:text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)]'
                             }`}
                           >
                             {status === 'pending' ? 'В ожидании' :
@@ -381,7 +381,7 @@ export default function FiltersModal({
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                               filters.status?.includes(stage)
                                 ? 'bg-[var(--primary)] text-white shadow-md'
-                                : 'bg-white text-[var(--muted)] border border-[var(--border)] hover:border-[var(--primary)]'
+                                : 'bg-white dark:bg-[var(--surface)] text-slate-700 dark:text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--primary)]'
                             }`}
                           >
                             {stage === 'lead' ? 'Лид' :
@@ -412,7 +412,7 @@ export default function FiltersModal({
                         value={filters.amountRange?.min || ''}
                         onChange={(e) => handleAmountRangeChange('min', e.target.value)}
                         placeholder="0"
-                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                       />
                     </div>
                     <div>
@@ -422,7 +422,7 @@ export default function FiltersModal({
                         value={filters.amountRange?.max || ''}
                         onChange={(e) => handleAmountRangeChange('max', e.target.value)}
                         placeholder="Без ограничений"
-                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                       />
                     </div>
                   </div>
@@ -439,11 +439,11 @@ export default function FiltersModal({
                     {savedFilters.map(filter => (
                       <div
                         key={filter.id}
-                        className="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl bg-white/50 dark:bg-[var(--surface)]/50 border border-[var(--border)] hover:border-[var(--primary)] transition-colors"
                       >
                         <button
                           onClick={() => applySavedFilter(filter.filters)}
-                          className="flex-1 text-left text-sm font-medium text-[var(--foreground)] hover:text-[var(--primary)]"
+                          className="flex-1 text-left text-sm font-medium text-slate-800 dark:text-[var(--foreground)] hover:text-[var(--primary)]"
                         >
                           {filter.name}
                         </button>
@@ -469,7 +469,7 @@ export default function FiltersModal({
               {hasActiveFilters && (
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-2 rounded-xl text-sm text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-white transition-colors"
+                  className="px-4 py-2 rounded-xl text-sm text-slate-600 dark:text-[var(--muted)] hover:text-slate-800 dark:hover:text-[var(--foreground)] hover:bg-white dark:hover:bg-[var(--surface)] transition-colors"
                 >
                   Очистить
                 </button>
@@ -497,16 +497,16 @@ export default function FiltersModal({
       {showSaveDialog && (
         <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/60 p-4">
           <div
-            className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-white p-6 shadow-2xl"
+            className="w-full max-w-md rounded-3xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-xl font-semibold text-[var(--foreground)] mb-4">Сохранить фильтр</h3>
+            <h3 className="text-xl font-semibold text-slate-800 dark:text-[var(--foreground)] mb-4">Сохранить фильтр</h3>
             <input
               type="text"
               value={saveFilterName}
               onChange={(e) => setSaveFilterName(e.target.value)}
               placeholder="Название фильтра"
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all mb-4"
+              className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)] px-4 py-3 text-sm text-slate-800 dark:text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all mb-4"
             />
             <div className="flex gap-3">
               <button

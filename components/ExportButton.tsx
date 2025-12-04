@@ -64,24 +64,24 @@ export default function ExportButton({
       </button>
       
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-[var(--border)] rounded-xl shadow-lg p-2 z-50 min-w-[180px]">
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg p-2 z-50 min-w-[180px]">
           <button
             onClick={() => handleExport('csv')}
-            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors text-slate-800 dark:text-[var(--foreground)]"
           >
             <FilePdfIcon className="w-4 h-4" />
             <span>CSV</span>
           </button>
           <button
             onClick={() => handleExport('excel')}
-            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors text-slate-800 dark:text-[var(--foreground)]"
           >
             <FileExcelIcon className="w-4 h-4" />
             <span>Excel</span>
           </button>
           <button
             onClick={() => handleExport('pdf')}
-            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-[var(--background-soft)] rounded-lg text-sm text-left transition-colors text-slate-800 dark:text-[var(--foreground)]"
           >
             <FilePdfIcon className="w-4 h-4" />
             <span>PDF</span>
