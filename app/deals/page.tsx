@@ -683,6 +683,12 @@ export default function DealsPage() {
       const pipelinesData = Array.isArray(pipelinesRes) ? pipelinesRes : []
       const contactsData = Array.isArray(contactsRes) ? contactsRes : []
       
+      // Сразу устанавливаем данные и убираем loading, чтобы страница отобразилась быстро
+      setDeals(dealsData)
+      setPipelines(pipelinesData)
+      setContacts(contactsData)
+      setLoading(false)
+      
       // Устанавливаем дефолтную воронку
       if (pipelinesData.length > 0) {
         const defaultPipeline = pipelinesData.find((p: Pipeline) => p.isDefault) || pipelinesData[0]
@@ -701,19 +707,20 @@ export default function DealsPage() {
           const validStages = [...pipelineStages.map(s => s.name), UNASSIGNED_STAGE]
           const dealsToUpdate: Deal[] = []
           
-          dealsData.forEach((deal: Deal) => {
-            // Проверяем, что этап не существует в текущих этапах воронки
+          // Обновляем этапы в данных для отображения
+          const updatedDealsData = dealsData.map((deal: Deal) => {
             if (!validStages.includes(deal.stage)) {
-              // Этап не существует, помечаем для перемещения в "Неразобранные"
               dealsToUpdate.push(deal)
-              // Временно меняем этап в данных для отображения
-              deal.stage = UNASSIGNED_STAGE
+              return { ...deal, stage: UNASSIGNED_STAGE }
             }
+            return deal
           })
           
-          // Обновляем сделки асинхронно в фоне, не блокируя загрузку страницы
+          // Если были изменения, обновляем состояние
           if (dealsToUpdate.length > 0) {
-            // Запускаем обновление в фоне
+            setDeals(updatedDealsData)
+            
+            // Обновляем сделки асинхронно в фоне, не блокируя загрузку страницы
             Promise.all(
               dealsToUpdate.map((deal) =>
                 fetch('/api/deals', {
@@ -742,16 +749,11 @@ export default function DealsPage() {
           }
         }
       }
-      
-      setDeals(dealsData)
-      setPipelines(pipelinesData)
-      setContacts(contactsData)
     } catch (error) {
       console.error('Error fetching data:', error)
       setDeals([])
       setPipelines([])
       setContacts([])
-    } finally {
       setLoading(false)
     }
   }
