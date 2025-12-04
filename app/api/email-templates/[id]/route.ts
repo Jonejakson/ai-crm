@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/get-session'
 // Получить шаблон по ID
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -14,7 +14,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const templateId = parseInt(params.id)
+    const { id } = await params
+    const templateId = parseInt(id)
     const companyId = parseInt(user.companyId)
 
     const template = await prisma.emailTemplate.findFirst({
@@ -44,7 +45,7 @@ export async function GET(
 // Обновить шаблон
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -53,7 +54,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const templateId = parseInt(params.id)
+    const { id } = await params
+    const templateId = parseInt(id)
     const companyId = parseInt(user.companyId)
     const body = await req.json()
     const { name, subject, body: templateBody, description } = body
@@ -128,7 +130,7 @@ export async function PUT(
 // Удалить шаблон
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -137,7 +139,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const templateId = parseInt(params.id)
+    const { id } = await params
+    const templateId = parseInt(id)
     const companyId = parseInt(user.companyId)
 
     // Проверяем, что шаблон существует и принадлежит компании
