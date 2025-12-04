@@ -1423,10 +1423,10 @@ export default function DealsPage() {
           </div>
           <DragOverlay>
             {activeDeal ? (
-              <div className="bg-white rounded-lg p-3 shadow-lg border border-gray-200 w-64">
-                <h4 className="font-medium text-gray-900 text-sm">{activeDeal.title}</h4>
-                <div className="text-xs text-gray-600 mt-1">{activeDeal.contact.name}</div>
-                <div className="text-sm font-semibold text-gray-900 mt-1">
+              <div className="bg-[var(--surface)] rounded-lg p-3 shadow-lg border-2 border-[var(--primary)] w-64">
+                <h4 className="font-medium text-[var(--foreground)] text-sm">{activeDeal.title}</h4>
+                <div className="text-xs text-[var(--muted)] mt-1">{activeDeal.contact.name}</div>
+                <div className="text-sm font-semibold text-[var(--foreground)] mt-1">
                   {activeDeal.amount.toLocaleString('ru-RU')} {activeDeal.currency}
                 </div>
               </div>
@@ -1713,7 +1713,7 @@ export default function DealsPage() {
           }}
         >
           <div 
-            className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col z-[100000]" 
+            className="bg-[var(--surface)] w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col z-[100000]" 
             onClick={(e) => e.stopPropagation()}
             style={{ 
               zIndex: 100000, 
@@ -1739,15 +1739,15 @@ export default function DealsPage() {
       {/* Модальное окно создания нового клиента */}
       {isNewContactModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[101]">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Новый клиент</h3>
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">Новый клиент</h3>
               <button
                 onClick={() => {
                   setIsNewContactModalOpen(false)
                   setNewContactData({ name: '', email: '', phone: '', company: '' })
                 }}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-[var(--muted)] hover:text-[var(--foreground)]"
               >
                 ✕
               </button>
@@ -1930,14 +1930,14 @@ function DealColumn({
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+          <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
             Этап
           </p>
-          <h3 className="font-semibold text-slate-800 text-lg">
+          <h3 className="font-semibold text-[var(--foreground)] text-lg">
             {stage}
           </h3>
         </div>
-        <span className="text-sm font-semibold text-slate-500">
+        <span className="text-sm font-semibold text-[var(--muted)]">
           {deals.length}
         </span>
       </div>
@@ -1998,7 +1998,7 @@ function DealCard({
       style={style}
       {...listeners}
       {...attributes}
-      className="group relative overflow-hidden rounded-2xl border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur cursor-grab active:cursor-grabbing transition-all hover:shadow-2xl"
+      className="group relative overflow-hidden rounded-2xl border-2 border-[var(--border-strong)] bg-[var(--surface)] p-4 shadow-lg backdrop-blur cursor-grab active:cursor-grabbing transition-all hover:shadow-xl hover:border-[var(--primary)]"
     >
       <div 
         className="absolute inset-x-4 top-2 h-1 rounded-full transition-all duration-300" 
@@ -2006,7 +2006,7 @@ function DealCard({
       />
       <div className="flex justify-between items-start mb-2">
         <h4 
-          className="font-medium text-gray-900 text-sm flex-1 pr-2 cursor-pointer hover:text-blue-600 transition-colors"
+          className="font-medium text-[var(--foreground)] text-sm flex-1 pr-2 cursor-pointer hover:text-[var(--primary)] transition-colors"
           onClick={(e) => {
             e.stopPropagation()
             onEdit(deal)
@@ -2020,7 +2020,7 @@ function DealCard({
               e.stopPropagation()
               onEdit(deal)
             }}
-            className="text-blue-500 hover:text-blue-700"
+            className="text-[var(--primary)] hover:text-[var(--primary-hover)]"
             title="Редактировать сделку"
           >
             ✎
@@ -2030,30 +2030,30 @@ function DealCard({
               e.stopPropagation()
               onDelete(deal.id)
             }}
-            className="text-red-500 hover:text-red-700"
+            className="text-[var(--error)] hover:text-[var(--error)]/80"
             title="Удалить сделку"
           >
             ×
           </button>
         </div>
       </div>
-      <div className="text-xs text-gray-600 mb-2">
+      <div className="text-xs text-[var(--muted)] mb-2">
         <a
           href={`/contacts/${deal.contact.id}`}
-          className="text-blue-600 hover:underline"
+          className="text-[var(--primary)] hover:underline"
           onClick={(e) => e.stopPropagation()}
         >
           {deal.contact.name}
         </a>
       </div>
-      <div className="text-lg font-semibold text-gray-900 mb-2">
+      <div className="text-lg font-semibold text-[var(--foreground)] mb-2">
         {deal.amount.toLocaleString('ru-RU')} {deal.currency}
       </div>
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="flex items-center justify-between text-xs text-[var(--muted)]">
         {deal.source && <span>Источник: {deal.source.name}</span>}
         {deal.dealType && <span>Тип: {deal.dealType.name}</span>}
         {deal.user && (
-          <span className="text-gray-400">{deal.user.name}</span>
+          <span className="text-[var(--muted-soft)]">{deal.user.name}</span>
         )}
       </div>
     </div>
