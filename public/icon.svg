@@ -1,0 +1,18 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3f6ff5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#grad)"/>
+  <g transform="translate(128, 100)">
+    <!-- Иконка кармана/кошелька -->
+    <path d="M128 64C128 28.6538 99.3462 0 64 0C28.6538 0 0 28.6538 0 64C0 99.3462 28.6538 128 64 128C99.3462 128 128 99.3462 128 64Z" fill="white" opacity="0.95"/>
+    <rect x="20" y="80" width="216" height="180" rx="24" fill="white" opacity="0.95"/>
+    <rect x="20" y="180" width="216" height="24" rx="12" fill="url(#grad)"/>
+    <circle cx="128" cy="120" r="24" fill="url(#grad)"/>
+  </g>
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">CRM</text>
+</svg>
+

@@ -70,6 +70,35 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
+        {/* PWA Meta Tags */}
+        <meta name="application-name" content="Pocket CRM" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Pocket CRM" />
+        <meta name="description" content="Современная CRM система для управления клиентами, сделками, задачами и аналитикой" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="msapplication-TileColor" content="#3f6ff5" />
+        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name="theme-color" content="#3f6ff5" />
+
+        {/* Apple Touch Icons */}
+        <link rel="apple-touch-icon" href="/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icon-192x192.png" />
+
+        {/* Favicon */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/icon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icon-16x16.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
+
+        {/* Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* PWA Splash Screens */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `

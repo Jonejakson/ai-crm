@@ -8,6 +8,7 @@ import { useGlobalShortcuts } from '@/lib/keyboard-shortcuts'
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp'
 import Sidebar from '@/components/Sidebar'
 import Header from '@/components/Header'
+import PWARegister from '@/components/PWARegister'
 import { usePathname } from 'next/navigation'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
@@ -63,6 +64,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             </main>
           </div>
           <KeyboardShortcutsHelp />
+          <PWARegister />
         </div>
       </ThemeProvider>
     </SessionProvider>
