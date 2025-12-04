@@ -480,7 +480,7 @@ export default function CompanyPage() {
   ]
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 w-full">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Профиль компании</p>

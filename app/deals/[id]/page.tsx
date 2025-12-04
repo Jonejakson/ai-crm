@@ -574,8 +574,8 @@ export default function DealDetailPage() {
   return (
     <div className="min-h-screen bg-[var(--background)]">
       {/* Шапка */}
-      <div className="bg-white border-b border-[var(--border)] sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-10">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <div className="space-y-3">
             {/* Название сделки на всю ширину */}
             <div>
@@ -630,7 +630,7 @@ export default function DealDetailPage() {
       </div>
 
       {/* Основной контент - двухколоночный layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Левая колонка - Информация о клиенте */}
           <div className="lg:col-span-1 space-y-6">
