@@ -509,9 +509,9 @@ export default function Dashboard() {
         </div>
 
         {/* Секция со сделками и задачами */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 w-full">
           {/* Сделки */}
-          <div className="glass-panel rounded-3xl p-0 overflow-hidden">
+          <div className="glass-panel rounded-3xl p-0 overflow-hidden w-full">
             <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
               <div>
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
@@ -554,7 +554,7 @@ export default function Dashboard() {
           </div>
 
           {/* Задачи */}
-          <div className="glass-panel rounded-3xl p-0 overflow-hidden">
+          <div className="glass-panel rounded-3xl p-0 overflow-hidden w-full">
             <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
               <div>
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
