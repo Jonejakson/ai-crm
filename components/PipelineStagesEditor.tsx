@@ -114,18 +114,18 @@ function SortableStageItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-2 p-3 bg-white border border-gray-300 rounded-lg mb-2"
+      className="flex items-center gap-2 p-3 bg-white dark:bg-[var(--surface)] border border-gray-300 dark:border-[var(--border)] rounded-lg mb-2"
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        className="cursor-grab active:cursor-grabbing text-gray-400 dark:text-[var(--muted)] hover:text-gray-600 dark:hover:text-[var(--foreground)]"
       >
         ☰
       </div>
-      <span className="flex-1 font-medium">
+      <span className="flex-1 font-medium text-slate-800 dark:text-[var(--foreground)]">
         {stage.name}
-        {isUnremovable && <span className="ml-2 text-xs text-gray-500">(не удаляется)</span>}
+        {isUnremovable && <span className="ml-2 text-xs text-slate-500 dark:text-[var(--muted)]">(не удаляется)</span>}
       </span>
       <div className="flex items-center gap-2">
         {/* Кнопка выбора цвета */}
@@ -135,17 +135,17 @@ function SortableStageItem({
               e.stopPropagation()
               setIsColorPickerOpen(!isColorPickerOpen)
             }}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-gray-300 dark:border-[var(--border)] hover:border-gray-400 dark:hover:border-[var(--border)] transition-colors"
             title="Изменить цвет"
           >
             <div className={`w-5 h-5 rounded ${currentColor.value} ${currentColor.shadow}`} />
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-slate-600 dark:text-[var(--foreground)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
             </svg>
           </button>
           {isColorPickerOpen && (
-            <div className="absolute right-0 top-full mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 min-w-[320px]">
-              <div className="text-xs font-semibold text-gray-700 mb-3">Выберите цвет:</div>
+            <div className="absolute right-0 top-full mt-2 bg-white dark:bg-[var(--surface)] border border-gray-300 dark:border-[var(--border)] rounded-lg shadow-lg p-4 z-50 min-w-[320px]">
+              <div className="text-xs font-semibold text-slate-700 dark:text-[var(--foreground)] mb-3">Выберите цвет:</div>
               <div className="grid grid-cols-6 gap-3">
                 {COLOR_PALETTE.map((color) => (
                   <button
@@ -276,19 +276,19 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-[var(--surface)] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Управление этапами воронки</h3>
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-[var(--foreground)]">Управление этапами воронки</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-slate-500 dark:text-[var(--muted)] hover:text-slate-700 dark:hover:text-[var(--foreground)]"
           >
             ✕
           </button>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-[var(--foreground)] mb-2">
             Добавить новый этап
           </label>
           <div className="flex gap-2">
@@ -298,7 +298,7 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
               onChange={(e) => setNewStageName(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddStage()}
               placeholder="Название этапа"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] bg-white dark:bg-[var(--background)] text-slate-800 dark:text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-[var(--muted)]"
             />
             <button
               onClick={handleAddStage}
@@ -310,7 +310,7 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-slate-700 dark:text-[var(--foreground)] mb-2">
             Порядок этапов (перетащите для изменения порядка)
           </label>
           <DndContext
@@ -325,7 +325,7 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
               <div className="space-y-2">
                 {localStages.map((stage, index) => (
                   editingStage === stage.name ? (
-                    <div key={`edit-${index}-${stage.name}`} className="flex items-center gap-2 p-3 bg-white border border-gray-300 rounded-lg mb-2">
+                    <div key={`edit-${index}-${stage.name}`} className="flex items-center gap-2 p-3 bg-white dark:bg-[var(--surface)] border border-gray-300 dark:border-[var(--border)] rounded-lg mb-2">
                       <input
                         type="text"
                         value={editingStageName}
@@ -337,7 +337,7 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
                             handleCancelEdit()
                           }
                         }}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#10b981]"
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-[var(--border)] rounded-lg focus:ring-2 focus:ring-[#10b981] bg-white dark:bg-[var(--background)] text-slate-800 dark:text-[var(--foreground)]"
                         autoFocus
                       />
                       <button
@@ -348,7 +348,7 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
                       </button>
                       <button
                         onClick={handleCancelEdit}
-                        className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
+                        className="px-4 py-2 text-slate-600 dark:text-[var(--muted)] hover:text-slate-800 dark:hover:text-[var(--foreground)] text-sm"
                       >
                         Отмена
                       </button>
@@ -370,10 +370,10 @@ export default function PipelineStagesEditor({ stages, onStagesChange, onClose, 
           </DndContext>
         </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t">
+        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-300 dark:border-[var(--border)]">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            className="px-4 py-2 text-slate-600 dark:text-[var(--muted)] hover:text-slate-800 dark:hover:text-[var(--foreground)]"
           >
             Отмена
           </button>
