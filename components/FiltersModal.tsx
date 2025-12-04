@@ -230,7 +230,7 @@ export default function FiltersModal({
         >
           {/* Modal Header */}
           <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-[var(--foreground)]">Фильтры</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-[var(--foreground)] dark:text-white">Фильтры</h2>
             <button
               onClick={onClose}
               className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
@@ -331,7 +331,7 @@ export default function FiltersModal({
                       type="date"
                       value={filters.dateRange?.start || ''}
                       onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] dark:text-white focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                     />
                   </div>
                   <div>
@@ -340,7 +340,7 @@ export default function FiltersModal({
                       type="date"
                       value={filters.dateRange?.end || ''}
                       onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] dark:text-white focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                     />
                   </div>
                 </div>
@@ -412,7 +412,7 @@ export default function FiltersModal({
                         value={filters.amountRange?.min || ''}
                         onChange={(e) => handleAmountRangeChange('min', e.target.value)}
                         placeholder="0"
-                        className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] dark:text-white placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                       />
                     </div>
                     <div>
@@ -422,7 +422,7 @@ export default function FiltersModal({
                         value={filters.amountRange?.max || ''}
                         onChange={(e) => handleAmountRangeChange('max', e.target.value)}
                         placeholder="Без ограничений"
-                        className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--surface)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--background)] px-4 py-2 text-sm text-slate-800 dark:text-[var(--foreground)] dark:text-white placeholder:text-slate-400 dark:placeholder:text-[var(--muted)] focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                       />
                     </div>
                   </div>
