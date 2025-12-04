@@ -507,12 +507,13 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Секция со сделками и задачами */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 w-full">
-          {/* Сделки */}
-          <div className="glass-panel rounded-3xl p-0 overflow-hidden w-full">
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
+      {/* Секция со сделками и задачами */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Сделки */}
+        <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
               <div>
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
                 <h2 className="text-xl font-bold text-[var(--foreground)]">Последние сделки</h2>
@@ -550,12 +551,12 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
-            </div>
           </div>
+        </div>
 
-          {/* Задачи */}
-          <div className="glass-panel rounded-3xl p-0 overflow-hidden w-full">
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
+        {/* Задачи */}
+        <div className="glass-panel rounded-3xl p-0 overflow-hidden flex-1">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-5 bg-gradient-to-r from-[var(--background-soft)] to-transparent">
               <div>
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
                 <h2 className="text-xl font-bold text-[var(--foreground)]">Последние задачи</h2>
@@ -589,7 +590,6 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
-            </div>
           </div>
         </div>
       </div>
