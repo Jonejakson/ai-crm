@@ -148,15 +148,30 @@ export default function ContactDetailPage() {
     }
   }
 
-  const replaceTemplateVariables = (text: string, contact: Contact | null): string => {
+  const replaceTemplateVariables = (text: string, contact: Contact | null, deal?: Deal | null): string => {
     if (!contact) return text
     
-    return text
-      .replace(/\{\{name\}\}/g, contact.name || '')
-      .replace(/\{\{email\}\}/g, contact.email || '')
-      .replace(/\{\{phone\}\}/g, contact.phone || '')
-      .replace(/\{\{company\}\}/g, contact.company || '')
-      .replace(/\{\{position\}\}/g, contact.position || '')
+    const { replaceTemplateVariables: replaceVars } = require('@/lib/email-template-utils')
+    return replaceVars(text, {
+      contact: {
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone,
+        company: contact.company,
+        position: contact.position,
+      },
+      deal: deal ? {
+        title: deal.title,
+        amount: deal.amount,
+        currency: deal.currency,
+        stage: deal.stage,
+        probability: deal.probability,
+      } : undefined,
+      manager: contact.user ? {
+        name: contact.user.name,
+        email: contact.user.email,
+      } : undefined,
+    })
   }
 
   const handleTemplateSelect = (templateId: number | '') => {
@@ -164,9 +179,11 @@ export default function ContactDetailPage() {
     if (templateId && contact) {
       const template = emailTemplates.find(t => t.id === templateId)
       if (template) {
+        // Используем первую сделку контакта, если есть
+        const firstDeal = deals.length > 0 ? deals[0] : null
         setEmailForm({
-          subject: replaceTemplateVariables(template.subject, contact),
-          message: replaceTemplateVariables(template.body, contact),
+          subject: replaceTemplateVariables(template.subject, contact, firstDeal),
+          message: replaceTemplateVariables(template.body, contact, firstDeal),
         })
       }
     }

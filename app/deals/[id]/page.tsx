@@ -10,6 +10,7 @@ import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Comments from '@/components/Comments'
 import toast from 'react-hot-toast'
+import { replaceTemplateVariables, type TemplateContext } from '@/lib/email-template-utils'
 
 interface Deal {
   id: number
@@ -273,6 +274,12 @@ export default function DealDetailPage() {
   const [loading, setLoading] = useState(true)
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+  const [emailTemplates, setEmailTemplates] = useState<Array<{ id: number; name: string; subject: string; body: string }>>([])
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | ''>('')
+  const [emailForm, setEmailForm] = useState({ subject: '', message: '' })
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [dealSources, setDealSources] = useState<DealSource[]>([])
   const [dealTypes, setDealTypes] = useState<DealType[]>([])
   const [stages, setStages] = useState<Stage[]>([])
@@ -297,6 +304,7 @@ export default function DealDetailPage() {
       fetchDealData()
       fetchDealSources()
       fetchDealTypes()
+      fetchEmailTemplates()
       fetchStages()
     }
   }, [dealId])
@@ -514,6 +522,101 @@ export default function DealDetailPage() {
     }
   }
 
+  const fetchEmailTemplates = async () => {
+    try {
+      const response = await fetch('/api/email-templates')
+      if (response.ok) {
+        const data = await response.json()
+        setEmailTemplates(data)
+      }
+    } catch (error) {
+      console.error('Error fetching email templates:', error)
+    }
+  }
+
+  const handleTemplateSelect = (templateId: number | '') => {
+    setSelectedTemplateId(templateId)
+    if (templateId && deal) {
+      const template = emailTemplates.find(t => t.id === templateId)
+      if (template) {
+        const context: TemplateContext = {
+          contact: {
+            name: deal.contact.name,
+            email: deal.contact.email,
+            phone: deal.contact.phone,
+            company: deal.contact.company,
+            position: deal.contact.position,
+          },
+          deal: {
+            title: deal.title,
+            amount: deal.amount,
+            currency: deal.currency,
+            stage: deal.stage,
+            probability: deal.probability,
+          },
+          manager: deal.user ? {
+            name: deal.user.name,
+            email: deal.user.email,
+          } : undefined,
+        }
+        setEmailForm({
+          subject: replaceTemplateVariables(template.subject, context),
+          message: replaceTemplateVariables(template.body, context),
+        })
+      }
+    }
+  }
+
+  const openEmailModal = () => {
+    setEmailAlert(null)
+    setSelectedTemplateId('')
+    setEmailForm({ subject: '', message: '' })
+    setIsEmailModalOpen(true)
+  }
+
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!emailForm.subject.trim() || !emailForm.message.trim() || !deal) {
+      setEmailAlert({ type: 'error', message: 'Заполните тему и текст письма' })
+      return
+    }
+
+    if (!deal.contact.email) {
+      setEmailAlert({ type: 'error', message: 'У контакта нет email' })
+      return
+    }
+
+    setEmailSending(true)
+    setEmailAlert(null)
+
+    try {
+      const response = await fetch('/api/integrations/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactId: deal.contact.id,
+          subject: emailForm.subject,
+          message: emailForm.message,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось отправить письмо')
+      }
+
+      setEmailAlert({ type: 'success', message: 'Письмо отправлено' })
+      setEmailForm({ subject: '', message: '' })
+      setIsEmailModalOpen(false)
+      fetchDealData()
+    } catch (error: any) {
+      setEmailAlert({ type: 'error', message: error.message || 'Ошибка отправки письма' })
+    } finally {
+      setEmailSending(false)
+    }
+  }
+
   const handleUpdateDeal = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!deal) return
@@ -646,10 +749,18 @@ export default function DealDetailPage() {
                   </Link>
                 </div>
                 {deal.contact.email && (
-                  <div>
-                    <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wide">Email</label>
-                    <p className="text-[var(--foreground)]">{deal.contact.email}</p>
-                  </div>
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-[var(--muted)] uppercase tracking-wide">Email</label>
+                      <p className="text-[var(--foreground)]">{deal.contact.email}</p>
+                    </div>
+                    <button
+                      onClick={openEmailModal}
+                      className="w-full btn-secondary text-sm"
+                    >
+                      ✉️ Отправить письмо
+                    </button>
+                  </>
                 )}
                 {deal.contact.phone && (
                   <div>
@@ -1051,6 +1162,103 @@ export default function DealDetailPage() {
                 </button>
                 <button type="submit" className="btn-primary">
                   Создать
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Модальное окно отправки письма */}
+      {isEmailModalOpen && deal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-white/95 p-6 shadow-2xl backdrop-blur-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Почта</p>
+                <h3 className="text-lg font-semibold">Отправить письмо</h3>
+              </div>
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {emailAlert && (
+              <div
+                className={`mb-4 rounded-2xl px-4 py-2 text-sm ${
+                  emailAlert.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-600'
+                    : 'bg-red-50 text-red-600'
+                }`}
+              >
+                {emailAlert.message}
+              </div>
+            )}
+
+            <form onSubmit={handleSendEmail} className="space-y-4">
+              {emailTemplates.length > 0 && (
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
+                    Шаблон (опционально)
+                  </label>
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => handleTemplateSelect(e.target.value ? Number(e.target.value) : '')}
+                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  >
+                    <option value="">Выберите шаблон...</option>
+                    {emailTemplates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
+                  Тема
+                </label>
+                <input
+                  type="text"
+                  value={emailForm.subject}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, subject: e.target.value }))}
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
+                  Сообщение
+                </label>
+                <textarea
+                  rows={6}
+                  value={emailForm.message}
+                  onChange={(e) => setEmailForm((prev) => ({ ...prev, message: e.target.value }))}
+                  className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEmailModalOpen(false)}
+                  className="btn-secondary text-sm"
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={emailSending}
+                  className="btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {emailSending ? 'Отправка…' : 'Отправить'}
                 </button>
               </div>
             </form>
