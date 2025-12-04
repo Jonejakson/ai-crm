@@ -1930,14 +1930,14 @@ function DealColumn({
     >
       <div className="flex items-center justify-between mb-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)]">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-600">
             Этап
           </p>
-          <h3 className="font-semibold text-[var(--foreground)] text-lg">
+          <h3 className="font-semibold text-slate-800 text-lg">
             {stage}
           </h3>
         </div>
-        <span className="text-sm font-semibold text-[var(--muted)]">
+        <span className="text-sm font-semibold text-slate-600">
           {deals.length}
         </span>
       </div>
