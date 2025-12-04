@@ -697,16 +697,25 @@ export default function DealsPage() {
           const activePipeline = pipelinesData.find((p: Pipeline) => p.id === currentPipelineId) || defaultPipeline
           const pipelineStages = getStagesFromPipeline(activePipeline)
           
-          // Перемещаем сделки с несуществующими этапами в "Неразобранные"
+          // Перемещаем сделки с несуществующими этапами в "Неразобранные" (асинхронно, не блокируя загрузку)
           const validStages = [...pipelineStages.map(s => s.name), UNASSIGNED_STAGE]
-          const dealsToUpdate: Promise<void>[] = []
+          const dealsToUpdate: Deal[] = []
           
           dealsData.forEach((deal: Deal) => {
             // Проверяем, что этап не существует в текущих этапах воронки
             if (!validStages.includes(deal.stage)) {
-              // Этап не существует, перемещаем в "Неразобранные"
-              console.log(`Moving deal ${deal.id} from stage "${deal.stage}" to "${UNASSIGNED_STAGE}"`)
-              dealsToUpdate.push(
+              // Этап не существует, помечаем для перемещения в "Неразобранные"
+              dealsToUpdate.push(deal)
+              // Временно меняем этап в данных для отображения
+              deal.stage = UNASSIGNED_STAGE
+            }
+          })
+          
+          // Обновляем сделки асинхронно в фоне, не блокируя загрузку страницы
+          if (dealsToUpdate.length > 0) {
+            // Запускаем обновление в фоне
+            Promise.all(
+              dealsToUpdate.map((deal) =>
                 fetch('/api/deals', {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
@@ -718,29 +727,13 @@ export default function DealsPage() {
                     stage: UNASSIGNED_STAGE,
                     pipelineId: deal.pipeline?.id || activePipeline.id,
                   }),
-                }).then((res) => {
-                  if (res.ok) {
-                    console.log(`Successfully moved deal ${deal.id} to unassigned`)
-                    deal.stage = UNASSIGNED_STAGE
-                  } else {
-                    console.error(`Failed to move deal ${deal.id}:`, res.status, res.statusText)
-                    return res.json().then(err => {
-                      console.error('Error details:', err)
-                    })
-                  }
                 }).catch(err => {
-                  console.error('Error moving deal to unassigned:', err)
+                  console.error(`Error moving deal ${deal.id} to unassigned:`, err)
                 })
               )
-            }
-          })
-          
-          // Ждем обновления всех сделок
-          if (dealsToUpdate.length > 0) {
-            await Promise.all(dealsToUpdate)
-            // Перезагружаем данные после обновления
-            const updatedDealsRes = await fetch(dealsUrl).then(res => res.ok ? res.json() : [])
-            dealsData = Array.isArray(updatedDealsRes) ? updatedDealsRes : []
+            ).catch(err => {
+              console.error('Error updating deals in background:', err)
+            })
           }
           
           const stages = [...pipelineStages, { name: UNASSIGNED_STAGE, color: 'bg-gradient-to-b from-[#f6f7fb] to-white' }]
