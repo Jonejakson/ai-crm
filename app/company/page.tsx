@@ -1011,16 +1011,16 @@ export default function CompanyPage() {
       {/* Модальное окно подтверждения удаления */}
       {deleteConfirmOpen && selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Подтвердите удаление</h2>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-[var(--surface)] rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-[var(--foreground)] mb-4">Подтвердите удаление</h2>
+            <p className="text-[var(--foreground-soft)] mb-4">
               Вы уверены, что хотите удалить пользователя <strong>{selectedUser.name}</strong>?
               <br />
-              <span className="text-sm text-red-600">Это действие нельзя отменить.</span>
+              <span className="text-sm text-[var(--error)]">Это действие нельзя отменить.</span>
             </p>
             
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              <div className="mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">
                 {error}
               </div>
             )}
@@ -1033,7 +1033,7 @@ export default function CompanyPage() {
                   setSelectedUser(null)
                   setError('')
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="btn-secondary flex-1"
                 disabled={deleting}
               >
                 Отмена
@@ -1042,7 +1042,7 @@ export default function CompanyPage() {
                 type="button"
                 onClick={handleDeleteUser}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-2 bg-[var(--error)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {deleting ? 'Удаление...' : 'Удалить'}
               </button>
@@ -1313,9 +1313,9 @@ function DealSourcesManager({
 
       {isModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">
                 {currentEditingSource ? 'Изменить источник' : 'Добавить источник'}
               </h2>
               <button
@@ -1325,33 +1325,33 @@ function DealSourcesManager({
                   setCurrentFormData({ name: '', pipelineId: '' })
                   setError('')
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                className="text-[var(--muted)] hover:text-[var(--foreground)] text-2xl leading-none"
               >
                 ✕
               </button>
             </div>
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              <div className="mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">
                 {error}
               </div>
             )}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Название *</label>
                 <input
                   type="text"
                   value={currentFormData.name}
                   onChange={(e) => setCurrentFormData({ ...currentFormData, name: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                   placeholder="Например: Авито, Сайт, Реклама"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Воронка (опционально)</label>
+                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Воронка (опционально)</label>
                 <select
                   value={currentFormData.pipelineId}
                   onChange={(e) => setCurrentFormData({ ...currentFormData, pipelineId: e.target.value })}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                 >
                   <option value="">Не привязывать</option>
                   {pipelines.map((pipeline) => (
@@ -1360,7 +1360,7 @@ function DealSourcesManager({
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">При выборе источника сделка автоматически попадёт в эту воронку</p>
+                <p className="text-xs text-[var(--muted)] mt-1">При выборе источника сделка автоматически попадёт в эту воронку</p>
               </div>
             </div>
             <div className="flex gap-3 mt-6 justify-end">
@@ -1534,9 +1534,9 @@ function DealTypesManager({
 
       {isModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">
                 {currentEditingType ? 'Изменить тип' : 'Добавить тип'}
               </h2>
               <button
@@ -1546,23 +1546,23 @@ function DealTypesManager({
                   setCurrentFormData({ name: '' })
                   setError('')
                 }}
-                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+                className="text-[var(--muted)] hover:text-[var(--foreground)] text-2xl leading-none"
               >
                 ✕
               </button>
             </div>
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+              <div className="mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">
                 {error}
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Название *</label>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Название *</label>
               <input
                 type="text"
                 value={currentFormData.name}
                 onChange={(e) => setCurrentFormData({ ...currentFormData, name: e.target.value })}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
                 placeholder="Например: Продажа, Монтаж, Консультация"
               />
             </div>

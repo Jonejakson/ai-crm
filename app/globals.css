@@ -64,6 +64,8 @@
   --foreground-soft: #cbd5e1;
   --muted: #94a3b8;
   --muted-soft: #64748b;
+  --panel: #1e293b;
+  --panel-muted: #0f172a;
   
   /* Основные цвета для темной темы */
   --primary: #10b981;
@@ -71,6 +73,7 @@
   --primary-light: #34d399;
   --primary-soft: #064e3b;
   --primary-gradient: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  --primary-gradient-hover: linear-gradient(135deg, #059669 0%, #10b981 100%);
   
   --secondary: #34d399;
   --secondary-hover: #10b981;
@@ -97,7 +100,9 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   --shadow-primary: 0 4px 14px 0 rgba(16, 185, 129, 0.3);
+  --shadow-primary-lg: 0 8px 24px 0 rgba(16, 185, 129, 0.4);
 }
 
 @theme inline {
@@ -125,8 +130,14 @@ body {
   line-height: 1.6;
 }
 
+.dark body {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(52, 211, 153, 0.05) 0px, transparent 50%);
+}
+
 .app-shell {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-xl);
   backdrop-filter: blur(24px) saturate(180%);
