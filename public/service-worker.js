@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   '/company',
   '/offline',
   '/manifest.json',
+  '/icon.svg',
 ];
 
 // Стратегии кэширования
