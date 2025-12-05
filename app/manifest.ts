@@ -1,0 +1,49 @@
+import type { MetadataRoute } from 'next'
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: 'Pocket CRM - Управление клиентами и сделками',
+    short_name: 'Pocket CRM',
+    description:
+      'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0f172a',
+    theme_color: '#3f6ff5',
+    orientation: 'portrait-primary',
+    scope: '/',
+    icons: [
+      {
+        src: '/icon.svg',
+        sizes: '512x512',
+        type: 'image/svg+xml',
+        purpose: 'any maskable',
+      },
+    ],
+    categories: ['business', 'productivity'],
+    shortcuts: [
+      {
+        name: 'Контакты',
+        short_name: 'Контакты',
+        description: 'Быстрый доступ к контактам',
+        url: '/contacts',
+        icons: [{ src: '/icon.svg', sizes: '512x512', type: 'image/svg+xml' }],
+      },
+      {
+        name: 'Сделки',
+        short_name: 'Сделки',
+        description: 'Быстрый доступ к сделкам',
+        url: '/deals',
+        icons: [{ src: '/icon.svg', sizes: '512x512', type: 'image/svg+xml' }],
+      },
+      {
+        name: 'Задачи',
+        short_name: 'Задачи',
+        description: 'Быстрый доступ к задачам',
+        url: '/tasks',
+        icons: [{ src: '/icon.svg', sizes: '512x512', type: 'image/svg+xml' }],
+      },
+    ],
+  }
+}
+

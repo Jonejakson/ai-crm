@@ -87,7 +87,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon.svg" />
 
         {/* Manifest */}
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest.webmanifest" />
 
         {/* PWA Splash Screens */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
