@@ -8,6 +8,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import AutomationBuilder from '@/components/AutomationBuilder'
 
 interface Automation {
   id: number
@@ -125,6 +126,7 @@ export default function AutomationsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null)
   const [users, setUsers] = useState<{ id: number; name: string; email: string }[]>([])
+  const [useVisualEditor, setUseVisualEditor] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -193,9 +195,30 @@ export default function AutomationsPage() {
     setError('')
     setSuccess('')
 
-    if (!formData.name || formData.actions.length === 0) {
-      setError('Заполните название и добавьте хотя бы одно действие')
+    if (!formData.name) {
+      setError('Заполните название автоматизации')
       return
+    }
+
+    if (formData.actions.length === 0) {
+      setError('Добавьте хотя бы одно действие')
+      return
+    }
+
+    // Валидация действий
+    for (const action of formData.actions) {
+      if (action.type === 'SEND_EMAIL' && !action.params.subject) {
+        setError('Для действия "Отправить письмо" необходимо указать тему')
+        return
+      }
+      if (action.type === 'CREATE_TASK' && !action.params.title) {
+        setError('Для действия "Создать задачу" необходимо указать заголовок')
+        return
+      }
+      if (action.type === 'CHANGE_PROBABILITY' && action.params.probability === undefined) {
+        setError('Для действия "Изменить вероятность" необходимо указать значение')
+        return
+      }
     }
 
     try {
@@ -467,6 +490,35 @@ export default function AutomationsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Переключатель режима */}
+              <div className="flex items-center justify-between p-3 bg-slate-100 rounded-xl">
+                <span className="text-sm font-medium text-slate-700">Режим редактирования:</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setUseVisualEditor(false)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      !useVisualEditor
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Обычный
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseVisualEditor(true)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      useVisualEditor
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    Визуальный
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
                   Название *
@@ -583,46 +635,173 @@ export default function AutomationsPage() {
                 </div>
               )}
 
-              {/* Действия */}
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+              {/* Визуальный редактор или обычная форма */}
+              {useVisualEditor ? (
+                <div className="space-y-4">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Действия *</p>
-                    <p className="text-sm text-slate-500">Шаги выполняются последовательно после срабатывания триггера</p>
-                  </div>
-                  <button type="button" onClick={addAction} className="btn-secondary text-sm">
-                    + Добавить действие
-                  </button>
-                </div>
-
-                {formData.actions.length === 0 ? (
-                  <div className="empty-state border border-dashed border-white/50 rounded-3xl bg-white/40 py-10">
-                    <div className="empty-state-icon">⚙️</div>
-                    <h3 className="empty-state-title">Нет действий</h3>
-                    <p className="empty-state-description">
-                      Добавьте хотя бы одно действие, чтобы автоматизация начала работать.
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-400 mb-2">Визуальный редактор</p>
+                    <p className="text-sm text-slate-500 mb-4">
+                      Перетаскивайте блоки и соединяйте их для создания автоматизации
                     </p>
+                    <AutomationBuilder
+                      triggerTypes={TRIGGER_TYPES}
+                      actionTypes={ACTION_TYPES}
+                      users={users}
+                      initialData={{
+                        triggerType: formData.triggerType,
+                        triggerConfig: formData.triggerConfig,
+                        actions: formData.actions.map(({ id, ...rest }) => rest),
+                      }}
+                      onSave={(data) => {
+                        setFormData({
+                          ...formData,
+                          triggerType: data.triggerType,
+                          triggerConfig: data.triggerConfig,
+                          actions: data.actions.map((action, index) => ({
+                            id: generateActionId(),
+                            type: action.type,
+                            params: action.params,
+                          })),
+                        })
+                        setSuccess('Автоматизация обновлена из визуального редактора')
+                      }}
+                    />
                   </div>
-                ) : (
-                  <DndContext collisionDetection={closestCenter} onDragEnd={handleActionsReorder}>
-                    <SortableContext items={formData.actions.map((action) => action.id)} strategy={verticalListSortingStrategy}>
-                      <div className="space-y-4">
-                        {formData.actions.map((action, index) => (
-                          <SortableActionCard
-                            key={action.id}
-                            action={action}
-                            index={index}
-                            users={users}
-                            onRemove={removeAction}
-                            onTypeChange={updateActionType}
-                            onParamChange={updateActionParam}
-                          />
-                        ))}
+                </div>
+              ) : (
+                <>
+                  {/* Триггер */}
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                      Триггер (когда срабатывает) *
+                    </label>
+                    <select
+                      value={formData.triggerType}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          triggerType: e.target.value,
+                          triggerConfig: {},
+                        })
+                      }}
+                      className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                    >
+                      {TRIGGER_TYPES.map((type) => (
+                        <option key={type.value} value={type.value}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Условия триггера */}
+                  {formData.triggerType === 'DEAL_STAGE_CHANGED' && (
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                        Этап (если пусто, срабатывает на любой этап)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.triggerConfig.stage || ''}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            triggerConfig: { ...formData.triggerConfig, stage: e.target.value },
+                          })
+                        }
+                        className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                        placeholder="Например: negotiation"
+                      />
+                    </div>
+                  )}
+
+                  {formData.triggerType === 'DEAL_AMOUNT_CHANGED' && (
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                          Минимальная сумма (₽)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.triggerConfig.minAmount ?? ''}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              triggerConfig: {
+                                ...formData.triggerConfig,
+                                minAmount: e.target.value === '' ? null : Number(e.target.value),
+                              },
+                            })
+                          }
+                          className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                          placeholder="0"
+                        />
                       </div>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </div>
+                      <div>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                          Максимальная сумма (опционально)
+                        </label>
+                        <input
+                          type="number"
+                          value={formData.triggerConfig.maxAmount ?? ''}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              triggerConfig: {
+                                ...formData.triggerConfig,
+                                maxAmount: e.target.value === '' ? null : Number(e.target.value),
+                              },
+                            })
+                          }
+                          className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
+                          placeholder="Не ограничено"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Действия */}
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Действия *</p>
+                        <p className="text-sm text-slate-500">Шаги выполняются последовательно после срабатывания триггера</p>
+                      </div>
+                      <button type="button" onClick={addAction} className="btn-secondary text-sm">
+                        + Добавить действие
+                      </button>
+                    </div>
+
+                    {formData.actions.length === 0 ? (
+                      <div className="empty-state border border-dashed border-white/50 rounded-3xl bg-white/40 py-10">
+                        <div className="empty-state-icon">⚙️</div>
+                        <h3 className="empty-state-title">Нет действий</h3>
+                        <p className="empty-state-description">
+                          Добавьте хотя бы одно действие, чтобы автоматизация начала работать.
+                        </p>
+                      </div>
+                    ) : (
+                      <DndContext collisionDetection={closestCenter} onDragEnd={handleActionsReorder}>
+                        <SortableContext items={formData.actions.map((action) => action.id)} strategy={verticalListSortingStrategy}>
+                          <div className="space-y-4">
+                            {formData.actions.map((action, index) => (
+                              <SortableActionCard
+                                key={action.id}
+                                action={action}
+                                index={index}
+                                users={users}
+                                onRemove={removeAction}
+                                onTypeChange={updateActionType}
+                                onParamChange={updateActionParam}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center gap-3 pt-4">
                 <label className="flex items-center gap-2">
