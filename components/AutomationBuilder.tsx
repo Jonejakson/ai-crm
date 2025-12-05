@@ -223,17 +223,28 @@ export default function AutomationBuilder({
     (changes: any) => {
       onNodesChangeInternal(changes)
       
-      // Отслеживаем выбранный узел
+      // Отслеживаем выбранный узел и обновляем его при изменении
       changes.forEach((change: any) => {
         if (change.type === 'select' && change.selected) {
           const node = nodes.find((n) => n.id === change.id)
           setSelectedNode(node || null)
         } else if (change.type === 'select' && !change.selected) {
           setSelectedNode(null)
+        } else if (change.type === 'position' || change.type === 'dimensions') {
+          // Обновляем selectedNode если он был изменен
+          if (selectedNode && selectedNode.id === change.id) {
+            setNodes((nds) => {
+              const updatedNode = nds.find((n) => n.id === change.id)
+              if (updatedNode) {
+                setSelectedNode(updatedNode)
+              }
+              return nds
+            })
+          }
         }
       })
     },
-    [nodes, onNodesChangeInternal]
+    [nodes, onNodesChangeInternal, selectedNode, setNodes]
   )
 
   const addActionNode = useCallback(() => {
@@ -279,8 +290,8 @@ export default function AutomationBuilder({
 
   const updateNodeConfig = useCallback(
     (nodeId: string, config: any) => {
-      setNodes((nds) =>
-        nds.map((node) => {
+      setNodes((nds) => {
+        const updatedNodes = nds.map((node) => {
           if (node.id === nodeId) {
             return {
               ...node,
@@ -292,15 +303,25 @@ export default function AutomationBuilder({
           }
           return node
         })
-      )
+        
+        // Обновляем selectedNode если это он был изменен
+        if (selectedNode && selectedNode.id === nodeId) {
+          const updatedNode = updatedNodes.find((n) => n.id === nodeId)
+          if (updatedNode) {
+            setSelectedNode(updatedNode)
+          }
+        }
+        
+        return updatedNodes
+      })
     },
-    [setNodes]
+    [setNodes, selectedNode]
   )
 
   const updateNodeType = useCallback(
     (nodeId: string, automationType: string, label: string) => {
-      setNodes((nds) =>
-        nds.map((node) => {
+      setNodes((nds) => {
+        const updatedNodes = nds.map((node) => {
           if (node.id === nodeId) {
             return {
               ...node,
@@ -313,9 +334,19 @@ export default function AutomationBuilder({
           }
           return node
         })
-      )
+        
+        // Обновляем selectedNode если это он был изменен
+        if (selectedNode && selectedNode.id === nodeId) {
+          const updatedNode = updatedNodes.find((n) => n.id === nodeId)
+          if (updatedNode) {
+            setSelectedNode(updatedNode)
+          }
+        }
+        
+        return updatedNodes
+      })
     },
-    [setNodes]
+    [setNodes, selectedNode]
   )
 
   const handleSave = useCallback(() => {
@@ -409,21 +440,25 @@ export default function AutomationBuilder({
       </div>
 
       {/* Панель настройки выбранного узла */}
-      {selectedNode && (
-        <div className="p-4 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
-          <h3 className="text-lg font-semibold mb-4 text-[var(--foreground)]">
-            Настройка: {selectedNode.data.label}
-          </h3>
-          <NodeConfigPanel
-            node={selectedNode}
-            triggerTypes={triggerTypes}
-            actionTypes={actionTypes}
-            users={users}
-            onConfigChange={(config) => updateNodeConfig(selectedNode.id, config)}
-            onTypeChange={(type, label) => updateNodeType(selectedNode.id, type, label)}
-          />
-        </div>
-      )}
+      {selectedNode && (() => {
+        // Получаем актуальную ноду из состояния nodes
+        const currentNode = nodes.find((n) => n.id === selectedNode.id) || selectedNode
+        return (
+          <div className="p-4 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
+            <h3 className="text-lg font-semibold mb-4 text-[var(--foreground)]">
+              Настройка: {currentNode.data.label}
+            </h3>
+            <NodeConfigPanel
+              node={currentNode}
+              triggerTypes={triggerTypes}
+              actionTypes={actionTypes}
+              users={users}
+              onConfigChange={(config) => updateNodeConfig(currentNode.id, config)}
+              onTypeChange={(type, label) => updateNodeType(currentNode.id, type, label)}
+            />
+          </div>
+        )
+      })()}
     </div>
   )
 }
