@@ -1,17 +1,13 @@
 // Service Worker для PWA
 // Версия кэша - обновляйте при изменении ресурсов
-const CACHE_NAME = 'pocket-crm-v1';
-const RUNTIME_CACHE = 'pocket-crm-runtime-v1';
+const CACHE_NAME = 'pocket-crm-v2';
+const RUNTIME_CACHE = 'pocket-crm-runtime-v2';
 
 // Ресурсы для кэширования при установке
 const STATIC_ASSETS = [
   '/',
-  '/contacts',
-  '/deals',
-  '/tasks',
-  '/company',
   '/offline',
-  '/manifest.json',
+  '/manifest.webmanifest',
   '/icon.svg',
 ];
 
@@ -35,14 +31,25 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[Service Worker] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        // Кэшируем критичные ресурсы, игнорируем ошибки для несуществующих
+        return Promise.allSettled(
+          STATIC_ASSETS.map(url => 
+            cache.add(url).catch(err => {
+              console.warn(`[Service Worker] Failed to cache ${url}:`, err);
+              return null;
+            })
+          )
+        );
       })
       .then(() => {
+        console.log('[Service Worker] Installation complete');
         // Принудительно активировать новый Service Worker
         return self.skipWaiting();
       })
       .catch((error) => {
         console.error('[Service Worker] Install error:', error);
+        // Все равно активируем Service Worker даже при ошибках
+        return self.skipWaiting();
       })
   );
 });
@@ -88,22 +95,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API запросы - Network First
+  // Пропускаем запросы к другим доменам (кроме нашего)
+  if (url.origin !== location.origin) {
+    return;
+  }
+
+  // API запросы - Network First с кэшем
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstStrategy(request));
     return;
   }
 
-  // Статические ресурсы (CSS, JS, изображения) - Cache First
+  // Статические ресурсы (CSS, JS, изображения, шрифты) - Cache First
   if (
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/) ||
-    url.pathname.startsWith('/_next/static/')
+    url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp)$/i) ||
+    url.pathname.startsWith('/_next/static/') ||
+    url.pathname.startsWith('/_next/image')
   ) {
     event.respondWith(cacheFirstStrategy(request));
     return;
   }
 
-  // HTML страницы - Network First с fallback на кэш
+  // HTML страницы - Network First с fallback на кэш и офлайн страницу
   if (request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(networkFirstWithOfflineFallback(request));
     return;
@@ -175,17 +188,27 @@ async function networkFirstStrategy(request) {
 // Стратегия: Network First с офлайн fallback
 async function networkFirstWithOfflineFallback(request) {
   try {
-    const networkResponse = await fetch(request);
+    // Пытаемся загрузить из сети с таймаутом
+    const networkResponse = await Promise.race([
+      fetch(request),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Network timeout')), 5000)
+      )
+    ]);
     
     // Кэшируем успешные ответы
-    if (networkResponse.ok) {
+    if (networkResponse && networkResponse.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, networkResponse.clone());
+      // Клонируем ответ перед кэшированием
+      const responseToCache = networkResponse.clone();
+      cache.put(request, responseToCache).catch(err => {
+        console.error('[Service Worker] Cache put error:', err);
+      });
     }
     
     return networkResponse;
   } catch (error) {
-    console.log('[Service Worker] Network failed, serving offline page');
+    console.log('[Service Worker] Network failed, trying cache:', error);
     
     // Пытаемся найти в кэше
     const cachedResponse = await caches.match(request);
@@ -199,12 +222,47 @@ async function networkFirstWithOfflineFallback(request) {
       return offlinePage;
     }
     
-    // Если офлайн страница не найдена, возвращаем простой ответ
-    return new Response('Офлайн режим. Проверьте подключение к интернету.', {
-      status: 503,
-      statusText: 'Service Unavailable',
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+    // Если офлайн страница не найдена, возвращаем простой HTML ответ
+    return new Response(
+      `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Офлайн - Pocket CRM</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px;
+    }
+    h1 { font-size: 24px; margin-bottom: 16px; }
+    p { font-size: 16px; opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Нет подключения</h1>
+    <p>Проверьте подключение к интернету и попробуйте снова.</p>
+  </div>
+</body>
+</html>`,
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      }
+    );
   }
 }
 
