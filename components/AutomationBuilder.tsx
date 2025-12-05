@@ -409,7 +409,7 @@ export default function AutomationBuilder({
       </div>
 
       {/* Визуальный редактор */}
-      <div className="w-full h-[600px] border border-[var(--border)] rounded-2xl bg-[var(--background)] overflow-hidden">
+      <div className="w-full h-[400px] border border-[var(--border)] rounded-2xl bg-[var(--background)] overflow-hidden">
         <ReactFlow
           nodes={nodes}
           edges={edges}
