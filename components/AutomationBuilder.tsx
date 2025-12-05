@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -44,7 +44,8 @@ function TriggerNode({ data, selected }: { data: AutomationNodeData; selected: b
     <div
       className={`px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg border-2 ${
         selected ? 'border-blue-300 ring-2 ring-blue-300' : 'border-blue-600'
-      } min-w-[220px]`}
+      } min-w-[220px] group relative`}
+      title="Триггер - событие, которое запускает автоматизацию. Нажмите для настройки."
     >
       <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-white border-2 border-blue-600" />
       <div className="flex items-center gap-2 mb-2">
@@ -59,6 +60,9 @@ function TriggerNode({ data, selected }: { data: AutomationNodeData; selected: b
           {data.config.maxAmount && <div>Макс. сумма: {data.config.maxAmount}₽</div>}
         </div>
       )}
+      <div className="absolute -top-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+        Нажмите для настройки триггера
+      </div>
     </div>
   )
 }
@@ -82,13 +86,27 @@ function ConditionNode({ data, selected }: { data: AutomationNodeData; selected:
 }
 
 function ActionNode({ data, selected }: { data: AutomationNodeData; selected: boolean }) {
+  // Проверяем валидность действия
+  const isValid = useMemo(() => {
+    if (data.automationType === 'CREATE_TASK') return !!data.config?.title
+    if (data.automationType === 'SEND_EMAIL') return !!data.config?.subject
+    if (data.automationType === 'CHANGE_PROBABILITY') return data.config?.probability !== undefined
+    return true
+  }, [data])
+
   return (
     <div
       className={`px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg border-2 ${
         selected ? 'border-green-300 ring-2 ring-green-300' : 'border-green-600'
-      } min-w-[220px]`}
+      } ${!isValid ? 'ring-2 ring-red-400 border-red-400' : ''} min-w-[220px] group relative`}
+      title="Действие - что выполняется при срабатывании триггера. Нажмите для настройки. Delete - удалить."
     >
       <Handle type="target" position={Position.Top} className="w-3 h-3 bg-white border-2 border-green-600" />
+      {!isValid && (
+        <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+          !
+        </div>
+      )}
       <div className="flex items-center gap-2 mb-2">
         <div className="w-2 h-2 bg-white rounded-full" />
         <span className="text-xs font-semibold text-white uppercase tracking-wide">Действие</span>
@@ -101,6 +119,9 @@ function ActionNode({ data, selected }: { data: AutomationNodeData; selected: bo
           {data.config.probability !== undefined && <div>Вероятность: {data.config.probability}%</div>}
         </div>
       )}
+      <div className="absolute -top-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-xs px-2 py-1 rounded pointer-events-none whitespace-nowrap z-10">
+        Нажмите для настройки. Delete - удалить
+      </div>
     </div>
   )
 }
@@ -349,6 +370,88 @@ export default function AutomationBuilder({
     [setNodes, selectedNode]
   )
 
+  // Генерация предпросмотра автоматизации
+  const generatePreview = useCallback(() => {
+    const triggerNode = nodes.find((n) => n.type === 'trigger')
+    if (!triggerNode) return 'Настройте триггер'
+
+    const actionNodes = nodes
+      .filter((n) => n.type === 'action')
+      .sort((a, b) => a.position.y - b.position.y)
+
+    if (actionNodes.length === 0) return 'Добавьте хотя бы одно действие'
+
+    const triggerLabel = triggerNode.data.label || 'Триггер'
+    const triggerConfig = triggerNode.data.config || {}
+    
+    let triggerDescription = triggerLabel
+    if (triggerNode.data.automationType === 'DEAL_STAGE_CHANGED' && triggerConfig.stage) {
+      triggerDescription = `Когда сделка переходит на этап "${triggerConfig.stage}"`
+    } else if (triggerNode.data.automationType === 'DEAL_AMOUNT_CHANGED') {
+      const min = triggerConfig.minAmount ? `от ${triggerConfig.minAmount}₽` : ''
+      const max = triggerConfig.maxAmount ? `до ${triggerConfig.maxAmount}₽` : ''
+      triggerDescription = `Когда сумма сделки изменяется ${min} ${max}`.trim()
+    }
+
+    const actionsDescription = actionNodes.map((node, index) => {
+      const actionLabel = node.data.label || 'Действие'
+      const actionConfig = node.data.config || {}
+      
+      if (node.data.automationType === 'CREATE_TASK') {
+        return `${index + 1}. Создается задача "${actionConfig.title || 'без названия'}"`
+      } else if (node.data.automationType === 'SEND_EMAIL') {
+        return `${index + 1}. Отправляется письмо "${actionConfig.subject || 'без темы'}"`
+      } else if (node.data.automationType === 'CHANGE_PROBABILITY') {
+        return `${index + 1}. Вероятность сделки изменяется на ${actionConfig.probability || 0}%`
+      } else if (node.data.automationType === 'ASSIGN_USER') {
+        return `${index + 1}. Назначается пользователь`
+      } else if (node.data.automationType === 'UPDATE_DEAL_STAGE') {
+        return `${index + 1}. Этап сделки изменяется на "${actionConfig.newStage || ''}"`
+      }
+      return `${index + 1}. ${actionLabel}`
+    }).join('\n')
+
+    return `${triggerDescription}, выполняется:\n${actionsDescription}`
+  }, [nodes, triggerTypes, actionTypes])
+
+  // Тестирование автоматизации
+  const handleTest = useCallback(async () => {
+    const triggerNode = nodes.find((n) => n.type === 'trigger')
+    if (!triggerNode) {
+      alert('Необходимо настроить триггер')
+      return
+    }
+
+    const actionNodes = nodes
+      .filter((n) => n.type === 'action')
+      .sort((a, b) => a.position.y - b.position.y)
+
+    if (actionNodes.length === 0) {
+      alert('Добавьте хотя бы одно действие')
+      return
+    }
+
+    // Показываем модальное окно с результатами теста
+    const preview = generatePreview()
+    const testResults = actionNodes.map((node, index) => {
+      const actionConfig = node.data.config || {}
+      let result = '✅ Готово к выполнению'
+      
+      // Проверяем обязательные поля
+      if (node.data.automationType === 'CREATE_TASK' && !actionConfig.title) {
+        result = '❌ Не указан заголовок задачи'
+      } else if (node.data.automationType === 'SEND_EMAIL' && !actionConfig.subject) {
+        result = '❌ Не указана тема письма'
+      } else if (node.data.automationType === 'CHANGE_PROBABILITY' && actionConfig.probability === undefined) {
+        result = '❌ Не указана вероятность'
+      }
+      
+      return `${index + 1}. ${node.data.label}: ${result}`
+    }).join('\n')
+
+    alert(`Тест автоматизации:\n\n${preview}\n\nРезультаты проверки:\n${testResults}`)
+  }, [nodes, generatePreview])
+
   const handleSave = useCallback(() => {
     const triggerNode = nodes.find((n) => n.type === 'trigger')
     if (!triggerNode) {
@@ -378,6 +481,55 @@ export default function AutomationBuilder({
     onSave?.(automationData)
   }, [nodes, triggerTypes, actionTypes, onSave])
 
+  const [showPreview, setShowPreview] = useState(false)
+
+  // Обработка клавиатурных сокращений
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete - удалить выбранный блок
+      if (e.key === 'Delete' && selectedNode && selectedNode.type !== 'trigger') {
+        deleteNode(selectedNode.id)
+      }
+      // Escape - снять выделение
+      if (e.key === 'Escape') {
+        setSelectedNode(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedNode, deleteNode])
+
+  // Валидация соединений
+  const validateConnections = useCallback(() => {
+    const errors: string[] = []
+    const triggerNode = nodes.find((n) => n.type === 'trigger')
+    
+    if (!triggerNode) {
+      errors.push('Необходимо настроить триггер')
+      return errors
+    }
+
+    const actionNodes = nodes.filter((n) => n.type === 'action')
+    if (actionNodes.length === 0) {
+      errors.push('Добавьте хотя бы одно действие')
+      return errors
+    }
+
+    // Проверяем, что все действия соединены
+    const connectedActionIds = new Set(
+      edges.filter((e) => e.source === triggerNode.id || actionNodes.some((a) => a.id === e.source)).map((e) => e.target)
+    )
+
+    actionNodes.forEach((node) => {
+      if (!connectedActionIds.has(node.id) && node.id !== actionNodes[0]?.id) {
+        errors.push(`Действие "${node.data.label}" не соединено с другими блоками`)
+      }
+    })
+
+    return errors
+  }, [nodes, edges])
+
   return (
     <div className="space-y-4">
       {/* Панель инструментов */}
@@ -386,6 +538,7 @@ export default function AutomationBuilder({
           <button
             onClick={addActionNode}
             className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+            title="Добавить новое действие (Ctrl+N)"
           >
             + Добавить действие
           </button>
@@ -393,10 +546,25 @@ export default function AutomationBuilder({
             <button
               onClick={() => deleteNode(selectedNode.id)}
               className="px-4 py-2 bg-[var(--error)] text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+              title="Удалить блок (Delete)"
             >
               Удалить блок
             </button>
           )}
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="px-4 py-2 bg-[var(--secondary)] text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+            title="Предпросмотр автоматизации"
+          >
+            👁️ Предпросмотр
+          </button>
+          <button
+            onClick={handleTest}
+            className="px-4 py-2 bg-[var(--warning)] text-white rounded-lg hover:opacity-90 transition-opacity text-sm font-medium"
+            title="Протестировать автоматизацию"
+          >
+            🧪 Тест
+          </button>
         </div>
         {onSave && (
           <button
@@ -407,6 +575,34 @@ export default function AutomationBuilder({
           </button>
         )}
       </div>
+
+      {/* Предпросмотр */}
+      {showPreview && (
+        <div className="p-4 bg-[var(--surface)] rounded-2xl border border-[var(--border)]">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">Предпросмотр автоматизации</h3>
+            <button
+              onClick={() => setShowPreview(false)}
+              className="text-[var(--muted)] hover:text-[var(--foreground)]"
+            >
+              ✕
+            </button>
+          </div>
+          <pre className="text-sm text-[var(--foreground)] whitespace-pre-wrap font-sans bg-[var(--background)] p-3 rounded-lg border border-[var(--border)]">
+            {generatePreview()}
+          </pre>
+          {validateConnections().length > 0 && (
+            <div className="mt-3 p-3 bg-[var(--error-soft)] border border-[var(--error)] rounded-lg">
+              <p className="text-sm font-semibold text-[var(--error)] mb-1">⚠️ Обнаружены ошибки:</p>
+              <ul className="text-sm text-[var(--error)] list-disc list-inside">
+                {validateConnections().map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Визуальный редактор */}
       <div className="w-full h-[400px] border border-[var(--border)] rounded-2xl bg-[var(--background)] overflow-hidden">
