@@ -1,7 +1,7 @@
 // Service Worker для PWA
 // Версия кэша - обновляйте при изменении ресурсов
-const CACHE_NAME = 'pocket-crm-v2';
-const RUNTIME_CACHE = 'pocket-crm-runtime-v2';
+const CACHE_NAME = 'pocket-crm-v3';
+const RUNTIME_CACHE = 'pocket-crm-runtime-v3';
 
 // Ресурсы для кэширования при установке
 const STATIC_ASSETS = [
@@ -10,6 +10,14 @@ const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/icon.svg',
 ];
+
+// Логирование для отладки
+const DEBUG = true;
+function log(...args) {
+  if (DEBUG) {
+    console.log('[SW]', ...args);
+  }
+}
 
 // Стратегии кэширования
 const CACHE_STRATEGIES = {
@@ -25,29 +33,31 @@ const CACHE_STRATEGIES = {
 
 // Установка Service Worker
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Installing...');
+  log('Installing Service Worker...');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[Service Worker] Caching static assets');
+        log('Caching static assets:', STATIC_ASSETS);
         // Кэшируем критичные ресурсы, игнорируем ошибки для несуществующих
         return Promise.allSettled(
           STATIC_ASSETS.map(url => 
             cache.add(url).catch(err => {
-              console.warn(`[Service Worker] Failed to cache ${url}:`, err);
+              log(`Failed to cache ${url}:`, err.message);
               return null;
             })
           )
         );
       })
-      .then(() => {
-        console.log('[Service Worker] Installation complete');
+      .then((results) => {
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        log(`Installation complete: ${successful} cached, ${failed} failed`);
         // Принудительно активировать новый Service Worker
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error('[Service Worker] Install error:', error);
+        log('Install error:', error);
         // Все равно активируем Service Worker даже при ошибках
         return self.skipWaiting();
       })
@@ -56,11 +66,12 @@ self.addEventListener('install', (event) => {
 
 // Активация Service Worker
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activating...');
+  log('Activating Service Worker...');
   
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
+        log('Found caches:', cacheNames);
         return Promise.all(
           cacheNames
             .filter((name) => {
@@ -68,14 +79,27 @@ self.addEventListener('activate', (event) => {
               return name !== CACHE_NAME && name !== RUNTIME_CACHE;
             })
             .map((name) => {
-              console.log('[Service Worker] Deleting old cache:', name);
+              log('Deleting old cache:', name);
               return caches.delete(name);
             })
         );
       })
       .then(() => {
-        // Взять контроль над всеми клиентами
+        log('Taking control of all clients...');
+        // Взять контроль над всеми клиентами немедленно
         return self.clients.claim();
+      })
+      .then(() => {
+        log('Service Worker activated and controlling clients');
+        // Уведомляем все клиенты об активации
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type: 'SW_ACTIVATED',
+              message: 'Service Worker activated'
+            });
+          });
+        });
       })
   );
 });
@@ -99,6 +123,8 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== location.origin) {
     return;
   }
+
+  log('Fetch:', request.method, url.pathname);
 
   // API запросы - Network First с кэшем
   if (url.pathname.startsWith('/api/')) {
@@ -128,26 +154,39 @@ self.addEventListener('fetch', (event) => {
 
 // Стратегия: Cache First
 async function cacheFirstStrategy(request) {
+  const url = new URL(request.url);
+  log('Cache first for:', url.pathname);
+  
   try {
-    const cachedResponse = await caches.match(request);
+    // Проверяем оба кэша
+    let cachedResponse = await caches.match(request, { cacheName: RUNTIME_CACHE });
+    if (!cachedResponse) {
+      cachedResponse = await caches.match(request, { cacheName: CACHE_NAME });
+    }
+    
     if (cachedResponse) {
+      log('Serving from cache:', url.pathname);
       return cachedResponse;
     }
 
+    log('Cache miss, fetching from network:', url.pathname);
     const networkResponse = await fetch(request);
     
     // Кэшируем успешные ответы
     if (networkResponse.ok) {
       const cache = await caches.open(RUNTIME_CACHE);
-      cache.put(request, networkResponse.clone());
+      cache.put(request, networkResponse.clone()).catch(err => {
+        log('Cache put error:', err);
+      });
     }
     
     return networkResponse;
   } catch (error) {
-    console.error('[Service Worker] Cache first error:', error);
+    log('Cache first error:', error.message);
     // Возвращаем офлайн страницу для HTML запросов
     if (request.headers.get('accept')?.includes('text/html')) {
-      return caches.match('/offline');
+      const offlinePage = await caches.match('/offline');
+      if (offlinePage) return offlinePage;
     }
     throw error;
   }
@@ -187,42 +226,55 @@ async function networkFirstStrategy(request) {
 
 // Стратегия: Network First с офлайн fallback
 async function networkFirstWithOfflineFallback(request) {
+  const url = new URL(request.url);
+  log('Network first with offline fallback for:', url.pathname);
+  
   try {
-    // Пытаемся загрузить из сети с таймаутом
+    // Пытаемся загрузить из сети с таймаутом (3 секунды для мобильных)
     const networkResponse = await Promise.race([
       fetch(request),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Network timeout')), 5000)
+        setTimeout(() => reject(new Error('Network timeout')), 3000)
       )
     ]);
     
     // Кэшируем успешные ответы
     if (networkResponse && networkResponse.ok) {
+      log('Network success, caching:', url.pathname);
       const cache = await caches.open(RUNTIME_CACHE);
       // Клонируем ответ перед кэшированием
       const responseToCache = networkResponse.clone();
       cache.put(request, responseToCache).catch(err => {
-        console.error('[Service Worker] Cache put error:', err);
+        log('Cache put error:', err);
       });
+      return networkResponse;
     }
     
-    return networkResponse;
+    // Если ответ не OK, пробуем кэш
+    throw new Error('Network response not OK');
   } catch (error) {
-    console.log('[Service Worker] Network failed, trying cache:', error);
+    log('Network failed, trying cache:', url.pathname, error.message);
     
-    // Пытаемся найти в кэше
-    const cachedResponse = await caches.match(request);
+    // Пытаемся найти в кэше (проверяем оба кэша)
+    let cachedResponse = await caches.match(request, { cacheName: RUNTIME_CACHE });
+    if (!cachedResponse) {
+      cachedResponse = await caches.match(request, { cacheName: CACHE_NAME });
+    }
+    
     if (cachedResponse) {
+      log('Serving from cache:', url.pathname);
       return cachedResponse;
     }
     
     // Возвращаем офлайн страницу
-    const offlinePage = await caches.match('/offline');
+    log('No cache found, serving offline page');
+    const offlinePage = await caches.match('/offline', { cacheName: CACHE_NAME });
     if (offlinePage) {
       return offlinePage;
     }
     
     // Если офлайн страница не найдена, возвращаем простой HTML ответ
+    log('Offline page not found, serving fallback HTML');
     return new Response(
       `<!DOCTYPE html>
 <html lang="ru">
