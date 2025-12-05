@@ -16,7 +16,6 @@ import ReactFlow, {
   Handle,
   Position,
 } from 'reactflow'
-import 'reactflow/dist/style.css'
 
 interface AutomationNodeData {
   label: string
