@@ -39,7 +39,7 @@ export async function GET() {
       prisma.subscription.count().catch(() => 0),
       prisma.subscription.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
       prisma.subscription.count({ where: { status: 'TRIAL' } }).catch(() => 0),
-      prisma.subscription.count({ where: { status: 'CANCELLED' } }).catch(() => 0),
+      prisma.subscription.count({ where: { status: 'CANCELED' } }).catch(() => 0),
     ])
 
     return NextResponse.json({
