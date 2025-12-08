@@ -6,6 +6,7 @@ type Metrics = {
   ok: boolean
   timestamp: string
   dbOk: boolean
+  uptimeSeconds?: number
   metrics: {
     usersTotal: number
     contactsTotal: number
