@@ -119,6 +119,170 @@ export const automationTemplates: AutomationTemplate[] = [
     category: 'Задачи',
     complexity: 'basic',
   },
+  {
+    id: 'deal-created-quick-touch',
+    title: 'Быстрый фоллоу-ап после создания сделки',
+    description: 'Сразу после создания сделки — создать задачу на контакт и отправить приветственное письмо.',
+    triggerType: 'DEAL_CREATED',
+    actions: [
+      {
+        type: 'CREATE_TASK',
+        params: {
+          title: 'Связаться с клиентом',
+          description: 'Поздороваться, уточнить потребность и договориться о следующем шаге.',
+          dueInDays: 0,
+        },
+      },
+      {
+        type: 'SEND_EMAIL',
+        params: {
+          subject: 'Добро пожаловать!',
+          body: 'Спасибо, что выбрали нас. Давайте обсудим детали и согласуем следующий шаг.',
+        },
+      },
+    ],
+    category: 'Сделки',
+    complexity: 'basic',
+  },
+  {
+    id: 'stage-negotiation-raise-probability',
+    title: 'Повысить вероятность на этапе переговоров',
+    description: 'При переходе на этап negotiation повышаем вероятность сделки.',
+    triggerType: 'DEAL_STAGE_CHANGED',
+    triggerConfig: { stage: 'negotiation' },
+    actions: [
+      {
+        type: 'CHANGE_PROBABILITY',
+        params: {
+          probability: 60,
+        },
+      },
+    ],
+    category: 'Сделки',
+    complexity: 'basic',
+  },
+  {
+    id: 'stage-proposal-send-email',
+    title: 'Отправить КП на этапе предложения',
+    description: 'При переходе на этап proposal отправить письмо с КП.',
+    triggerType: 'DEAL_STAGE_CHANGED',
+    triggerConfig: { stage: 'proposal' },
+    actions: [
+      {
+        type: 'SEND_EMAIL',
+        params: {
+          subject: 'Коммерческое предложение',
+          body: 'Добрый день! Отправляем вам наше предложение. Будем рады обсудить детали.',
+        },
+      },
+      {
+        type: 'CREATE_TASK',
+        params: {
+          title: 'Дожать предложение',
+          description: 'Уточнить вопросы, договориться о созвоне.',
+          dueInDays: 1,
+        },
+      },
+    ],
+    category: 'Сделки',
+    complexity: 'basic',
+  },
+  {
+    id: 'task-created-notify-and-assign',
+    title: 'Уведомление и назначение при создании задачи',
+    description: 'При создании задачи — уведомить и назначить ответственного.',
+    triggerType: 'TASK_CREATED',
+    actions: [
+      {
+        type: 'ASSIGN_USER',
+        params: {
+          userId: null, // выберите ответственного перед сохранением
+        },
+      },
+      {
+        type: 'CREATE_NOTIFICATION',
+        params: {
+          title: 'Новая задача',
+          message: 'Появилась новая задача, проверьте детали.',
+          type: 'info',
+        },
+      },
+    ],
+    category: 'Задачи',
+    complexity: 'basic',
+  },
+  {
+    id: 'event-created-send-email',
+    title: 'Письмо после создания события',
+    description: 'После создания события отправить подтверждение/напоминание.',
+    triggerType: 'EVENT_CREATED',
+    actions: [
+      {
+        type: 'SEND_EMAIL',
+        params: {
+          subject: 'Подтверждение встречи',
+          body: 'Напоминание о запланированной встрече. Если нужно перенести — дайте знать.',
+        },
+      },
+    ],
+    category: 'События',
+    complexity: 'basic',
+  },
+  {
+    id: 'task-completed-notify-won',
+    title: 'Закрыть сделку в выигрыш при завершении ключевой задачи',
+    description: 'Когда ключевая задача завершена — перевести сделку в этап won и уведомить.',
+    triggerType: 'TASK_COMPLETED',
+    actions: [
+      {
+        type: 'UPDATE_DEAL_STAGE',
+        params: {
+          newStage: 'won',
+        },
+      },
+      {
+        type: 'CREATE_NOTIFICATION',
+        params: {
+          title: 'Сделка выиграна',
+          message: 'Ключевая задача выполнена, сделка переведена в выигрыш.',
+          type: 'success',
+        },
+      },
+    ],
+    category: 'Задачи',
+    complexity: 'advanced',
+  },
+  {
+    id: 'deal-amount-range-assign-and-probability',
+    title: 'Маршрутка для средних сделок',
+    description: 'Если сумма сделки от 50 000 до 150 000 ₽ — назначить менеджера и выставить вероятность.',
+    triggerType: 'DEAL_AMOUNT_CHANGED',
+    triggerConfig: { minAmount: 50000, maxAmount: 150000 },
+    actions: [
+      {
+        type: 'ASSIGN_USER',
+        params: {
+          userId: null, // выберите менеджера перед сохранением
+        },
+      },
+      {
+        type: 'CHANGE_PROBABILITY',
+        params: {
+          probability: 45,
+        },
+      },
+      {
+        type: 'CREATE_NOTIFICATION',
+        params: {
+          title: 'Средняя сделка',
+          message: 'Сделка в диапазоне 50-150к, проверьте план действий.',
+          type: 'info',
+        },
+      },
+    ],
+    category: 'Сделки',
+    complexity: 'advanced',
+  },
 ]
 
 
