@@ -21,6 +21,7 @@ export default function OpsPage() {
   const [data, setData] = useState<Metrics | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [health, setHealth] = useState<{ ok: boolean; startedAt?: string; uptimeSeconds?: number } | null>(null)
 
   const load = async () => {
     try {
@@ -33,6 +34,15 @@ export default function OpsPage() {
       }
       const json = (await res.json()) as Metrics
       setData(json)
+
+      // health-check
+      try {
+        const h = await fetch('/api/ops/health')
+        const hj = await h.json()
+        setHealth(hj)
+      } catch (e) {
+        setHealth({ ok: false })
+      }
     } catch (e: any) {
       setError(e?.message || 'Ошибка загрузки')
     } finally {
@@ -68,7 +78,13 @@ export default function OpsPage() {
         <MetricCard
           title="БД"
           value={data?.dbOk ? 'OK' : 'Ошибка'}
-          subtitle={data ? new Date(data.timestamp).toLocaleTimeString() : ''}
+          subtitle={
+            data
+              ? `t=${new Date(data.timestamp).toLocaleTimeString()} · uptime=${Math.round(
+                  (data.uptimeSeconds ?? 0) / 60
+                )} мин`
+              : ''
+          }
           status={data?.dbOk ? 'ok' : 'warn'}
         />
         <MetricCard
@@ -95,6 +111,18 @@ export default function OpsPage() {
           title="Пользователей"
           value={data?.metrics?.usersTotal ?? '-'}
           subtitle="Всего в компании"
+        />
+        <MetricCard
+          title="Health"
+          value={health?.ok ? 'OK' : 'Ошибка'}
+          subtitle={
+            health?.startedAt
+              ? `start: ${new Date(health.startedAt).toLocaleString()} · uptime=${Math.round(
+                  (health.uptimeSeconds ?? 0) / 60
+                )} мин`
+              : ''
+          }
+          status={health?.ok ? 'ok' : 'warn'}
         />
       </div>
     </div>

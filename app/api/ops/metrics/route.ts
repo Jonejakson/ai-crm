@@ -46,13 +46,15 @@ export async function GET() {
       }),
     ])
 
-    // Проверка доступности БД и интеграций (минимально)
+    // Проверка доступности БД (факт успешных запросов) + uptime процесса
     const dbOk = true
+    const uptimeSeconds = Math.round(process.uptime())
 
     return NextResponse.json({
       ok: true,
       timestamp: now.toISOString(),
       dbOk,
+      uptimeSeconds,
       metrics: {
         usersTotal,
         contactsTotal,
