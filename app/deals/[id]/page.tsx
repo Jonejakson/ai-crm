@@ -500,6 +500,75 @@ export default function DealDetailPage() {
     }
   }
 
+  const handleSyncMoysklad = async () => {
+    if (!deal) return
+    try {
+      const response = await fetch('/api/accounting/moysklad/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealId: deal.id, mode: 'sync' }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message || 'Синхронизировано с МойСклад')
+        fetchDealData()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при синхронизации с МойСклад')
+      }
+    } catch (error) {
+      console.error('Error syncing with Moysklad:', error)
+      toast.error('Ошибка при синхронизации с МойСклад')
+    }
+  }
+
+  const handleDownloadInvoice = async () => {
+    if (!deal) return
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/invoice`, {
+        method: 'GET',
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Не удалось сформировать PDF')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `invoice-${deal.id}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('PDF счет сформирован')
+    } catch (e) {
+      console.error(e)
+      toast.error('Ошибка при формировании счета')
+    }
+  }
+
+  const handleSendInvoice = async () => {
+    if (!deal) return
+    const email = deal.contact?.email
+    if (!email) {
+      toast.error('У контакта нет email')
+      return
+    }
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/invoice?sendEmail=1&email=${encodeURIComponent(email)}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Не удалось отправить счет')
+        return
+      }
+      const data = await res.json()
+      toast.success(data.message || 'Счет отправлен')
+    } catch (e) {
+      console.error(e)
+      toast.error('Ошибка при отправке счета')
+    }
+  }
+
   const handleExportTo1C = async () => {
     if (!deal) return
     try {
@@ -722,10 +791,31 @@ export default function DealDetailPage() {
                 Выгрузить в 1С
               </button>
               <button
+                onClick={handleSyncMoysklad}
+                className="btn-secondary text-sm"
+                title="Обновить/синхронизировать заказ из МойСклад"
+              >
+                Обновить из МойСклад
+              </button>
+              <button
                 onClick={() => setIsEditModalOpen(true)}
                 className="btn-primary text-sm"
               >
                 Редактировать
+              </button>
+              <button
+                onClick={handleDownloadInvoice}
+                className="btn-secondary text-sm"
+                title="Скачать счет (PDF)"
+              >
+                Счет (PDF)
+              </button>
+              <button
+                onClick={handleSendInvoice}
+                className="btn-secondary text-sm"
+                title="Отправить счет на email контакта"
+              >
+                Отправить счет
               </button>
             </div>
           </div>

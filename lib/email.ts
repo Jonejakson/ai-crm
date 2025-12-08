@@ -31,11 +31,18 @@ export function isEmailConfigured() {
   return Boolean(MAIL_HOST && MAIL_PORT && MAIL_USER && MAIL_PASSWORD && MAIL_FROM)
 }
 
+interface Attachment {
+  filename: string
+  content: Buffer | string
+  contentType?: string
+}
+
 interface SendEmailPayload {
   to: string
   subject: string
   text?: string
   html?: string
+  attachments?: Attachment[]
 }
 
 export async function sendEmail(payload: SendEmailPayload) {
@@ -46,6 +53,7 @@ export async function sendEmail(payload: SendEmailPayload) {
     subject: payload.subject,
     text: payload.text ?? payload.html,
     html: payload.html,
+    attachments: payload.attachments,
   })
 
   return info

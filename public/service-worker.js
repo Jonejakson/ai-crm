@@ -9,6 +9,8 @@ const STATIC_ASSETS = [
   '/offline',
   '/manifest.webmanifest',
   '/icon.svg',
+  '/icon-192x192.png',
+  '/icon-512x512.png',
 ];
 
 // Логирование для отладки

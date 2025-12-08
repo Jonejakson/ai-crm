@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { contactId, dealId } = body
+    const { contactId, dealId, mode } = body
 
     if (!contactId && !dealId) {
       return NextResponse.json({ error: "contactId или dealId обязателен" }, { status: 400 })
@@ -111,49 +111,74 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Если есть сделка, создаем заказ в МойСклад
-    let orderId = null
-    if (deal && !deal.externalId) {
-      const orderData: any = {
-        name: deal.title,
-        description: `Сделка из CRM: ${deal.title}`,
-        sum: deal.amount * 100, // МойСклад использует копейки
-        agent: {
-          meta: {
-            href: `${baseUrl}/entity/counterparty/${counterpartyId}`,
-            metadataHref: `${baseUrl}/entity/counterparty/metadata`,
-            type: 'counterparty',
-            mediaType: 'application/json',
+    // Если есть сделка — создаем или обновляем заказ в МойСклад
+    let orderId = deal?.externalId || null
+    if (deal) {
+      // Режим принудительного обновления
+      const forceUpdate = mode === 'sync'
+      if (!orderId || forceUpdate) {
+        // если надо обновить — пытаемся найти существующий заказ
+        let existingOrder: any = null
+        if (orderId) {
+          const orderResp = await fetch(`${baseUrl}/entity/customerorder/${orderId}`, {
+            headers: {
+              'Authorization': `Basic ${authString}`,
+              'Content-Type': 'application/json',
+            },
+          })
+          if (orderResp.ok) {
+            existingOrder = await orderResp.json()
+          }
+        }
+
+        const orderData: any = {
+          name: deal.title,
+          description: `Сделка из CRM: ${deal.title}`,
+          sum: deal.amount * 100, // МойСклад использует копейки
+          agent: {
+            meta: {
+              href: `${baseUrl}/entity/counterparty/${counterpartyId}`,
+              metadataHref: `${baseUrl}/entity/counterparty/metadata`,
+              type: 'counterparty',
+              mediaType: 'application/json',
+            },
           },
-        },
-      }
+        }
 
-      const orderResponse = await fetch(`${baseUrl}/entity/customerorder`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${authString}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData),
-      })
+        // Если есть существующий заказ и режим sync — обновляем
+        const orderUrl = existingOrder
+          ? `${baseUrl}/entity/customerorder/${existingOrder.id}`
+          : `${baseUrl}/entity/customerorder`
 
-      if (orderResponse.ok) {
-        const order = await orderResponse.json()
-        orderId = order.id
+        const orderMethod = existingOrder ? 'PUT' : 'POST'
 
-        // Сохраняем externalId и обновляем сумму сделки из заказа (на случай отличий)
-        await prisma.deal.update({
-          where: { id: deal.id },
-          data: {
-            externalId: orderId,
-            amount: typeof order.sum === 'number' ? Math.round(order.sum / 100) : deal.amount,
-            syncedAt: new Date(),
+        const orderResponse = await fetch(orderUrl, {
+          method: orderMethod,
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify(orderData),
         })
-      } else {
-        const errorData = await orderResponse.json().catch(() => ({}))
-        console.error('[moysklad][export][order]', errorData)
-        // Не прерываем процесс, если заказ не создался
+
+        if (orderResponse.ok) {
+          const order = await orderResponse.json()
+          orderId = order.id
+
+          // Сохраняем externalId и обновляем сумму сделки из заказа (на случай отличий)
+          await prisma.deal.update({
+            where: { id: deal.id },
+            data: {
+              externalId: orderId,
+              amount: typeof order.sum === 'number' ? Math.round(order.sum / 100) : deal.amount,
+              syncedAt: new Date(),
+            },
+          })
+        } else {
+          const errorData = await orderResponse.json().catch(() => ({}))
+          console.error('[moysklad][export][order]', errorData)
+          // Не прерываем процесс, если заказ не создался/обновился
+        }
       }
     }
 
@@ -173,7 +198,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: deal ? 'Контакт и заказ выгружены в МойСклад' : 'Контакт выгружен в МойСклад',
+      message:
+        mode === 'sync'
+          ? deal
+            ? 'Заказ синхронизирован с МойСклад'
+            : 'Контрагент синхронизирован с МойСклад'
+          : deal
+          ? 'Контакт и заказ выгружены в МойСклад'
+          : 'Контакт выгружен в МойСклад',
       counterpartyId,
       orderId,
     })
