@@ -21,8 +21,10 @@ export async function GET() {
       dealsTotal,
       contactsTotal,
       submissions24h,
+      subsTotal,
       subsActive,
       subsTrial,
+      subsCanceled,
     ] = await Promise.all([
       prisma.company.count(),
       prisma.company.count({ where: { createdAt: { gt: d24h } } }),
@@ -34,8 +36,10 @@ export async function GET() {
       prisma.deal.count(),
       prisma.contact.count(),
       prisma.webFormSubmission.count({ where: { createdAt: { gt: d24h } } }),
+      prisma.subscription.count().catch(() => 0),
       prisma.subscription.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
       prisma.subscription.count({ where: { status: 'TRIAL' } }).catch(() => 0),
+      prisma.subscription.count({ where: { status: 'CANCELLED' } }).catch(() => 0),
     ])
 
     return NextResponse.json({
@@ -49,8 +53,10 @@ export async function GET() {
         dealsTotal,
         contactsTotal,
         submissions24h,
+        subsTotal,
         subsActive,
         subsTrial,
+        subsCanceled,
       },
     })
   } catch (error) {

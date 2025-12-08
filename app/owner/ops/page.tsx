@@ -15,8 +15,10 @@ type OwnerMetrics = {
     dealsTotal: number
     contactsTotal: number
     submissions24h: number
+    subsTotal: number
     subsActive: number
     subsTrial: number
+    subsCanceled: number
   }
 }
 
@@ -77,6 +79,7 @@ export default function OwnerOpsPage() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <SectionTitle title="Система" />
         <MetricCard
           title="Компаний всего"
           value={data?.metrics?.companiesTotal ?? '-'}
@@ -107,6 +110,22 @@ export default function OwnerOpsPage() {
           value={data ? new Date(data.timestamp).toLocaleTimeString() : '-'}
           subtitle="Серверное время метрик"
         />
+        <SectionTitle title="Бизнес" />
+        <MetricCard
+          title="Подписки"
+          value={`Всего: ${data?.metrics?.subsTotal ?? 0}`}
+          subtitle={`Актив: ${data?.metrics?.subsActive ?? 0} • Trial: ${data?.metrics?.subsTrial ?? 0} • Отмены: ${data?.metrics?.subsCanceled ?? 0}`}
+        />
+        <MetricCard
+          title="Сабмиты форм 24ч"
+          value={data?.metrics?.submissions24h ?? '-'}
+          subtitle="WebForm submissions (все компании)"
+        />
+        <MetricCard
+          title="Сделки / Контакты"
+          value={`${data?.metrics?.dealsTotal ?? '-'} / ${data?.metrics?.contactsTotal ?? '-'}`}
+          subtitle="Всего по всем компаниям"
+        />
       </div>
     </div>
   )
@@ -129,5 +148,14 @@ function MetricCard({
     </div>
   )
 }
+
+function SectionTitle({ title }: { title: string }) {
+  return (
+    <div className="md:col-span-3 text-sm font-semibold text-[var(--muted)] mt-2 mb-1">
+      {title}
+    </div>
+  )
+}
+
 
 
