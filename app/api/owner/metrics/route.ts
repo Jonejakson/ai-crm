@@ -21,10 +21,7 @@ export async function GET() {
       dealsTotal,
       contactsTotal,
       submissions24h,
-      subsTotal,
-      subsActive,
-      subsTrial,
-      subsCanceled,
+      subsRaw,
     ] = await Promise.all([
       prisma.company.count(),
       prisma.company.count({ where: { createdAt: { gt: d24h } } }),
@@ -36,11 +33,23 @@ export async function GET() {
       prisma.deal.count(),
       prisma.contact.count(),
       prisma.webFormSubmission.count({ where: { createdAt: { gt: d24h } } }),
-      prisma.subscription.count().catch(() => 0),
-      prisma.subscription.count({ where: { status: 'ACTIVE' } }).catch(() => 0),
-      prisma.subscription.count({ where: { status: 'TRIAL' } }).catch(() => 0),
-      prisma.subscription.count({ where: { status: 'CANCELED' } }).catch(() => 0),
+      prisma.subscription.findMany({
+        select: { companyId: true, status: true },
+      }),
     ])
+
+    // Считаем по уникальным компаниям
+    const uniq = (arr: number[]) => Array.from(new Set(arr))
+    const subsActiveCompanies = uniq(
+      subsRaw.filter((s) => s.status === 'ACTIVE').map((s) => s.companyId)
+    )
+    const subsTrialCompanies = uniq(
+      subsRaw.filter((s) => s.status === 'TRIAL').map((s) => s.companyId)
+    )
+    const subsCanceledCompanies = uniq(
+      subsRaw.filter((s) => s.status === 'CANCELED').map((s) => s.companyId)
+    )
+    const subsAnyCompanies = uniq(subsRaw.map((s) => s.companyId))
 
     return NextResponse.json({
       ok: true,
@@ -53,10 +62,10 @@ export async function GET() {
         dealsTotal,
         contactsTotal,
         submissions24h,
-        subsTotal,
-        subsActive,
-        subsTrial,
-        subsCanceled,
+        subsTotal: subsAnyCompanies.length,
+        subsActive: subsActiveCompanies.length,
+        subsTrial: subsTrialCompanies.length,
+        subsCanceled: subsCanceledCompanies.length,
       },
     })
   } catch (error) {
