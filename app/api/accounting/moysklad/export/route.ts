@@ -118,27 +118,11 @@ export async function POST(request: NextRequest) {
         name: deal.title,
         description: `Сделка из CRM: ${deal.title}`,
         sum: deal.amount * 100, // МойСклад использует копейки
-        currency: {
-          meta: {
-            href: `${baseUrl}/entity/currency/${deal.currency === 'RUB' ? 'b72b4c1-6a7c-11e3-9fa0-504800000006' : 'b72b4c1-6a7c-11e3-9fa0-504800000006'}`,
-            metadataHref: `${baseUrl}/entity/currency/metadata`,
-            type: 'currency',
-            mediaType: 'application/json',
-          },
-        },
         agent: {
           meta: {
             href: `${baseUrl}/entity/counterparty/${counterpartyId}`,
             metadataHref: `${baseUrl}/entity/counterparty/metadata`,
             type: 'counterparty',
-            mediaType: 'application/json',
-          },
-        },
-        organization: {
-          meta: {
-            href: `${baseUrl}/entity/organization`,
-            metadataHref: `${baseUrl}/entity/organization/metadata`,
-            type: 'organization',
             mediaType: 'application/json',
           },
         },
