@@ -15,7 +15,6 @@ import {
   AutomationsIcon,
   CompanyIcon,
   EmailTemplateIcon,
-  ShieldIcon,
   MenuIcon,
   CloseIcon
 } from './Icons'
@@ -48,7 +47,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       { id: 'email-templates', name: 'Шаблоны писем', href: '/email-templates', Icon: EmailTemplateIcon },
       { id: 'automations', name: 'Автоматизации', href: '/automations', Icon: AutomationsIcon },
       { id: 'company', name: 'Компания', href: '/company', Icon: CompanyIcon },
-      { id: 'ops', name: 'Операции', href: '/ops', Icon: ShieldIcon },
+      { id: 'ops', name: 'Операции', href: '/ops', Icon: ActivityIcon },
     ] : []),
   ]
 
