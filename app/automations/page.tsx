@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { EditIcon, TrashIcon } from '@/components/Icons'
 import { DndContext, DragEndEvent, closestCenter } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
@@ -9,6 +9,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import AutomationBuilder from '@/components/AutomationBuilder'
+import { automationTemplates, AutomationTemplate } from '@/lib/automation-templates'
 
 interface Automation {
   id: number
@@ -127,6 +128,7 @@ export default function AutomationsPage() {
   const [editingAutomation, setEditingAutomation] = useState<Automation | null>(null)
   const [users, setUsers] = useState<{ id: number; name: string; email: string }[]>([])
   const [useVisualEditor, setUseVisualEditor] = useState(false)
+  const [templateSearch, setTemplateSearch] = useState('')
 
   const [formData, setFormData] = useState({
     name: '',
@@ -136,6 +138,17 @@ export default function AutomationsPage() {
     triggerConfig: {} as any,
     actions: [] as ActionForm[],
   })
+
+  const filteredTemplates = useMemo(() => {
+    const term = templateSearch.trim().toLowerCase()
+    if (!term) return automationTemplates
+    return automationTemplates.filter(
+      (tpl) =>
+        tpl.title.toLowerCase().includes(term) ||
+        tpl.description.toLowerCase().includes(term) ||
+        (tpl.category || '').toLowerCase().includes(term)
+    )
+  }, [templateSearch])
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -312,6 +325,27 @@ export default function AutomationsPage() {
     }))
   }
 
+  const applyTemplate = (template: AutomationTemplate) => {
+    const mappedActions = (template.actions || []).map((action) => ({
+      id: generateActionId(),
+      type: action.type,
+      params: action.params || {},
+    }))
+
+    setEditingAutomation(null)
+    setUseVisualEditor(false)
+    setFormData({
+      name: template.title,
+      description: template.description,
+      isActive: true,
+      triggerType: template.triggerType,
+      triggerConfig: template.triggerConfig || {},
+      actions: mappedActions,
+    })
+    setIsModalOpen(true)
+    setSuccess('Шаблон применен. Проверьте и сохраните автоматизацию.')
+  }
+
   const updateActionType = (actionId: string, type: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -405,6 +439,55 @@ export default function AutomationsPage() {
           {success}
         </div>
       )}
+
+      {/* Библиотека готовых автоматизаций */}
+      <div className="glass-panel rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 space-y-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Шаблоны</p>
+            <h2 className="text-xl font-semibold text-slate-900">Библиотека готовых автоматизаций</h2>
+            <p className="text-sm text-slate-500">Выберите шаблон и настройте под себя</p>
+          </div>
+          <input
+            value={templateSearch}
+            onChange={(e) => setTemplateSearch(e.target.value)}
+            placeholder="Поиск по шаблонам..."
+            className="w-full md:w-64 rounded-xl border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredTemplates.map((tpl) => (
+            <div
+              key={tpl.id}
+              className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 shadow-sm flex flex-col gap-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">{tpl.title}</h3>
+                {tpl.complexity && (
+                  <span className="text-xs px-2 py-1 rounded-full bg-[var(--background-soft)] text-[var(--muted)]">
+                    {tpl.complexity === 'basic' ? 'Базовый' : 'Продвинутый'}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-[var(--muted)]">{tpl.description}</p>
+              <div className="flex items-center justify-between text-xs text-[var(--muted)]">
+                <span>Триггер: {TRIGGER_TYPES.find((t) => t.value === tpl.triggerType)?.label || tpl.triggerType}</span>
+                {tpl.category && <span className="px-2 py-1 rounded bg-[var(--background-soft)]">{tpl.category}</span>}
+              </div>
+              <button
+                onClick={() => applyTemplate(tpl)}
+                className="btn-primary text-sm w-full"
+              >
+                Использовать шаблон
+              </button>
+            </div>
+          ))}
+          {filteredTemplates.length === 0 && (
+            <div className="col-span-full text-sm text-[var(--muted)]">Шаблоны не найдены</div>
+          )}
+        </div>
+      </div>
 
       <div className="glass-panel rounded-3xl overflow-hidden">
         {automations.length === 0 ? (
