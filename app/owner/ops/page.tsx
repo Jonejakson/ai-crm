@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { isOwner } from '@/lib/owner'
 import { useSession } from 'next-auth/react'
 
 type OwnerMetrics = {
@@ -56,10 +55,6 @@ export default function OwnerOpsPage() {
 
   if (status === 'loading') {
     return <div className="p-6 text-[var(--muted)]">Загрузка…</div>
-  }
-
-  if (!session?.user?.email || !isOwner(session.user.email)) {
-    return <div className="p-6 text-red-600">Доступ запрещён</div>
   }
 
   return (
