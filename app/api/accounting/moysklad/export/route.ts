@@ -141,11 +141,12 @@ export async function POST(request: NextRequest) {
         const order = await orderResponse.json()
         orderId = order.id
 
-        // Сохраняем externalId в сделку
+        // Сохраняем externalId и обновляем сумму сделки из заказа (на случай отличий)
         await prisma.deal.update({
           where: { id: deal.id },
           data: {
             externalId: orderId,
+            amount: typeof order.sum === 'number' ? Math.round(order.sum / 100) : deal.amount,
             syncedAt: new Date(),
           },
         })
