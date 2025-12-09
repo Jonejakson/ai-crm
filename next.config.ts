@@ -24,6 +24,16 @@ const nextConfig: NextConfig = {
       fullUrl: process.env.NODE_ENV === 'development',
     },
   },
+
+  webpack: (config) => {
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      pdfkit: 'pdfkit/js/pdfkit.js',
+      fontkit: 'fontkit/index.js',
+    }
+    return config
+  },
 };
 
 // Обернуть конфигурацию в Sentry, если DSN установлен
