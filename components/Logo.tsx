@@ -42,7 +42,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   if (variant === 'icon') {
     return (
       <div className={`${currentSize.icon} ${className}`}>
-        <EnvelopeIcon />
+        <FlameIcon />
       </div>
     )
   }
