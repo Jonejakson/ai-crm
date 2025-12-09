@@ -25,6 +25,14 @@ const nextConfig: NextConfig = {
     },
   },
 
+  // Turbopack config: mirror aliases to avoid pdfkit/fontkit ESM helpers issues
+  turbopack: {
+    resolveAlias: {
+      pdfkit: 'pdfkit/js/pdfkit.js',
+      fontkit: 'fontkit/index.js',
+    },
+  },
+
   webpack: (config) => {
     config.resolve = config.resolve || {}
     config.resolve.alias = {
