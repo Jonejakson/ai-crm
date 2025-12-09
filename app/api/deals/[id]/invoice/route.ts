@@ -5,7 +5,9 @@ import { sendEmail, isEmailConfigured } from '@/lib/email'
 // Генерация PDF счета/квита по сделке
 
 async function generatePdfBuffer(deal: any, contact: any) {
-  const PDFKit = (await import('pdfkit')).default as any
+  // Import the CJS build of pdfkit to avoid Turbopack ESM helper issues
+  const pdfkitModule = (await import('pdfkit/js/pdfkit.js')) as any
+  const PDFKit = pdfkitModule.default || pdfkitModule
   const doc = new PDFKit({ margin: 40 })
   const chunks: Buffer[] = []
   doc.on('data', (c: Buffer) => chunks.push(c))
