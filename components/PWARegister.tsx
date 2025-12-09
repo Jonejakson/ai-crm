@@ -156,7 +156,7 @@ export default function PWARegister() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-              Установить Pocket CRM
+              Установить Flame CRM
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
               Установите приложение для быстрого доступа и работы офлайн

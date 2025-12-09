@@ -485,7 +485,7 @@ export default function CompanyPage() {
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Профиль компании</p>
           <h1 className="text-3xl font-semibold text-[var(--foreground)]">Управление командой и тарифами</h1>
-          <p className="text-sm text-[var(--muted)]">Контролируйте доступ, роли и подписку Pocket CRM из одного окна.</p>
+          <p className="text-sm text-[var(--muted)]">Контролируйте доступ, роли и подписку Flame CRM из одного окна.</p>
         </div>
         <a
           href="/company/custom-fields"

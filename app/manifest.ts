@@ -2,10 +2,10 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Pocket CRM - Управление клиентами и сделками',
-    short_name: 'Pocket CRM',
+    name: 'Flame CRM - Управление клиентами и сделками',
+    short_name: 'Flame CRM',
     description:
-      'Современная CRM система для управления клиентами, сделками, задачами и аналитикой',
+      'Flame CRM — современная система для управления клиентами, сделками, задачами и аналитикой',
     start_url: '/',
     display: 'standalone',
     background_color: '#0f172a',

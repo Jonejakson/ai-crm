@@ -310,7 +310,7 @@ export default function CalendarClient() {
       {/* Заголовок */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Календарь Pocket CRM</p>
+          <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Календарь Flame CRM</p>
           <h1 className="text-3xl font-semibold text-[var(--foreground)]">
             {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h1>

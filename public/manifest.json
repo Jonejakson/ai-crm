@@ -1,7 +1,7 @@
 {
-  "name": "Pocket CRM - Управление клиентами и сделками",
-  "short_name": "Pocket CRM",
-  "description": "Современная CRM система для управления клиентами, сделками, задачами и аналитикой",
+  "name": "Flame CRM - Управление клиентами и сделками",
+  "short_name": "Flame CRM",
+  "description": "Flame CRM — современная система для управления клиентами, сделками, задачами и аналитикой",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",

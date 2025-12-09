@@ -283,7 +283,7 @@ async function networkFirstWithOfflineFallback(request) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Офлайн - Pocket CRM</title>
+  <title>Офлайн - Flame CRM</title>
   <style>
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -325,7 +325,7 @@ self.addEventListener('push', (event) => {
   console.log('[Service Worker] Push notification received');
   
   const data = event.data?.json() || {};
-  const title = data.title || 'Pocket CRM';
+  const title = data.title || 'Flame CRM';
   const options = {
     body: data.body || 'У вас новое уведомление',
     icon: '/icon-192x192.png',

@@ -73,7 +73,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   if (variant === 'text') {
     return (
       <span className={`font-bold ${currentSize.text} text-[var(--foreground)] ${className}`}>
-        Pocket CRM
+        Flame CRM
       </span>
     )
   }
@@ -85,7 +85,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
         <EnvelopeIcon />
       </div>
       <span className={`font-bold ${currentSize.text} text-[var(--foreground)] tracking-tight`}>
-        Pocket CRM
+        Flame CRM
       </span>
     </div>
   )

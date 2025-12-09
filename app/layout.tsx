@@ -3,10 +3,10 @@ import LayoutClient from './layout-client'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Pocket CRM - Управление клиентами и сделками',
-    template: '%s | Pocket CRM'
+    default: 'Flame CRM - Управление клиентами и сделками',
+    template: '%s | Flame CRM'
   },
-  description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой. Автоматизация продаж, интеграции, AI-ассистент.',
+  description: 'Flame CRM — современная CRM система для управления клиентами, сделками, задачами и аналитикой. Автоматизация продаж, интеграции, AI-ассистент.',
   keywords: [
     'CRM',
     'управление клиентами',
@@ -18,25 +18,25 @@ export const metadata: Metadata = {
     'воронка продаж',
     'управление контактами',
     'CRM система',
-    'Pocket CRM'
+    'Flame CRM'
   ],
-  authors: [{ name: 'Pocket CRM' }],
-  creator: 'Pocket CRM',
-  publisher: 'Pocket CRM',
+  authors: [{ name: 'Flame CRM' }],
+  creator: 'Flame CRM',
+  publisher: 'Flame CRM',
   metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
-    siteName: 'Pocket CRM',
-    title: 'Pocket CRM - Управление клиентами и сделками',
-    description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой. Автоматизация продаж, интеграции, AI-ассистент.',
+    siteName: 'Flame CRM',
+    title: 'Flame CRM - Управление клиентами и сделками',
+    description: 'Flame CRM — современная CRM система для управления клиентами, сделками, задачами и аналитикой. Автоматизация продаж, интеграции, AI-ассистент.',
     url: '/',
     // images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Pocket CRM' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pocket CRM - Управление клиентами и сделками',
-    description: 'Современная CRM система для управления клиентами, сделками, задачами и аналитикой.',
+    title: 'Flame CRM - Управление клиентами и сделками',
+    description: 'Flame CRM — современная CRM система для управления клиентами, сделками, задачами и аналитикой.',
     // images: ['/og-image.png'],
   },
   robots: {
@@ -71,11 +71,11 @@ export default function RootLayout({
     <html lang="ru">
       <head>
         {/* PWA Meta Tags */}
-        <meta name="application-name" content="Pocket CRM" />
+        <meta name="application-name" content="Flame CRM" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Pocket CRM" />
-        <meta name="description" content="Современная CRM система для управления клиентами, сделками, задачами и аналитикой" />
+        <meta name="apple-mobile-web-app-title" content="Flame CRM" />
+        <meta name="description" content="Flame CRM — современная CRM система для управления клиентами, сделками, задачами и аналитикой" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#3f6ff5" />
