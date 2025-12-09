@@ -29,8 +29,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     resolveAlias: {
       pdfkit: 'pdfkit/js/pdfkit.js',
-      // Resolve absolute path to CJS entry
-      fontkit: require.resolve('fontkit/dist/main.cjs'),
+      // Point to package entry (maps to CJS for require)
+      fontkit: require.resolve('fontkit'),
     },
   },
 
@@ -39,8 +39,8 @@ const nextConfig: NextConfig = {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       pdfkit: require.resolve('pdfkit/js/pdfkit.js'),
-      // Resolve absolute path to CJS entry
-      fontkit: require.resolve('fontkit/dist/main.cjs'),
+      // Point to package entry (maps to CJS for require)
+      fontkit: require.resolve('fontkit'),
     }
     return config
   },
