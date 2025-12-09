@@ -29,7 +29,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     resolveAlias: {
       pdfkit: 'pdfkit/js/pdfkit.js',
-      fontkit: 'fontkit/index.js',
+      // Use the CJS build; exports field hides index.js
+      fontkit: 'fontkit/dist/fontkit.js',
     },
   },
 
@@ -38,7 +39,8 @@ const nextConfig: NextConfig = {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
       pdfkit: 'pdfkit/js/pdfkit.js',
-      fontkit: 'fontkit/index.js',
+      // Use the CJS build; exports field hides index.js
+      fontkit: 'fontkit/dist/fontkit.js',
     }
     return config
   },
