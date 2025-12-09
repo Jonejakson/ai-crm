@@ -28,8 +28,8 @@ const nextConfig: NextConfig = {
   // Turbopack config: mirror aliases to avoid pdfkit/fontkit ESM helpers issues
   turbopack: {
     resolveAlias: {
-      pdfkit: 'pdfkit/js/pdfkit.js',
-      // Point to package entry (maps to CJS for require)
+      // Point to package entry (CJS)
+      pdfkit: require.resolve('pdfkit'),
       fontkit: require.resolve('fontkit'),
     },
   },
@@ -38,8 +38,8 @@ const nextConfig: NextConfig = {
     config.resolve = config.resolve || {}
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      pdfkit: require.resolve('pdfkit/js/pdfkit.js'),
-      // Point to package entry (maps to CJS for require)
+      // Point to package entry (CJS)
+      pdfkit: require.resolve('pdfkit'),
       fontkit: require.resolve('fontkit'),
     }
     return config
