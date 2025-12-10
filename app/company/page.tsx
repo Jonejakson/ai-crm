@@ -608,7 +608,7 @@ export default function CompanyPage() {
                     </div>
                     <h3 className="text-2xl font-semibold text-[var(--foreground)]">{plan.name}</h3>
                     <p className="text-sm text-[var(--muted)]">
-                      {plan.description || 'Полный функционал CRM без ограничений по модулям.'}
+                      {plan.description || 'Полный функционал CRM без ограничений по модулям и доплат.'}
                     </p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-semibold text-[var(--foreground)]">{formatPrice(plan)}</p>
