@@ -110,6 +110,7 @@ model Company {
     advertisingIntegrations AdvertisingIntegration[]
     accountingIntegrations AccountingIntegration[]
     emailTemplates EmailTemplate[]
+    supportTickets SupportTicket[]
 }
 
 model User {
@@ -138,6 +139,7 @@ model User {
   assignedWebhookIntegrations WebhookIntegration[] @relation("WebhookIntegrationAssignee")
   assignedMessagingIntegrations MessagingIntegration[] @relation("MessagingIntegrationAssignee")
   assignedAdvertisingIntegrations AdvertisingIntegration[] @relation("AdvertisingIntegrationAssignee")
+  supportTickets SupportTicket[]
 }
 
 model Contact {
