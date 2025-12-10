@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         message: message.trim(),
         email: (email || user.email || '').trim(),
         companyId: Number(user.companyId),
-        userId: user.id,
+        userId: Number(user.id),
       },
     })
 
