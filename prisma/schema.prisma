@@ -429,6 +429,22 @@ model Comment {
     updatedAt   DateTime @updatedAt
 }
 
+model SupportTicket {
+    id         Int      @id @default(autoincrement())
+    subject    String
+    message    String
+    email      String
+    status     String   @default("open")
+    company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+    companyId  Int
+    user       User?    @relation(fields: [userId], references: [id])
+    userId     Int?
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    @@index([companyId, status])
+}
+
 model Tag {
     id          Int      @id @default(autoincrement())
     name        String
