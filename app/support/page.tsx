@@ -44,7 +44,7 @@ export default function SupportPage() {
         <h1 className="text-3xl font-semibold text-[var(--foreground)]">Свяжитесь с нами</h1>
         <p className="text-sm text-[var(--muted)]">
           Опишите проблему или вопрос. Мы ответим на email и в Telegram (если указан в аккаунте).
-          Тикет создастся в системе без скрытых доплат, SLA: быстрый ответ в рабочее время.
+          Тикет создастся в системе, SLA: быстрый ответ в рабочее время.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
           <div className="p-3 rounded-2xl bg-[var(--background-soft)]">
