@@ -109,8 +109,19 @@ export async function POST(req: Request) {
       if (isNewCompany && finalCompanyId) {
         try {
           // Ищем план LITE (бесплатный/базовый)
+          // Выбираем только существующие поля, чтобы избежать ошибок схемы
           const litePlan = await tx.plan.findFirst({
-            where: { slug: PlanSlug.LITE }
+            where: { slug: PlanSlug.LITE },
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              price: true,
+              currency: true,
+              userLimit: true,
+              contactLimit: true,
+              pipelineLimit: true,
+            }
           })
 
           if (litePlan) {

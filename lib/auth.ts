@@ -35,10 +35,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.error('❌ Авторизация: отсутствует email или password')
           return null
         }
 
         try {
+          console.log('🔐 Попытка авторизации для:', credentials.email)
+          
           // Получаем Prisma только когда нужно (не в Edge Runtime)
           const prisma = await getPrisma()
           const user = await prisma.user.findUnique({
@@ -51,8 +54,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           })
 
           if (!user) {
+            console.error('❌ Пользователь не найден:', credentials.email)
             return null
           }
+
+          console.log('✅ Пользователь найден:', user.email, 'Роль:', user.role)
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
@@ -60,9 +66,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           )
 
           if (!isPasswordValid) {
+            console.error('❌ Неверный пароль для:', credentials.email)
             return null
           }
 
+          console.log('✅ Авторизация успешна для:', credentials.email)
           return {
             id: user.id.toString(),
             email: user.email,
@@ -71,7 +79,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             companyId: user.companyId.toString(),
           }
         } catch (error: any) {
-          console.error('Ошибка авторизации:', error)
+          console.error('❌ Ошибка авторизации:', error.message)
+          console.error('Stack:', error.stack)
           return null
         }
       }
