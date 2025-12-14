@@ -17,15 +17,15 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const filterUserId = searchParams.get('userId'); // Параметр фильтрации для админа
 
-    // Если админ передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
+    // Если админ или owner передал userId, фильтруем по нему, иначе используем стандартную фильтрацию
     let whereCondition: any;
     
-    if (user.role === 'admin' && filterUserId) {
-      // Админ может фильтровать по конкретному пользователю
+    if ((user.role === 'admin' || user.role === 'owner') && filterUserId) {
+      // Админ/owner может фильтровать по конкретному пользователю
       const targetUserId = parseInt(filterUserId);
       whereCondition = { userId: targetUserId };
     } else {
-      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
+      // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании, owner - все)
       whereCondition = await getDirectWhereCondition();
     }
 
