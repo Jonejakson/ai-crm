@@ -43,6 +43,9 @@ export default function LoginPage() {
         console.log('Registration successful:', data)
 
         // После регистрации автоматически входим
+        // Небольшая задержка, чтобы база данных успела обновиться
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         const result = await nextAuthSignIn('credentials', {
           email,
           password,
@@ -50,7 +53,12 @@ export default function LoginPage() {
         })
 
         if (result?.error) {
-          setError('Ошибка при входе после регистрации')
+          // Если автоматический вход не сработал, предлагаем войти вручную
+          console.error('Ошибка автоматического входа:', result.error)
+          setError('Регистрация успешна! Пожалуйста, войдите вручную.')
+          setIsRegister(false) // Переключаем на форму входа
+          setEmail(email) // Сохраняем email
+          setPassword('') // Очищаем пароль
         } else {
           router.push('/')
           router.refresh()
