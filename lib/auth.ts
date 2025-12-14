@@ -2,13 +2,13 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 
-// Загружаем переменные окружения ПЕРЕД импортом Prisma
-// Но НЕ импортируем Prisma здесь, чтобы избежать проблем с Edge Runtime
-if (typeof window === 'undefined') {
+// В production НЕ загружаем dotenv - используем переменные из Docker/системы
+// Загружаем переменные окружения только в development
+if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
   try {
-    require('dotenv').config({ override: true })
+    require('dotenv').config()
   } catch (e) {
-    // dotenv уже загружен
+    // Игнорируем ошибки загрузки dotenv
   }
 }
 
