@@ -5,19 +5,18 @@
 import { PrismaClient } from '@prisma/client'
 
 // Загружаем dotenv ПЕРЕД созданием Prisma Client
+// В production НЕ переопределяем переменные окружения из Docker/системы
 // Не используем path и process.cwd() для совместимости с Edge Runtime
-if (typeof window === 'undefined') {
+if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
   try {
     const dotenv = require('dotenv')
-    // dotenv.config() автоматически ищет .env в корне проекта
-    const result = dotenv.config({ override: true })
-    if (result.error) {
+    // В development загружаем .env файл, но не переопределяем существующие переменные
+    const result = dotenv.config()
+    if (result.error && !result.error.message.includes('ENOENT')) {
       console.warn('⚠️ Ошибка загрузки .env:', result.error)
-    } else {
-      console.log('✅ .env файл загружен')
     }
   } catch (e) {
-    console.warn('⚠️ Ошибка при загрузке dotenv:', e)
+    // Игнорируем ошибки загрузки dotenv
   }
 }
 
@@ -28,13 +27,14 @@ const globalForPrisma = globalThis as unknown as {
 
 // Функция для получения DATABASE_URL
 function getDatabaseUrl(): string {
-  // Пробуем загрузить dotenv еще раз
-  if (typeof window === 'undefined') {
+  // В production используем переменные окружения напрямую (из Docker/системы)
+  // В development загружаем из .env только если переменная не установлена
+  if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production' && !process.env.DATABASE_URL) {
     try {
       const dotenv = require('dotenv')
-      dotenv.config({ override: true })
+      dotenv.config()
     } catch (e) {
-      // Игнорируем
+      // Игнорируем ошибки
     }
   }
 

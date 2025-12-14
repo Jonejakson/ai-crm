@@ -3,12 +3,13 @@ import bcrypt from "bcryptjs"
 import { validateRequest, createUserSchema } from "@/lib/validation"
 import { SubscriptionStatus, BillingInterval, PlanSlug } from '@prisma/client'
 
-// Загружаем переменные окружения ПЕРЕД импортом Prisma
-if (typeof window === 'undefined') {
+// В production НЕ загружаем dotenv - используем переменные из Docker/системы
+// Загружаем переменные окружения только в development
+if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
   try {
     require('dotenv').config()
   } catch (e) {
-    // dotenv уже загружен
+    // Игнорируем ошибки загрузки dotenv
   }
 }
 
