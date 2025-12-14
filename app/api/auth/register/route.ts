@@ -56,27 +56,36 @@ export async function POST(req: Request) {
     let finalCompanyId = companyId;
     let isNewCompany = false;
     
-    if (!finalCompanyId) {
-      // Создаем новую компанию
-      const company = await prisma.company.create({
-        data: {
-          name: `${name}'s Company`,
-        },
-      });
-      finalCompanyId = company.id;
-      isNewCompany = true;
-    }
-
-    // Проверяем, есть ли уже пользователи в компании
-    const existingUsersCount = await prisma.user.count({
-      where: { companyId: finalCompanyId }
-    })
-
-    // Если это новая компания или первый пользователь - делаем его админом
-    const userRole = (isNewCompany || existingUsersCount === 0) ? 'admin' : 'user'
-
     // Создание пользователя и подписки в транзакции
     const result = await prisma.$transaction(async (tx) => {
+      // Если companyId не передан, создаем новую компанию
+      if (!finalCompanyId) {
+        const company = await tx.company.create({
+          data: {
+            name: `${name}'s Company`,
+          },
+        });
+        finalCompanyId = company.id;
+        isNewCompany = true;
+      }
+
+      // Проверяем, есть ли уже пользователи в компании
+      const existingUsersCount = await tx.user.count({
+        where: { companyId: finalCompanyId }
+      })
+
+      // Если это новая компания или первый пользователь - делаем его админом
+      const userRole = (isNewCompany || existingUsersCount === 0) ? 'admin' : 'user'
+      
+      // Логирование для отладки
+      console.log('🔍 Registration debug:', {
+        email,
+        isNewCompany,
+        finalCompanyId,
+        existingUsersCount,
+        userRole
+      })
+
       // Создание пользователя
       const user = await tx.user.create({
         data: {
@@ -96,7 +105,7 @@ export async function POST(req: Request) {
       })
 
       // Если это новая компания, создаем подписку (trial или бесплатный план)
-      if (isNewCompany) {
+      if (isNewCompany && finalCompanyId) {
         // Ищем план LITE (бесплатный/базовый)
         const litePlan = await tx.plan.findFirst({
           where: { slug: PlanSlug.LITE }
