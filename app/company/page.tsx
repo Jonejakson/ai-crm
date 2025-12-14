@@ -485,7 +485,7 @@ export default function CompanyPage() {
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Профиль компании</p>
           <h1 className="text-3xl font-semibold text-[var(--foreground)]">Управление командой и тарифами</h1>
-          <p className="text-sm text-[var(--muted)]">Контролируйте доступ, роли и подписку Pocket CRM из одного окна.</p>
+          <p className="text-sm text-[var(--muted)]">Контролируйте доступ, роли и подписку Flame CRM из одного окна.</p>
         </div>
         <a
           href="/company/custom-fields"
@@ -582,16 +582,38 @@ export default function CompanyPage() {
 
               const items = [...highlights, ...limits]
 
+              // Привязка к пакетам S/M/L по лимиту пользователей
+              const tier =
+                typeof plan.userLimit === 'number'
+                  ? plan.userLimit <= 5
+                    ? 'S'
+                    : plan.userLimit <= 15
+                    ? 'M'
+                    : 'L'
+                  : 'L'
+
               return (
                 <div
                   key={plan.id}
                   className={`card h-full flex flex-col gap-4 border ${isCurrent ? 'ring-2 ring-[var(--primary)]/50' : ''}`}
                 >
                   <div className="space-y-2">
-                    <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">{plan.slug}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[var(--background-soft)] px-3 py-1 text-xs font-semibold text-[var(--foreground)]">
+                        План {tier}
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-100">
+                        14 дней бесплатно
+                      </span>
+                    </div>
                     <h3 className="text-2xl font-semibold text-[var(--foreground)]">{plan.name}</h3>
-                    <p className="text-sm text-[var(--muted)]">{plan.description}</p>
-                    <p className="text-3xl font-semibold text-[var(--foreground)]">{formatPrice(plan)}</p>
+                    <p className="text-sm text-[var(--muted)]">
+                      {plan.description || 'Полный функционал CRM без ограничений по модулям и доплат.'}
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl font-semibold text-[var(--foreground)]">{formatPrice(plan)}</p>
+                      <span className="text-xs text-[var(--muted)]">после пробного периода</span>
+                    </div>
                   </div>
                   <ul className="space-y-2 text-sm text-[var(--muted)] flex-1">
                     {items.map((item, index) => (
@@ -610,7 +632,7 @@ export default function CompanyPage() {
                         : 'bg-[var(--primary)] text-white hover:opacity-90'
                     }`}
                   >
-                    {isCurrent ? 'Текущий план' : 'Выбрать тариф'}
+                    {isCurrent ? 'Текущий план' : 'Начать 14-дневный тест'}
                   </button>
                 </div>
               )

@@ -4,14 +4,42 @@ import { sanitizeFormFields } from "@/lib/webforms"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-  "Access-Control-Headers": "Content-Type",
+const allowedOriginsEnv =
+  process.env.WEBFORM_ALLOWED_ORIGINS ||
+  process.env.ALLOWED_ORIGINS ||
+  process.env.NEXT_PUBLIC_WEBFORM_ALLOWED_ORIGINS ||
+  ''
+
+function parseAllowedOrigins() {
+  return allowedOriginsEnv
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
-export async function OPTIONS() {
-  return new Response(null, { headers: CORS_HEADERS })
+function getAllowedOrigin(originHeader: string | null) {
+  const allowed = parseAllowedOrigins()
+  if (allowed.length === 0) return '*'
+  if (!originHeader) return allowed[0] || '*'
+  if (allowed.includes(originHeader)) return originHeader
+  return null
+}
+
+function corsHeaders(origin: string | null) {
+  return {
+    'Access-Control-Allow-Origin': origin || 'null',
+    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  }
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const allowedOrigin = getAllowedOrigin(origin)
+  if (!allowedOrigin) {
+    return new Response(null, { status: 403, headers: corsHeaders(null) })
+  }
+  return new Response(null, { headers: corsHeaders(allowedOrigin) })
 }
 
 type RouteContext = { params: Promise<{ token: string }> }
@@ -19,6 +47,11 @@ type RouteContext = { params: Promise<{ token: string }> }
 export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const { token } = await context.params
+    const origin = request.headers.get('origin')
+    const allowedOrigin = getAllowedOrigin(origin)
+    if (!allowedOrigin) {
+      return jsonResponse({ error: 'Origin not allowed' }, 403, corsHeaders(null))
+    }
     const form = await prisma.webForm.findUnique({
       where: { token },
       include: {
@@ -28,7 +61,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     })
 
     if (!form || !form.isActive) {
-      return jsonResponse({ error: "Форма не найдена" }, 404)
+      return jsonResponse({ error: "Форма не найдена" }, 404, corsHeaders(allowedOrigin))
     }
 
     const payload = await parseRequestPayload(request)
@@ -37,7 +70,34 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const requiredFields = config.fields.filter((field) => field.enabled !== false && field.required)
     for (const field of requiredFields) {
       if (!payload[field.key]?.trim()) {
-        return jsonResponse({ error: `Поле "${field.label}" обязательно` }, 400)
+        return jsonResponse({ error: `Поле "${field.label}" обязательно` }, 400, corsHeaders(allowedOrigin))
+      }
+    }
+
+    // Honeypot
+    if (isHoneypotTriggered(payload)) {
+      return jsonResponse({ error: 'Spam detected' }, 400, corsHeaders(allowedOrigin))
+    }
+
+    // Ограничение длины полей (простая валидация)
+    const MAX_FIELD_LENGTH = parseInt(process.env.WEBFORM_MAX_FIELD_LENGTH || '2000', 10)
+    for (const [k, v] of Object.entries(payload)) {
+      if (typeof v === 'string' && v.length > MAX_FIELD_LENGTH) {
+        return jsonResponse({ error: `Поле "${k}" слишком длинное` }, 400, corsHeaders(allowedOrigin))
+      }
+    }
+
+    // Rate limit по IP за окно времени
+    const ip = getIpAddress(request)
+    const windowMinutes = parseInt(process.env.WEBFORM_RATE_WINDOW_MINUTES || '10', 10)
+    const limit = parseInt(process.env.WEBFORM_RATE_LIMIT || '20', 10)
+    if (ip && limit > 0 && windowMinutes > 0) {
+      const since = new Date(Date.now() - windowMinutes * 60 * 1000)
+      const count = await prisma.webFormSubmission.count({
+        where: { ipAddress: ip, createdAt: { gt: since } },
+      })
+      if (count >= limit) {
+        return jsonResponse({ error: 'Too many requests' }, 429, corsHeaders(allowedOrigin))
       }
     }
 
@@ -106,20 +166,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
         message: form.successMessage || "Спасибо! Заявка успешно отправлена.",
         redirectUrl: form.redirectUrl || null,
       },
-      200
+      200,
+      corsHeaders(allowedOrigin)
     )
   } catch (error) {
     console.error("[webforms][submit]", error)
-    return jsonResponse({ error: "Не удалось отправить форму" }, 500)
+    const origin = request.headers.get('origin')
+    const allowedOrigin = getAllowedOrigin(origin)
+    return jsonResponse({ error: "Не удалось отправить форму" }, 500, corsHeaders(allowedOrigin || null))
   }
 }
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function jsonResponse(body: Record<string, unknown>, status = 200, headers?: Record<string, string>) {
   return new NextResponse(JSON.stringify(body), {
     status,
     headers: {
       "Content-Type": "application/json",
-      ...CORS_HEADERS,
+      ...(headers || corsHeaders('*')),
     },
   })
 }
@@ -139,6 +202,17 @@ async function parseRequestPayload(request: Request) {
     }
   }
   return result
+}
+
+// Honeypot защита: если поле заполнено — считаем ботом
+function isHoneypotTriggered(payload: Record<string, string>) {
+  const honeypotField =
+    process.env.WEBFORM_HONEYPOT_FIELD ||
+    process.env.HONEYPOT_FIELD ||
+    process.env.NEXT_PUBLIC_WEBFORM_HONEYPOT_FIELD ||
+    'website'
+  const val = payload[honeypotField]
+  return typeof val === 'string' && val.trim().length > 0
 }
 
 async function upsertContact({

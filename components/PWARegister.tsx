@@ -15,41 +15,69 @@ export default function PWARegister() {
 
     // Регистрация Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/service-worker.js', {
-          scope: '/',
-        })
-        .then((registration) => {
+      // Ждем загрузки страницы перед регистрацией
+      const registerSW = async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/service-worker.js', {
+            scope: '/',
+            updateViaCache: 'none', // Всегда проверять обновления
+          })
+          
           console.log('[PWA] Service Worker registered:', registration.scope)
 
-          // Проверка обновлений каждые 60 секунд
+          // Проверяем, активен ли Service Worker
+          if (registration.installing) {
+            console.log('[PWA] Service Worker installing...')
+          } else if (registration.waiting) {
+            console.log('[PWA] Service Worker waiting...')
+          } else if (registration.active) {
+            console.log('[PWA] Service Worker active')
+          }
+
+          // Проверка обновлений каждые 5 минут
           setInterval(() => {
-            registration.update()
-          }, 60000)
+            registration.update().catch(err => {
+              console.warn('[PWA] Update check failed:', err)
+            })
+          }, 300000)
 
           // Обработка обновлений
           registration.addEventListener('updatefound', () => {
             const newWorker = registration.installing
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
+                console.log('[PWA] Service Worker state:', newWorker.state)
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // Новый Service Worker доступен
                   console.log('[PWA] New Service Worker available')
-                  // Можно показать уведомление пользователю
+                } else if (newWorker.state === 'activated') {
+                  console.log('[PWA] New Service Worker activated')
                 }
               })
             }
           })
-        })
-        .catch((error) => {
+        } catch (error) {
           console.error('[PWA] Service Worker registration failed:', error)
-        })
+        }
+      }
+
+      // Регистрируем сразу, если страница уже загружена
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        registerSW()
+      } else {
+        window.addEventListener('load', registerSW)
+      }
 
       // Обработка обновления Service Worker
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('[PWA] Service Worker controller changed')
         // Перезагружаем страницу для применения обновлений
         window.location.reload()
+      })
+
+      // Обработка ошибок Service Worker
+      navigator.serviceWorker.addEventListener('error', (event) => {
+        console.error('[PWA] Service Worker error:', event)
       })
     }
 
@@ -128,7 +156,7 @@ export default function PWARegister() {
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-              Установить Pocket CRM
+              Установить Flame CRM
             </h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
               Установите приложение для быстрого доступа и работы офлайн

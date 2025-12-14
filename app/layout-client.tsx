@@ -1,6 +1,7 @@
 'use client'
 
 import './globals.css'
+import 'reactflow/dist/style.css'
 import { SessionProvider } from 'next-auth/react'
 import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from '@/lib/theme'

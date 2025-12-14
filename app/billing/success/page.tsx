@@ -114,7 +114,7 @@ export default function BillingSuccessPage() {
   }
 
   const infoChips = [
-    { label: 'План', value: invoiceInfo?.planName ?? 'Pocket CRM' },
+    { label: 'План', value: invoiceInfo?.planName ?? 'Flame CRM' },
     { label: 'Сумма', value: formatCurrency(invoiceInfo?.amount, invoiceInfo?.currency) },
     { label: 'Invoice ID', value: invoiceInfo?.id ?? invoiceId ?? '—' },
   ]

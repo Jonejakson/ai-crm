@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:migrate": "prisma migrate dev",
@@ -37,10 +37,12 @@
     "next-auth": "^5.0.0-beta.30",
     "nodemailer": "^7.0.10",
     "openai": "^6.8.1",
+    "pdfkit": "^0.13.0",
     "pg": "^8.11.3",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hot-toast": "^2.6.0",
+    "reactflow": "^11.11.4",
     "recharts": "^3.4.1",
     "xlsx": "^0.18.5",
     "zod": "^4.1.13"

@@ -4,7 +4,7 @@ import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from '@/lib/theme'
 import Notifications from './Notifications'
 import SearchBar from './SearchBar'
-import { MoonIcon, SunIcon } from './Icons'
+import { MoonIcon, SunIcon, DialogsIcon } from './Icons'
 
 export default function Header() {
   const { data: session } = useSession()
@@ -22,7 +22,7 @@ export default function Header() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)] bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
-            {session?.user ? session.user.name : 'Pocket CRM'}
+            {session?.user ? session.user.name : 'Flame CRM'}
           </h1>
           <p className="text-xs text-[var(--muted)] mt-1">
             {new Date().toLocaleDateString('ru-RU', { 
@@ -45,6 +45,13 @@ export default function Header() {
               >
                 {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
               </button>
+              <a
+                href="/support"
+                className="p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-all duration-300 hover:scale-110"
+                title="Поддержка"
+              >
+                <DialogsIcon className="w-5 h-5" />
+              </a>
               <Notifications />
               <div className="hidden text-right sm:block px-3 py-2 rounded-xl bg-[var(--background-soft)]">
                 <p className="text-sm font-semibold text-[var(--foreground)]">{session.user.name}</p>

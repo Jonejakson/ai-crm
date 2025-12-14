@@ -1,51 +1,28 @@
 'use client'
 
-const EnvelopeIcon = () => (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-      <defs>
-        <linearGradient id="pocket-envelope-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="100%" stopColor="#06b6d4" />
-        </linearGradient>
-        <linearGradient id="pocket-envelope-shadow" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#0f172a" stopOpacity="0.1" />
-          <stop offset="100%" stopColor="#0f172a" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <rect x="6" y="8" width="28" height="24" rx="10" fill="url(#pocket-envelope-shadow)" opacity="0.35" />
-      <rect x="8" y="10" width="24" height="20" rx="8" fill="url(#pocket-envelope-gradient)" />
-      <path
-        d="M9.5 13L20 21L30.5 13"
-        stroke="white"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        opacity="0.95"
-      />
-      <path
-        d="M11 26L16.5 20.5"
-        stroke="white"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
-      <path
-        d="M29 26L23.5 20.5"
-        stroke="white"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-        opacity="0.8"
-      />
-      <circle cx="28" cy="15" r="2" fill="white" opacity="0.85" />
-      <path
-        d="M12 18C16 21 24 21 28 18"
-        stroke="white"
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
-    </svg>
-  )
+const FlameIcon = () => (
+  <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+    <defs>
+      <linearGradient id="flame-green" x1="20" y1="4" x2="20" y2="36" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#34d399" />
+        <stop offset="0.55" stopColor="#22c55e" />
+        <stop offset="1" stopColor="#15803d" />
+      </linearGradient>
+      <linearGradient id="flame-green-glow" x1="20" y1="12" x2="20" y2="34" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#ecfdf3" stopOpacity="0.9" />
+        <stop offset="1" stopColor="#bbf7d0" stopOpacity="0.25" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M22 5c2.5 3 3.5 6.3 2.8 9.4-.5 2.1-1.9 4-1.2 5.9.7 1.9 3.1 2.9 3.1 5.8 0 4.3-3.8 7.9-8.7 7.9-4.9 0-8.7-3.6-8.7-8.1 0-5.5 4.6-7.1 6.5-11.1.9-1.9.8-3.8.1-5.8-.6-1.7-.1-3.6 1.3-5.3 1.6-1.8 4-3 4.8 1.3Z"
+      fill="url(#flame-green)"
+    />
+    <path
+      d="M21 13c1.3 1.6 2 3.4 1.4 5.2-.4 1.3-1.3 2.7-.8 3.9.5 1.2 2 1.8 2 3.7 0 2.7-2.4 5-5.3 5-3 0-5.3-2.2-5.3-5.1 0-3.5 2.8-4.6 4-7.1.6-1.2.5-2.4.1-3.7-.4-1.1-.1-2.3.8-3.4 1-1.2 2.5-2 3.1 1.5Z"
+      fill="url(#flame-green-glow)"
+    />
+  </svg>
+)
 
 interface LogoProps {
   variant?: 'full' | 'icon' | 'text'
@@ -65,7 +42,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   if (variant === 'icon') {
     return (
       <div className={`${currentSize.icon} ${className}`}>
-        <EnvelopeIcon />
+        <FlameIcon />
       </div>
     )
   }
@@ -73,7 +50,7 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   if (variant === 'text') {
     return (
       <span className={`font-bold ${currentSize.text} text-[var(--foreground)] ${className}`}>
-        Pocket CRM
+        Flame CRM
       </span>
     )
   }
@@ -82,10 +59,10 @@ export default function Logo({ variant = 'full', size = 'md', className = '' }: 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <div className={currentSize.icon}>
-        <EnvelopeIcon />
+        <FlameIcon />
       </div>
       <span className={`font-bold ${currentSize.text} text-[var(--foreground)] tracking-tight`}>
-        Pocket CRM
+        Flame CRM
       </span>
     </div>
   )

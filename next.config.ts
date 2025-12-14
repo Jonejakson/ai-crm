@@ -27,6 +27,26 @@ const nextConfig: NextConfig = {
       fullUrl: process.env.NODE_ENV === 'development',
     },
   },
+
+  // Turbopack config: mirror aliases to avoid pdfkit/fontkit ESM helpers issues
+  turbopack: {
+    resolveAlias: {
+      // Point to package entry (CJS)
+      pdfkit: require.resolve('pdfkit'),
+      fontkit: require.resolve('fontkit'),
+    },
+  },
+
+  webpack: (config) => {
+    config.resolve = config.resolve || {}
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      // Point to package entry (CJS)
+      pdfkit: require.resolve('pdfkit'),
+      fontkit: require.resolve('fontkit'),
+    }
+    return config
+  },
 };
 
 // Обернуть конфигурацию в Sentry, если DSN установлен
