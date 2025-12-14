@@ -106,27 +106,35 @@ export async function POST(req: Request) {
 
       // Если это новая компания, создаем подписку (trial или бесплатный план)
       if (isNewCompany && finalCompanyId) {
-        // Ищем план LITE (бесплатный/базовый)
-        const litePlan = await tx.plan.findFirst({
-          where: { slug: PlanSlug.LITE }
-        })
-
-        if (litePlan) {
-          const now = new Date()
-          const trialEnd = new Date(now)
-          trialEnd.setDate(trialEnd.getDate() + 14) // 14 дней пробного периода
-
-          // Создаем подписку со статусом TRIAL
-          await tx.subscription.create({
-            data: {
-              companyId: finalCompanyId,
-              planId: litePlan.id,
-              status: SubscriptionStatus.TRIAL,
-              billingInterval: BillingInterval.MONTHLY,
-              currentPeriodEnd: trialEnd,
-              trialEndsAt: trialEnd,
-            }
+        try {
+          // Ищем план LITE (бесплатный/базовый)
+          const litePlan = await tx.plan.findFirst({
+            where: { slug: PlanSlug.LITE }
           })
+
+          if (litePlan) {
+            const now = new Date()
+            const trialEnd = new Date(now)
+            trialEnd.setDate(trialEnd.getDate() + 14) // 14 дней пробного периода
+
+            // Создаем подписку со статусом TRIAL
+            await tx.subscription.create({
+              data: {
+                companyId: finalCompanyId,
+                planId: litePlan.id,
+                status: SubscriptionStatus.TRIAL,
+                billingInterval: BillingInterval.MONTHLY,
+                currentPeriodEnd: trialEnd,
+                trialEndsAt: trialEnd,
+              }
+            })
+            console.log('✅ Подписка создана для новой компании:', finalCompanyId)
+          } else {
+            console.warn('⚠️ План LITE не найден, подписка не создана для компании:', finalCompanyId)
+          }
+        } catch (subscriptionError: any) {
+          // Логируем ошибку, но не прерываем регистрацию
+          console.error('⚠️ Ошибка при создании подписки (регистрация продолжается):', subscriptionError.message)
         }
       }
 
