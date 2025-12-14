@@ -13,7 +13,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('dark')
+  const [theme, setThemeState] = useState<Theme>('light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -34,9 +34,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       console.error('Error reading theme from localStorage:', e)
     }
 
-    // По умолчанию используем темную тему
-    setThemeState('dark')
-    applyTheme('dark')
+    // По умолчанию используем светлую тему
+    setThemeState('light')
+    applyTheme('light')
   }, [])
 
   const applyTheme = (newTheme: Theme) => {
@@ -83,7 +83,7 @@ export function useTheme() {
   if (context === undefined) {
     // Возвращаем значения по умолчанию вместо ошибки для SSR безопасности
     return {
-      theme: 'dark' as Theme,
+      theme: 'light' as Theme,
       toggleTheme: () => {},
       setTheme: () => {},
     }

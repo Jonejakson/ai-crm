@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // Режим standalone для Docker
+  output: 'standalone',
+  
   // Оптимизация для продакшена
   reactStrictMode: true,
   

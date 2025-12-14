@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: crm_postgres
+    environment:
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      POSTGRES_DB: crm_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: crm_app
+    ports:
+      - "3000:3000"
+    environment:
+      # База данных
+      DATABASE_URL: postgresql://crm_user:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/crm_db?schema=public
+      
+      # NextAuth (обязательно!)
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-${AUTH_SECRET:-change_this_secret}}
+      AUTH_SECRET: ${AUTH_SECRET:-${NEXTAUTH_SECRET:-change_this_secret}}
+      
+      # Шифрование (обязательно для production!)
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      
+      # OpenAI API (опционально)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      
+      # Email (опционально)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      
+      # DaData API (опционально)
+      DADATA_API_KEY: ${DADATA_API_KEY:-}
+      DADATA_SECRET_KEY: ${DADATA_SECRET_KEY:-}
+      
+      # Sentry (опционально)
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      SENTRY_ORG: ${SENTRY_ORG:-}
+      SENTRY_PROJECT: ${SENTRY_PROJECT:-}
+      
+      # YooKassa (опционально)
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID:-}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY:-}
+      
+      # Node Environment
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+

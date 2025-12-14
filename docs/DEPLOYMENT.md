@@ -94,7 +94,7 @@ npm run db:deploy
 
 3. **Настройте переменные окружения:**
    - В настройках проекта → Variables
-   - Добавьте `AUTH_SECRET`, `NEXTAUTH_URL`, `OPENAI_API_KEY`
+   - Добавьте `AUTH_SECRET`, ` задачахNEXTAUTH_URL`, `OPENAI_API_KEY`
 
 4. **Примените миграции:**
    - Railway автоматически выполнит `postinstall` скрипт (генерирует Prisma Client)
@@ -307,5 +307,11 @@ server {
 2. Проверьте подключение к базе данных
 3. Убедитесь, что все переменные окружения установлены
 4. См. `docs/TROUBLESHOOTING.md` для решения частых проблем
+
+
+
+
+
+
 
 

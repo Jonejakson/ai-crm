@@ -51,112 +51,63 @@ DADATA_API_KEY="your-dadata-key"
 DADATA_SECRET_KEY="your-dadata-secret"
 ```
 
-### 4. Создание Dockerfile
+### 4. Проверка Docker-файлов
 
-Создайте файл `Dockerfile` в корне проекта:
+Убедитесь, что в проекте есть следующие файлы (они уже созданы):
+- `Dockerfile` - для сборки Docker-образа приложения
+- `docker-compose.yml` - для оркестрации контейнеров
+- `.dockerignore` - для оптимизации сборки
+- `next.config.ts` - уже настроен с `output: 'standalone'`
 
-```dockerfile
-FROM node:20-alpine AS base
+### 5. Настройка переменных окружения для Docker
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
+Создайте файл `.env` в корне проекта (или используйте существующий):
 
-COPY package.json package-lock.json* ./
-RUN npm ci
+Файл `docker-compose.yml` уже создан и настроен. В нем используются переменные из `.env` файла.
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+**Важно:** В `.env` файле должны быть указаны следующие переменные для Docker:
 
-ENV NEXT_TELEMETRY_DISABLED 1
+```env
+# Пароль для PostgreSQL (используется в docker-compose.yml)
+POSTGRES_PASSWORD=your_secure_password_here
 
-RUN npm run build
+# NextAuth
+NEXTAUTH_URL=https://your-domain.com
+NEXTAUTH_SECRET=your-secret-key-here
 
-# Production image, copy all the files and run next
-FROM base AS runner
-WORKDIR /app
+# Email (опционально)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-password
+SMTP_FROM=your-email@gmail.com
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# DaData API (опционально)
+DADATA_API_KEY=your-dadata-key
+DADATA_SECRET_KEY=your-dadata-secret
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-CMD ["node", "server.js"]
+# Sentry (опционально)
+SENTRY_DSN=your-sentry-dsn
+NEXT_PUBLIC_SENTRY_DSN=your-sentry-dsn
+SENTRY_ORG=your-org
+SENTRY_PROJECT=your-project
 ```
 
-### 5. Обновление next.config.js
-
-Убедитесь, что в `next.config.js` включен standalone режим:
-
-```javascript
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'standalone',
-  // ... остальные настройки
-}
-
-module.exports = nextConfig
-```
-
-### 6. Создание docker-compose.yml
-
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: crm_user
-      POSTGRES_PASSWORD: your_secure_password
-      POSTGRES_DB: crm_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://crm_user:your_secure_password@postgres:5432/crm_db?schema=public
-      NEXTAUTH_URL: https://your-domain.com
-      NEXTAUTH_SECRET: your-secret-key-here
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-```
-
-### 7. Запуск приложения
+### 6. Запуск приложения
 
 ```bash
-# Сборка и запуск
+# Сборка и запуск контейнеров
 docker-compose up -d --build
+
+# Дождитесь запуска PostgreSQL (проверка здоровья)
+docker-compose ps
 
 # Применение миграций Prisma
 docker-compose exec app npx prisma migrate deploy
 docker-compose exec app npx prisma generate
+
+# Проверка логов
+docker-compose logs -f app
 ```
 
 ### 8. Настройка Nginx (реверс-прокси)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn as nextAuthSignIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -12,6 +12,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isRegister, setIsRegister] = useState(false)
   const [name, setName] = useState('')
+
+  // Принудительно устанавливаем светлую тему на странице логина
+  useEffect(() => {
+    document.documentElement.classList.remove('dark')
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,7 +78,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50" data-theme="light">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-xl border border-gray-200 animate-fadeIn">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
