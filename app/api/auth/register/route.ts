@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { validateRequest, createUserSchema } from "@/lib/validation"
+import { SubscriptionStatus, BillingInterval, PlanSlug } from '@prisma/client'
 
 // Загружаем переменные окружения ПЕРЕД импортом Prisma
 if (typeof window === 'undefined') {
@@ -51,8 +52,9 @@ export async function POST(req: Request) {
     // Хеширование пароля
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // Создаем компанию для нового пользователя (или используем существующую, если передан companyId)
+    // Определяем, создается ли новая компания или пользователь присоединяется к существующей
     let finalCompanyId = companyId;
+    let isNewCompany = false;
     
     if (!finalCompanyId) {
       // Создаем новую компанию
@@ -62,28 +64,68 @@ export async function POST(req: Request) {
         },
       });
       finalCompanyId = company.id;
+      isNewCompany = true;
     }
 
-    // Создание пользователя
-    const user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        password: hashedPassword,
-        companyId: finalCompanyId,
-        role: 'user', // По умолчанию обычный пользователь
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        companyId: true,
+    // Проверяем, есть ли уже пользователи в компании
+    const existingUsersCount = await prisma.user.count({
+      where: { companyId: finalCompanyId }
+    })
+
+    // Если это новая компания или первый пользователь - делаем его админом
+    const userRole = (isNewCompany || existingUsersCount === 0) ? 'admin' : 'user'
+
+    // Создание пользователя и подписки в транзакции
+    const result = await prisma.$transaction(async (tx) => {
+      // Создание пользователя
+      const user = await tx.user.create({
+        data: {
+          email,
+          name,
+          password: hashedPassword,
+          companyId: finalCompanyId,
+          role: userRole,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          companyId: true,
+        }
+      })
+
+      // Если это новая компания, создаем подписку (trial или бесплатный план)
+      if (isNewCompany) {
+        // Ищем план LITE (бесплатный/базовый)
+        const litePlan = await tx.plan.findFirst({
+          where: { slug: PlanSlug.LITE }
+        })
+
+        if (litePlan) {
+          const now = new Date()
+          const trialEnd = new Date(now)
+          trialEnd.setDate(trialEnd.getDate() + 14) // 14 дней пробного периода
+
+          // Создаем подписку со статусом TRIAL
+          await tx.subscription.create({
+            data: {
+              companyId: finalCompanyId,
+              planId: litePlan.id,
+              status: SubscriptionStatus.TRIAL,
+              billingInterval: BillingInterval.MONTHLY,
+              currentPeriodEnd: trialEnd,
+              trialEndsAt: trialEnd,
+            }
+          })
+        }
       }
+
+      return user
     })
 
     return NextResponse.json(
-      { message: "Пользователь успешно создан", user },
+      { message: "Пользователь успешно создан", user: result },
       { status: 201 }
     )
   } catch (error: any) {
