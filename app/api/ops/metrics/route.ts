@@ -9,7 +9,8 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
-  if (user.role !== 'admin') {
+  // Разрешаем доступ для admin и owner
+  if (user.role !== 'admin' && user.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -17,7 +18,8 @@ export async function GET() {
     const now = new Date()
     const d24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
     const d10m = new Date(now.getTime() - 10 * 60 * 1000)
-    const companyId = Number(user.companyId)
+    const isOwner = user.role === 'owner'
+    const companyId = isOwner ? undefined : Number(user.companyId)
 
     const [
       usersTotal,
@@ -28,18 +30,19 @@ export async function GET() {
       submissionsLast24h,
       activityLast10m,
     ] = await Promise.all([
-      prisma.user.count({ where: { companyId } }),
-      prisma.contact.count({ where: { user: { companyId } } }),
-      prisma.deal.count({ where: { user: { companyId } } }),
-      prisma.deal.count({ where: { user: { companyId }, createdAt: { gt: d24h } } }),
-      prisma.contact.count({ where: { user: { companyId }, createdAt: { gt: d24h } } }),
+      // Для owner - все пользователи, для admin - только своей компании
+      prisma.user.count({ where: isOwner ? {} : { companyId: companyId! } }),
+      prisma.contact.count({ where: isOwner ? {} : { user: { companyId: companyId! } } }),
+      prisma.deal.count({ where: isOwner ? {} : { user: { companyId: companyId! } } }),
+      prisma.deal.count({ where: isOwner ? { createdAt: { gt: d24h } } : { user: { companyId: companyId! }, createdAt: { gt: d24h } } }),
+      prisma.contact.count({ where: isOwner ? { createdAt: { gt: d24h } } : { user: { companyId: companyId! }, createdAt: { gt: d24h } } }),
       prisma.webFormSubmission.count({
-        where: { webForm: { companyId }, createdAt: { gt: d24h } },
+        where: isOwner ? { createdAt: { gt: d24h } } : { webForm: { companyId: companyId! }, createdAt: { gt: d24h } },
       }),
       prisma.activityLog.groupBy({
         by: ['userId'],
         where: {
-          companyId,
+          ...(isOwner ? {} : { companyId: companyId! }),
           createdAt: { gt: d10m },
           userId: { not: null },
         },
