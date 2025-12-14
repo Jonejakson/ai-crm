@@ -2,14 +2,15 @@ import { getCurrentUser } from "./get-session";
 
 /**
  * Утилита для контроля доступа к данным
+ * - owner: видит все данные всех компаний (супер-админ)
  * - admin: видит все данные своей компании
  * - manager: видит только свои данные
  * - user: видит только свои данные
  */
 
 export interface AccessFilter {
-  companyId: number;
-  userId?: number; // Только для manager/user, undefined для admin
+  companyId?: number; // undefined для owner (видит все компании)
+  userId?: number; // Только для manager/user, undefined для admin/owner
 }
 
 /**
@@ -24,6 +25,13 @@ export async function getAccessFilter(): Promise<AccessFilter | null> {
 
   const companyId = parseInt(user.companyId);
   const userId = parseInt(user.id);
+
+  // Owner видит все компании (без фильтра)
+  if (user.role === 'owner') {
+    return {
+      // companyId и userId не указываем, чтобы видеть все данные
+    };
+  }
 
   // Админ видит всю компанию
   if (user.role === 'admin') {
@@ -48,6 +56,11 @@ export async function getWhereCondition() {
   
   if (!filter) {
     throw new Error('Unauthorized');
+  }
+
+  // Для owner: без фильтра (видит все)
+  if (!filter.companyId) {
+    return {};
   }
 
   // Для админа: фильтр по компании
@@ -79,7 +92,11 @@ export async function getDirectWhereCondition() {
     throw new Error('Unauthorized');
   }
 
-  // Для админа: видим все данные компании через связь с User
+  // Для owner: без фильтра (видит все)
+  if (!filter.companyId) {
+    return {};
+  }
+
   // Для менеджера/пользователя: только свой userId
   if (filter.userId) {
     return {
@@ -103,18 +120,26 @@ export async function getDirectWhereCondition() {
 }
 
 /**
- * Проверить, является ли пользователь админом
+ * Проверить, является ли пользователь owner (владельцем системы)
  */
-export async function isAdmin(): Promise<boolean> {
+export async function isOwner(): Promise<boolean> {
   const user = await getCurrentUser();
-  return user?.role === 'admin';
+  return user?.role === 'owner';
 }
 
 /**
- * Проверить, является ли пользователь менеджером или админом
+ * Проверить, является ли пользователь админом или owner
+ */
+export async function isAdmin(): Promise<boolean> {
+  const user = await getCurrentUser();
+  return user?.role === 'admin' || user?.role === 'owner';
+}
+
+/**
+ * Проверить, является ли пользователь менеджером, админом или owner
  */
 export async function isManagerOrAdmin(): Promise<boolean> {
   const user = await getCurrentUser();
-  return user?.role === 'admin' || user?.role === 'manager';
+  return user?.role === 'admin' || user?.role === 'manager' || user?.role === 'owner';
 }
 

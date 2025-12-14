@@ -25,7 +25,7 @@ export default function UserFilter({ selectedUserId, onUserChange }: UserFilterP
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const isAdmin = session?.user?.role === 'admin'
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'owner'
 
   useEffect(() => {
     if (isAdmin) {

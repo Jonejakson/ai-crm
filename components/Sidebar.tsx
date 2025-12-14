@@ -31,7 +31,8 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
 
   const pathname = usePathname()
   const activeSection = getActiveSection(pathname)
-  const isAdmin = session?.user?.role === 'admin'
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'owner'
+  const isOwner = session?.user?.role === 'owner'
   const userName = session?.user?.name || 'Пользователь'
   const userEmail = session?.user?.email || 'email@company.com'
 
