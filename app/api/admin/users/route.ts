@@ -59,6 +59,21 @@ export async function GET(req: Request) {
       }));
     }
 
+    // Получаем информацию о компании для админа
+    let companyInfo = null;
+    if (!isUserOwner && companyId) {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { name: true, isLegalEntity: true }
+      });
+      if (company) {
+        companyInfo = {
+          name: company.name,
+          isLegalEntity: company.isLegalEntity
+        };
+      }
+    }
+
     // Статистика по компании
     const totalUsers = users.length;
     const adminUsers = users.filter(u => u.role === 'admin').length;
@@ -69,6 +84,7 @@ export async function GET(req: Request) {
       admins: adminUsers,
       regular: regularUsers,
       isOwner: isUserOwner,
+      company: companyInfo,
       users: usersWithCompany.map(u => ({
         id: u.id,
         email: u.email,
