@@ -61,7 +61,9 @@ export default function LoginPage() {
         const data = await res.json()
 
         if (!res.ok) {
-          setError(data.error || 'Ошибка при регистрации')
+          // Показываем более понятное сообщение об ошибке
+          const errorMessage = data.message || data.error || 'Ошибка при регистрации'
+          setError(errorMessage)
           setIsLoading(false)
           return
         }
