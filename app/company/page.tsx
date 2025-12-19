@@ -62,7 +62,6 @@ export default function CompanyPage() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
-  const [userSearch, setUserSearch] = useState('')
   const [companyInfo, setCompanyInfo] = useState<{ name: string; isLegalEntity: boolean } | null>(null)
 
   // Форма создания пользователя
@@ -108,7 +107,6 @@ export default function CompanyPage() {
       }
       fetchUsers()
       fetchBilling()
-      fetchCompanyInfo()
     }
   }, [status, session, router])
 
@@ -138,22 +136,6 @@ export default function CompanyPage() {
     }
   }
 
-  const fetchCompanyInfo = async () => {
-    try {
-      if (!session?.user?.companyId) return
-      
-      const response = await fetch(`/api/company/info`)
-      if (response.ok) {
-        const data = await response.json()
-        setCompanyInfo({
-          name: data.name || '',
-          isLegalEntity: data.isLegalEntity || false
-        })
-      }
-    } catch (error: any) {
-      console.error('Error fetching company info:', error)
-    }
-  }
 
   const fetchBilling = async () => {
     setBillingLoading(true)
