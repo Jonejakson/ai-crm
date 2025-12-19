@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Определяем, создается ли новая компания или пользователь присоединяется к существующей
-    let finalCompanyId = companyId;
+    let finalCompanyId: number | undefined = companyId;
     let isNewCompany = false;
     
     // Создание пользователя и подписки в транзакции
@@ -95,9 +95,17 @@ export async function POST(req: Request) {
         }
       }
 
+      // Убеждаемся, что finalCompanyId определен (обязательное поле в схеме)
+      if (!finalCompanyId) {
+        throw new Error('Не удалось определить компанию для пользователя')
+      }
+
+      // TypeScript guard - теперь finalCompanyId точно number
+      const companyIdForUser: number = finalCompanyId;
+
       // Проверяем, есть ли уже пользователи в компании
       const existingUsersCount = await tx.user.count({
-        where: { companyId: finalCompanyId }
+        where: { companyId: companyIdForUser }
       })
 
       // Если это новая компания или первый пользователь - делаем его админом
@@ -109,18 +117,21 @@ export async function POST(req: Request) {
         isNewCompany,
         finalCompanyId,
         existingUsersCount,
-        userRole
+        userRole,
+        userType,
+        name,
+        lastName
       })
 
       // Создание пользователя
       const user = await tx.user.create({
         data: {
           email,
-          name,
-          lastName: lastName || null,
+          name: name.trim(), // Только имя
+          lastName: lastName ? lastName.trim() : null, // Фамилия отдельно
           password: hashedPassword,
           phone: phone || null,
-          companyId: finalCompanyId,
+          companyId: companyIdForUser, // Теперь всегда определен как number
           role: userRole,
         },
         select: {
