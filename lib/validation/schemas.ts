@@ -172,16 +172,19 @@ export const createUserSchema = z.object({
   password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
   name: z.string().min(1, 'Имя обязательно').max(255),
   lastName: z.string().max(255).optional().nullable(),
-  phone: z.string().min(1, 'Контактный номер обязателен').regex(/^\+?[1-9]\d{1,14}$/, 'Неверный формат телефона'),
+  // Телефон: принимаем любой формат, очистка будет в API
+  phone: z.string().min(1, 'Контактный номер обязателен'),
   role: z.enum(['admin', 'manager', 'user']).optional().default('user'),
   companyId: z.number().int().positive().optional(),
   userType: z.enum(['individual', 'legal']).optional().default('individual'),
   companyName: z.string().max(255).optional(),
-  inn: z.string().regex(/^\d{10,12}$/, 'ИНН должен содержать 10 или 12 цифр').optional(),
+  // ИНН: принимаем любой формат, очистка будет в API
+  inn: z.string().optional(),
 }).refine((data) => {
   // Для юр лица ИНН и название компании обязательны
   if (data.userType === 'legal') {
-    if (!data.inn || !data.companyName) {
+    const cleanInn = data.inn ? data.inn.replace(/\s/g, '') : ''
+    if (!cleanInn || cleanInn.length < 10 || !data.companyName || data.companyName.trim() === '') {
       return false
     }
   }

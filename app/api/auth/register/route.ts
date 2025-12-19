@@ -29,6 +29,14 @@ export async function POST(req: Request) {
 
     const body = await req.json()
 
+    // Предобработка данных: очистка телефона и ИНН от форматирования
+    if (body.phone) {
+      body.phone = body.phone.replace(/\s|\(|\)|-/g, '')
+    }
+    if (body.inn) {
+      body.inn = body.inn.replace(/\s/g, '')
+    }
+
     // Валидация с помощью Zod
     const validation = validateRequest(createUserSchema, body)
     
