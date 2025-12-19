@@ -1,263 +1,266 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum PlanSlug {
-    LITE
-    TEAM
-    PRO
+  LITE
+  TEAM
+  PRO
 }
 
 enum SubscriptionStatus {
-    TRIAL
-    ACTIVE
-    PAST_DUE
-    CANCELED
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
 }
 
 enum BillingInterval {
-    MONTHLY
-    YEARLY
+  MONTHLY
+  YEARLY
 }
 
 enum InvoiceStatus {
-    PENDING
-    PAID
-    FAILED
+  PENDING
+  PAID
+  FAILED
 }
 
 enum AutomationTriggerType {
-    DEAL_STAGE_CHANGED
-    DEAL_CREATED
-    DEAL_AMOUNT_CHANGED
-    TASK_CREATED
-    TASK_COMPLETED
-    CONTACT_CREATED
-    EVENT_CREATED
+  DEAL_STAGE_CHANGED
+  DEAL_CREATED
+  DEAL_AMOUNT_CHANGED
+  TASK_CREATED
+  TASK_COMPLETED
+  CONTACT_CREATED
+  EVENT_CREATED
 }
 
 enum AutomationActionType {
-    CREATE_TASK
-    SEND_EMAIL
-    CHANGE_PROBABILITY
-    ASSIGN_USER
-    CREATE_NOTIFICATION
-    UPDATE_DEAL_STAGE
+  CREATE_TASK
+  SEND_EMAIL
+  CHANGE_PROBABILITY
+  ASSIGN_USER
+  CREATE_NOTIFICATION
+  UPDATE_DEAL_STAGE
 }
 
 enum CustomFieldType {
-    TEXT
-    NUMBER
-    DATE
-    SELECT
-    MULTISELECT
-    CHECKBOX
-    URL
-    EMAIL
-    PHONE
-    TEXTAREA
+  TEXT
+  NUMBER
+  DATE
+  SELECT
+  MULTISELECT
+  CHECKBOX
+  URL
+  EMAIL
+  PHONE
+  TEXTAREA
 }
 
 enum MessagingPlatform {
-    TELEGRAM
-    WHATSAPP
-    INTERNAL
+  TELEGRAM
+  WHATSAPP
+  INTERNAL
 }
 
 enum EmailProvider {
-    GMAIL
-    OUTLOOK
-    IMAP_SMTP
-    YANDEX
+  GMAIL
+  OUTLOOK
+  IMAP_SMTP
+  YANDEX
 }
 
 enum AdvertisingPlatform {
-    YANDEX_DIRECT
-    AVITO
-    GOOGLE_ADS
+  YANDEX_DIRECT
+  AVITO
+  GOOGLE_ADS
 }
 
 enum AccountingPlatform {
-    MOYSKLAD
-    ONE_C
-    BITRIX24
+  MOYSKLAD
+  ONE_C
+  BITRIX24
 }
 
 model Company {
-    id        Int       @id @default(autoincrement())
-    name      String
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    users     User[]
-    pipelines Pipeline[]
-    trialEndsAt DateTime?
-    subscriptions Subscription[]
-    automations Automation[]
-    activityLogs ActivityLog[]
-    tags        Tag[]
-    customFields CustomField[]
-    dealSources DealSource[]
-    dealTypes   DealType[]
-    messagingIntegrations MessagingIntegration[]
-    webForms   WebForm[]
-    emailIntegrations EmailIntegration[]
-    webhookIntegrations WebhookIntegration[]
-    advertisingIntegrations AdvertisingIntegration[]
-    accountingIntegrations AccountingIntegration[]
-    emailTemplates EmailTemplate[]
-    supportTickets SupportTicket[]
+  id                      Int                      @id @default(autoincrement())
+  name                    String
+  inn                     String? // ИНН для юридических лиц
+  isLegalEntity           Boolean                  @default(false) // Флаг: физ лицо (false) или юр лицо (true)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  users                   User[]
+  pipelines               Pipeline[]
+  trialEndsAt             DateTime?
+  subscriptions           Subscription[]
+  automations             Automation[]
+  activityLogs            ActivityLog[]
+  tags                    Tag[]
+  customFields            CustomField[]
+  dealSources             DealSource[]
+  dealTypes               DealType[]
+  messagingIntegrations   MessagingIntegration[]
+  webForms                WebForm[]
+  emailIntegrations       EmailIntegration[]
+  webhookIntegrations     WebhookIntegration[]
+  advertisingIntegrations AdvertisingIntegration[]
+  accountingIntegrations  AccountingIntegration[]
+  emailTemplates          EmailTemplate[]
+  supportTickets          SupportTicket[]
 }
 
 model User {
-    id            Int            @id @default(autoincrement())
-    email         String         @unique
-    name          String
-    password      String
-    phone         String?        // Номер телефона менеджера
-    role          String         @default("user") // user, manager, admin
-    company       Company        @relation(fields: [companyId], references: [id])
-    companyId     Int
-    createdAt     DateTime       @default(now())
-    updatedAt     DateTime       @updatedAt
-    tasks         Task[]
-    contacts      Contact[]
-    deals         Deal[]
-    events        Event[]
-    notifications Notification[]
-    emailMessages EmailMessage[]
-    activityLogs  ActivityLog[]
-    files         File[]
-    comments      Comment[]
-  messagingAccounts UserMessagingAccount[]
-  assignedWebForms WebForm[] @relation("WebFormAssignee")
-  assignedEmailIntegrations EmailIntegration[] @relation("EmailIntegrationAssignee")
-  assignedWebhookIntegrations WebhookIntegration[] @relation("WebhookIntegrationAssignee")
-  assignedMessagingIntegrations MessagingIntegration[] @relation("MessagingIntegrationAssignee")
+  id                              Int                      @id @default(autoincrement())
+  email                           String                   @unique
+  name                            String
+  lastName                        String? // Фамилия
+  password                        String
+  phone                           String? // Номер телефона менеджера
+  role                            String                   @default("user") // user, manager, admin
+  company                         Company                  @relation(fields: [companyId], references: [id])
+  companyId                       Int
+  createdAt                       DateTime                 @default(now())
+  updatedAt                       DateTime                 @updatedAt
+  tasks                           Task[]
+  contacts                        Contact[]
+  deals                           Deal[]
+  events                          Event[]
+  notifications                   Notification[]
+  emailMessages                   EmailMessage[]
+  activityLogs                    ActivityLog[]
+  files                           File[]
+  comments                        Comment[]
+  messagingAccounts               UserMessagingAccount[]
+  assignedWebForms                WebForm[]                @relation("WebFormAssignee")
+  assignedEmailIntegrations       EmailIntegration[]       @relation("EmailIntegrationAssignee")
+  assignedWebhookIntegrations     WebhookIntegration[]     @relation("WebhookIntegrationAssignee")
+  assignedMessagingIntegrations   MessagingIntegration[]   @relation("MessagingIntegrationAssignee")
   assignedAdvertisingIntegrations AdvertisingIntegration[] @relation("AdvertisingIntegrationAssignee")
-  supportTickets SupportTicket[]
+  supportTickets                  SupportTicket[]
 }
 
 model Contact {
-    id             Int      @id @default(autoincrement())
-    name           String
-    email          String?
-    phone          String?
-    company        String?
-    position       String?
-    inn            String?
-    telegramChatId String? // Chat ID для Telegram
-    whatsappId     String? // ID для WhatsApp
-    externalId     String? // ID в системе учета (1С, МойСклад)
-    syncedAt       DateTime? // Время последней синхронизации
-    createdAt      DateTime @default(now())
-    updatedAt      DateTime @updatedAt
-    user           User?    @relation(fields: [userId], references: [id])
-    userId         Int?
-    tasks          Task[]
-    dialogs        Dialog[]
-    deals          Deal[]
-    events         Event[]
-    emailMessages  EmailMessage[]
-    tags           ContactTag[]
+  id             Int            @id @default(autoincrement())
+  name           String
+  email          String?
+  phone          String?
+  company        String?
+  position       String?
+  inn            String?
+  telegramChatId String? // Chat ID для Telegram
+  whatsappId     String? // ID для WhatsApp
+  externalId     String? // ID в системе учета (1С, МойСклад)
+  syncedAt       DateTime? // Время последней синхронизации
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  user           User?          @relation(fields: [userId], references: [id])
+  userId         Int?
+  tasks          Task[]
+  dialogs        Dialog[]
+  deals          Deal[]
+  events         Event[]
+  emailMessages  EmailMessage[]
+  tags           ContactTag[]
 }
 
 model Task {
-    id          Int      @id @default(autoincrement())
-    title       String
-    description String?
-    status      String   @default("pending")
-    dueDate     DateTime?
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    contact     Contact? @relation(fields: [contactId], references: [id])
-    contactId   Int?
-    user        User?    @relation(fields: [userId], references: [id])
-    userId      Int?
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  status      String    @default("pending")
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  contact     Contact?  @relation(fields: [contactId], references: [id])
+  contactId   Int?
+  user        User?     @relation(fields: [userId], references: [id])
+  userId      Int?
 }
 
 model Dialog {
-    id          Int              @id @default(autoincrement())
-    message     String
-    sender      String           @default("user")
-    platform    MessagingPlatform @default(INTERNAL)
-    externalId  String?          // ID сообщения в мессенджере
-    createdAt   DateTime         @default(now())
-    contact     Contact?         @relation(fields: [contactId], references: [id])
-    contactId   Int?
+  id         Int               @id @default(autoincrement())
+  message    String
+  sender     String            @default("user")
+  platform   MessagingPlatform @default(INTERNAL)
+  externalId String? // ID сообщения в мессенджере
+  createdAt  DateTime          @default(now())
+  contact    Contact?          @relation(fields: [contactId], references: [id])
+  contactId  Int?
 }
 
 model Pipeline {
-    id        Int      @id @default(autoincrement())
-    name      String
-    stages    String   // JSON массив этапов с цветами
-    isDefault Boolean  @default(false)
-    company   Company  @relation(fields: [companyId], references: [id])
-    companyId Int
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    deals     Deal[]
-    dealSources DealSource[]
-    webForms  WebForm[]
-    emailIntegrations EmailIntegration[]
-    webhookIntegrations WebhookIntegration[]
-    messagingIntegrations MessagingIntegration[]
-    advertisingIntegrations AdvertisingIntegration[]
+  id                      Int                      @id @default(autoincrement())
+  name                    String
+  stages                  String // JSON массив этапов с цветами
+  isDefault               Boolean                  @default(false)
+  company                 Company                  @relation(fields: [companyId], references: [id])
+  companyId               Int
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deals                   Deal[]
+  dealSources             DealSource[]
+  webForms                WebForm[]
+  emailIntegrations       EmailIntegration[]
+  webhookIntegrations     WebhookIntegration[]
+  messagingIntegrations   MessagingIntegration[]
+  advertisingIntegrations AdvertisingIntegration[]
 }
 
 model Deal {
-    id              Int       @id @default(autoincrement())
-    title           String
-    amount          Float     @default(0)
-    currency        String    @default("RUB")
-    stage           String    // этап воронки
-    probability     Int       @default(0) // 0-100%
-    expectedCloseDate DateTime?
-    contact         Contact   @relation(fields: [contactId], references: [id])
-    contactId       Int
-    user            User      @relation(fields: [userId], references: [id])
-    userId          Int
-    pipeline        Pipeline? @relation(fields: [pipelineId], references: [id])
-    pipelineId      Int?
-    source          DealSource? @relation(fields: [sourceId], references: [id])
-    sourceId        Int?
-    dealType        DealType? @relation(fields: [dealTypeId], references: [id])
-    dealTypeId      Int?
-    createdAt       DateTime  @default(now())
-    updatedAt       DateTime  @updatedAt
-  tags            DealTag[]
-  webForm         WebForm?  @relation(fields: [webFormId], references: [id])
-  webFormId       Int?
-  emailMessages   EmailMessage[]
-  externalId      String?   // ID в системе учета (1С, МойСклад)
-  syncedAt        DateTime? // Время последней синхронизации
+  id                Int            @id @default(autoincrement())
+  title             String
+  amount            Float          @default(0)
+  currency          String         @default("RUB")
+  stage             String // этап воронки
+  probability       Int            @default(0) // 0-100%
+  expectedCloseDate DateTime?
+  contact           Contact        @relation(fields: [contactId], references: [id])
+  contactId         Int
+  user              User           @relation(fields: [userId], references: [id])
+  userId            Int
+  pipeline          Pipeline?      @relation(fields: [pipelineId], references: [id])
+  pipelineId        Int?
+  source            DealSource?    @relation(fields: [sourceId], references: [id])
+  sourceId          Int?
+  dealType          DealType?      @relation(fields: [dealTypeId], references: [id])
+  dealTypeId        Int?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  tags              DealTag[]
+  webForm           WebForm?       @relation(fields: [webFormId], references: [id])
+  webFormId         Int?
+  emailMessages     EmailMessage[]
+  externalId        String? // ID в системе учета (1С, МойСклад)
+  syncedAt          DateTime? // Время последней синхронизации
 }
 
 model WebForm {
-  id                Int       @id @default(autoincrement())
+  id                Int                 @id @default(autoincrement())
   name              String
-  token             String    @unique
-  isActive          Boolean   @default(true)
-  displayType       String    @default("inline") // "inline" | "popup"
-  buttonText        String?   // Текст кнопки для popup режима
+  token             String              @unique
+  isActive          Boolean             @default(true)
+  displayType       String              @default("inline") // "inline" | "popup"
+  buttonText        String? // Текст кнопки для popup режима
   fields            Json
   successMessage    String?
   redirectUrl       String?
-  company           Company   @relation(fields: [companyId], references: [id])
+  company           Company             @relation(fields: [companyId], references: [id])
   companyId         Int
-  source            DealSource? @relation(fields: [sourceId], references: [id])
+  source            DealSource?         @relation(fields: [sourceId], references: [id])
   sourceId          Int?
-  pipeline          Pipeline? @relation(fields: [pipelineId], references: [id])
+  pipeline          Pipeline?           @relation(fields: [pipelineId], references: [id])
   pipelineId        Int?
   initialStage      String?
-  defaultAssignee   User?     @relation("WebFormAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultAssignee   User?               @relation("WebFormAssignee", fields: [defaultAssigneeId], references: [id])
   defaultAssigneeId Int?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
   submissions       WebFormSubmission[]
   deals             Deal[]
 }
@@ -275,552 +278,552 @@ model WebFormSubmission {
 }
 
 model Event {
-    id          Int       @id @default(autoincrement())
-    title       String
-    description String?
-    startDate   DateTime
-    endDate     DateTime?
-    location    String?
-    type        String    @default("meeting") // meeting, call, task, other
-    contact     Contact?  @relation(fields: [contactId], references: [id])
-    contactId   Int?
-    user        User      @relation(fields: [userId], references: [id])
-    userId      Int
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  location    String?
+  type        String    @default("meeting") // meeting, call, task, other
+  contact     Contact?  @relation(fields: [contactId], references: [id])
+  contactId   Int?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Notification {
-    id        Int       @id @default(autoincrement())
-    title     String
-    message   String
-    type      String    @default("info") // info, warning, success, error
-    entityType String?  // task, deal, event, contact
-    entityId   Int?
-    isRead    Boolean   @default(false)
-    user      User      @relation(fields: [userId], references: [id])
-    userId    Int
-    createdAt DateTime  @default(now())
+  id         Int      @id @default(autoincrement())
+  title      String
+  message    String
+  type       String   @default("info") // info, warning, success, error
+  entityType String? // task, deal, event, contact
+  entityId   Int?
+  isRead     Boolean  @default(false)
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  createdAt  DateTime @default(now())
 }
 
 model EmailMessage {
-    id         Int      @id @default(autoincrement())
-    subject    String
-    body       String
-    status     String   @default("pending") // pending, sent, failed, received
-    error      String?
-    providerId String?  // ID сообщения у провайдера (Gmail messageId, Outlook id и т.д.)
-    toEmail    String?  // Для исходящих
-    fromEmail  String?  // Для входящих
-    messageId  String?  // Email Message-ID заголовок
-    threadId   String?  // ID треда (для группировки переписки)
-    isIncoming Boolean  @default(false) // true - входящее, false - исходящее
-    emailIntegration EmailIntegration? @relation(fields: [emailIntegrationId], references: [id])
-    emailIntegrationId Int?
-    createdAt  DateTime @default(now())
-    user       User?    @relation(fields: [userId], references: [id])
-    userId     Int?
-    contact    Contact? @relation(fields: [contactId], references: [id])
-    contactId  Int?
-    deal       Deal?    @relation(fields: [dealId], references: [id])
-    dealId     Int?
+  id                 Int               @id @default(autoincrement())
+  subject            String
+  body               String
+  status             String            @default("pending") // pending, sent, failed, received
+  error              String?
+  providerId         String? // ID сообщения у провайдера (Gmail messageId, Outlook id и т.д.)
+  toEmail            String? // Для исходящих
+  fromEmail          String? // Для входящих
+  messageId          String? // Email Message-ID заголовок
+  threadId           String? // ID треда (для группировки переписки)
+  isIncoming         Boolean           @default(false) // true - входящее, false - исходящее
+  emailIntegration   EmailIntegration? @relation(fields: [emailIntegrationId], references: [id])
+  emailIntegrationId Int?
+  createdAt          DateTime          @default(now())
+  user               User?             @relation(fields: [userId], references: [id])
+  userId             Int?
+  contact            Contact?          @relation(fields: [contactId], references: [id])
+  contactId          Int?
+  deal               Deal?             @relation(fields: [dealId], references: [id])
+  dealId             Int?
 }
 
 model Plan {
-    id                    Int         @id @default(autoincrement())
-    name                   String
-    slug                   PlanSlug    @unique
-    description            String?
-    price                  Int         @default(0) // цена в минорных единицах (например, копейки)
-    currency               String      @default("RUB")
-    userLimit              Int?
-    contactLimit           Int?
-    pipelineLimit          Int?
-    dealLimit              Int?        // Лимит открытых сделок
-    storageLimit           Int?        // Лимит хранилища в МБ
-    webFormLimit           Int?        // Лимит веб-форм (null = без ограничений)
-    emailIntegrationLimit  Int?        // Лимит email интеграций (null = без ограничений)
-    webhookLimit           Int?        // Лимит webhook'ов (null = без ограничений)
-    customFieldLimit       Int?        // Лимит кастомных полей (null = без ограничений)
-    features               Json?       // JSON с флагами доступных функций
-    createdAt              DateTime    @default(now())
-    updatedAt              DateTime    @updatedAt
-    subscriptions          Subscription[]
+  id                    Int            @id @default(autoincrement())
+  name                  String
+  slug                  PlanSlug       @unique
+  description           String?
+  price                 Int            @default(0) // цена в минорных единицах (например, копейки)
+  currency              String         @default("RUB")
+  userLimit             Int?
+  contactLimit          Int?
+  pipelineLimit         Int?
+  dealLimit             Int? // Лимит открытых сделок
+  storageLimit          Int? // Лимит хранилища в МБ
+  webFormLimit          Int? // Лимит веб-форм (null = без ограничений)
+  emailIntegrationLimit Int? // Лимит email интеграций (null = без ограничений)
+  webhookLimit          Int? // Лимит webhook'ов (null = без ограничений)
+  customFieldLimit      Int? // Лимит кастомных полей (null = без ограничений)
+  features              Json? // JSON с флагами доступных функций
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  subscriptions         Subscription[]
 }
 
 model Subscription {
-    id                Int                @id @default(autoincrement())
-    company           Company            @relation(fields: [companyId], references: [id])
-    companyId         Int
-    plan              Plan               @relation(fields: [planId], references: [id])
-    planId            Int
-    status            SubscriptionStatus @default(TRIAL)
-    billingInterval   BillingInterval    @default(MONTHLY)
-    currentPeriodEnd  DateTime?
-    trialEndsAt       DateTime?
-    cancelAtPeriodEnd Boolean            @default(false)
-    externalCustomerId    String?
-    externalSubscriptionId String?
-    createdAt         DateTime           @default(now())
-    updatedAt         DateTime           @updatedAt
-    invoices          Invoice[]
+  id                     Int                @id @default(autoincrement())
+  company                Company            @relation(fields: [companyId], references: [id])
+  companyId              Int
+  plan                   Plan               @relation(fields: [planId], references: [id])
+  planId                 Int
+  status                 SubscriptionStatus @default(TRIAL)
+  billingInterval        BillingInterval    @default(MONTHLY)
+  currentPeriodEnd       DateTime?
+  trialEndsAt            DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  externalCustomerId     String?
+  externalSubscriptionId String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  invoices               Invoice[]
 }
 
 model Invoice {
-    id             Int            @id @default(autoincrement())
-    subscription   Subscription   @relation(fields: [subscriptionId], references: [id])
-    subscriptionId Int
-    amount         Int
-    currency       String         @default("RUB")
-    status         InvoiceStatus  @default(PENDING)
-    paidAt         DateTime?
-    externalId     String?
-    createdAt      DateTime       @default(now())
+  id             Int           @id @default(autoincrement())
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  subscriptionId Int
+  amount         Int
+  currency       String        @default("RUB")
+  status         InvoiceStatus @default(PENDING)
+  paidAt         DateTime?
+  externalId     String?
+  createdAt      DateTime      @default(now())
 }
 
 model Automation {
-    id          Int                  @id @default(autoincrement())
-    name        String
-    description String?
-    isActive    Boolean              @default(true)
-    triggerType AutomationTriggerType
-    triggerConfig Json?              // условия триггера (например, stage name, amount threshold)
-    actions     Json                 // массив действий
-    company     Company              @relation(fields: [companyId], references: [id])
-    companyId   Int
-    createdAt   DateTime             @default(now())
-    updatedAt   DateTime             @updatedAt
+  id            Int                   @id @default(autoincrement())
+  name          String
+  description   String?
+  isActive      Boolean               @default(true)
+  triggerType   AutomationTriggerType
+  triggerConfig Json? // условия триггера (например, stage name, amount threshold)
+  actions       Json // массив действий
+  company       Company               @relation(fields: [companyId], references: [id])
+  companyId     Int
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 }
 
 model ActivityLog {
-    id          Int      @id @default(autoincrement())
-    entityType  String   // deal, contact, task, event
-    entityId    Int
-    action      String   // created, updated, deleted, stage_changed, etc.
-    description String?
-    metadata    Json?    // дополнительные данные
-    user        User?    @relation(fields: [userId], references: [id])
-    userId      Int?
-    company     Company  @relation(fields: [companyId], references: [id])
-    companyId   Int
-    createdAt   DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  entityType  String // deal, contact, task, event
+  entityId    Int
+  action      String // created, updated, deleted, stage_changed, etc.
+  description String?
+  metadata    Json? // дополнительные данные
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      Int?
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   Int
+  createdAt   DateTime @default(now())
 }
 
 model File {
-    id          Int      @id @default(autoincrement())
-    name        String
-    originalName String
-    url         String
-    size        Int      // размер в байтах
-    mimeType    String
-    entityType  String   // contact, deal, task, event
-    entityId    Int
-    user        User?    @relation(fields: [userId], references: [id])
-    userId      Int?
-    createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  name         String
+  originalName String
+  url          String
+  size         Int // размер в байтах
+  mimeType     String
+  entityType   String // contact, deal, task, event
+  entityId     Int
+  user         User?    @relation(fields: [userId], references: [id])
+  userId       Int?
+  createdAt    DateTime @default(now())
 }
 
 model Comment {
-    id          Int      @id @default(autoincrement())
-    text        String
-    entityType  String   // deal, task
-    entityId    Int
-    user        User     @relation(fields: [userId], references: [id])
-    userId      Int
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  text       String
+  entityType String // deal, task
+  entityId   Int
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model SupportTicket {
-    id         Int      @id @default(autoincrement())
-    subject    String
-    message    String
-    email      String
-    status     String   @default("open")
-    company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId  Int
-    user       User?    @relation(fields: [userId], references: [id])
-    userId     Int?
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  subject   String
+  message   String
+  email     String
+  status    String   @default("open")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId Int
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    @@index([companyId, status])
+  @@index([companyId, status])
 }
 
 model Tag {
-    id          Int      @id @default(autoincrement())
-    name        String
-    color       String   @default("#3B82F6") // цвет тега в hex
-    company     Company  @relation(fields: [companyId], references: [id])
-    companyId   Int
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-    contacts    ContactTag[]
-    deals       DealTag[]
+  id        Int          @id @default(autoincrement())
+  name      String
+  color     String       @default("#3B82F6") // цвет тега в hex
+  company   Company      @relation(fields: [companyId], references: [id])
+  companyId Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  contacts  ContactTag[]
+  deals     DealTag[]
 }
 
 model ContactTag {
-    id        Int      @id @default(autoincrement())
-    contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-    contactId Int
-    tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-    tagId     Int
-    createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId Int
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     Int
+  createdAt DateTime @default(now())
 
-    @@unique([contactId, tagId])
+  @@unique([contactId, tagId])
 }
 
 model DealTag {
-    id        Int      @id @default(autoincrement())
-    deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
-    dealId    Int
-    tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-    tagId     Int
-    createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId    Int
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId     Int
+  createdAt DateTime @default(now())
 
-    @@unique([dealId, tagId])
+  @@unique([dealId, tagId])
 }
 
 model CustomField {
-    id          Int              @id @default(autoincrement())
-    name        String
-    type        CustomFieldType
-    entityType  String           // contact, deal, task
-    isRequired  Boolean          @default(false)
-    isUnique    Boolean          @default(false)
-    order       Int              @default(0) // порядок отображения
-    options     Json?            // для SELECT и MULTISELECT - массив опций
-    defaultValue String?         // значение по умолчанию
-    company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId   Int
-    createdAt   DateTime         @default(now())
-    updatedAt   DateTime         @updatedAt
-    values      CustomFieldValue[]
+  id           Int                @id @default(autoincrement())
+  name         String
+  type         CustomFieldType
+  entityType   String // contact, deal, task
+  isRequired   Boolean            @default(false)
+  isUnique     Boolean            @default(false)
+  order        Int                @default(0) // порядок отображения
+  options      Json? // для SELECT и MULTISELECT - массив опций
+  defaultValue String? // значение по умолчанию
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId    Int
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  values       CustomFieldValue[]
 
-    @@unique([companyId, entityType, name]) // уникальное имя поля в рамках компании и типа сущности
+  @@unique([companyId, entityType, name]) // уникальное имя поля в рамках компании и типа сущности
 }
 
 model CustomFieldValue {
-    id            Int         @id @default(autoincrement())
-    customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
-    customFieldId Int
-    entityType    String      // contact, deal, task
-    entityId      Int         // ID контакта, сделки или задачи
-    value         String?     // значение поля (JSON для MULTISELECT)
-    createdAt     DateTime    @default(now())
-    updatedAt     DateTime    @updatedAt
+  id            Int         @id @default(autoincrement())
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  customFieldId Int
+  entityType    String // contact, deal, task
+  entityId      Int // ID контакта, сделки или задачи
+  value         String? // значение поля (JSON для MULTISELECT)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-    @@unique([customFieldId, entityType, entityId]) // одно значение поля на сущность
-    @@index([entityType, entityId]) // для быстрого поиска значений сущности
+  @@unique([customFieldId, entityType, entityId]) // одно значение поля на сущность
+  @@index([entityType, entityId]) // для быстрого поиска значений сущности
 }
 
 model DealSource {
-    id        Int      @id @default(autoincrement())
-    name      String
-    company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId Int
-    pipeline  Pipeline? @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
-    pipelineId Int?
-    order     Int      @default(0)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    deals     Deal[]
-    webForms  WebForm[]
-    emailIntegrations EmailIntegration[]
-    webhookIntegrations WebhookIntegration[]
-    messagingIntegrations MessagingIntegration[]
-    advertisingIntegrations AdvertisingIntegration[]
+  id                      Int                      @id @default(autoincrement())
+  name                    String
+  company                 Company                  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId               Int
+  pipeline                Pipeline?                @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
+  pipelineId              Int?
+  order                   Int                      @default(0)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  deals                   Deal[]
+  webForms                WebForm[]
+  emailIntegrations       EmailIntegration[]
+  webhookIntegrations     WebhookIntegration[]
+  messagingIntegrations   MessagingIntegration[]
+  advertisingIntegrations AdvertisingIntegration[]
 
-    @@unique([companyId, name])
+  @@unique([companyId, name])
 }
 
 model DealType {
-    id        Int      @id @default(autoincrement())
-    name      String
-    company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId Int
-    order     Int      @default(0)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    deals     Deal[]
+  id        Int      @id @default(autoincrement())
+  name      String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId Int
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deals     Deal[]
 
-    @@unique([companyId, name])
+  @@unique([companyId, name])
 }
 
 model MessagingIntegration {
-    id          Int              @id @default(autoincrement())
-    platform    MessagingPlatform
-    isActive    Boolean          @default(false)
-    botToken    String?          // Telegram bot token или WhatsApp API key
-    webhookUrl  String?          // URL для webhook'ов
-    webhookSecret String?        // Секрет для проверки webhook'ов
-    settings    Json?            // Дополнительные настройки (JSON)
-    
-    // Настройки автоматизации
-    autoCreateContact Boolean    @default(true) // Автоматически создавать контакты
-    autoCreateDeal    Boolean    @default(false) // Автоматически создавать сделки
-    defaultSourceId    Int?       // Источник сделки по умолчанию
-    defaultPipelineId Int?       // Воронка по умолчанию
-    defaultAssigneeId Int?       // Ответственный по умолчанию
-    
-    company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId   Int
-    defaultAssignee User?        @relation("MessagingIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
-    defaultSource   DealSource?  @relation(fields: [defaultSourceId], references: [id])
-    defaultPipeline  Pipeline?   @relation(fields: [defaultPipelineId], references: [id])
-    
-    createdAt   DateTime         @default(now())
-    updatedAt   DateTime         @updatedAt
+  id            Int               @id @default(autoincrement())
+  platform      MessagingPlatform
+  isActive      Boolean           @default(false)
+  botToken      String? // Telegram bot token или WhatsApp API key
+  webhookUrl    String? // URL для webhook'ов
+  webhookSecret String? // Секрет для проверки webhook'ов
+  settings      Json? // Дополнительные настройки (JSON)
 
-    @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
+  // Настройки автоматизации
+  autoCreateContact Boolean @default(true) // Автоматически создавать контакты
+  autoCreateDeal    Boolean @default(false) // Автоматически создавать сделки
+  defaultSourceId   Int? // Источник сделки по умолчанию
+  defaultPipelineId Int? // Воронка по умолчанию
+  defaultAssigneeId Int? // Ответственный по умолчанию
+
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       Int
+  defaultAssignee User?       @relation("MessagingIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultSource   DealSource? @relation(fields: [defaultSourceId], references: [id])
+  defaultPipeline Pipeline?   @relation(fields: [defaultPipelineId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
 }
 
 // Подключения менеджеров к их личным аккаунтам в мессенджерах
 model UserMessagingAccount {
-    id              Int              @id @default(autoincrement())
-    platform        MessagingPlatform
-    isActive        Boolean          @default(false)
-    phone           String?          // Номер телефона для WhatsApp
-    telegramApiId   String?          // Telegram API ID
-    telegramApiHash String?          // Telegram API Hash
-    telegramSession String?          // Сессия Telegram (зашифрованная)
-    whatsappSession String?          // Сессия WhatsApp (зашифрованная)
-    settings        Json?            // Дополнительные настройки
-    lastSyncAt      DateTime?        // Время последней синхронизации
-    user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userId          Int
-    createdAt       DateTime         @default(now())
-    updatedAt       DateTime         @updatedAt
+  id              Int               @id @default(autoincrement())
+  platform        MessagingPlatform
+  isActive        Boolean           @default(false)
+  phone           String? // Номер телефона для WhatsApp
+  telegramApiId   String? // Telegram API ID
+  telegramApiHash String? // Telegram API Hash
+  telegramSession String? // Сессия Telegram (зашифрованная)
+  whatsappSession String? // Сессия WhatsApp (зашифрованная)
+  settings        Json? // Дополнительные настройки
+  lastSyncAt      DateTime? // Время последней синхронизации
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          Int
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-    @@unique([userId, platform]) // Один аккаунт каждого типа на пользователя
+  @@unique([userId, platform]) // Один аккаунт каждого типа на пользователя
 }
 
 // Email интеграции для компании
 model EmailIntegration {
-    id                Int       @id @default(autoincrement())
-    provider          EmailProvider
-    email             String    // Email адрес
-    displayName       String?   // Отображаемое имя
-    isActive          Boolean   @default(true)
-    isIncomingEnabled Boolean  @default(true) // Получение входящих писем
-    isOutgoingEnabled Boolean  @default(true) // Отправка писем
-    
-    // Для IMAP/SMTP
-    imapHost          String?
-    imapPort          Int?
-    imapUsername      String?
-    imapPassword      String?  // Зашифрованный пароль
-    smtpHost          String?
-    smtpPort          Int?
-    smtpUsername      String?
-    smtpPassword      String?  // Зашифрованный пароль
-    useSSL            Boolean  @default(true)
-    
-    // Для OAuth (Gmail, Outlook)
-    accessToken       String?  // OAuth access token (зашифрованный)
-    refreshToken      String?  // OAuth refresh token (зашифрованный)
-    tokenExpiresAt    DateTime? // Время истечения токена
-    
-    // Настройки синхронизации
-    lastSyncAt        DateTime? // Время последней синхронизации
-    syncInterval      Int      @default(5) // Интервал синхронизации в минутах
-    autoCreateContact Boolean  @default(true) // Автоматически создавать контакты из писем
-    autoCreateDeal    Boolean  @default(false) // Автоматически создавать сделки из писем
-    defaultSourceId   Int?     // Источник сделки по умолчанию
-    defaultPipelineId  Int?     // Воронка по умолчанию
-    defaultAssigneeId Int?     // Ответственный по умолчанию
-    
-    settings          Json?    // Дополнительные настройки
-    
-    company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId         Int
-    defaultAssignee   User?    @relation("EmailIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
-    defaultSource      DealSource? @relation(fields: [defaultSourceId], references: [id])
-    defaultPipeline    Pipeline? @relation(fields: [defaultPipelineId], references: [id])
-    
-    messages          EmailMessage[]
-    
-    createdAt         DateTime  @default(now())
-    updatedAt         DateTime  @updatedAt
-    
-    @@unique([companyId, email, provider]) // Один email одного провайдера на компанию
+  id                Int           @id @default(autoincrement())
+  provider          EmailProvider
+  email             String // Email адрес
+  displayName       String? // Отображаемое имя
+  isActive          Boolean       @default(true)
+  isIncomingEnabled Boolean       @default(true) // Получение входящих писем
+  isOutgoingEnabled Boolean       @default(true) // Отправка писем
+
+  // Для IMAP/SMTP
+  imapHost     String?
+  imapPort     Int?
+  imapUsername String?
+  imapPassword String? // Зашифрованный пароль
+  smtpHost     String?
+  smtpPort     Int?
+  smtpUsername String?
+  smtpPassword String? // Зашифрованный пароль
+  useSSL       Boolean @default(true)
+
+  // Для OAuth (Gmail, Outlook)
+  accessToken    String? // OAuth access token (зашифрованный)
+  refreshToken   String? // OAuth refresh token (зашифрованный)
+  tokenExpiresAt DateTime? // Время истечения токена
+
+  // Настройки синхронизации
+  lastSyncAt        DateTime? // Время последней синхронизации
+  syncInterval      Int       @default(5) // Интервал синхронизации в минутах
+  autoCreateContact Boolean   @default(true) // Автоматически создавать контакты из писем
+  autoCreateDeal    Boolean   @default(false) // Автоматически создавать сделки из писем
+  defaultSourceId   Int? // Источник сделки по умолчанию
+  defaultPipelineId Int? // Воронка по умолчанию
+  defaultAssigneeId Int? // Ответственный по умолчанию
+
+  settings Json? // Дополнительные настройки
+
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       Int
+  defaultAssignee User?       @relation("EmailIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultSource   DealSource? @relation(fields: [defaultSourceId], references: [id])
+  defaultPipeline Pipeline?   @relation(fields: [defaultPipelineId], references: [id])
+
+  messages EmailMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, email, provider]) // Один email одного провайдера на компанию
 }
 
 model WebhookIntegration {
-    id                Int       @id @default(autoincrement())
-    name              String    // Название интеграции
-    token             String    @unique // Уникальный токен для авторизации webhook'ов
-    isActive          Boolean   @default(true)
-    description       String?   // Описание интеграции
-    
-    // Настройки обработки данных
-    autoCreateContact Boolean   @default(true) // Автоматически создавать контакты
-    autoCreateDeal    Boolean   @default(false) // Автоматически создавать сделки
-    defaultSourceId   Int?      // Источник сделки по умолчанию
-    defaultPipelineId Int?      // Воронка по умолчанию
-    defaultAssigneeId Int?      // Ответственный по умолчанию
-    
-    // Маппинг полей (JSON: { "name": "full_name", "email": "email_address", ... })
-    fieldMapping      Json?     // Маппинг полей из внешней системы в поля CRM
-    
-    settings          Json?     // Дополнительные настройки
-    
-    company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId         Int
-    defaultAssignee   User?     @relation("WebhookIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
-    defaultSource     DealSource? @relation(fields: [defaultSourceId], references: [id])
-    defaultPipeline   Pipeline? @relation(fields: [defaultPipelineId], references: [id])
-    
-    logs              WebhookLog[]
-    
-    createdAt         DateTime  @default(now())
-    updatedAt         DateTime  @updatedAt
-    
-    @@index([token]) // Индекс для быстрого поиска по токену
+  id          Int     @id @default(autoincrement())
+  name        String // Название интеграции
+  token       String  @unique // Уникальный токен для авторизации webhook'ов
+  isActive    Boolean @default(true)
+  description String? // Описание интеграции
+
+  // Настройки обработки данных
+  autoCreateContact Boolean @default(true) // Автоматически создавать контакты
+  autoCreateDeal    Boolean @default(false) // Автоматически создавать сделки
+  defaultSourceId   Int? // Источник сделки по умолчанию
+  defaultPipelineId Int? // Воронка по умолчанию
+  defaultAssigneeId Int? // Ответственный по умолчанию
+
+  // Маппинг полей (JSON: { "name": "full_name", "email": "email_address", ... })
+  fieldMapping Json? // Маппинг полей из внешней системы в поля CRM
+
+  settings Json? // Дополнительные настройки
+
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       Int
+  defaultAssignee User?       @relation("WebhookIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultSource   DealSource? @relation(fields: [defaultSourceId], references: [id])
+  defaultPipeline Pipeline?   @relation(fields: [defaultPipelineId], references: [id])
+
+  logs WebhookLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([token]) // Индекс для быстрого поиска по токену
 }
 
 model WebhookLog {
-    id                Int       @id @default(autoincrement())
-    webhook           WebhookIntegration @relation(fields: [webhookId], references: [id], onDelete: Cascade)
-    webhookId         Int
-    payload           Json      // Входящие данные
-    response          Json?     // Ответ системы
-    status            String    @default("success") // success, error, warning
-    errorMessage      String?   // Сообщение об ошибке
-    contactId         Int?      // ID созданного/найденного контакта
-    dealId            Int?      // ID созданной сделки
-    ipAddress         String?   // IP адрес отправителя
-    userAgent         String?   // User-Agent заголовок
-    createdAt         DateTime  @default(now())
-    
-    @@index([webhookId, createdAt]) // Индекс для фильтрации по webhook и дате
+  id           Int                @id @default(autoincrement())
+  webhook      WebhookIntegration @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  webhookId    Int
+  payload      Json // Входящие данные
+  response     Json? // Ответ системы
+  status       String             @default("success") // success, error, warning
+  errorMessage String? // Сообщение об ошибке
+  contactId    Int? // ID созданного/найденного контакта
+  dealId       Int? // ID созданной сделки
+  ipAddress    String? // IP адрес отправителя
+  userAgent    String? // User-Agent заголовок
+  createdAt    DateTime           @default(now())
+
+  @@index([webhookId, createdAt]) // Индекс для фильтрации по webhook и дате
 }
 
 model AdvertisingIntegration {
-    id                Int       @id @default(autoincrement())
-    platform          AdvertisingPlatform
-    name              String?   // Название интеграции (опционально)
-    isActive          Boolean   @default(true)
-    
-    // API credentials
-    apiToken          String?   // API токен или ключ
-    apiSecret         String?   // Секретный ключ (если нужен)
-    accountId         String?   // ID аккаунта в рекламной системе
-    
-    // Настройки автоматизации
-    autoCreateContact Boolean   @default(true) // Автоматически создавать контакты
-    autoCreateDeal    Boolean   @default(false) // Автоматически создавать сделки
-    defaultSourceId   Int?      // Источник сделки по умолчанию
-    defaultPipelineId Int?      // Воронка по умолчанию
-    defaultAssigneeId Int?      // Ответственный по умолчанию
-    
-    // Webhook настройки
-    webhookUrl        String?   // URL для webhook'ов
-    webhookSecret     String?   // Секрет для проверки webhook'ов
-    
-    // Дополнительные настройки
-    settings          Json?     // Дополнительные настройки (JSON)
-    
-    company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId         Int
-    defaultAssignee   User?     @relation("AdvertisingIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
-    defaultSource     DealSource? @relation(fields: [defaultSourceId], references: [id])
-    defaultPipeline   Pipeline?  @relation(fields: [defaultPipelineId], references: [id])
-    
-    logs              AdvertisingLog[]
-    
-    createdAt         DateTime  @default(now())
-    updatedAt         DateTime  @updatedAt
-    
-    @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
-    @@index([platform, isActive]) // Индекс для быстрого поиска активных интеграций
+  id       Int                 @id @default(autoincrement())
+  platform AdvertisingPlatform
+  name     String? // Название интеграции (опционально)
+  isActive Boolean             @default(true)
+
+  // API credentials
+  apiToken  String? // API токен или ключ
+  apiSecret String? // Секретный ключ (если нужен)
+  accountId String? // ID аккаунта в рекламной системе
+
+  // Настройки автоматизации
+  autoCreateContact Boolean @default(true) // Автоматически создавать контакты
+  autoCreateDeal    Boolean @default(false) // Автоматически создавать сделки
+  defaultSourceId   Int? // Источник сделки по умолчанию
+  defaultPipelineId Int? // Воронка по умолчанию
+  defaultAssigneeId Int? // Ответственный по умолчанию
+
+  // Webhook настройки
+  webhookUrl    String? // URL для webhook'ов
+  webhookSecret String? // Секрет для проверки webhook'ов
+
+  // Дополнительные настройки
+  settings Json? // Дополнительные настройки (JSON)
+
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId       Int
+  defaultAssignee User?       @relation("AdvertisingIntegrationAssignee", fields: [defaultAssigneeId], references: [id])
+  defaultSource   DealSource? @relation(fields: [defaultSourceId], references: [id])
+  defaultPipeline Pipeline?   @relation(fields: [defaultPipelineId], references: [id])
+
+  logs AdvertisingLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
+  @@index([platform, isActive]) // Индекс для быстрого поиска активных интеграций
 }
 
 model AdvertisingLog {
-    id                Int       @id @default(autoincrement())
-    advertising       AdvertisingIntegration @relation(fields: [advertisingId], references: [id], onDelete: Cascade)
-    advertisingId     Int
-    payload           Json      // Входящие данные
-    response          Json?     // Ответ системы
-    status            String    @default("success") // success, error, warning
-    errorMessage      String?   // Сообщение об ошибке
-    contactId         Int?      // ID созданного/найденного контакта
-    dealId            Int?      // ID созданной сделки
-    leadId            String?   // ID лида в рекламной системе
-    campaignId        String?   // ID кампании
-    createdAt         DateTime  @default(now())
-    
-    @@index([advertisingId, createdAt]) // Индекс для фильтрации по интеграции и дате
+  id            Int                    @id @default(autoincrement())
+  advertising   AdvertisingIntegration @relation(fields: [advertisingId], references: [id], onDelete: Cascade)
+  advertisingId Int
+  payload       Json // Входящие данные
+  response      Json? // Ответ системы
+  status        String                 @default("success") // success, error, warning
+  errorMessage  String? // Сообщение об ошибке
+  contactId     Int? // ID созданного/найденного контакта
+  dealId        Int? // ID созданной сделки
+  leadId        String? // ID лида в рекламной системе
+  campaignId    String? // ID кампании
+  createdAt     DateTime               @default(now())
+
+  @@index([advertisingId, createdAt]) // Индекс для фильтрации по интеграции и дате
 }
 
 model AccountingIntegration {
-    id                Int       @id @default(autoincrement())
-    platform          AccountingPlatform
-    name              String?   // Название интеграции
-    isActive          Boolean   @default(true)
-    
-    // API credentials
-    apiToken          String?   // API токен или ключ
-    apiSecret         String?   // Секретный ключ (если нужен)
-    baseUrl           String?   // Базовый URL API (для 1С)
-    accountId         String?   // ID аккаунта
-    
-    // Настройки синхронизации
-    syncContacts      Boolean   @default(true) // Синхронизировать контакты
-    syncDeals         Boolean   @default(true) // Синхронизировать сделки
-    syncProducts      Boolean   @default(false) // Синхронизировать товары
-    autoSync          Boolean   @default(false) // Автоматическая синхронизация
-    syncInterval      Int       @default(60) // Интервал синхронизации в минутах
-    
-    // Настройки маппинга
-    contactMapping    Json?     // Маппинг полей контакта
-    dealMapping       Json?     // Маппинг полей сделки
-    
-    // Дополнительные настройки
-    settings          Json?     // Дополнительные настройки (JSON)
-    lastSyncAt        DateTime? // Время последней синхронизации
-    
-    company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId         Int
-    
-    logs              AccountingLog[]
-    
-    createdAt         DateTime  @default(now())
-    updatedAt         DateTime  @updatedAt
-    
-    @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
-    @@index([platform, isActive]) // Индекс для быстрого поиска активных интеграций
+  id       Int                @id @default(autoincrement())
+  platform AccountingPlatform
+  name     String? // Название интеграции
+  isActive Boolean            @default(true)
+
+  // API credentials
+  apiToken  String? // API токен или ключ
+  apiSecret String? // Секретный ключ (если нужен)
+  baseUrl   String? // Базовый URL API (для 1С)
+  accountId String? // ID аккаунта
+
+  // Настройки синхронизации
+  syncContacts Boolean @default(true) // Синхронизировать контакты
+  syncDeals    Boolean @default(true) // Синхронизировать сделки
+  syncProducts Boolean @default(false) // Синхронизировать товары
+  autoSync     Boolean @default(false) // Автоматическая синхронизация
+  syncInterval Int     @default(60) // Интервал синхронизации в минутах
+
+  // Настройки маппинга
+  contactMapping Json? // Маппинг полей контакта
+  dealMapping    Json? // Маппинг полей сделки
+
+  // Дополнительные настройки
+  settings   Json? // Дополнительные настройки (JSON)
+  lastSyncAt DateTime? // Время последней синхронизации
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId Int
+
+  logs AccountingLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, platform]) // Одна интеграция каждого типа на компанию
+  @@index([platform, isActive]) // Индекс для быстрого поиска активных интеграций
 }
 
 model AccountingLog {
-    id                Int       @id @default(autoincrement())
-    accounting        AccountingIntegration @relation(fields: [accountingId], references: [id], onDelete: Cascade)
-    accountingId      Int
-    action            String    // sync_contacts, sync_deals, create_contact, create_order, etc.
-    entityType        String?   // contact, deal, product
-    entityId          Int?      // ID сущности в CRM
-    externalId        String?   // ID в системе учета
-    payload           Json?     // Отправленные данные
-    response          Json?     // Ответ системы
-    status            String    @default("success") // success, error, warning
-    errorMessage      String?   // Сообщение об ошибке
-    createdAt         DateTime  @default(now())
-    
-    @@index([accountingId, createdAt]) // Индекс для фильтрации по интеграции и дате
-    @@index([entityType, entityId]) // Индекс для поиска по сущности
+  id           Int                   @id @default(autoincrement())
+  accounting   AccountingIntegration @relation(fields: [accountingId], references: [id], onDelete: Cascade)
+  accountingId Int
+  action       String // sync_contacts, sync_deals, create_contact, create_order, etc.
+  entityType   String? // contact, deal, product
+  entityId     Int? // ID сущности в CRM
+  externalId   String? // ID в системе учета
+  payload      Json? // Отправленные данные
+  response     Json? // Ответ системы
+  status       String                @default("success") // success, error, warning
+  errorMessage String? // Сообщение об ошибке
+  createdAt    DateTime              @default(now())
+
+  @@index([accountingId, createdAt]) // Индекс для фильтрации по интеграции и дате
+  @@index([entityType, entityId]) // Индекс для поиска по сущности
 }
 
 model EmailTemplate {
-    id          Int      @id @default(autoincrement())
-    name        String   // Название шаблона
-    subject     String   // Тема письма (может содержать переменные)
-    body        String   // Тело письма (может содержать переменные)
-    description String?  // Описание шаблона
-    company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-    companyId   Int
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String // Название шаблона
+  subject     String // Тема письма (может содержать переменные)
+  body        String // Тело письма (может содержать переменные)
+  description String? // Описание шаблона
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    @@unique([companyId, name]) // Уникальное имя шаблона в рамках компании
-    @@index([companyId]) // Индекс для быстрого поиска шаблонов компании
+  @@unique([companyId, name]) // Уникальное имя шаблона в рамках компании
+  @@index([companyId]) // Индекс для быстрого поиска шаблонов компании
 }

@@ -171,9 +171,24 @@ export const createUserSchema = z.object({
   email: z.string().email('Неверный формат email'),
   password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
   name: z.string().min(1, 'Имя обязательно').max(255),
-  phone: phoneSchema,
+  lastName: z.string().max(255).optional().nullable(),
+  phone: z.string().min(1, 'Контактный номер обязателен').regex(/^\+?[1-9]\d{1,14}$/, 'Неверный формат телефона'),
   role: z.enum(['admin', 'manager', 'user']).optional().default('user'),
   companyId: z.number().int().positive().optional(),
+  userType: z.enum(['individual', 'legal']).optional().default('individual'),
+  companyName: z.string().max(255).optional(),
+  inn: z.string().regex(/^\d{10,12}$/, 'ИНН должен содержать 10 или 12 цифр').optional(),
+}).refine((data) => {
+  // Для юр лица ИНН и название компании обязательны
+  if (data.userType === 'legal') {
+    if (!data.inn || !data.companyName) {
+      return false
+    }
+  }
+  return true
+}, {
+  message: 'Для юридического лица необходимо указать название компании и ИНН',
+  path: ['inn'], // Показываем ошибку на поле ИНН
 })
 
 export const updateUserSchema = createUserSchema.partial().extend({

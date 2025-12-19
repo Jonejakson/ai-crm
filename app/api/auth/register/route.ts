@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       return validation // Возвращаем ошибку валидации
     }
     
-    const { email, password, name, companyId } = validation
+    const { email, password, name, lastName, phone, companyId, userType, companyName, inn } = validation
 
     // Проверка существования пользователя
     const existingUser = await prisma.user.findUnique({
@@ -61,9 +61,16 @@ export async function POST(req: Request) {
     const result = await prisma.$transaction(async (tx) => {
       // Если companyId не передан, создаем новую компанию
       if (!finalCompanyId) {
+        // Определяем название компании
+        const companyNameValue = userType === 'legal' && companyName 
+          ? companyName 
+          : `${name}${lastName ? ' ' + lastName : ''}`
+
         const company = await tx.company.create({
           data: {
-            name: `${name}'s Company`,
+            name: companyNameValue,
+            inn: userType === 'legal' ? inn || null : null,
+            isLegalEntity: userType === 'legal',
           },
         });
         finalCompanyId = company.id;
@@ -92,7 +99,9 @@ export async function POST(req: Request) {
         data: {
           email,
           name,
+          lastName: lastName || null,
           password: hashedPassword,
+          phone: phone || null,
           companyId: finalCompanyId,
           role: userRole,
         },
@@ -100,6 +109,8 @@ export async function POST(req: Request) {
           id: true,
           email: true,
           name: true,
+          lastName: true,
+          phone: true,
           role: true,
           companyId: true,
         }
