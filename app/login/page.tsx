@@ -40,7 +40,8 @@ export default function LoginPage() {
         const registerData: any = {
           email,
           password,
-          name: `${name} ${lastName}`.trim(),
+          name: name.trim(), // Только имя
+          lastName: lastName.trim(), // Фамилия отдельно
           phone,
           userType,
         }

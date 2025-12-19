@@ -59,22 +59,40 @@ export async function POST(req: Request) {
     
     // Создание пользователя и подписки в транзакции
     const result = await prisma.$transaction(async (tx) => {
-      // Если companyId не передан, создаем новую компанию
-      if (!finalCompanyId) {
-        // Определяем название компании
-        const companyNameValue = userType === 'legal' && companyName 
-          ? companyName 
-          : `${name}${lastName ? ' ' + lastName : ''}`
-
+      // Создаем компанию ТОЛЬКО для юр лиц
+      if (!finalCompanyId && userType === 'legal' && companyName) {
         const company = await tx.company.create({
           data: {
-            name: companyNameValue,
-            inn: userType === 'legal' ? inn || null : null,
-            isLegalEntity: userType === 'legal',
+            name: companyName,
+            inn: inn || null,
+            isLegalEntity: true,
           },
         });
         finalCompanyId = company.id;
         isNewCompany = true;
+      }
+      
+      // Для физ лиц используем общую компанию "Физ лица" (или создаем если нет)
+      if (!finalCompanyId && userType === 'individual') {
+        const defaultCompany = await tx.company.findFirst({
+          where: { 
+            name: 'Физ лица',
+            isLegalEntity: false 
+          }
+        });
+        
+        if (defaultCompany) {
+          finalCompanyId = defaultCompany.id;
+        } else {
+          // Создаем общую компанию для физ лиц
+          const company = await tx.company.create({
+            data: {
+              name: 'Физ лица',
+              isLegalEntity: false,
+            },
+          });
+          finalCompanyId = company.id;
+        }
       }
 
       // Проверяем, есть ли уже пользователи в компании
