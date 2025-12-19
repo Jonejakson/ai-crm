@@ -49,6 +49,9 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
       { id: 'email-templates', name: 'Шаблоны писем', href: '/email-templates', Icon: EmailTemplateIcon },
       { id: 'automations', name: 'Автоматизации', href: '/automations', Icon: AutomationsIcon },
       { id: 'company', name: 'Компания', href: '/company', Icon: CompanyIcon },
+    ] : []),
+    // Операции только для owner
+    ...(isOwner ? [
       { id: 'ops', name: 'Операции', href: '/ops', Icon: ActivityIcon },
     ] : []),
   ]

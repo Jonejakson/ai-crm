@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 type Metrics = {
   ok: boolean
@@ -19,10 +21,26 @@ type Metrics = {
 }
 
 export default function OpsPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [data, setData] = useState<Metrics | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<{ ok: boolean; startedAt?: string; uptimeSeconds?: number } | null>(null)
+
+  // Проверка доступа - только owner
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login')
+      return
+    }
+    if (status === 'authenticated') {
+      if (session?.user?.role !== 'owner') {
+        router.push('/')
+        return
+      }
+    }
+  }, [status, session, router])
 
   const load = async () => {
     try {
