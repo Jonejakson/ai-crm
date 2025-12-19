@@ -475,7 +475,7 @@ export default function CompanyPage() {
     {
       label: 'Фильтр',
       value: `${filteredUsers.length} из ${users.length}`,
-      note: userSearch ? 'Применён поиск' : 'Все пользователи',
+      note: 'Все пользователи',
     },
   ]
 
