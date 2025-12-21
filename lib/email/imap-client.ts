@@ -114,8 +114,8 @@ export async function fetchEmailsFromImap(
                   // Извлекаем заголовки для парсинга тикетов
                   const headers: Record<string, string> = {}
                   if (parsed.headers) {
-                    parsed.headers.forEach((header) => {
-                      if (header.key && header.value) {
+                    parsed.headers.forEach((header: any) => {
+                      if (header && typeof header === 'object' && 'key' in header && 'value' in header) {
                         headers[header.key] = Array.isArray(header.value) 
                           ? header.value.join(', ') 
                           : String(header.value)
