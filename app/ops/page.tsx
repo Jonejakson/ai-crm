@@ -57,6 +57,8 @@ export default function OpsPage() {
   const [health, setHealth] = useState<{ ok: boolean; startedAt?: string; uptimeSeconds?: number } | null>(null)
   const [usersData, setUsersData] = useState<UsersData | null>(null)
   const [usersLoading, setUsersLoading] = useState(false)
+  const [ticketsData, setTicketsData] = useState<{ tickets: any[]; total: number } | null>(null)
+  const [ticketsLoading, setTicketsLoading] = useState(false)
 
   // Проверка доступа - только owner
   useEffect(() => {
@@ -115,12 +117,30 @@ export default function OpsPage() {
     }
   }
 
+  const loadTickets = async () => {
+    try {
+      setTicketsLoading(true)
+      const res = await fetch('/api/support/tickets?limit=5')
+      if (!res.ok) {
+        throw new Error('Не удалось загрузить тикеты')
+      }
+      const json = await res.json()
+      setTicketsData(json)
+    } catch (e: any) {
+      console.error('Ошибка загрузки тикетов:', e)
+    } finally {
+      setTicketsLoading(false)
+    }
+  }
+
   useEffect(() => {
     load()
     loadUsers()
+    loadTickets()
     const timer = setInterval(() => {
       load()
       loadUsers()
+      loadTickets()
     }, 60_000) // автообновление раз в минуту
     return () => clearInterval(timer)
   }, [])

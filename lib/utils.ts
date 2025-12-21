@@ -21,8 +21,11 @@ export function getActiveSection(pathname: string): string {
   if (pathname.startsWith('/calendar')) return 'calendar'
   if (pathname.startsWith('/analytics')) return 'analytics'
   if (pathname.startsWith('/activity')) return 'activity'
+  if (pathname.startsWith('/support')) return 'support'
   if (pathname.startsWith('/email-templates')) return 'email-templates'
   if (pathname.startsWith('/automations')) return 'automations'
   if (pathname.startsWith('/company')) return 'company'
+  if (pathname.startsWith('/ops/support')) return 'ops-support'
+  if (pathname.startsWith('/ops')) return 'ops'
   return 'dashboard'
 }
