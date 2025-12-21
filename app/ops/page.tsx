@@ -225,10 +225,10 @@ export default function OpsPage() {
       </div>
 
       {/* Блок тикетов поддержки - ВСЕГДА ОТОБРАЖАЕТСЯ */}
-      <div className="rounded-2xl border-2 border-[var(--primary)] bg-[var(--surface)] p-6 space-y-4" style={{ minHeight: '200px' }}>
+      <div className="rounded-2xl border-4 border-red-500 bg-yellow-100 p-6 space-y-4" style={{ minHeight: '200px', display: 'block !important' }}>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">Тикеты поддержки</h2>
+            <h2 className="text-2xl font-bold text-red-600">🔥 ТИКЕТЫ ПОДДЕРЖКИ 🔥</h2>
             <p className="text-[var(--muted)] text-sm">
               Последние тикеты. <a href="/ops/support" className="text-[var(--primary)] hover:underline">Открыть все →</a>
             </p>
