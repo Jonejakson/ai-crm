@@ -25,8 +25,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # База данных - используем напрямую из .env или собираем из POSTGRES_PASSWORD
-      DATABASE_URL: ${DATABASE_URL:-postgresql://crm_user:${POSTGRES_PASSWORD:-change_this_password}@postgres:5432/crm_db?schema=public}
+      # База данных - используем напрямую из .env
+      DATABASE_URL: ${DATABASE_URL}
       
       # NextAuth (обязательно!)
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
