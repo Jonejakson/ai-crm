@@ -72,8 +72,8 @@ ${message.trim()}
 Ticket ID: ${ticketId}
         `.trim()
 
-        // Используем nodemailer напрямую для добавления заголовков
-        const nodemailer = await import('nodemailer')
+        // Используем sendEmail с расширенными опциями через nodemailer
+        const nodemailer = require('nodemailer')
         const transporter = nodemailer.createTransport({
           host: process.env.MAIL_HOST,
           port: Number(process.env.MAIL_PORT),
