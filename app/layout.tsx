@@ -86,8 +86,8 @@ export default function RootLayout({
         <link rel="icon" href="/icon.svg" />
         <link rel="apple-touch-icon" href="/icon.svg" />
 
-        {/* Manifest */}
-        <link rel="manifest" href="/manifest.webmanifest" />
+        {/* Manifest - Next.js автоматически обслуживает через app/manifest.ts */}
+        <link rel="manifest" href="/manifest" />
 
         {/* PWA Splash Screens */}
         <meta name="apple-mobile-web-app-capable" content="yes" />
