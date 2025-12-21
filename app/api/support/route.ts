@@ -72,11 +72,28 @@ ${message.trim()}
 Ticket ID: ${ticketId}
         `.trim()
 
-        await sendEmail({
+        // Используем nodemailer напрямую для добавления заголовков
+        const nodemailer = await import('nodemailer')
+        const transporter = nodemailer.createTransport({
+          host: process.env.MAIL_HOST,
+          port: Number(process.env.MAIL_PORT),
+          secure: Number(process.env.MAIL_PORT) === 465,
+          auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASSWORD,
+          },
+        })
+
+        await transporter.sendMail({
+          from: process.env.MAIL_FROM,
           to: supportEmail,
           subject: emailSubject,
           text: emailBody,
           html: emailBody.replace(/\n/g, '<br/>'),
+          headers: {
+            'X-Ticket-ID': ticketId,
+            'Reply-To': supportEmail,
+          },
         })
       } catch (emailError) {
         console.error('[support][email]', emailError)

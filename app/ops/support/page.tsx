@@ -48,6 +48,7 @@ export default function OpsSupportPage() {
   const [replyMessage, setReplyMessage] = useState('')
   const [replying, setReplying] = useState(false)
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [syncing, setSyncing] = useState(false)
 
   // Проверка доступа - только owner
   useEffect(() => {
@@ -198,9 +199,34 @@ export default function OpsSupportPage() {
             Управление тикетами поддержки. Отвечайте на тикеты здесь или с почты info@flamecrm.ru
           </p>
         </div>
-        <button onClick={loadTickets} className="btn-secondary" disabled={loading}>
-          {loading ? 'Обновление…' : 'Обновить'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              setSyncing(true)
+              try {
+                const res = await fetch('/api/support/sync-tickets', { method: 'POST' })
+                const data = await res.json()
+                if (data.success) {
+                  alert(`Синхронизировано тикетов: ${data.processedTickets}`)
+                  await loadTickets()
+                } else {
+                  alert(`Ошибка: ${data.error}`)
+                }
+              } catch (e: any) {
+                alert(`Ошибка синхронизации: ${e.message}`)
+              } finally {
+                setSyncing(false)
+              }
+            }}
+            className="btn-secondary"
+            disabled={syncing}
+          >
+            {syncing ? 'Синхронизация...' : 'Синхронизировать с почтой'}
+          </button>
+          <button onClick={loadTickets} className="btn-secondary" disabled={loading}>
+            {loading ? 'Обновление…' : 'Обновить'}
+          </button>
+        </div>
       </div>
 
       {error && (

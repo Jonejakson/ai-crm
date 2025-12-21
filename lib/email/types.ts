@@ -10,6 +10,7 @@ export interface EmailMessage {
   body: string
   htmlBody?: string
   date: Date
+  headers?: Record<string, string>
   attachments?: Array<{
     filename: string
     contentType: string

@@ -111,6 +111,18 @@ export async function fetchEmailsFromImap(
                     }
                   }
 
+                  // Извлекаем заголовки для парсинга тикетов
+                  const headers: Record<string, string> = {}
+                  if (parsed.headers) {
+                    parsed.headers.forEach((header) => {
+                      if (header.key && header.value) {
+                        headers[header.key] = Array.isArray(header.value) 
+                          ? header.value.join(', ') 
+                          : String(header.value)
+                      }
+                    })
+                  }
+
                   const email: EmailMessage = {
                     messageId: parsed.messageId || `imap-${seqno}-${Date.now()}`,
                     threadId: parsed.inReplyTo || undefined,
@@ -126,6 +138,7 @@ export async function fetchEmailsFromImap(
                       contentType: att.contentType || 'application/octet-stream',
                       content: att.content as Buffer,
                     })),
+                    headers,
                   }
                   messages.push(email)
                 })
