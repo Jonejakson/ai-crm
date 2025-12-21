@@ -215,6 +215,81 @@ export default function OpsPage() {
         />
       </div>
 
+      {/* Блок тикетов поддержки */}
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Тикеты поддержки</h2>
+            <p className="text-[var(--muted)] text-sm">
+              Последние тикеты. <a href="/ops/support" className="text-[var(--primary)] hover:underline">Открыть все →</a>
+            </p>
+          </div>
+          <button onClick={loadTickets} className="btn-secondary" disabled={ticketsLoading}>
+            {ticketsLoading ? 'Обновление…' : 'Обновить'}
+          </button>
+        </div>
+
+        {ticketsLoading && !ticketsData ? (
+          <div className="text-center py-4 text-[var(--muted)]">Загрузка тикетов…</div>
+        ) : ticketsData?.tickets && ticketsData.tickets.length > 0 ? (
+          <div className="space-y-2">
+            {ticketsData.tickets.slice(0, 5).map((ticket: any) => (
+              <a
+                key={ticket.id}
+                href={`/ops/support`}
+                className="block p-3 rounded-lg border border-[var(--border)] hover:border-[var(--primary)] hover:bg-[var(--background-soft)] transition-all"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-mono text-[var(--muted)]">{ticket.ticketId}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          ticket.status === 'open'
+                            ? 'bg-blue-100 text-blue-800'
+                            : ticket.status === 'in_progress'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : ticket.status === 'resolved'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {ticket.status === 'open'
+                          ? 'Открыт'
+                          : ticket.status === 'in_progress'
+                          ? 'В работе'
+                          : ticket.status === 'resolved'
+                          ? 'Решен'
+                          : 'Закрыт'}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-[var(--foreground)] text-sm">{ticket.subject}</h3>
+                    <p className="text-xs text-[var(--muted)] mt-1 line-clamp-1">{ticket.message}</p>
+                  </div>
+                  <div className="text-xs text-[var(--muted)] ml-4 whitespace-nowrap">
+                    {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}
+                  </div>
+                </div>
+                <div className="text-xs text-[var(--muted)] mt-2">
+                  {ticket.user?.name || ticket.email} · Сообщений: {ticket.messages?.length || 0}
+                </div>
+              </a>
+            ))}
+            {ticketsData.total > 5 && (
+              <div className="text-center pt-2">
+                <a href="/ops/support" className="text-sm text-[var(--primary)] hover:underline">
+                  Показать все ({ticketsData.total}) →
+                </a>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-4 text-[var(--muted)]">
+            Тикетов нет
+          </div>
+        )}
+      </div>
+
       {/* Блок с пользователями */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
