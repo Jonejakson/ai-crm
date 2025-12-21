@@ -222,8 +222,8 @@ export default function OpsPage() {
         />
       </div>
 
-      {/* Блок тикетов поддержки */}
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 space-y-4">
+      {/* Блок тикетов поддержки - ВСЕГДА ОТОБРАЖАЕТСЯ */}
+      <div className="rounded-2xl border-2 border-[var(--primary)] bg-[var(--surface)] p-6 space-y-4" style={{ minHeight: '200px' }}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-[var(--foreground)]">Тикеты поддержки</h2>
