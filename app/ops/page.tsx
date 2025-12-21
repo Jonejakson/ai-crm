@@ -122,12 +122,18 @@ export default function OpsPage() {
       setTicketsLoading(true)
       const res = await fetch('/api/support/tickets?limit=5')
       if (!res.ok) {
-        throw new Error('Не удалось загрузить тикеты')
+        const errorData = await res.json().catch(() => ({}))
+        console.error('Ошибка загрузки тикетов:', res.status, errorData)
+        // Не показываем ошибку пользователю, просто оставляем пустым
+        setTicketsData({ tickets: [], total: 0 })
+        return
       }
       const json = await res.json()
+      console.log('Тикеты загружены:', json)
       setTicketsData(json)
     } catch (e: any) {
       console.error('Ошибка загрузки тикетов:', e)
+      setTicketsData({ tickets: [], total: 0 })
     } finally {
       setTicketsLoading(false)
     }
@@ -283,11 +289,11 @@ export default function OpsPage() {
               </div>
             )}
           </div>
-        ) : (
+        ) : ticketsData ? (
           <div className="text-center py-4 text-[var(--muted)]">
             Тикетов нет
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Блок с пользователями */}
