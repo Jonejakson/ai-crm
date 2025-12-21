@@ -8,6 +8,7 @@ import { processIncomingEmail } from "@/lib/email/processor"
 import { decryptPassword } from "@/lib/encryption"
 import { processTicketReplyEmail, shouldProcessAsTicketReply } from "@/lib/support/ticket-email-handler"
 import type { ParsedEmail } from "@/lib/support/ticket-parser"
+import { SUPPORT_EMAIL } from "@/lib/support/config"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -117,8 +118,8 @@ export async function POST(_request: NextRequest, context: RouteContext) {
           }
 
           // Проверяем, является ли это ответом на тикет поддержки
-          if (shouldProcessAsTicketReply(parsedEmail, 'info@flamecrm.ru')) {
-            const ticketResult = await processTicketReplyEmail(parsedEmail, 'info@flamecrm.ru')
+          if (shouldProcessAsTicketReply(parsedEmail, SUPPORT_EMAIL)) {
+            const ticketResult = await processTicketReplyEmail(parsedEmail, SUPPORT_EMAIL)
             if (ticketResult.processed) {
               processedTickets++
               processedCount++

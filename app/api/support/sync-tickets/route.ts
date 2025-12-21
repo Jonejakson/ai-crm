@@ -5,6 +5,7 @@ import { fetchEmailsFromImap } from '@/lib/email/imap-client'
 import { processTicketReplyEmail, shouldProcessAsTicketReply } from '@/lib/support/ticket-email-handler'
 import type { ParsedEmail } from '@/lib/support/ticket-parser'
 import { decryptPassword } from '@/lib/encryption'
+import { getSupportEmailConfig, SUPPORT_EMAIL, isSupportEmailConfigured } from '@/lib/support/config'
 
 /**
  * API для синхронизации ответов на тикеты с почты
@@ -17,49 +18,55 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Находим email интеграцию для info@flamecrm.ru
-    const supportEmail = 'info@flamecrm.ru'
-    const integration = await prisma.emailIntegration.findFirst({
+    // Сначала пытаемся найти email интеграцию
+    let integration = await prisma.emailIntegration.findFirst({
       where: {
-        email: supportEmail,
+        email: SUPPORT_EMAIL,
         isActive: true,
         isIncomingEnabled: true,
       },
     })
 
-    if (!integration) {
-      return NextResponse.json({
-        success: false,
-        error: 'Email integration for support not found. Please configure IMAP for info@flamecrm.ru',
-      })
-    }
+    let imapConfig: {
+      host: string
+      port: number
+      username: string
+      password: string
+      useSSL: boolean
+    } | null = null
+    let lastSyncAt: Date | undefined = undefined
 
-    if (integration.provider !== 'IMAP_SMTP' && integration.provider !== 'YANDEX') {
-      return NextResponse.json({
-        success: false,
-        error: 'Only IMAP/SMTP and Yandex integrations are supported for ticket sync',
-      })
-    }
-
-    if (!integration.imapHost || !integration.imapUsername || !integration.imapPassword) {
-      return NextResponse.json({
-        success: false,
-        error: 'IMAP configuration is incomplete',
-      })
-    }
-
-    // Получаем письма
-    const since = integration.lastSyncAt || undefined
-    const emails = await fetchEmailsFromImap(
-      {
+    // Если интеграция найдена - используем её
+    if (integration && integration.imapHost && integration.imapUsername && integration.imapPassword) {
+      imapConfig = {
         host: integration.imapHost,
         port: integration.imapPort || 993,
         username: integration.imapUsername,
         password: decryptPassword(integration.imapPassword),
-        useSSL: integration.useSSL,
-      },
-      since
-    )
+        useSSL: integration.useSSL ?? true,
+      }
+      lastSyncAt = integration.lastSyncAt || undefined
+    } else {
+      // Иначе используем системные настройки из переменных окружения
+      const supportConfig = getSupportEmailConfig()
+      if (!supportConfig.configured) {
+        return NextResponse.json({
+          success: false,
+          error: 'Support email not configured. Please set SUPPORT_IMAP_* environment variables or configure email integration for info@flamecrm.ru',
+        })
+      }
+
+      imapConfig = {
+        host: supportConfig.imapHost!,
+        port: supportConfig.imapPort!,
+        username: supportConfig.imapUsername!,
+        password: supportConfig.imapPassword!,
+        useSSL: supportConfig.useSSL!,
+      }
+    }
+
+    // Получаем письма
+    const emails = await fetchEmailsFromImap(imapConfig, lastSyncAt)
 
     let processedTickets = 0
     let errors: string[] = []
@@ -75,14 +82,14 @@ export async function POST(request: NextRequest) {
           messageId: email.messageId,
           inReplyTo: email.threadId,
           headers: {
-            'To': email.to.join(', ') || supportEmail,
+            'To': email.to.join(', ') || SUPPORT_EMAIL,
             'From': email.fromEmail,
             ...email.headers,
           },
         }
 
-        if (shouldProcessAsTicketReply(parsedEmail, supportEmail)) {
-          const result = await processTicketReplyEmail(parsedEmail, supportEmail)
+        if (shouldProcessAsTicketReply(parsedEmail, SUPPORT_EMAIL)) {
+          const result = await processTicketReplyEmail(parsedEmail, SUPPORT_EMAIL)
           if (result.processed) {
             processedTickets++
           } else if (result.error) {
@@ -96,10 +103,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Обновляем время последней синхронизации
-    await prisma.emailIntegration.update({
-      where: { id: integration.id },
-      data: { lastSyncAt: new Date() },
-    })
+    if (integration) {
+      await prisma.emailIntegration.update({
+        where: { id: integration.id },
+        data: { lastSyncAt: new Date() },
+      })
+    }
+    // Если используется системная конфигурация, время синхронизации не сохраняется
+    // (можно добавить в будущем отдельную таблицу для системных настроек)
 
     return NextResponse.json({
       success: true,

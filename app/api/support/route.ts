@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
 import { isEmailConfigured, sendEmail } from '@/lib/email'
+import { SUPPORT_EMAIL } from '@/lib/support/config'
 
 // Генерация уникального ID тикета
 function generateTicketId(): string {
@@ -51,7 +52,6 @@ export async function POST(request: NextRequest) {
     })
 
     // Отправляем email админу
-    const supportEmail = 'info@flamecrm.ru'
     if (isEmailConfigured()) {
       try {
         const emailSubject = `[${ticketId}] ${subject.trim()}`
@@ -86,13 +86,13 @@ Ticket ID: ${ticketId}
 
         await transporter.sendMail({
           from: process.env.MAIL_FROM,
-          to: supportEmail,
+          to: SUPPORT_EMAIL,
           subject: emailSubject,
           text: emailBody,
           html: emailBody.replace(/\n/g, '<br/>'),
           headers: {
             'X-Ticket-ID': ticketId,
-            'Reply-To': supportEmail,
+            'Reply-To': SUPPORT_EMAIL,
           },
         })
       } catch (emailError) {

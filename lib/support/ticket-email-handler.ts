@@ -5,6 +5,7 @@
 import prisma from '@/lib/prisma'
 import { extractTicketId, isTicketReply, extractReplyText } from './ticket-parser'
 import type { ParsedEmail } from './ticket-parser'
+import { SUPPORT_EMAIL } from './config'
 
 export interface TicketEmailResult {
   processed: boolean
@@ -18,7 +19,7 @@ export interface TicketEmailResult {
  */
 export async function processTicketReplyEmail(
   email: ParsedEmail,
-  supportEmail: string = 'info@flamecrm.ru'
+  supportEmail: string = SUPPORT_EMAIL
 ): Promise<TicketEmailResult> {
   try {
     // Проверяем, является ли это ответом на тикет
@@ -143,7 +144,7 @@ export async function processTicketReplyEmail(
  */
 export function shouldProcessAsTicketReply(
   email: ParsedEmail,
-  supportEmail: string = 'info@flamecrm.ru'
+  supportEmail: string = SUPPORT_EMAIL
 ): boolean {
   // Проверяем, что это ответ на тикет
   if (!isTicketReply(email)) {

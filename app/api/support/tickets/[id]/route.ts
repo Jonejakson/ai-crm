@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
 import { isEmailConfigured, sendEmail } from '@/lib/email'
+import { SUPPORT_EMAIL } from '@/lib/support/config'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     // Отправляем email
     if (isEmailConfigured()) {
       try {
-        const recipientEmail = isAdmin ? ticket.email : 'info@flamecrm.ru'
+        const recipientEmail = isAdmin ? ticket.email : SUPPORT_EMAIL
         const emailSubject = `Re: [${ticket.ticketId}] ${ticket.subject}`
         const emailBody = `
 ${message.trim()}
