@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
+import { PuzzleIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -62,7 +62,7 @@ export default function CompanyPage() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
-  const [userSearch, setUserSearch] = useState('')
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; isLegalEntity: boolean } | null>(null)
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -122,6 +122,12 @@ export default function CompanyPage() {
       }
       const data = await response.json()
       setUsers(data.users || [])
+      if (data.company) {
+        setCompanyInfo({
+          name: data.company.name,
+          isLegalEntity: data.company.isLegalEntity
+        })
+      }
     } catch (error: any) {
       console.error('Error fetching users:', error)
       setError('Ошибка загрузки пользователей')
@@ -129,6 +135,7 @@ export default function CompanyPage() {
       setLoading(false)
     }
   }
+
 
   const fetchBilling = async () => {
     setBillingLoading(true)
@@ -439,15 +446,8 @@ export default function CompanyPage() {
     return null
   }
 
-  const filteredUsers = users.filter((user) => {
-    const term = userSearch.toLowerCase().trim()
-    if (!term) return true
-    return (
-      user.name.toLowerCase().includes(term) ||
-      user.email.toLowerCase().includes(term) ||
-      getRoleName(user.role).toLowerCase().includes(term)
-    )
-  })
+  // Убрали фильтрацию, так как поиск удален
+  const filteredUsers = users
 
   const roleStats = users.reduce<Record<string, number>>((acc, user) => {
     acc[user.role] = (acc[user.role] || 0) + 1
@@ -475,7 +475,7 @@ export default function CompanyPage() {
     {
       label: 'Фильтр',
       value: `${filteredUsers.length} из ${users.length}`,
-      note: userSearch ? 'Применён поиск' : 'Все пользователи',
+      note: 'Все пользователи',
     },
   ]
 
@@ -723,27 +723,14 @@ export default function CompanyPage() {
 
         {/* Список пользователей */}
         <div className="glass-panel rounded-3xl p-6 space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Команда</p>
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">
-                Пользователи компании ({users.length})
-              </h2>
-            </div>
-            <div className="relative w-full md:w-72">
-              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
-              <input
-                type="text"
-                placeholder="Поиск по имени или email..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-10 pr-4 py-2.5 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-              />
-            </div>
+          <div>
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Команда</p>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">
+              {companyInfo?.isLegalEntity 
+                ? `Пользователи компании ${companyInfo.name} (${users.length})`
+                : `Пользователи (${users.length})`}
+            </h2>
           </div>
-          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
-            Найдено: {filteredUsers.length}
-          </p>
 
           {filteredUsers.length === 0 ? (
             <div className="empty-state">
@@ -752,9 +739,7 @@ export default function CompanyPage() {
               </div>
               <h3 className="empty-state-title">Пользователи не найдены</h3>
               <p className="empty-state-description">
-                {userSearch
-                  ? 'Сбросьте поиск или добавьте нового пользователя.'
-                  : 'Добавьте первого сотрудника, чтобы начать совместную работу.'}
+                Добавьте первого сотрудника, чтобы начать совместную работу.
               </p>
             </div>
           ) : (
