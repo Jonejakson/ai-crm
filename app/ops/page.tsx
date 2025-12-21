@@ -141,16 +141,18 @@ export default function OpsPage() {
   }
 
   useEffect(() => {
-    load()
-    loadUsers()
-    loadTickets()
-    const timer = setInterval(() => {
+    if (status === 'authenticated' && session?.user?.role === 'owner') {
       load()
       loadUsers()
       loadTickets()
-    }, 60_000) // автообновление раз в минуту
-    return () => clearInterval(timer)
-  }, [])
+      const timer = setInterval(() => {
+        load()
+        loadUsers()
+        loadTickets()
+      }, 60_000) // автообновление раз в минуту
+      return () => clearInterval(timer)
+    }
+  }, [status, session])
 
   return (
     <div className="p-6 space-y-6">
