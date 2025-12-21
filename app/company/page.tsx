@@ -435,7 +435,7 @@ export default function CompanyPage() {
     )
   }
 
-  if (session?.user?.role !== 'admin') {
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
     return null
   }
 

@@ -227,3 +227,5 @@ echo "   • Остановка: docker-compose down"
 echo "   • Запуск: docker-compose up -d"
 echo ""
 
+
+

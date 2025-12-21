@@ -314,3 +314,5 @@ docker-compose exec app npx prisma migrate deploy
 2. Запустите скрипт проверки: `./scripts/check-deployment.sh`
 3. Проверьте документацию: `DEPLOY_SELECTEL.md`, `DOCKER_DEPLOY_QUICK.md`
 
+
+

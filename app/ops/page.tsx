@@ -18,11 +18,41 @@ type Metrics = {
   }
 }
 
+type UserWithStats = {
+  id: number
+  email: string
+  firstName: string
+  lastName: string
+  fullName: string
+  phone: string | null
+  role: string
+  contactType: 'individual' | 'legal' | 'mixed' | 'unknown'
+  company: {
+    id: number
+    name: string
+    usersCount: number
+  }
+  stats: {
+    dealsCount: number
+    contactsCount: number
+    tasksCount: number
+  }
+  createdAt: string
+}
+
+type UsersData = {
+  ok: boolean
+  users: UserWithStats[]
+  total: number
+}
+
 export default function OpsPage() {
   const [data, setData] = useState<Metrics | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [health, setHealth] = useState<{ ok: boolean; startedAt?: string; uptimeSeconds?: number } | null>(null)
+  const [usersData, setUsersData] = useState<UsersData | null>(null)
+  const [usersLoading, setUsersLoading] = useState(false)
 
   const load = async () => {
     try {
@@ -51,9 +81,29 @@ export default function OpsPage() {
     }
   }
 
+  const loadUsers = async () => {
+    try {
+      setUsersLoading(true)
+      const res = await fetch('/api/ops/users')
+      if (!res.ok) {
+        throw new Error('Не удалось загрузить пользователей')
+      }
+      const json = (await res.json()) as UsersData
+      setUsersData(json)
+    } catch (e: any) {
+      console.error('Ошибка загрузки пользователей:', e)
+    } finally {
+      setUsersLoading(false)
+    }
+  }
+
   useEffect(() => {
     load()
-    const timer = setInterval(load, 60_000) // автообновление раз в минуту
+    loadUsers()
+    const timer = setInterval(() => {
+      load()
+      loadUsers()
+    }, 60_000) // автообновление раз в минуту
     return () => clearInterval(timer)
   }, [])
 
@@ -125,6 +175,149 @@ export default function OpsPage() {
           }
           status={health?.ok ? 'ok' : 'warn'}
         />
+      </div>
+
+      {/* Блок с пользователями */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Пользователи и компании</h2>
+            <p className="text-[var(--muted)] text-sm">
+              Список пользователей с информацией о компаниях и основных показателях
+            </p>
+          </div>
+          <button onClick={loadUsers} className="btn-secondary" disabled={usersLoading}>
+            {usersLoading ? 'Обновление…' : 'Обновить'}
+          </button>
+        </div>
+
+        {usersLoading && !usersData ? (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-[var(--muted)]">
+            Загрузка пользователей…
+          </div>
+        ) : usersData?.users && usersData.users.length > 0 ? (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[var(--background)] border-b border-[var(--border)]">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Пользователь
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Тип
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Компания
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Пользователей в компании
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Сделок
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Контактов
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Задач
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Роль
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {usersData.users.map((user) => (
+                    <tr key={user.id} className="hover:bg-[var(--background)] transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <div className="text-sm font-medium text-[var(--foreground)]">
+                            {user.firstName} {user.lastName && <span>{user.lastName}</span>}
+                          </div>
+                          <div className="text-xs text-[var(--muted)]">{user.email}</div>
+                          {user.phone && (
+                            <div className="text-xs text-[var(--muted)]">{user.phone}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.contactType === 'legal'
+                              ? 'bg-orange-100 text-orange-800'
+                              : user.contactType === 'individual'
+                              ? 'bg-green-100 text-green-800'
+                              : user.contactType === 'mixed'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {user.contactType === 'legal'
+                            ? 'Юр. лицо'
+                            : user.contactType === 'individual'
+                            ? 'Физ. лицо'
+                            : user.contactType === 'mixed'
+                            ? 'Смешанный'
+                            : 'Не определен'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-[var(--foreground)] font-medium">
+                          {user.company.name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-[var(--foreground)]">
+                          {user.company.usersCount}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-[var(--foreground)]">
+                          {user.stats.dealsCount}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-[var(--foreground)]">
+                          {user.stats.contactsCount}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-[var(--foreground)]">
+                          {user.stats.tasksCount}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.role === 'admin' || user.role === 'owner'
+                              ? 'bg-blue-100 text-blue-800'
+                              : user.role === 'manager'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {user.role === 'owner' ? 'Владелец' : user.role === 'admin' ? 'Админ' : user.role === 'manager' ? 'Менеджер' : 'Пользователь'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="px-6 py-3 bg-[var(--background)] border-t border-[var(--border)] text-sm text-[var(--muted)]">
+              Всего пользователей: {usersData.total}
+            </div>
+          </div>
+        ) : usersData && usersData.users && usersData.users.length === 0 ? (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-[var(--muted)]">
+            Пользователи не найдены
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-[var(--muted)]">
+            {usersData ? 'Загрузка данных...' : 'Нажмите "Обновить" для загрузки пользователей'}
+          </div>
+        )}
       </div>
     </div>
   )

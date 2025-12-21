@@ -119,3 +119,5 @@ curl http://localhost:3000/api/health
 - `DOCKER_DEPLOY_QUICK.md` - быстрый деплой
 - `DEPLOY_CHECKLIST.md` - чеклист деплоя
 
+
+
