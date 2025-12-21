@@ -290,11 +290,11 @@ export default function OpsPage() {
               </div>
             )}
           </div>
-        ) : ticketsData ? (
+        ) : (
           <div className="text-center py-4 text-[var(--muted)]">
-            Тикетов нет
+            {ticketsData ? 'Тикетов нет' : 'Нажмите "Обновить" для загрузки тикетов'}
           </div>
-        ) : null}
+        )}
       </div>
 
       {/* Блок с пользователями */}
