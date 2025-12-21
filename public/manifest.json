@@ -24,21 +24,21 @@
       "short_name": "Контакты",
       "description": "Быстрый доступ к контактам",
       "url": "/contacts",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml" }]
     },
     {
       "name": "Сделки",
       "short_name": "Сделки",
       "description": "Быстрый доступ к сделкам",
       "url": "/deals",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml" }]
     },
     {
       "name": "Задачи",
       "short_name": "Задачи",
       "description": "Быстрый доступ к задачам",
       "url": "/tasks",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml" }]
     }
   ]
 }
