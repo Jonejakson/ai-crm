@@ -54,6 +54,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     // Операции только для owner
     ...(isOwner ? [
       { id: 'ops', name: 'Операции', href: '/ops', Icon: ActivityIcon },
+      { id: 'ops-support', name: 'Тикеты поддержки', href: '/ops/support', Icon: DialogsIcon },
     ] : []),
   ]
 

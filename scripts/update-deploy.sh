@@ -54,3 +54,5 @@ echo ""
 echo "📋 Проверка логов:"
 echo "   docker-compose logs -f app"
 
+
+

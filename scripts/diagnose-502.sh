@@ -47,3 +47,5 @@ docker-compose logs --tail=20 app
 echo ""
 echo "✅ Диагностика завершена"
 
+
+
