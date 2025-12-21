@@ -123,16 +123,17 @@ export default function OpsPage() {
       const res = await fetch('/api/support/tickets?limit=5')
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}))
-        console.error('Ошибка загрузки тикетов:', res.status, errorData)
-        // Не показываем ошибку пользователю, просто оставляем пустым
+        console.error('[ops] Ошибка загрузки тикетов:', res.status, errorData)
+        // Устанавливаем пустые данные, чтобы блок отображался
         setTicketsData({ tickets: [], total: 0 })
         return
       }
       const json = await res.json()
-      console.log('Тикеты загружены:', json)
+      console.log('[ops] Тикеты загружены:', json)
       setTicketsData(json)
     } catch (e: any) {
-      console.error('Ошибка загрузки тикетов:', e)
+      console.error('[ops] Ошибка загрузки тикетов:', e)
+      // Устанавливаем пустые данные, чтобы блок отображался
       setTicketsData({ tickets: [], total: 0 })
     } finally {
       setTicketsLoading(false)
