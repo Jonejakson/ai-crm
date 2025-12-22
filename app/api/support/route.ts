@@ -206,7 +206,18 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, tickets })
+    // Добавляем количество непрочитанных сообщений для каждого тикета
+    const ticketsWithUnread = tickets.map(ticket => {
+      const unreadCount = ticket.messages.filter(
+        msg => msg.isFromAdmin && !msg.isRead
+      ).length
+      return {
+        ...ticket,
+        unreadMessagesCount: unreadCount,
+      }
+    })
+
+    return NextResponse.json({ success: true, tickets: ticketsWithUnread })
   } catch (error) {
     console.error('[support][GET]', error)
     return NextResponse.json({ error: 'Не удалось получить тикеты' }, { status: 500 })

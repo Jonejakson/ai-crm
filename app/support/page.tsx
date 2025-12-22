@@ -12,12 +12,14 @@ type SupportTicket = {
   status: string
   createdAt: string
   updatedAt: string
+  unreadMessagesCount?: number
   messages: Array<{
     id: number
     message: string
     fromEmail: string
     fromName: string | null
     isFromAdmin: boolean
+    isRead?: boolean
     createdAt: string
   }>
 }
@@ -32,9 +34,9 @@ export default function SupportPage() {
   const [success, setSuccess] = useState('')
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [loadingTickets, setLoadingTickets] = useState(false)
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null)
-  const [replyMessage, setReplyMessage] = useState('')
-  const [replying, setReplying] = useState(false)
+  const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set())
+  const [replyMessage, setReplyMessage] = useState<Record<number, string>>({})
+  const [replying, setReplying] = useState<Record<number, boolean>>({})
 
   const loadTickets = async () => {
     try {
@@ -84,15 +86,16 @@ export default function SupportPage() {
     }
   }
 
-  const handleReply = async () => {
-    if (!selectedTicket || !replyMessage.trim()) return
+  const handleReply = async (ticketId: number) => {
+    const message = replyMessage[ticketId]?.trim()
+    if (!message) return
 
     try {
-      setReplying(true)
-      const res = await fetch(`/api/support/tickets/${selectedTicket.id}`, {
+      setReplying(prev => ({ ...prev, [ticketId]: true }))
+      const res = await fetch(`/api/support/tickets/${ticketId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: replyMessage }),
+        body: JSON.stringify({ message }),
       })
 
       if (!res.ok) {
@@ -100,19 +103,41 @@ export default function SupportPage() {
         throw new Error(err.error || 'Не удалось отправить ответ')
       }
 
-      setReplyMessage('')
+      setReplyMessage(prev => ({ ...prev, [ticketId]: '' }))
       await loadTickets()
-      // Обновляем выбранный тикет
-      const updatedRes = await fetch(`/api/support/tickets/${selectedTicket.id}`)
-      if (updatedRes.ok) {
-        const data = await updatedRes.json()
-        setSelectedTicket(data.ticket)
-      }
     } catch (e: any) {
       setError(e?.message || 'Ошибка отправки ответа')
     } finally {
-      setReplying(false)
+      setReplying(prev => ({ ...prev, [ticketId]: false }))
     }
+  }
+
+  const toggleTicket = async (ticket: SupportTicket) => {
+    const isExpanded = expandedTickets.has(ticket.id)
+    
+    if (!isExpanded) {
+      // При открытии тикета загружаем полные данные и отмечаем как прочитанные
+      try {
+        const res = await fetch(`/api/support/tickets/${ticket.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          // Обновляем тикет в списке
+          setTickets(prev => prev.map(t => t.id === ticket.id ? data.ticket : t))
+        }
+      } catch (error) {
+        console.error('Error loading ticket details:', error)
+      }
+    }
+    
+    setExpandedTickets(prev => {
+      const newSet = new Set(prev)
+      if (isExpanded) {
+        newSet.delete(ticket.id)
+      } else {
+        newSet.add(ticket.id)
+      }
+      return newSet
+    })
   }
 
   const getStatusLabel = (status: string) => {
@@ -160,107 +185,111 @@ export default function SupportPage() {
         <div className="glass-panel rounded-3xl p-6 space-y-4">
           <h2 className="text-xl font-semibold text-[var(--foreground)]">Мои тикеты</h2>
           <div className="space-y-3">
-            {tickets.map((ticket) => (
-              <div
-                key={ticket.id}
-                onClick={() => setSelectedTicket(ticket)}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                  selectedTicket?.id === ticket.id
-                    ? 'border-[var(--primary)] bg-[var(--primary-soft)]'
-                    : 'border-[var(--border)] bg-white hover:border-[var(--primary)]'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-mono text-[var(--muted)]">{ticket.ticketId}</span>
-                      <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
-                        {getStatusLabel(ticket.status)}
+            {tickets.map((ticket) => {
+              const isExpanded = expandedTickets.has(ticket.id)
+              const unreadCount = ticket.unreadMessagesCount || 0
+              
+              return (
+                <div
+                  key={ticket.id}
+                  className="rounded-xl border border-[var(--border)] bg-white overflow-hidden transition-all"
+                >
+                  {/* Заголовок тикета */}
+                  <div
+                    onClick={() => toggleTicket(ticket)}
+                    className="p-4 cursor-pointer hover:bg-[var(--background-soft)] transition-all"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-mono text-[var(--muted)]">{ticket.ticketId}</span>
+                          <span className="px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
+                            {getStatusLabel(ticket.status)}
+                          </span>
+                          {unreadCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-red-500 text-white font-medium">
+                              {unreadCount} новое
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-semibold text-[var(--foreground)]">{ticket.subject}</h3>
+                        <p className="text-sm text-[var(--muted)] mt-1 line-clamp-2">{ticket.message}</p>
+                      </div>
+                      <div className="text-xs text-[var(--muted)] ml-4">
+                        {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}
+                      </div>
+                    </div>
+                    <div className="text-xs text-[var(--muted)] mt-2 flex items-center justify-between">
+                      <span>Сообщений: {ticket.messages.length}</span>
+                      <span className="text-[var(--primary)]">
+                        {isExpanded ? 'Свернуть' : 'Развернуть'}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-[var(--foreground)]">{ticket.subject}</h3>
-                    <p className="text-sm text-[var(--muted)] mt-1 line-clamp-2">{ticket.message}</p>
                   </div>
-                  <div className="text-xs text-[var(--muted)] ml-4">
-                    {new Date(ticket.createdAt).toLocaleDateString('ru-RU')}
-                  </div>
-                </div>
-                <div className="text-xs text-[var(--muted)] mt-2">
-                  Сообщений: {ticket.messages.length}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* Детали тикета */}
-      {selectedTicket && (
-        <div className="glass-panel rounded-3xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">
-              {selectedTicket.subject}
-            </h2>
-            <button
-              onClick={() => setSelectedTicket(null)}
-              className="text-sm text-[var(--muted)] hover:text-[var(--foreground)]"
-            >
-              Закрыть
-            </button>
-          </div>
+                  {/* Раскрывающееся содержимое */}
+                  {isExpanded && (
+                    <div className="border-t border-[var(--border)] p-4 space-y-4 bg-[var(--background-soft)]">
+                      {/* Переписка */}
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-[var(--foreground)]">Переписка</h3>
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                          {ticket.messages.map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={`p-3 rounded-lg ${
+                                msg.isFromAdmin
+                                  ? 'bg-[var(--primary-soft)] border border-[var(--primary)]'
+                                  : 'bg-white border border-[var(--border)]'
+                              } ${!msg.isRead && msg.isFromAdmin ? 'ring-2 ring-red-300' : ''}`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="text-sm font-medium">
+                                  {msg.isFromAdmin ? 'Поддержка' : msg.fromName || msg.fromEmail}
+                                  {!msg.isRead && msg.isFromAdmin && (
+                                    <span className="ml-2 text-xs text-red-600">● Новое</span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-[var(--muted)]">
+                                  {new Date(msg.createdAt).toLocaleString('ru-RU')}
+                                </div>
+                              </div>
+                              <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
-          <div className="space-y-3">
-            <h3 className="font-semibold text-[var(--foreground)]">Переписка</h3>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {selectedTicket.messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`p-3 rounded-lg ${
-                    msg.isFromAdmin
-                      ? 'bg-[var(--primary-soft)] border border-[var(--primary)]'
-                      : 'bg-[var(--background-soft)] border border-[var(--border)]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium">
-                      {msg.isFromAdmin ? 'Поддержка' : msg.fromName || msg.fromEmail}
+                      {/* Форма ответа */}
+                      <div className="space-y-3 pt-4 border-t border-[var(--border)]">
+                        <h3 className="font-semibold text-[var(--foreground)]">Ответить</h3>
+                        <textarea
+                          value={replyMessage[ticket.id] || ''}
+                          onChange={(e) => setReplyMessage(prev => ({ ...prev, [ticket.id]: e.target.value }))}
+                          placeholder="Введите ответ..."
+                          rows={4}
+                          className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                        />
+                        <button
+                          onClick={() => handleReply(ticket.id)}
+                          disabled={!replyMessage[ticket.id]?.trim() || replying[ticket.id]}
+                          className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white font-medium text-sm hover:opacity-90 disabled:opacity-50"
+                        >
+                          {replying[ticket.id] ? 'Отправка...' : 'Отправить ответ'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="text-xs text-[var(--muted)]">
-                      {new Date(msg.createdAt).toLocaleString('ru-RU')}
-                    </div>
-                  </div>
-                  <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Форма ответа */}
-          <div className="space-y-3 pt-4 border-t border-[var(--border)]">
-            <h3 className="font-semibold text-[var(--foreground)]">Ответить</h3>
-            <textarea
-              value={replyMessage}
-              onChange={(e) => setReplyMessage(e.target.value)}
-              placeholder="Введите ответ..."
-              rows={4}
-              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-            />
-            <button
-              onClick={handleReply}
-              disabled={!replyMessage.trim() || replying}
-              className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white font-medium text-sm hover:opacity-90 disabled:opacity-50"
-            >
-              {replying ? 'Отправка...' : 'Отправить ответ'}
-            </button>
+              )
+            })}
           </div>
         </div>
       )}
 
       {/* Форма создания нового тикета */}
       <div className="glass-panel rounded-3xl p-6 space-y-4">
-        <h2 className="text-xl font-semibold text-[var(--foreground)]">
-          {selectedTicket ? 'Создать новый тикет' : 'Создать тикет'}
-        </h2>
+        <h2 className="text-xl font-semibold text-[var(--foreground)]">Создать тикет</h2>
         {error && (
           <div className="rounded-xl border border-[var(--error)]/30 bg-[var(--error-soft)] px-4 py-3 text-[var(--error)]">
             {error}

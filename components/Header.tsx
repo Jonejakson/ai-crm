@@ -2,6 +2,7 @@
 
 import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from '@/lib/theme'
+import { useState, useEffect } from 'react'
 import Notifications from './Notifications'
 import SearchBar from './SearchBar'
 import { MoonIcon, SunIcon, DialogsIcon } from './Icons'
@@ -9,12 +10,34 @@ import { MoonIcon, SunIcon, DialogsIcon } from './Icons'
 export default function Header() {
   const { data: session } = useSession()
   const { theme, toggleTheme } = useTheme()
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0)
   const currentDate = new Date().toLocaleDateString('ru-RU', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   })
+
+  // Загружаем количество непрочитанных сообщений в тикетах
+  useEffect(() => {
+    if (session?.user) {
+      const loadUnreadCount = async () => {
+        try {
+          const res = await fetch('/api/support/unread-count')
+          if (res.ok) {
+            const data = await res.json()
+            setUnreadSupportCount(data.count || 0)
+          }
+        } catch (error) {
+          console.error('Error loading unread support count:', error)
+        }
+      }
+      
+      loadUnreadCount()
+      const interval = setInterval(loadUnreadCount, 30000) // Обновляем каждые 30 секунд
+      return () => clearInterval(interval)
+    }
+  }, [session])
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl bg-opacity-95 shadow-sm">
@@ -47,10 +70,15 @@ export default function Header() {
               </button>
               <a
                 href="/support"
-                className="p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-all duration-300 hover:scale-110"
+                className="relative p-2.5 rounded-xl text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-all duration-300 hover:scale-110"
                 title="Поддержка"
               >
                 <DialogsIcon className="w-5 h-5" />
+                {unreadSupportCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+                    {unreadSupportCount > 9 ? '9+' : unreadSupportCount}
+                  </span>
+                )}
               </a>
               <Notifications />
               <div className="hidden text-right sm:block px-3 py-2 rounded-xl bg-[var(--background-soft)]">
