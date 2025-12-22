@@ -412,11 +412,10 @@ export default function SupportPage() {
                                     >
                                       {file.mimeType.startsWith('image/') ? (
                                         <img
-                                          src={file.url}
+                                          src={`/api/files/${file.name}`}
                                           alt={file.originalName}
-                                          className="w-12 h-12 object-cover rounded"
-                                          onClick={() => window.open(file.url, '_blank')}
-                                          style={{ cursor: 'pointer' }}
+                                          className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                                          onClick={() => window.open(`/api/files/${file.name}`, '_blank')}
                                         />
                                       ) : (
                                         <div className="w-12 h-12 bg-[var(--background-soft)] rounded flex items-center justify-center text-xs">
@@ -425,7 +424,7 @@ export default function SupportPage() {
                                       )}
                                       <div className="flex-1 min-w-0">
                                         <a
-                                          href={file.url}
+                                          href={`/api/files/${file.name}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="text-sm text-[var(--primary)] hover:underline truncate block"
