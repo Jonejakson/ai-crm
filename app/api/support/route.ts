@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Создаем первое сообщение от пользователя
-    await prisma.supportTicketMessage.create({
+    const firstMessage = await prisma.supportTicketMessage.create({
       data: {
         ticketId: ticket.id,
         message: message.trim(),
@@ -157,7 +157,13 @@ Ticket ID: ${ticketId}
       })
     }
 
-    return NextResponse.json({ success: true, ticket })
+    return NextResponse.json({ 
+      success: true, 
+      ticket: {
+        ...ticket,
+        firstMessageId: firstMessage.id,
+      }
+    })
   } catch (error) {
     console.error('[support][POST]', error)
     return NextResponse.json({ error: 'Не удалось создать тикет' }, { status: 500 })

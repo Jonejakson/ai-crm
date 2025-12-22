@@ -40,6 +40,8 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [newTicketFiles, setNewTicketFiles] = useState<File[]>([])
+  const [uploadingNewTicketFiles, setUploadingNewTicketFiles] = useState(false)
   const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [loadingTickets, setLoadingTickets] = useState(false)
   const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set())
@@ -70,6 +72,33 @@ export default function SupportPage() {
     }
   }, [session])
 
+  const handleNewTicketFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const fileArray = Array.from(files)
+    
+    // Проверка размера файлов (10 МБ)
+    const maxSize = 10 * 1024 * 1024 // 10 МБ
+    for (const file of fileArray) {
+      if (file.size > maxSize) {
+        setError(`Файл "${file.name}" превышает лимит 10 МБ`)
+        return
+      }
+    }
+
+    setNewTicketFiles(prev => [...prev, ...fileArray])
+
+    // Очищаем input
+    if (e.target) {
+      e.target.value = ''
+    }
+  }
+
+  const removeNewTicketFile = (index: number) => {
+    setNewTicketFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -85,9 +114,39 @@ export default function SupportPage() {
       if (!res.ok) {
         throw new Error(data.error || 'Не удалось отправить тикет')
       }
+
+      // Если есть файлы и сообщение создано, загружаем их
+      if (newTicketFiles.length > 0 && data.ticket?.firstMessageId) {
+        setUploadingNewTicketFiles(true)
+        try {
+          for (const file of newTicketFiles) {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('entityType', 'support_ticket_message')
+            formData.append('entityId', data.ticket.firstMessageId.toString())
+
+            const uploadRes = await fetch('/api/files/upload', {
+              method: 'POST',
+              body: formData,
+            })
+
+            if (!uploadRes.ok) {
+              const uploadErr = await uploadRes.json().catch(() => ({}))
+              console.error('Ошибка загрузки файла:', uploadErr)
+              // Продолжаем загрузку остальных файлов
+            }
+          }
+        } catch (uploadError) {
+          console.error('Ошибка загрузки файлов:', uploadError)
+        } finally {
+          setUploadingNewTicketFiles(false)
+        }
+      }
+
       setSuccess('Мы получили обращение и свяжемся с вами в ближайшее время.')
       setSubject('')
       setMessage('')
+      setNewTicketFiles([])
       await loadTickets() // Обновляем список тикетов
     } catch (err: any) {
       setError(err.message || 'Ошибка отправки')
@@ -507,13 +566,55 @@ export default function SupportPage() {
             />
           </div>
 
-          <div className="flex justify-end">
+          {/* Прикрепленные файлы для нового тикета */}
+          {newTicketFiles.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[var(--foreground)]">Прикрепленные файлы</label>
+              <div className="space-y-2">
+                {newTicketFiles.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-[var(--background-soft)] rounded-lg"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-sm">📎</span>
+                      <span className="text-sm text-[var(--foreground)] truncate">{file.name}</span>
+                      <span className="text-xs text-[var(--muted)]">
+                        ({formatFileSize(file.size)})
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => removeNewTicketFile(index)}
+                      className="text-red-500 hover:text-red-700 text-sm px-2"
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                multiple
+                onChange={handleNewTicketFileSelect}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+              />
+              <span className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors inline-block">
+                📎 Прикрепить файл (до 10 МБ)
+              </span>
+            </label>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploadingNewTicketFiles}
               className="rounded-2xl px-5 py-2.5 bg-[var(--primary)] text-white font-semibold text-sm hover:opacity-90 transition disabled:opacity-60"
             >
-              {loading ? 'Отправляем...' : 'Отправить тикет'}
+              {loading || uploadingNewTicketFiles ? 'Отправляем...' : 'Отправить тикет'}
             </button>
           </div>
         </form>
