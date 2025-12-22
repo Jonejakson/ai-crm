@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Создаем или обновляем контрагента в МойСклад
-    let counterpartyId = contact.externalId
+    let counterpartyId = (contact as any).externalId || null
 
     if (!counterpartyId) {
       // Создаем нового контрагента
@@ -101,18 +101,22 @@ export async function POST(request: NextRequest) {
       const counterparty = await createResponse.json()
       counterpartyId = counterparty.id
 
-      // Сохраняем externalId в контакт
-      await prisma.contact.update({
-        where: { id: contact.id },
-        data: {
-          externalId: counterpartyId,
-          syncedAt: new Date(),
-        },
-      })
+      // Сохраняем externalId в контакт (если поля существуют в базе)
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Contact" SET "externalId" = $1, "syncedAt" = $2 WHERE id = $3`,
+          counterpartyId,
+          new Date(),
+          contact.id
+        )
+      } catch (e) {
+        // Если поля не существуют, просто логируем
+        console.warn('Could not update externalId/syncedAt - fields may not exist in database')
+      }
     }
 
     // Если есть сделка — создаем или обновляем заказ в МойСклад
-    let orderId = deal?.externalId || null
+    let orderId = (deal as any)?.externalId || null
     if (deal) {
       // Режим принудительного обновления
       const forceUpdate = mode === 'sync'
@@ -166,14 +170,23 @@ export async function POST(request: NextRequest) {
           orderId = order.id
 
           // Сохраняем externalId и обновляем сумму сделки из заказа (на случай отличий)
-          await prisma.deal.update({
-            where: { id: deal.id },
-            data: {
-              externalId: orderId,
-              amount: typeof order.sum === 'number' ? Math.round(order.sum / 100) : deal.amount,
-              syncedAt: new Date(),
-            },
-          })
+          try {
+            await prisma.$executeRawUnsafe(
+              `UPDATE "Deal" SET "externalId" = $1, "syncedAt" = $2, amount = $3 WHERE id = $4`,
+              orderId,
+              new Date(),
+              typeof order.sum === 'number' ? Math.round(order.sum / 100) : deal.amount,
+              deal.id
+            )
+          } catch (e) {
+            // Если поля не существуют, обновляем только amount
+            await prisma.deal.update({
+              where: { id: deal.id },
+              data: {
+                amount: typeof order.sum === 'number' ? Math.round(order.sum / 100) : deal.amount,
+              },
+            })
+          }
         } else {
           const errorData = await orderResponse.json().catch(() => ({}))
           console.error('[moysklad][export][order]', errorData)

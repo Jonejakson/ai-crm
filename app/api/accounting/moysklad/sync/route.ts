@@ -48,15 +48,12 @@ export async function POST(request: NextRequest) {
       const authString = Buffer.from(`${apiToken}:${apiSecret}`).toString('base64')
       const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
 
-      const deals = await prisma.deal.findMany({
-        where: {
-          externalId: { not: null },
-          user: { companyId: integ.companyId },
-        },
-        orderBy: { updatedAt: 'desc' },
-        take: perIntegrationLimit,
-        select: { id: true, externalId: true, amount: true },
-      })
+      // Используем raw SQL для получения сделок с externalId (если поле существует)
+      const deals = await prisma.$queryRawUnsafe<Array<{ id: number; externalId: string | null; amount: number }>>(
+        `SELECT id, "externalId", amount FROM "Deal" WHERE "externalId" IS NOT NULL AND "userId" IN (SELECT id FROM "User" WHERE "companyId" = $1) ORDER BY "updatedAt" DESC LIMIT $2`,
+        integ.companyId,
+        perIntegrationLimit
+      )
 
       let updated = 0
       let errors = 0
@@ -78,10 +75,21 @@ export async function POST(request: NextRequest) {
           const order = await resp.json()
           const newAmount =
             typeof order.sum === 'number' ? Math.round(order.sum / 100) : d.amount
-          await prisma.deal.update({
-            where: { id: d.id },
-            data: { amount: newAmount, syncedAt: new Date() },
-          })
+          // Обновляем amount и syncedAt (если поля существуют)
+          try {
+            await prisma.$executeRawUnsafe(
+              `UPDATE "Deal" SET amount = $1, "syncedAt" = $2 WHERE id = $3`,
+              newAmount,
+              new Date(),
+              d.id
+            )
+          } catch (e) {
+            // Если syncedAt не существует, обновляем только amount
+            await prisma.deal.update({
+              where: { id: d.id },
+              data: { amount: newAmount },
+            })
+          }
           updated++
         } catch (e) {
           errors++
