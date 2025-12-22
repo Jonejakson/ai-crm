@@ -81,15 +81,29 @@ Ticket ID: ${ticketId}
 
         // Используем sendEmail с расширенными опциями через nodemailer
         const nodemailer = require('nodemailer')
+        
+        // Для Mail.ru нужны специальные настройки
+        const isMailRu = smtpHost.includes('mail.ru')
+        const port = Number(smtpPort)
+        const secure = port === 465
+        
         const transporter = nodemailer.createTransport({
           host: smtpHost,
-          port: Number(smtpPort),
-          secure: Number(smtpPort) === 465,
+          port: port,
+          secure: secure,
           auth: {
             user: smtpUser,
             pass: smtpPass,
           },
+          // Дополнительные настройки для Mail.ru
+          ...(isMailRu && {
+            tls: {
+              rejectUnauthorized: false,
+            },
+          }),
         })
+        
+        // Для Mail.ru не проверяем подключение заранее, так как может быть ошибка с паролем приложения
 
         // Отправляем на info@flamecrm.ru
         await transporter.sendMail({
@@ -105,8 +119,17 @@ Ticket ID: ${ticketId}
         })
         
         console.log(`[support][email] Email отправлен на ${SUPPORT_EMAIL} для тикета ${ticketId}`)
-      } catch (emailError) {
-        console.error('[support][email] Ошибка отправки email:', emailError)
+      } catch (emailError: any) {
+        const errorMessage = emailError?.message || String(emailError)
+        console.error('[support][email] Ошибка отправки email:', errorMessage)
+        
+        // Если ошибка связана с паролем приложения Mail.ru
+        if (errorMessage.includes('parol prilozheniya') || errorMessage.includes('Application password')) {
+          console.error('[support][email] ВАЖНО: Mail.ru требует пароль приложения!')
+          console.error('[support][email] Инструкция: https://help.mail.ru/mail/security/protection/external')
+          console.error('[support][email] Нужно создать пароль приложения в настройках почты Mail.ru')
+        }
+        
         // Не блокируем создание тикета из-за ошибки email
       }
     } else {
