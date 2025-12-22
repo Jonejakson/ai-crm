@@ -17,6 +17,12 @@ export interface CompanyData {
  * Декодирует HTML-сущности в текст
  */
 function decodeHtmlEntities(text: string): string {
+  // Сначала декодируем числовые HTML-сущности (&#34;, &#39; и т.д.)
+  let decoded = text.replace(/&#(\d+);/g, (match, code) => {
+    return String.fromCharCode(parseInt(code, 10))
+  })
+  
+  // Затем декодируем именованные HTML-сущности
   const entityMap: Record<string, string> = {
     '&quot;': '"',
     '&amp;': '&',
@@ -25,11 +31,15 @@ function decodeHtmlEntities(text: string): string {
     '&apos;': "'",
     '&#39;': "'",
     '&nbsp;': ' ',
+    '&laquo;': '«',
+    '&raquo;': '»',
   }
   
-  return text.replace(/&[#\w]+;/g, (entity) => {
+  decoded = decoded.replace(/&[#\w]+;/g, (entity) => {
     return entityMap[entity] || entity
   })
+  
+  return decoded
 }
 
 /**
