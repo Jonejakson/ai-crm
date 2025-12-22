@@ -79,6 +79,26 @@ export async function POST(request: Request) {
         hasAccess = !!event
         break
       }
+      case 'support_ticket_message': {
+        // Проверяем доступ к сообщению тикета
+        const message = await prisma.supportTicketMessage.findUnique({
+          where: { id: entityIdNum },
+          include: {
+            ticket: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        })
+        if (!message) {
+          hasAccess = false
+          break
+        }
+        // Owner видит все, пользователь - только свои тикеты
+        hasAccess = user.role === 'owner' || message.ticket.userId === Number(user.id)
+        break
+      }
       default:
         return NextResponse.json({ error: 'Invalid entity type' }, { status: 400 })
     }
@@ -118,6 +138,7 @@ export async function POST(request: Request) {
         entityType,
         entityId: entityIdNum,
         userId: userId || undefined,
+        messageId: entityType === 'support_ticket_message' ? entityIdNum : undefined,
       },
     })
 

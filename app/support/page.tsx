@@ -21,6 +21,14 @@ type SupportTicket = {
     isFromAdmin: boolean
     isRead?: boolean
     createdAt: string
+    files?: Array<{
+      id: number
+      name: string
+      originalName: string
+      url: string
+      size: number
+      mimeType: string
+    }>
   }>
 }
 
@@ -37,6 +45,8 @@ export default function SupportPage() {
   const [expandedTickets, setExpandedTickets] = useState<Set<number>>(new Set())
   const [replyMessage, setReplyMessage] = useState<Record<number, string>>({})
   const [replying, setReplying] = useState<Record<number, boolean>>({})
+  const [attachedFiles, setAttachedFiles] = useState<Record<number, File[]>>({})
+  const [uploadingFiles, setUploadingFiles] = useState<Record<number, boolean>>({})
 
   const loadTickets = async () => {
     try {
@@ -86,16 +96,62 @@ export default function SupportPage() {
     }
   }
 
+  const handleFileSelect = async (ticketId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const fileArray = Array.from(files)
+    
+    // Проверка размера файлов (10 МБ)
+    const maxSize = 10 * 1024 * 1024 // 10 МБ
+    for (const file of fileArray) {
+      if (file.size > maxSize) {
+        setError(`Файл "${file.name}" превышает лимит 10 МБ`)
+        return
+      }
+    }
+
+    setAttachedFiles(prev => ({
+      ...prev,
+      [ticketId]: [...(prev[ticketId] || []), ...fileArray],
+    }))
+
+    // Очищаем input
+    if (e.target) {
+      e.target.value = ''
+    }
+  }
+
+  const removeFile = (ticketId: number, index: number) => {
+    setAttachedFiles(prev => {
+      const files = prev[ticketId] || []
+      return {
+        ...prev,
+        [ticketId]: files.filter((_, i) => i !== index),
+      }
+    })
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' Б'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' КБ'
+    return (bytes / (1024 * 1024)).toFixed(1) + ' МБ'
+  }
+
   const handleReply = async (ticketId: number) => {
     const message = replyMessage[ticketId]?.trim()
-    if (!message) return
+    const files = attachedFiles[ticketId] || []
+    
+    if (!message && files.length === 0) return
 
     try {
       setReplying(prev => ({ ...prev, [ticketId]: true }))
+      
+      // Сначала создаем сообщение
       const res = await fetch(`/api/support/tickets/${ticketId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message: message || '' }),
       })
 
       if (!res.ok) {
@@ -103,7 +159,39 @@ export default function SupportPage() {
         throw new Error(err.error || 'Не удалось отправить ответ')
       }
 
+      const data = await res.json()
+      const messageId = data.message?.id
+
+      // Если есть файлы и сообщение создано, загружаем их
+      if (files.length > 0 && messageId) {
+        setUploadingFiles(prev => ({ ...prev, [ticketId]: true }))
+        try {
+          for (const file of files) {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('entityType', 'support_ticket_message')
+            formData.append('entityId', messageId.toString())
+
+            const uploadRes = await fetch('/api/files/upload', {
+              method: 'POST',
+              body: formData,
+            })
+
+            if (!uploadRes.ok) {
+              const uploadErr = await uploadRes.json().catch(() => ({}))
+              console.error('Ошибка загрузки файла:', uploadErr)
+              // Продолжаем загрузку остальных файлов
+            }
+          }
+        } catch (uploadError) {
+          console.error('Ошибка загрузки файлов:', uploadError)
+        } finally {
+          setUploadingFiles(prev => ({ ...prev, [ticketId]: false }))
+        }
+      }
+
       setReplyMessage(prev => ({ ...prev, [ticketId]: '' }))
+      setAttachedFiles(prev => ({ ...prev, [ticketId]: [] }))
       await loadTickets()
     } catch (e: any) {
       setError(e?.message || 'Ошибка отправки ответа')
@@ -255,6 +343,44 @@ export default function SupportPage() {
                                 </div>
                               </div>
                               <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
+                              {/* Прикрепленные файлы */}
+                              {msg.files && msg.files.length > 0 && (
+                                <div className="mt-3 space-y-2">
+                                  {msg.files.map((file) => (
+                                    <div
+                                      key={file.id}
+                                      className="flex items-center gap-2 p-2 bg-white rounded-lg border border-[var(--border)]"
+                                    >
+                                      {file.mimeType.startsWith('image/') ? (
+                                        <img
+                                          src={file.url}
+                                          alt={file.originalName}
+                                          className="w-12 h-12 object-cover rounded"
+                                          onClick={() => window.open(file.url, '_blank')}
+                                          style={{ cursor: 'pointer' }}
+                                        />
+                                      ) : (
+                                        <div className="w-12 h-12 bg-[var(--background-soft)] rounded flex items-center justify-center text-xs">
+                                          📎
+                                        </div>
+                                      )}
+                                      <div className="flex-1 min-w-0">
+                                        <a
+                                          href={file.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-sm text-[var(--primary)] hover:underline truncate block"
+                                        >
+                                          {file.originalName}
+                                        </a>
+                                        <div className="text-xs text-[var(--muted)]">
+                                          {formatFileSize(file.size)}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -270,13 +396,54 @@ export default function SupportPage() {
                           rows={4}
                           className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
                         />
-                        <button
-                          onClick={() => handleReply(ticket.id)}
-                          disabled={!replyMessage[ticket.id]?.trim() || replying[ticket.id]}
-                          className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white font-medium text-sm hover:opacity-90 disabled:opacity-50"
-                        >
-                          {replying[ticket.id] ? 'Отправка...' : 'Отправить ответ'}
-                        </button>
+                        
+                        {/* Прикрепленные файлы */}
+                        {attachedFiles[ticket.id] && attachedFiles[ticket.id].length > 0 && (
+                          <div className="space-y-2">
+                            {attachedFiles[ticket.id].map((file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-[var(--background-soft)] rounded-lg"
+                              >
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <span className="text-sm">📎</span>
+                                  <span className="text-sm text-[var(--foreground)] truncate">{file.name}</span>
+                                  <span className="text-xs text-[var(--muted)]">
+                                    ({formatFileSize(file.size)})
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => removeFile(ticket.id, index)}
+                                  className="text-red-500 hover:text-red-700 text-sm px-2"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3">
+                          <label className="cursor-pointer">
+                            <input
+                              type="file"
+                              multiple
+                              onChange={(e) => handleFileSelect(ticket.id, e)}
+                              className="hidden"
+                              accept="image/*,.pdf,.doc,.docx,.txt"
+                            />
+                            <span className="px-4 py-2 rounded-xl border border-[var(--border)] bg-white text-sm text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors inline-block">
+                              📎 Прикрепить файл (до 10 МБ)
+                            </span>
+                          </label>
+                          <button
+                            onClick={() => handleReply(ticket.id)}
+                            disabled={(!replyMessage[ticket.id]?.trim() && (!attachedFiles[ticket.id] || attachedFiles[ticket.id].length === 0)) || replying[ticket.id] || uploadingFiles[ticket.id]}
+                            className="px-4 py-2 rounded-xl bg-[var(--primary)] text-white font-medium text-sm hover:opacity-90 disabled:opacity-50"
+                          >
+                            {replying[ticket.id] || uploadingFiles[ticket.id] ? 'Отправка...' : 'Отправить ответ'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}

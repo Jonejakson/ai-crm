@@ -23,6 +23,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
       where: { id: ticketId },
       include: {
         messages: {
+          include: {
+            files: {
+              select: {
+                id: true,
+                name: true,
+                originalName: true,
+                url: true,
+                size: true,
+                mimeType: true,
+              },
+            },
+          },
           orderBy: {
             createdAt: 'asc',
           },
@@ -71,6 +83,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
       where: { id: ticketId },
       include: {
         messages: {
+          include: {
+            files: {
+              select: {
+                id: true,
+                name: true,
+                originalName: true,
+                url: true,
+                size: true,
+                mimeType: true,
+              },
+            },
+          },
           orderBy: {
             createdAt: 'asc',
           },

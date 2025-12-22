@@ -410,17 +410,19 @@ model ActivityLog {
 }
 
 model File {
-  id           Int      @id @default(autoincrement())
+  id           Int                   @id @default(autoincrement())
   name         String
   originalName String
   url          String
   size         Int // размер в байтах
   mimeType     String
-  entityType   String // contact, deal, task, event
+  entityType   String // contact, deal, task, event, support_ticket_message
   entityId     Int
-  user         User?    @relation(fields: [userId], references: [id])
+  user         User?                 @relation(fields: [userId], references: [id])
   userId       Int?
-  createdAt    DateTime @default(now())
+  message      SupportTicketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId    Int?
+  createdAt    DateTime              @default(now())
 }
 
 model Comment {
@@ -463,6 +465,7 @@ model SupportTicketMessage {
   isFromAdmin    Boolean       @default(false) // Ответ от админа или от пользователя
   isRead         Boolean       @default(false) // Прочитано ли сообщение пользователем
   emailMessageId String? // Message-ID из email для парсинга thread
+  files          File[] // Прикрепленные файлы
   createdAt      DateTime      @default(now())
 
   @@index([ticketId])
