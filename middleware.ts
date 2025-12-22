@@ -70,14 +70,24 @@ export async function middleware(request: NextRequest) {
   const response = isPublicPath 
     ? NextResponse.next()
     : (() => {
-        // Проверяем наличие сессионной cookie (NextAuth создает authjs.session-token)
-        const sessionToken = request.cookies.get('authjs.session-token') || 
-                             request.cookies.get('__Secure-authjs.session-token')
+        // Проверяем наличие сессионной cookie (NextAuth v5 использует разные имена в зависимости от окружения)
+        // Проверяем все возможные варианты имен cookie
+        const allCookies = request.cookies.getAll()
+        const sessionToken = allCookies.find(cookie => 
+          cookie.name === 'authjs.session-token' || 
+          cookie.name === '__Secure-authjs.session-token' ||
+          cookie.name === 'next-auth.session-token' ||
+          cookie.name === '__Secure-next-auth.session-token' ||
+          cookie.name.includes('session-token')
+        )
         
         // Если нет сессионной cookie, перенаправляем на страницу входа
         if (!sessionToken) {
           const loginUrl = new URL('/login', request.url)
-          loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+          // Сохраняем URL, на который пользователь пытался зайти, чтобы вернуться после входа
+          if (request.nextUrl.pathname !== '/') {
+            loginUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
+          }
           return NextResponse.redirect(loginUrl)
         }
         

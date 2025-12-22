@@ -23,6 +23,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const currentContactId = getCurrentContactId(pathname)
   
+  // Определяем, является ли текущий путь публичным (не требует авторизации)
+  const isPublicPath = pathname === '/login'
+  
   // Глобальные клавиатурные сокращения
   useGlobalShortcuts()
 
@@ -56,17 +59,25 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
             },
           }}
         />
-        <div className="flex min-h-screen bg-[var(--background)]">
-          <Sidebar currentContactId={currentContactId} />
-          <div className="flex-1 flex flex-col min-w-0">
-            <Header />
-            <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 overflow-y-auto">
-              {children}
-            </main>
+        {isPublicPath ? (
+          // Для публичных страниц (login) не показываем Sidebar и Header
+          <div className="min-h-screen bg-[var(--background)]">
+            {children}
           </div>
-          <KeyboardShortcutsHelp />
-          <PWARegister />
-        </div>
+        ) : (
+          // Для защищенных страниц показываем полный layout
+          <div className="flex min-h-screen bg-[var(--background)]">
+            <Sidebar currentContactId={currentContactId} />
+            <div className="flex-1 flex flex-col min-w-0">
+              <Header />
+              <main className="flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 overflow-y-auto">
+                {children}
+              </main>
+            </div>
+            <KeyboardShortcutsHelp />
+            <PWARegister />
+          </div>
+        )}
       </ThemeProvider>
     </SessionProvider>
     </ErrorBoundary>
