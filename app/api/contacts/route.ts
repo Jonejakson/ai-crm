@@ -148,9 +148,12 @@ export async function POST(req: Request) {
         if (data.position !== undefined) {
           contactData.position = data.position || null;
         }
-        if (data.inn !== undefined) {
+        if (data.inn !== undefined && data.inn) {
           contactData.inn = data.inn || null;
         }
+        
+        // Не включаем externalId и syncedAt, если они не переданы явно
+        // Эти поля могут отсутствовать в базе данных на старых инсталляциях
         
         const newContact = await prisma.contact.create({
           data: contactData,
