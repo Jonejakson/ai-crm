@@ -217,12 +217,12 @@ export default function ContactsPage() {
         let errorMessage = errorData.error || 'Ошибка при запросе к API'
         
         // Более понятное сообщение для пользователя
-        if (response.status === 403) {
-          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
-        } else if (response.status === 503) {
-          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
-        } else if (response.status === 404) {
+        if (response.status === 404) {
           errorMessage = 'Компания с таким ИНН не найдена'
+        } else if (response.status === 500) {
+          errorMessage = 'Ошибка при поиске компании. Попробуйте позже.'
+        } else {
+          errorMessage = errorData.error || 'Ошибка при запросе к API'
         }
         
         setInnError(errorMessage)
@@ -267,12 +267,12 @@ export default function ContactsPage() {
         const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
         let errorMessage = errorData.error || 'Ошибка при запросе к API'
 
-        if (response.status === 403) {
-          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
-        } else if (response.status === 503) {
-          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
-        } else if (response.status === 404) {
+        if (response.status === 404) {
           errorMessage = 'Компания с таким ИНН не найдена'
+        } else if (response.status === 500) {
+          errorMessage = 'Ошибка при поиске компании. Попробуйте позже.'
+        } else {
+          errorMessage = errorData.error || 'Ошибка при запросе к API'
         }
 
         setEditInnError(errorMessage)

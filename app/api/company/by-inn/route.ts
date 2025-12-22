@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
+import { fetchCompanyByInnFromChecko, fetchCompanyByInnFromFns } from '@/lib/company/checko-parser'
 
 // API для поиска компании по ИНН
-// Используем бесплатный API daData.ru или можно заменить на другой сервис
+// Используем парсер checko.ru (бесплатно) или API ФНС как fallback
 export async function GET(request: Request) {
   try {
     // Проверка авторизации
@@ -33,97 +34,52 @@ export async function GET(request: Request) {
       )
     }
 
-    // Используем API daData.ru (требуется API ключ в переменных окружения)
-    // Документация: https://dadata.ru/api/find-party/
-    const apiKey = process.env.DADATA_API_KEY
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { 
-          error: 'API ключ не настроен',
-          message: 'Настройте DADATA_API_KEY в переменных окружения для использования поиска по ИНН. Получить ключ можно на https://dadata.ru/'
-        },
-        { status: 503 }
-      )
+    // Пробуем сначала checko.ru (бесплатный парсинг)
+    try {
+      const companyData = await fetchCompanyByInnFromChecko(cleanInn)
+      
+      if (companyData && companyData.name) {
+        return NextResponse.json({
+          name: companyData.name,
+          inn: companyData.inn || cleanInn,
+          kpp: companyData.kpp || '',
+          ogrn: companyData.ogrn || '',
+          address: companyData.address || '',
+          management: companyData.management || '',
+          okved: companyData.okved || '',
+        })
+      }
+    } catch (checkoError: any) {
+      console.warn('Checko parser failed, trying fallback:', checkoError.message)
     }
 
-    // Запрос к daData API методом findById для поиска организации по ИНН
-    // Документация: https://dadata.ru/api/find-party/
-    const response = await fetch('https://suggestions.dadata.ru/suggestions/api/4_1/rs/findById/party', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': `Token ${apiKey}`,
-      },
-      body: JSON.stringify({
-        query: cleanInn,
-      }),
-    })
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      let errorMessage = 'Ошибка при запросе к API'
-      
-      // Пытаемся распарсить ошибку от daData
+    // Fallback: пробуем API ФНС (если настроен ключ)
+    const fnsApiKey = process.env.FNS_API_KEY
+    if (fnsApiKey) {
       try {
-        const errorData = JSON.parse(errorText)
-        errorMessage = errorData.message || errorData.detail || errorMessage
-      } catch {
-        // Если не удалось распарсить, используем текст ошибки
-        if (errorText) {
-          errorMessage = errorText
+        const companyData = await fetchCompanyByInnFromFns(cleanInn, fnsApiKey)
+        
+        if (companyData && companyData.name) {
+          return NextResponse.json({
+            name: companyData.name,
+            inn: companyData.inn || cleanInn,
+            kpp: companyData.kpp || '',
+            ogrn: companyData.ogrn || '',
+            address: companyData.address || '',
+            management: companyData.management || '',
+            okved: companyData.okved || '',
+          })
         }
+      } catch (fnsError: any) {
+        console.warn('FNS API failed:', fnsError.message)
       }
-      
-      console.error('daData API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        apiKeyLength: apiKey?.length,
-        apiKeyPrefix: apiKey ? apiKey.substring(0, 8) + '...' : 'missing'
-      })
-      
-      // Специальная обработка для 403 - возможно проблема с ключом
-      if (response.status === 403) {
-        return NextResponse.json(
-          { 
-            error: 'Доступ запрещен. Проверьте правильность API ключа DADATA_API_KEY в настройках Vercel.',
-            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-          },
-          { status: 403 }
-        )
-      }
-      
-      return NextResponse.json(
-        { 
-          error: errorMessage,
-          details: process.env.NODE_ENV === 'development' ? errorText : undefined
-        },
-        { status: response.status }
-      )
     }
 
-    const data = await response.json()
-
-    if (!data.suggestions || data.suggestions.length === 0) {
-      return NextResponse.json(
-        { error: 'Компания с таким ИНН не найдена' },
-        { status: 404 }
-      )
-    }
-
-    const company = data.suggestions[0].data
-
-    return NextResponse.json({
-      name: company.name?.full_with_opf || company.name?.short_with_opf || company.name?.full || '',
-      inn: company.inn || cleanInn,
-      kpp: company.kpp || '',
-      ogrn: company.ogrn || '',
-      address: company.address?.value || '',
-      management: company.management?.name || '',
-      okved: company.okved || '',
-    })
+    // Если ничего не сработало
+    return NextResponse.json(
+      { error: 'Компания с таким ИНН не найдена' },
+      { status: 404 }
+    )
   } catch (error: any) {
     console.error('Error fetching company by INN:', error)
     return NextResponse.json(
