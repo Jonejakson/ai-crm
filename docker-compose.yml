@@ -18,6 +18,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - crm_network
 
   app:
     build: .
@@ -72,6 +74,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - crm_network
 
 volumes:
   postgres_data:
+
+networks:
+  crm_network:
+    driver: bridge

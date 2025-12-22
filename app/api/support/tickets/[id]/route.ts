@@ -23,6 +23,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
       where: { id: ticketId },
       include: {
         messages: {
+          include: {
+            files: {
+              select: {
+                id: true,
+                name: true,
+                originalName: true,
+                url: true,
+                size: true,
+                mimeType: true,
+              },
+            },
+          },
           orderBy: {
             createdAt: 'asc',
           },
@@ -52,7 +64,58 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    return NextResponse.json({ success: true, ticket })
+    // Если пользователь открыл тикет, отмечаем все сообщения от админа как прочитанные
+    if (user.role !== 'owner' && ticket.userId === Number(user.id)) {
+      await prisma.supportTicketMessage.updateMany({
+        where: {
+          ticketId: ticket.id,
+          isFromAdmin: true,
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+        },
+      })
+    }
+
+    // Обновляем тикет с актуальными данными после обновления isRead
+    const updatedTicket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      include: {
+        messages: {
+          include: {
+            files: {
+              select: {
+                id: true,
+                name: true,
+                originalName: true,
+                url: true,
+                size: true,
+                mimeType: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+        company: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    })
+
+    return NextResponse.json({ success: true, ticket: updatedTicket })
   } catch (error) {
     console.error('[support][tickets][id][GET]', error)
     return NextResponse.json({ error: 'Не удалось получить тикет' }, { status: 500 })
@@ -106,8 +169,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
         fromEmail: user.email,
         fromName: user.name || undefined,
         isFromAdmin: isAdmin,
+        isRead: !isAdmin, // Если ответ от owner, помечаем как непрочитанное для пользователя
       },
     })
+
+    // Если owner ответил, создаем уведомление для пользователя
+    if (isAdmin && ticket.userId) {
+      try {
+        const { createNotification } = await import('@/lib/notifications')
+        await createNotification({
+          userId: ticket.userId,
+          title: 'Новый ответ в тикете поддержки',
+          message: `В тикете "${ticket.subject}" есть новый ответ от поддержки`,
+          type: 'info',
+          entityType: 'contact', // Используем contact как entityType для тикетов
+          entityId: ticket.id,
+        })
+      } catch (notifError) {
+        console.error('[support][tickets][id][notification]', notifError)
+        // Не блокируем ответ из-за ошибки уведомления
+      }
+    }
 
     // Обновляем статус тикета
     let newStatus = ticket.status

@@ -410,17 +410,19 @@ model ActivityLog {
 }
 
 model File {
-  id           Int      @id @default(autoincrement())
+  id           Int                   @id @default(autoincrement())
   name         String
   originalName String
   url          String
   size         Int // размер в байтах
   mimeType     String
-  entityType   String // contact, deal, task, event
+  entityType   String // contact, deal, task, event, support_ticket_message
   entityId     Int
-  user         User?    @relation(fields: [userId], references: [id])
+  user         User?                 @relation(fields: [userId], references: [id])
   userId       Int?
-  createdAt    DateTime @default(now())
+  message      SupportTicketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId    Int?
+  createdAt    DateTime              @default(now())
 }
 
 model Comment {
@@ -439,30 +441,32 @@ model SupportTicket {
   subject   String
   message   String
   email     String
-  status    String                  @default("open") // open, in_progress, resolved, closed
-  ticketId  String                  @unique // Уникальный ID для email (например: TKT-12345)
-  company   Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status    String                 @default("open") // open, in_progress, resolved, closed
+  ticketId  String                 @unique // Уникальный ID для email (например: TKT-12345)
+  company   Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId Int
-  user      User?                   @relation(fields: [userId], references: [id])
+  user      User?                  @relation(fields: [userId], references: [id])
   userId    Int?
   messages  SupportTicketMessage[]
-  createdAt DateTime                @default(now())
-  updatedAt DateTime                @updatedAt
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
 
   @@index([companyId, status])
   @@index([ticketId])
 }
 
 model SupportTicketMessage {
-  id           Int           @id @default(autoincrement())
-  ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  ticketId     Int
-  message      String
-  fromEmail    String // Кто отправил
-  fromName     String? // Имя отправителя
-  isFromAdmin  Boolean       @default(false) // Ответ от админа или от пользователя
+  id             Int           @id @default(autoincrement())
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId       Int
+  message        String
+  fromEmail      String // Кто отправил
+  fromName       String? // Имя отправителя
+  isFromAdmin    Boolean       @default(false) // Ответ от админа или от пользователя
+  isRead         Boolean       @default(false) // Прочитано ли сообщение пользователем
   emailMessageId String? // Message-ID из email для парсинга thread
-  createdAt    DateTime      @default(now())
+  files          File[] // Прикрепленные файлы
+  createdAt      DateTime      @default(now())
 
   @@index([ticketId])
 }

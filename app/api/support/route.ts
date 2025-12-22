@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Создаем первое сообщение от пользователя
-    await prisma.supportTicketMessage.create({
+    const firstMessage = await prisma.supportTicketMessage.create({
       data: {
         ticketId: ticket.id,
         message: message.trim(),
@@ -51,8 +51,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Отправляем email админу
-    if (isEmailConfigured()) {
+    // Отправляем email на info@flamecrm.ru
+    // Используем SMTP_* переменные если есть, иначе MAIL_*
+    const smtpHost = process.env.SMTP_HOST || process.env.MAIL_HOST
+    const smtpPort = process.env.SMTP_PORT || process.env.MAIL_PORT
+    const smtpUser = process.env.SMTP_USER || process.env.MAIL_USER
+    const smtpPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.MAIL_PASSWORD
+    const smtpFrom = process.env.SMTP_FROM || process.env.MAIL_FROM
+
+    if (smtpHost && smtpPort && smtpUser && smtpPass && smtpFrom) {
       try {
         const emailSubject = `[${ticketId}] ${subject.trim()}`
         const emailBody = `
@@ -74,18 +81,33 @@ Ticket ID: ${ticketId}
 
         // Используем sendEmail с расширенными опциями через nodemailer
         const nodemailer = require('nodemailer')
+        
+        // Для Mail.ru нужны специальные настройки
+        const isMailRu = smtpHost.includes('mail.ru')
+        const port = Number(smtpPort)
+        const secure = port === 465
+        
         const transporter = nodemailer.createTransport({
-          host: process.env.MAIL_HOST,
-          port: Number(process.env.MAIL_PORT),
-          secure: Number(process.env.MAIL_PORT) === 465,
+          host: smtpHost,
+          port: port,
+          secure: secure,
           auth: {
-            user: process.env.MAIL_USER,
-            pass: process.env.MAIL_PASSWORD,
+            user: smtpUser,
+            pass: smtpPass,
           },
+          // Дополнительные настройки для Mail.ru
+          ...(isMailRu && {
+            tls: {
+              rejectUnauthorized: false,
+            },
+          }),
         })
+        
+        // Для Mail.ru не проверяем подключение заранее, так как может быть ошибка с паролем приложения
 
+        // Отправляем на info@flamecrm.ru
         await transporter.sendMail({
-          from: process.env.MAIL_FROM,
+          from: smtpFrom,
           to: SUPPORT_EMAIL,
           subject: emailSubject,
           text: emailBody,
@@ -95,10 +117,23 @@ Ticket ID: ${ticketId}
             'Reply-To': SUPPORT_EMAIL,
           },
         })
-      } catch (emailError) {
-        console.error('[support][email]', emailError)
+        
+        console.log(`[support][email] Email отправлен на ${SUPPORT_EMAIL} для тикета ${ticketId}`)
+      } catch (emailError: any) {
+        const errorMessage = emailError?.message || String(emailError)
+        console.error('[support][email] Ошибка отправки email:', errorMessage)
+        
+        // Если ошибка связана с паролем приложения Mail.ru
+        if (errorMessage.includes('parol prilozheniya') || errorMessage.includes('Application password')) {
+          console.error('[support][email] ВАЖНО: Mail.ru требует пароль приложения!')
+          console.error('[support][email] Инструкция: https://help.mail.ru/mail/security/protection/external')
+          console.error('[support][email] Нужно создать пароль приложения в настройках почты Mail.ru')
+        }
+        
         // Не блокируем создание тикета из-за ошибки email
       }
+    } else {
+      console.warn('[support][email] SMTP не настроен, email не отправлен. Нужны: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM')
     }
 
     // Уведомление в Telegram (опционально)
@@ -122,14 +157,20 @@ Ticket ID: ${ticketId}
       })
     }
 
-    return NextResponse.json({ success: true, ticket })
+    return NextResponse.json({ 
+      success: true, 
+      ticket: {
+        ...ticket,
+        firstMessageId: firstMessage.id,
+      }
+    })
   } catch (error) {
     console.error('[support][POST]', error)
     return NextResponse.json({ error: 'Не удалось создать тикет' }, { status: 500 })
   }
 }
 
-// Получить тикеты пользователя
+// Получить тикеты пользователя (owner видит все тикеты)
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser()
   if (!user) {
@@ -137,14 +178,44 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Owner видит все тикеты, остальные - только свои
+    const isOwner = user.role === 'owner'
+    const whereCondition = isOwner 
+      ? {} // Owner видит все тикеты
+      : { userId: Number(user.id) } // Остальные - только свои
+
     const tickets = await prisma.supportTicket.findMany({
-      where: {
-        userId: Number(user.id),
-      },
+      where: whereCondition,
       include: {
         messages: {
+          include: {
+            files: {
+              select: {
+                id: true,
+                name: true,
+                originalName: true,
+                url: true,
+                size: true,
+                mimeType: true,
+              },
+            },
+          },
           orderBy: {
             createdAt: 'asc',
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            companyId: true,
+          },
+        },
+        company: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
@@ -153,7 +224,18 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, tickets })
+    // Добавляем количество непрочитанных сообщений для каждого тикета
+    const ticketsWithUnread = tickets.map(ticket => {
+      const unreadCount = ticket.messages.filter(
+        msg => msg.isFromAdmin && !msg.isRead
+      ).length
+      return {
+        ...ticket,
+        unreadMessagesCount: unreadCount,
+      }
+    })
+
+    return NextResponse.json({ success: true, tickets: ticketsWithUnread })
   } catch (error) {
     console.error('[support][GET]', error)
     return NextResponse.json({ error: 'Не удалось получить тикеты' }, { status: 500 })
