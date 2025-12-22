@@ -51,8 +51,15 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Отправляем email админу
-    if (isEmailConfigured()) {
+    // Отправляем email на info@flamecrm.ru
+    // Используем SMTP_* переменные если есть, иначе MAIL_*
+    const smtpHost = process.env.SMTP_HOST || process.env.MAIL_HOST
+    const smtpPort = process.env.SMTP_PORT || process.env.MAIL_PORT
+    const smtpUser = process.env.SMTP_USER || process.env.MAIL_USER
+    const smtpPass = process.env.SMTP_PASS || process.env.SMTP_PASSWORD || process.env.MAIL_PASSWORD
+    const smtpFrom = process.env.SMTP_FROM || process.env.MAIL_FROM
+
+    if (smtpHost && smtpPort && smtpUser && smtpPass && smtpFrom) {
       try {
         const emailSubject = `[${ticketId}] ${subject.trim()}`
         const emailBody = `
@@ -75,17 +82,18 @@ Ticket ID: ${ticketId}
         // Используем sendEmail с расширенными опциями через nodemailer
         const nodemailer = require('nodemailer')
         const transporter = nodemailer.createTransport({
-          host: process.env.MAIL_HOST,
-          port: Number(process.env.MAIL_PORT),
-          secure: Number(process.env.MAIL_PORT) === 465,
+          host: smtpHost,
+          port: Number(smtpPort),
+          secure: Number(smtpPort) === 465,
           auth: {
-            user: process.env.MAIL_USER,
-            pass: process.env.MAIL_PASSWORD,
+            user: smtpUser,
+            pass: smtpPass,
           },
         })
 
+        // Отправляем на info@flamecrm.ru
         await transporter.sendMail({
-          from: process.env.MAIL_FROM,
+          from: smtpFrom,
           to: SUPPORT_EMAIL,
           subject: emailSubject,
           text: emailBody,
@@ -95,10 +103,14 @@ Ticket ID: ${ticketId}
             'Reply-To': SUPPORT_EMAIL,
           },
         })
+        
+        console.log(`[support][email] Email отправлен на ${SUPPORT_EMAIL} для тикета ${ticketId}`)
       } catch (emailError) {
-        console.error('[support][email]', emailError)
+        console.error('[support][email] Ошибка отправки email:', emailError)
         // Не блокируем создание тикета из-за ошибки email
       }
+    } else {
+      console.warn('[support][email] SMTP не настроен, email не отправлен. Нужны: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM')
     }
 
     // Уведомление в Telegram (опционально)
@@ -129,7 +141,7 @@ Ticket ID: ${ticketId}
   }
 }
 
-// Получить тикеты пользователя
+// Получить тикеты пользователя (owner видит все тикеты)
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser()
   if (!user) {
@@ -137,14 +149,32 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Owner видит все тикеты, остальные - только свои
+    const isOwner = user.role === 'owner'
+    const whereCondition = isOwner 
+      ? {} // Owner видит все тикеты
+      : { userId: Number(user.id) } // Остальные - только свои
+
     const tickets = await prisma.supportTicket.findMany({
-      where: {
-        userId: Number(user.id),
-      },
+      where: whereCondition,
       include: {
         messages: {
           orderBy: {
             createdAt: 'asc',
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            companyId: true,
+          },
+        },
+        company: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },
