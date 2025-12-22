@@ -14,6 +14,25 @@ export interface CompanyData {
 }
 
 /**
+ * Декодирует HTML-сущности в текст
+ */
+function decodeHtmlEntities(text: string): string {
+  const entityMap: Record<string, string> = {
+    '&quot;': '"',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&apos;': "'",
+    '&#39;': "'",
+    '&nbsp;': ' ',
+  }
+  
+  return text.replace(/&[#\w]+;/g, (entity) => {
+    return entityMap[entity] || entity
+  })
+}
+
+/**
  * Парсит HTML страницы checko.ru и извлекает данные о компании
  */
 function parseCheckoHtml(html: string, inn: string): CompanyData | null {
@@ -136,13 +155,18 @@ function parseCheckoHtml(html: string, inn: string): CompanyData | null {
                        cleanHtml.match(/okved[:\s]*([\d.]+)/i)
     const okved = okvedMatch ? okvedMatch[1] : undefined
 
+    // Декодируем HTML-сущности в названии и других полях
+    const decodedName = decodeHtmlEntities(name.trim())
+    const decodedAddress = address ? decodeHtmlEntities(address) : undefined
+    const decodedManagement = management ? decodeHtmlEntities(management) : undefined
+
     return {
-      name: name.trim(),
+      name: decodedName,
       inn: foundInn,
       kpp,
       ogrn,
-      address,
-      management,
+      address: decodedAddress,
+      management: decodedManagement,
       okved,
     }
   } catch (error) {
