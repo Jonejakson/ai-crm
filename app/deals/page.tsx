@@ -1820,10 +1820,20 @@ export default function DealsPage() {
               onSubmit={async (e) => {
                 e.preventDefault()
                 try {
+                  // Преобразуем пустые строки в null для опциональных полей
+                  const contactDataToSend = {
+                    name: newContactData.name,
+                    email: newContactData.email?.trim() || null,
+                    phone: newContactData.phone?.trim() || null,
+                    company: newContactData.company?.trim() || null,
+                    position: null, // Поле не используется в этой форме
+                    inn: newContactData.inn?.trim() || null,
+                  }
+                  
                   const response = await fetch('/api/contacts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newContactData),
+                    body: JSON.stringify(contactDataToSend),
                   })
 
                   if (response.ok) {

@@ -165,12 +165,22 @@ export default function ContactsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // Преобразуем пустые строки в null для опциональных полей
+      const contactDataToSend = {
+        name: formData.name,
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
+        company: formData.company?.trim() || null,
+        position: formData.position?.trim() || null,
+        inn: formData.inn?.trim() || null,
+      }
+      
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(contactDataToSend),
       })
 
       if (response.ok) {
