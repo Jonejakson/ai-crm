@@ -33,3 +33,4 @@ SET "ticketId" = 'TKT-' || "id" || '-' || EXTRACT(EPOCH FROM "createdAt")::BIGIN
 WHERE "ticketId" IS NULL;
 
 
+
