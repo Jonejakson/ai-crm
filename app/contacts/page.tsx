@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import Modal from '@/components/Modal'
+import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 import ExportButton from '@/components/ExportButton'
@@ -53,6 +54,7 @@ export default function ContactsPage() {
   })
   const [editInnLoading, setEditInnLoading] = useState(false)
   const [editInnError, setEditInnError] = useState('')
+  const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
     fetchContacts()
@@ -191,7 +193,11 @@ export default function ContactsPage() {
         toast.success('Контакт успешно создан')
       } else {
         const errorData = await response.json()
-        toast.error(errorData.error || 'Ошибка при создании контакта')
+        if (errorData.subscriptionExpired) {
+          setShowRenewalModal(true)
+        } else {
+          toast.error(errorData.error || 'Ошибка при создании контакта')
+        }
       }
     } catch (error) {
       console.error('Error creating contact:', error)
@@ -896,6 +902,11 @@ export default function ContactsPage() {
           </div>
         </form>
       </Modal>
+
+      <SubscriptionRenewalModal
+        isOpen={showRenewalModal}
+        onClose={() => setShowRenewalModal(false)}
+      />
     </div>
   )
 }

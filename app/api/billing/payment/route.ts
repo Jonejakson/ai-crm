@@ -30,9 +30,10 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { planId, billingInterval = 'MONTHLY' } = body as {
+    const { planId, billingInterval = 'MONTHLY', periodMonths = 1 } = body as {
       planId?: number
       billingInterval?: 'MONTHLY' | 'YEARLY'
+      periodMonths?: 1 | 3 | 6 | 12
     }
 
     if (!planId) {
@@ -47,15 +48,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
 
+    // Рассчитываем цену с учетом скидок
+    // Месячные тарифы поднимаем на 20%
+    const monthlyPrice = Math.round(plan.price * 1.2)
+    
+    // Скидки: 3 месяца - 5%, 6 месяцев - 10%, 12 месяцев - 15%
+    const discounts: Record<number, number> = {
+      1: 0,
+      3: 0.05,
+      6: 0.10,
+      12: 0.15,
+    }
+    
+    const discount = discounts[periodMonths] || 0
+    const totalPrice = Math.round(monthlyPrice * periodMonths * (1 - discount))
+
     // В режиме разработки или если план бесплатный, сразу активируем подписку
     const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
     if (plan.price === 0 || isDevMode) {
       const now = new Date()
       const nextPeriod = new Date(now)
-      if (billingInterval === 'YEARLY') {
+      if (periodMonths === 12) {
         nextPeriod.setFullYear(nextPeriod.getFullYear() + 1)
       } else {
-        nextPeriod.setMonth(nextPeriod.getMonth() + 1)
+        nextPeriod.setMonth(nextPeriod.getMonth() + periodMonths)
       }
 
       const subscription = await prisma.subscription.create({
@@ -63,7 +79,7 @@ export async function POST(request: Request) {
           companyId: Number(currentUser.companyId),
           planId: plan.id,
           status: SubscriptionStatus.ACTIVE,
-          billingInterval: billingInterval === 'YEARLY' ? BillingInterval.YEARLY : BillingInterval.MONTHLY,
+          billingInterval: periodMonths === 12 ? BillingInterval.YEARLY : BillingInterval.MONTHLY,
           currentPeriodEnd: nextPeriod,
         },
         include: {
@@ -76,7 +92,7 @@ export async function POST(request: Request) {
         await prisma.invoice.create({
           data: {
             subscriptionId: subscription.id,
-            amount: plan.price,
+            amount: totalPrice,
             currency: plan.currency,
             status: 'PAID',
             paidAt: new Date(),
@@ -90,10 +106,10 @@ export async function POST(request: Request) {
     // Создаем подписку со статусом TRIAL (будет активирована после оплаты)
     const now = new Date()
     const nextPeriod = new Date(now)
-    if (billingInterval === 'YEARLY') {
+    if (periodMonths === 12) {
       nextPeriod.setFullYear(nextPeriod.getFullYear() + 1)
     } else {
-      nextPeriod.setMonth(nextPeriod.getMonth() + 1)
+      nextPeriod.setMonth(nextPeriod.getMonth() + periodMonths)
     }
 
     const subscription = await prisma.subscription.create({
@@ -101,7 +117,7 @@ export async function POST(request: Request) {
         companyId: Number(currentUser.companyId),
         planId: plan.id,
         status: SubscriptionStatus.TRIAL,
-        billingInterval: billingInterval === 'YEARLY' ? BillingInterval.YEARLY : BillingInterval.MONTHLY,
+        billingInterval: periodMonths === 12 ? BillingInterval.YEARLY : BillingInterval.MONTHLY,
         currentPeriodEnd: nextPeriod,
       },
     })
@@ -110,7 +126,7 @@ export async function POST(request: Request) {
     const invoice = await prisma.invoice.create({
       data: {
         subscriptionId: subscription.id,
-        amount: plan.price,
+        amount: totalPrice,
         currency: plan.currency,
         status: 'PENDING',
       },
@@ -121,10 +137,16 @@ export async function POST(request: Request) {
     const returnUrl = `${baseUrl}/billing/success?invoiceId=${invoice.id}`
     const cancelUrl = `${baseUrl}/billing/cancel?invoiceId=${invoice.id}`
 
+    const periodLabel = periodMonths === 12 
+      ? 'Годовая' 
+      : periodMonths === 1 
+        ? 'Месячная' 
+        : `На ${periodMonths} ${periodMonths === 3 || periodMonths === 6 ? 'месяца' : 'месяцев'}`
+
     const payment = await createYooKassaPayment(
-      plan.price,
+      totalPrice,
       plan.currency,
-      `Подписка ${plan.name} - ${billingInterval === 'YEARLY' ? 'Годовая' : 'Месячная'}`,
+      `Подписка ${plan.name} - ${periodLabel}`,
       returnUrl,
       {
         invoiceId: invoice.id.toString(),

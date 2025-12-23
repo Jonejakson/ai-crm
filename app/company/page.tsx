@@ -530,14 +530,26 @@ export default function CompanyPage() {
       </div>
 
       <section className="space-y-4 mb-8">
-        <div className="glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className={`glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between ${
+          subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
+            ? 'border-2 border-red-500 bg-red-50/50' 
+            : ''
+        }`}>
           <div>
             <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Текущий тариф</p>
-            <h2 className="text-2xl font-semibold text-[var(--foreground)]">
-              {subscription?.plan?.name ?? 'План не выбран'}
+            <h2 className={`text-2xl font-semibold ${
+              subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
+                ? 'text-red-600' 
+                : 'text-[var(--foreground)]'
+            }`}>
+              {subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
+                ? 'Подписка закончилась'
+                : subscription?.plan?.name ?? 'План не выбран'}
             </h2>
             <p className="text-sm text-[var(--muted)]">
-              {subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
+              {subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
+                ? 'Продлите подписку для продолжения работы с CRM'
+                : subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
             </p>
           </div>
           <div className="text-sm text-[var(--muted)] text-left md:text-right">
@@ -545,8 +557,14 @@ export default function CompanyPage() {
               <>
                 <p className="text-lg font-semibold text-[var(--foreground)]">{formatPrice(subscription.plan)}</p>
                 {subscription?.currentPeriodEnd && (
-                  <span className="text-xs text-[var(--muted)]">
-                    Продление: {new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}
+                  <span className={`text-xs ${
+                    new Date(subscription.currentPeriodEnd) < new Date()
+                      ? 'text-red-600 font-semibold'
+                      : 'text-[var(--muted)]'
+                  }`}>
+                    {new Date(subscription.currentPeriodEnd) < new Date()
+                      ? 'Подписка закончилась'
+                      : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`}
                   </span>
                 )}
               </>

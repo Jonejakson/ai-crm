@@ -63,3 +63,4 @@ export function isSupportEmailConfigured(): boolean {
   return config.configured === true
 }
 
+

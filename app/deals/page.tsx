@@ -12,6 +12,7 @@ import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import FiltersModal from '@/components/FiltersModal'
+import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal'
 import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import type { CollisionDetection } from '@dnd-kit/core'
@@ -412,6 +413,7 @@ export default function DealsPage() {
   const [dealTypes, setDealTypes] = useState<Array<{id: number, name: string}>>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
+  const [showRenewalModal, setShowRenewalModal] = useState(false)
   const kanbanScrollRef = useRef<HTMLDivElement>(null)
   const topScrollbarRef = useRef<HTMLDivElement>(null)
 
@@ -974,7 +976,11 @@ export default function DealsPage() {
         toast.success('Сделка успешно создана')
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка при создании сделки')
+        if (error.subscriptionExpired) {
+          setShowRenewalModal(true)
+        } else {
+          toast.error(error.error || 'Ошибка при создании сделки')
+        }
       }
     } catch (error) {
       console.error('Error creating deal:', error)
@@ -2005,6 +2011,11 @@ export default function DealsPage() {
           setSavedFilters(updated)
           localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
         }}
+      />
+
+      <SubscriptionRenewalModal
+        isOpen={showRenewalModal}
+        onClose={() => setShowRenewalModal(false)}
       />
     </div>
   )

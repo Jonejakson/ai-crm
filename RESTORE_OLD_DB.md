@@ -142,3 +142,4 @@ docker-compose exec postgres psql -U crm_user -d crm_db -c "SELECT COUNT(*) FROM
 docker-compose exec postgres pg_dump -U crm_user crm_db > /tmp/empty_backup.sql
 ```
 
+

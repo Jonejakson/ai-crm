@@ -28,10 +28,79 @@ export async function getActiveSubscription(companyId: number) {
 }
 
 /**
+ * Проверить, истекла ли подписка
+ */
+export async function isSubscriptionExpired(companyId: number): Promise<{
+  expired: boolean
+  subscription: any | null
+  daysUntilExpiry?: number
+}> {
+  const subscription = await getActiveSubscription(companyId)
+  
+  if (!subscription) {
+    return { expired: true, subscription: null }
+  }
+
+  // Если статус CANCELED, подписка истекла
+  if (subscription.status === SubscriptionStatus.CANCELED) {
+    return { expired: true, subscription }
+  }
+
+  // Проверяем дату окончания периода
+  if (!subscription.currentPeriodEnd) {
+    return { expired: true, subscription }
+  }
+
+  const now = new Date()
+  const periodEnd = new Date(subscription.currentPeriodEnd)
+  const expired = periodEnd < now
+  const daysUntilExpiry = expired 
+    ? 0 
+    : Math.ceil((periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+  return {
+    expired,
+    subscription,
+    daysUntilExpiry: expired ? undefined : daysUntilExpiry,
+  }
+}
+
+/**
+ * Проверить, можно ли создавать новые сущности (контакты, сделки, автоматизации)
+ */
+export async function canCreateEntities(companyId: number): Promise<{
+  allowed: boolean
+  message?: string
+  subscription?: any
+}> {
+  const expiryCheck = await isSubscriptionExpired(companyId)
+  
+  if (expiryCheck.expired) {
+    return {
+      allowed: false,
+      message: 'Подписка закончилась. Продлите подписку для создания новых контактов, сделок и автоматизаций.',
+      subscription: expiryCheck.subscription,
+    }
+  }
+
+  return {
+    allowed: true,
+    subscription: expiryCheck.subscription,
+  }
+}
+
+/**
  * Получить план компании (активная подписка или дефолтный Lite)
  */
 export async function getCompanyPlan(companyId: number) {
-  const subscription = await getActiveSubscription(companyId)
+  const expiryCheck = await isSubscriptionExpired(companyId)
+  
+  // Если подписка истекла, возвращаем null (нельзя использовать план)
+  if (expiryCheck.expired) {
+    return null
+  }
+
+  const subscription = expiryCheck.subscription
   
   if (subscription?.plan) {
     console.log('[getCompanyPlan] Найдена активная подписка:', subscription.plan.slug, 'для companyId:', companyId)

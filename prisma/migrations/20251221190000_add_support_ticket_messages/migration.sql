@@ -32,3 +32,4 @@ UPDATE "SupportTicket"
 SET "ticketId" = 'TKT-' || "id" || '-' || EXTRACT(EPOCH FROM "createdAt")::BIGINT
 WHERE "ticketId" IS NULL;
 
+
