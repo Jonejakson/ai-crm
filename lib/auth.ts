@@ -48,20 +48,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             where: {
               email: credentials.email
             },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              lastName: true,
-              password: true,
-              role: true,
-              companyId: true,
-              company: {
-                select: {
-                  id: true,
-                  name: true
-                }
-              }
+            include: {
+              company: true
             }
           })
 
