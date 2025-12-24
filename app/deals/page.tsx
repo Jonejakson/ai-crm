@@ -172,20 +172,20 @@ function CustomSelect({
 
   useEffect(() => {
     const updatePosition = () => {
-      if (buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect()
-        const viewportHeight = window.innerHeight
-        const viewportWidth = window.innerWidth
-        const spaceBelow = viewportHeight - rect.bottom
-        const spaceAbove = rect.top
-        const dropdownHeight = 256 // max-h-64 = 256px
-        const gap = 8
-        const padding = 16 // Отступ от краев экрана
+      if (!buttonRef.current) return
+      
+      // Используем requestAnimationFrame для точного расчета позиции
+      requestAnimationFrame(() => {
+        if (!buttonRef.current) return
         
-        // ПРОСТАЯ ЛОГИКА: ВСЕГДА открываем вниз, без исключений
-        // Для fixed позиционирования используем координаты относительно viewport
+        const rect = buttonRef.current.getBoundingClientRect()
+        const viewportWidth = window.innerWidth
+        const gap = 8
+        const padding = 16
+        
         // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
-        let top = rect.bottom + gap
+        // getBoundingClientRect() возвращает координаты относительно viewport
+        const top = rect.bottom + gap
         
         // На мобильных делаем список на всю ширину с отступами
         const isMobile = viewportWidth < 768
@@ -193,11 +193,9 @@ function CustomSelect({
         let width = rect.width
         
         if (isMobile) {
-          // На мобильных: список на всю ширину экрана с отступами
           left = padding
           width = viewportWidth - (padding * 2)
         } else {
-          // На десктопе: ограничиваем left, чтобы не выходить за границы viewport
           const maxLeft = viewportWidth - width - padding
           left = Math.max(padding, Math.min(maxLeft, left))
         }
@@ -207,14 +205,17 @@ function CustomSelect({
           left,
           width,
         })
-      }
+      })
     }
 
     if (isOpen) {
-      // Принудительно обновляем позицию сразу и после небольшой задержки
+      // Обновляем позицию несколько раз для надежности
       updatePosition()
-      setTimeout(updatePosition, 10)
-      setTimeout(updatePosition, 50)
+      const timeout1 = setTimeout(updatePosition, 0)
+      const timeout2 = setTimeout(updatePosition, 10)
+      const timeout3 = setTimeout(updatePosition, 50)
+      const timeout4 = setTimeout(updatePosition, 100)
+      
       window.addEventListener('resize', updatePosition)
       window.addEventListener('scroll', updatePosition, true)
       
@@ -233,18 +234,16 @@ function CustomSelect({
       }
       
       return () => {
+        clearTimeout(timeout1)
+        clearTimeout(timeout2)
+        clearTimeout(timeout3)
+        clearTimeout(timeout4)
         window.removeEventListener('resize', updatePosition)
         window.removeEventListener('scroll', updatePosition, true)
-        // Удаляем обработчики со всех прокручиваемых родителей
         scrollableParents.forEach(el => {
           el.removeEventListener('scroll', updatePosition, true)
         })
       }
-    }
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
     }
   }, [isOpen])
 
