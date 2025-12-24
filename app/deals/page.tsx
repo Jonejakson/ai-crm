@@ -180,12 +180,25 @@ function CustomSelect({
         
         const rect = buttonRef.current.getBoundingClientRect()
         const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
         const gap = 8
         const padding = 16
         
         // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
         // getBoundingClientRect() возвращает координаты относительно viewport
-        const top = rect.bottom + gap
+        let top = rect.bottom + gap
+        
+        // КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся, что top больше чем rect.top (кнопка)
+        // Если top меньше rect.top, значит что-то пошло не так - принудительно исправляем
+        if (top <= rect.top) {
+          // Если расчет дал неправильный результат, просто ставим позицию ниже кнопки
+          top = rect.bottom + gap
+        }
+        
+        // Дополнительная проверка: если top получился слишком маленьким, исправляем
+        if (top < rect.bottom) {
+          top = rect.bottom + gap
+        }
         
         // На мобильных делаем список на всю ширину с отступами
         const isMobile = viewportWidth < 768
@@ -198,6 +211,13 @@ function CustomSelect({
         } else {
           const maxLeft = viewportWidth - width - padding
           left = Math.max(padding, Math.min(maxLeft, left))
+        }
+        
+        // Финальная проверка: если позиция все еще неправильная, логируем для отладки
+        if (top <= rect.top) {
+          console.warn('Dropdown position error:', { top, rectTop: rect.top, rectBottom: rect.bottom })
+          // Принудительно ставим правильную позицию
+          top = rect.bottom + gap
         }
         
         setPosition({
