@@ -275,33 +275,25 @@ function CustomSelect({
     setIsOpen(false)
   }
 
-  const dropdownContent = isOpen && typeof document !== 'undefined' && (() => {
-    // Рассчитываем максимальную высоту на основе доступного пространства
-    if (typeof window === 'undefined') return null
-    
-    const viewportHeight = window.innerHeight
-    const padding = 16
-    
-    // ВСЕГДА открываем вниз - рассчитываем пространство снизу от позиции dropdown
-    // position.top - это верх dropdown, считаем от него до низа viewport
-    const availableSpace = Math.max(100, viewportHeight - position.top - padding)
-    
-    // Ограничиваем высоту: минимум 100px, максимум 256px или доступное пространство
-    const maxHeight = Math.min(256, Math.max(100, availableSpace))
-    
-    return (
-      <div
-        ref={dropdownRef}
-        className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto"
-        style={{
-          top: `${position.top}px`,
-          left: `${position.left}px`,
-          width: `${position.width}px`,
-          maxHeight: `${maxHeight}px`,
-          zIndex: 100000, // Выше модального окна (z-index: 101)
-          position: 'fixed',
-        }}
-      >
+  // Рассчитываем максимальную высоту на основе доступного пространства
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0
+  const padding = 16
+  const availableSpace = Math.max(100, viewportHeight - position.top - padding)
+  const maxHeight = Math.min(256, Math.max(100, availableSpace))
+
+  const dropdownContent = isOpen && typeof document !== 'undefined' ? (
+    <div
+      ref={dropdownRef}
+      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto"
+      style={{
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `${position.width}px`,
+        maxHeight: `${maxHeight}px`,
+        zIndex: 100000, // Выше модального окна (z-index: 101)
+        position: 'fixed',
+      }}
+    >
       {options.map((option) => {
         const isSelected = value === option.value
         return (
@@ -319,9 +311,8 @@ function CustomSelect({
           </button>
         )
       })}
-      </div>
-    )
-  })()
+    </div>
+  ) : null
 
   return (
     <>
