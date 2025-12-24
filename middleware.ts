@@ -4,7 +4,7 @@ import { checkRateLimit, rateLimitConfigs } from "@/lib/rate-limit"
 
 export async function middleware(request: NextRequest) {
   // Разрешаем доступ к публичным маршрутам
-  const publicPaths = ['/login', '/api/auth', '/api/webforms/public', '/api/health', '/manifest']
+  const publicPaths = ['/login', '/api/auth', '/api/webforms/public', '/api/health', '/manifest', '/api/company/by-inn/public']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   // Rate limiting для разных типов endpoints
