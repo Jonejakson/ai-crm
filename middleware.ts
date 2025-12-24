@@ -142,6 +142,6 @@ export const config = {
      * - _next/image (оптимизация изображений)
      * - favicon.ico
      */
-    "/((?!api/auth|api/webforms/public|api/company/by-inn/public|login|manifest|privacy|terms|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/webforms/public|api/company/by-inn/public|api/admin/reset-password-emergency|login|manifest|privacy|terms|_next/static|_next/image|favicon.ico).*)",
   ],
 }
