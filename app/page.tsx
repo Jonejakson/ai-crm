@@ -2,6 +2,8 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
@@ -99,6 +101,8 @@ const FUNNEL_METRIC_META: FunnelMetricMeta[] = [
 ]
 
 export default function Dashboard() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [tasks, setTasks] = useState<Task[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
@@ -108,11 +112,19 @@ export default function Dashboard() {
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
+  // Проверяем авторизацию
   useEffect(() => {
-    fetchData()
-    // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
-    checkNotifications()
-  }, [selectedUserId])
+    if (status === 'unauthenticated') {
+      router.push('/login')
+      return
+    }
+
+    if (status === 'authenticated') {
+      fetchData()
+      // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
+      checkNotifications()
+    }
+  }, [status, session, router, selectedUserId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
