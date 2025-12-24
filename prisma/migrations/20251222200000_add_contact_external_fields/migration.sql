@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "Contact" ADD COLUMN IF NOT EXISTS "externalId" TEXT;
+ALTER TABLE "Contact" ADD COLUMN IF NOT EXISTS "syncedAt" TIMESTAMP(3);
+
+
+

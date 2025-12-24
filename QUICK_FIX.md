@@ -104,3 +104,5 @@ navigator.serviceWorker.getRegistrations().then(registrations => {
 location.reload(true);
 ```
 
+
+

@@ -118,3 +118,5 @@ docker-compose exec postgres psql -U crm_user -d crm_db -c "SELECT email, name, 
 - Пароль должен быть минимум 6 символов
 - После создания пользователя попробуйте войти через форму
 
+
+

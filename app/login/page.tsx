@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { signIn as nextAuthSignIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { signIn as nextAuthSignIn, useSession } from 'next-auth/react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type UserType = 'individual' | 'legal'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { data: session, status } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -28,6 +30,15 @@ export default function LoginPage() {
   useEffect(() => {
     document.documentElement.classList.remove('dark')
   }, [])
+
+  // Если пользователь уже авторизован, перенаправляем на главную страницу
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      const callbackUrl = searchParams.get('callbackUrl') || '/'
+      router.push(callbackUrl)
+      router.refresh()
+    }
+  }, [status, session, router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -96,7 +107,9 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Неверный email или пароль')
       } else {
-        router.push('/')
+        // После успешного входа перенаправляем на callbackUrl или на главную
+        const callbackUrl = searchParams.get('callbackUrl') || '/'
+        router.push(callbackUrl)
         router.refresh()
       }
     }
@@ -342,6 +355,21 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Загрузка...</p>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }
 

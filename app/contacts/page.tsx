@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
 import Modal from '@/components/Modal'
+import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 import ExportButton from '@/components/ExportButton'
@@ -53,6 +54,7 @@ export default function ContactsPage() {
   })
   const [editInnLoading, setEditInnLoading] = useState(false)
   const [editInnError, setEditInnError] = useState('')
+  const [showRenewalModal, setShowRenewalModal] = useState(false)
 
   useEffect(() => {
     fetchContacts()
@@ -165,12 +167,22 @@ export default function ContactsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
+      // Преобразуем пустые строки в null для опциональных полей
+      const contactDataToSend = {
+        name: formData.name,
+        email: formData.email?.trim() || null,
+        phone: formData.phone?.trim() || null,
+        company: formData.company?.trim() || null,
+        position: formData.position?.trim() || null,
+        inn: formData.inn?.trim() || null,
+      }
+      
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(contactDataToSend),
       })
 
       if (response.ok) {
@@ -181,7 +193,11 @@ export default function ContactsPage() {
         toast.success('Контакт успешно создан')
       } else {
         const errorData = await response.json()
-        toast.error(errorData.error || 'Ошибка при создании контакта')
+        if (errorData.subscriptionExpired) {
+          setShowRenewalModal(true)
+        } else {
+          toast.error(errorData.error || 'Ошибка при создании контакта')
+        }
       }
     } catch (error) {
       console.error('Error creating contact:', error)
@@ -217,12 +233,12 @@ export default function ContactsPage() {
         let errorMessage = errorData.error || 'Ошибка при запросе к API'
         
         // Более понятное сообщение для пользователя
-        if (response.status === 403) {
-          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
-        } else if (response.status === 503) {
-          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
-        } else if (response.status === 404) {
+        if (response.status === 404) {
           errorMessage = 'Компания с таким ИНН не найдена'
+        } else if (response.status === 500) {
+          errorMessage = 'Ошибка при поиске компании. Попробуйте позже.'
+        } else {
+          errorMessage = errorData.error || 'Ошибка при запросе к API'
         }
         
         setInnError(errorMessage)
@@ -267,12 +283,12 @@ export default function ContactsPage() {
         const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
         let errorMessage = errorData.error || 'Ошибка при запросе к API'
 
-        if (response.status === 403) {
-          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
-        } else if (response.status === 503) {
-          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
-        } else if (response.status === 404) {
+        if (response.status === 404) {
           errorMessage = 'Компания с таким ИНН не найдена'
+        } else if (response.status === 500) {
+          errorMessage = 'Ошибка при поиске компании. Попробуйте позже.'
+        } else {
+          errorMessage = errorData.error || 'Ошибка при запросе к API'
         }
 
         setEditInnError(errorMessage)
@@ -886,6 +902,11 @@ export default function ContactsPage() {
           </div>
         </form>
       </Modal>
+
+      <SubscriptionRenewalModal
+        isOpen={showRenewalModal}
+        onClose={() => setShowRenewalModal(false)}
+      />
     </div>
   )
 }

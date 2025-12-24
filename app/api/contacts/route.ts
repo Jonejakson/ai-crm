@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
-import { checkContactLimit } from "@/lib/subscription-limits";
+import { checkContactLimit, canCreateEntities } from "@/lib/subscription-limits";
 
 // ❶ Получить все контакты (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -123,8 +123,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Проверка лимита контактов
     const companyId = parseInt(user.companyId);
+
+    // Проверка, не истекла ли подписка
+    const canCreate = await canCreateEntities(companyId);
+    if (!canCreate.allowed) {
+      return NextResponse.json(
+        { 
+          error: canCreate.message || "Подписка закончилась",
+          subscriptionExpired: true,
+        },
+        { status: 403 }
+      );
+    }
+
+    // Проверка лимита контактов
     const contactLimitCheck = await checkContactLimit(companyId);
     if (!contactLimitCheck.allowed) {
       return NextResponse.json(
@@ -148,9 +161,12 @@ export async function POST(req: Request) {
         if (data.position !== undefined) {
           contactData.position = data.position || null;
         }
-        if (data.inn !== undefined) {
+        if (data.inn !== undefined && data.inn) {
           contactData.inn = data.inn || null;
         }
+        
+        // Не включаем externalId и syncedAt, если они не переданы явно
+        // Эти поля могут отсутствовать в базе данных на старых инсталляциях
         
         const newContact = await prisma.contact.create({
           data: contactData,

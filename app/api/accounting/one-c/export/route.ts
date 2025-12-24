@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Создаем или обновляем контрагента в 1С
-    let counterpartyId = contact.externalId
+    let counterpartyId = (contact as any).externalId || null
 
     if (!counterpartyId) {
       // Создаем нового контрагента
@@ -147,19 +147,22 @@ export async function POST(request: NextRequest) {
         throw new Error('Не удалось создать контрагента в 1С. Проверьте настройки API и URL.')
       }
 
-      // Сохраняем externalId в контакт
-      await prisma.contact.update({
-        where: { id: contact.id },
-        data: {
-          externalId: counterpartyId,
-          syncedAt: new Date(),
-        },
-      })
+      // Сохраняем externalId в контакт (если поля существуют в базе)
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "Contact" SET "externalId" = $1, "syncedAt" = $2 WHERE id = $3`,
+          counterpartyId,
+          new Date(),
+          contact.id
+        )
+      } catch (e) {
+        console.warn('Could not update externalId/syncedAt - fields may not exist in database')
+      }
     }
 
     // Если есть сделка, создаем документ продажи в 1С
     let orderId = null
-    if (deal && !deal.externalId) {
+    if (deal && !(deal as any).externalId) {
       const orderData: any = {
         Наименование: deal.title,
         Контрагент: counterpartyId,
@@ -205,14 +208,17 @@ export async function POST(request: NextRequest) {
       }
 
       if (created && orderId) {
-        // Сохраняем externalId в сделку
-        await prisma.deal.update({
-          where: { id: deal.id },
-          data: {
-            externalId: orderId,
-            syncedAt: new Date(),
-          },
-        })
+        // Сохраняем externalId в сделку (если поля существуют в базе)
+        try {
+          await prisma.$executeRawUnsafe(
+            `UPDATE "Deal" SET "externalId" = $1, "syncedAt" = $2 WHERE id = $3`,
+            orderId,
+            new Date(),
+            deal.id
+          )
+        } catch (e) {
+          console.warn('Could not update externalId/syncedAt in deal - fields may not exist in database')
+        }
       } else {
         console.warn('[one-c][export]', 'Не удалось создать заказ в 1С, но контрагент создан')
       }
