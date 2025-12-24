@@ -114,6 +114,10 @@ export default function Dashboard() {
 
   // Проверяем авторизацию
   useEffect(() => {
+    if (status === 'loading') {
+      return // Ждем проверки авторизации
+    }
+
     if (status === 'unauthenticated') {
       router.push('/login')
       return
@@ -125,6 +129,23 @@ export default function Dashboard() {
       checkNotifications()
     }
   }, [status, session, router, selectedUserId])
+
+  // Показываем загрузку пока проверяется авторизация
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-[var(--muted)]">Загрузка...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Если не авторизован, не показываем контент (будет редирект)
+  if (status === 'unauthenticated') {
+    return null
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
