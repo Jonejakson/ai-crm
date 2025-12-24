@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createPortal } from 'react-dom'
 import toast from 'react-hot-toast'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -163,130 +162,14 @@ function CustomSelect({
   required?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const selectedOption = options.find(opt => opt.value === value)
   const displayText = selectedOption ? selectedOption.label : placeholder
 
-  useEffect(() => {
-    const updatePosition = () => {
-      if (!buttonRef.current) return
-      
-      // Используем requestAnimationFrame для точного расчета позиции
-      requestAnimationFrame(() => {
-        if (!buttonRef.current) return
-        
-        const rect = buttonRef.current.getBoundingClientRect()
-        const viewportWidth = window.innerWidth
-        const viewportHeight = window.innerHeight
-        const gap = 8
-        const padding = 16
-        
-        // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
-        // getBoundingClientRect() возвращает координаты относительно viewport
-        let top = rect.bottom + gap
-        
-        // КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся, что top больше чем rect.top (кнопка)
-        // Если top меньше или равен rect.top, значит что-то пошло не так - принудительно исправляем
-        if (top <= rect.top || top <= rect.bottom) {
-          // Если расчет дал неправильный результат, используем альтернативный метод
-          // Вычисляем позицию через offsetTop + offsetHeight + scrollY
-          const buttonElement = buttonRef.current
-          let calculatedTop = buttonElement.offsetTop + buttonElement.offsetHeight
-          
-          // Находим все прокручиваемые родители и добавляем их scrollTop
-          let parent: HTMLElement | null = buttonElement.offsetParent as HTMLElement
-          while (parent) {
-            calculatedTop += parent.scrollTop
-            parent = parent.offsetParent as HTMLElement
-          }
-          
-          // Добавляем scrollY окна
-          calculatedTop += window.scrollY
-          
-          // Используем альтернативный расчет, если он дает правильный результат
-          if (calculatedTop > rect.top) {
-            top = calculatedTop + gap
-          } else {
-            // Если и это не помогло, просто ставим позицию ниже кнопки с запасом
-            top = rect.bottom + gap + 10
-          }
-        }
-        
-        // Финальная проверка: если позиция все еще неправильная, принудительно исправляем
-        if (top <= rect.top || top <= rect.bottom) {
-          // Последняя попытка - просто ставим позицию намного ниже кнопки
-          top = rect.bottom + gap + 20
-        }
-        
-        // На мобильных делаем список на всю ширину с отступами
-        const isMobile = viewportWidth < 768
-        let left = rect.left
-        let width = rect.width
-        
-        if (isMobile) {
-          left = padding
-          width = viewportWidth - (padding * 2)
-        } else {
-          const maxLeft = viewportWidth - width - padding
-          left = Math.max(padding, Math.min(maxLeft, left))
-        }
-        
-        // Финальная проверка: если позиция все еще неправильная, логируем для отладки
-        if (top <= rect.top) {
-          console.warn('Dropdown position error:', { top, rectTop: rect.top, rectBottom: rect.bottom })
-          // Принудительно ставим правильную позицию
-          top = rect.bottom + gap
-        }
-        
-        setPosition({
-          top,
-          left,
-          width,
-        })
-      })
-    }
-
-    if (isOpen) {
-      // Обновляем позицию несколько раз для надежности
-      updatePosition()
-      const timeout1 = setTimeout(updatePosition, 0)
-      const timeout2 = setTimeout(updatePosition, 10)
-      const timeout3 = setTimeout(updatePosition, 50)
-      const timeout4 = setTimeout(updatePosition, 100)
-      
-      window.addEventListener('resize', updatePosition)
-      window.addEventListener('scroll', updatePosition, true)
-      
-      // Находим все прокручиваемые родители и добавляем обработчики прокрутки
-      let parent: HTMLElement | null = buttonRef.current?.parentElement || null
-      const scrollableParents: HTMLElement[] = []
-      
-      while (parent) {
-        const style = window.getComputedStyle(parent)
-        if (style.overflow === 'auto' || style.overflow === 'scroll' || 
-            style.overflowY === 'auto' || style.overflowY === 'scroll') {
-          scrollableParents.push(parent)
-          parent.addEventListener('scroll', updatePosition, true)
-        }
-        parent = parent.parentElement
-      }
-      
-      return () => {
-        clearTimeout(timeout1)
-        clearTimeout(timeout2)
-        clearTimeout(timeout3)
-        clearTimeout(timeout4)
-        window.removeEventListener('resize', updatePosition)
-        window.removeEventListener('scroll', updatePosition, true)
-        scrollableParents.forEach(el => {
-          el.removeEventListener('scroll', updatePosition, true)
-        })
-      }
-    }
-  }, [isOpen])
+  // Убираем всю сложную логику позиционирования - используем простой absolute
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -316,23 +199,12 @@ function CustomSelect({
     setIsOpen(false)
   }
 
-  // Рассчитываем максимальную высоту на основе доступного пространства
-  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0
-  const padding = 16
-  const availableSpace = Math.max(100, viewportHeight - position.top - padding)
-  const maxHeight = Math.min(256, Math.max(100, availableSpace))
-
-  const dropdownContent = isOpen && typeof document !== 'undefined' ? (
+  const dropdownContent = isOpen ? (
     <div
       ref={dropdownRef}
-      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto"
+      className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto max-h-64 z-50"
       style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        width: `${position.width}px`,
-        maxHeight: `${maxHeight}px`,
-        zIndex: 100000, // Выше модального окна (z-index: 101)
-        position: 'fixed',
+        zIndex: 100000,
       }}
     >
       {options.map((option) => {
@@ -356,49 +228,47 @@ function CustomSelect({
   ) : null
 
   return (
-    <>
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300 text-left flex items-center justify-between min-h-[44px] ${
-            !value ? 'text-[var(--muted-soft)]' : ''
-          } ${isOpen ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''}`}
-          style={{ boxShadow: isOpen ? 'var(--shadow-md)' : 'var(--shadow-sm)' }}
-          onMouseEnter={() => {
-            if (buttonRef.current && !isOpen) {
-              buttonRef.current.style.boxShadow = 'var(--shadow)'
-            }
-          }}
-          onMouseLeave={() => {
-            if (buttonRef.current && !isOpen) {
-              buttonRef.current.style.boxShadow = 'var(--shadow-sm)'
-            }
-          }}
+    <div ref={containerRef} className="relative w-full">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300 text-left flex items-center justify-between min-h-[44px] ${
+          !value ? 'text-[var(--muted-soft)]' : ''
+        } ${isOpen ? 'ring-2 ring-[var(--primary)] border-[var(--primary)]' : ''}`}
+        style={{ boxShadow: isOpen ? 'var(--shadow-md)' : 'var(--shadow-sm)' }}
+        onMouseEnter={() => {
+          if (buttonRef.current && !isOpen) {
+            buttonRef.current.style.boxShadow = 'var(--shadow)'
+          }
+        }}
+        onMouseLeave={() => {
+          if (buttonRef.current && !isOpen) {
+            buttonRef.current.style.boxShadow = 'var(--shadow-sm)'
+          }
+        }}
+      >
+        <span className="truncate text-sm md:text-base">{displayText}</span>
+        <span className={`transition-transform duration-200 ml-2 flex-shrink-0 text-[var(--muted)] ${isOpen ? 'rotate-180' : ''}`}>
+          ▼
+        </span>
+      </button>
+      {required && (
+        <select
+          required
+          value={value}
+          onChange={() => {}}
+          className="absolute opacity-0 pointer-events-none w-0 h-0"
+          tabIndex={-1}
+          aria-hidden="true"
         >
-          <span className="truncate text-sm md:text-base">{displayText}</span>
-          <span className={`transition-transform duration-200 ml-2 flex-shrink-0 text-[var(--muted)] ${isOpen ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-        {required && (
-          <select
-            required
-            value={value}
-            onChange={() => {}}
-            className="absolute opacity-0 pointer-events-none w-0 h-0"
-            tabIndex={-1}
-            aria-hidden="true"
-          >
-            {options.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        )}
-      </div>
-      {typeof window !== 'undefined' && createPortal(dropdownContent, document.body)}
-    </>
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      )}
+      {dropdownContent}
+    </div>
   )
 }
 
