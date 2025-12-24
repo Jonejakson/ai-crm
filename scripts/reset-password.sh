@@ -15,17 +15,44 @@ cd /opt/flamecrm
 echo "Сброс пароля для пользователя: $EMAIL"
 echo ""
 
-# Генерируем хеш пароля через Node.js
+# Генерируем хеш пароля через Prisma/Node.js скрипт в контейнере
 HASHED_PASSWORD=$(docker exec -i crm_app node -e "
 const bcrypt = require('bcryptjs');
-bcrypt.hash('$NEW_PASSWORD', 10).then(hash => {
-  console.log(hash);
-});
+(async () => {
+  try {
+    const hash = await bcrypt.hash('$NEW_PASSWORD', 10);
+    console.log(hash);
+  } catch (err) {
+    console.error('Error:', err.message);
+    process.exit(1);
+  }
+})();
 ")
 
-if [ -z "$HASHED_PASSWORD" ]; then
+if [ -z "$HASHED_PASSWORD" ] || [[ "$HASHED_PASSWORD" == *"Error"* ]]; then
     echo "Ошибка: не удалось сгенерировать хеш пароля"
-    exit 1
+    echo "Попытка через альтернативный метод..."
+    
+    # Альтернативный способ - через временный скрипт
+    cat > /tmp/hash-password.js << 'JS'
+const bcrypt = require('bcryptjs');
+const password = process.argv[2];
+bcrypt.hash(password, 10).then(hash => {
+  console.log(hash);
+  process.exit(0);
+}).catch(err => {
+  console.error('Error:', err.message);
+  process.exit(1);
+});
+JS
+    
+    HASHED_PASSWORD=$(docker exec -i crm_app node /tmp/hash-password.js "$NEW_PASSWORD" 2>/dev/null)
+    
+    if [ -z "$HASHED_PASSWORD" ] || [[ "$HASHED_PASSWORD" == *"Error"* ]]; then
+        echo "❌ Критическая ошибка: не удалось сгенерировать хеш"
+        echo "Проверьте, что bcryptjs установлен в контейнере"
+        exit 1
+    fi
 fi
 
 echo "Хеш пароля сгенерирован"
