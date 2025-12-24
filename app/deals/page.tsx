@@ -182,23 +182,29 @@ function CustomSelect({
         const gap = 8
         const padding = 16 // Отступ от краев экрана
         
-        // Определяем, открывать ли список вверх
-        const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow
+        // Улучшенная логика: всегда пытаемся открыть вниз, если есть достаточно места
+        // Открываем вверх только если места снизу очень мало (меньше 100px) И места сверху больше
+        const minSpaceForDown = 100 // Минимальное пространство для открытия вниз
+        const openUp = spaceBelow < minSpaceForDown && spaceAbove > spaceBelow && spaceAbove > dropdownHeight
         
         // Для fixed позиционирования используем координаты относительно viewport
         let top: number
         if (openUp) {
-          // Открываем вверх
+          // Открываем вверх: позиция = верх кнопки - высота dropdown - отступ
           top = rect.top - dropdownHeight - gap
+          // Не даем уйти выше viewport
+          if (top < padding) {
+            top = padding
+          }
         } else {
-          // Открываем вниз
+          // Открываем вниз: позиция = низ кнопки + отступ
           top = rect.bottom + gap
+          // Не даем уйти ниже viewport
+          const maxTop = viewportHeight - dropdownHeight - padding
+          if (top + dropdownHeight > viewportHeight - padding) {
+            top = Math.max(padding, viewportHeight - dropdownHeight - padding)
+          }
         }
-        
-        // Ограничиваем позицию, чтобы не выходить за границы viewport
-        const maxTop = viewportHeight - dropdownHeight - padding
-        const minTop = padding
-        top = Math.max(minTop, Math.min(maxTop, top))
         
         // На мобильных делаем список на всю ширину с отступами
         const isMobile = viewportWidth < 768
@@ -211,7 +217,7 @@ function CustomSelect({
           width = viewportWidth - (padding * 2)
         } else {
           // На десктопе: ограничиваем left, чтобы не выходить за границы viewport
-          const maxLeft = viewportWidth - rect.width - padding
+          const maxLeft = viewportWidth - width - padding
           left = Math.max(padding, Math.min(maxLeft, left))
         }
         
@@ -297,7 +303,7 @@ function CustomSelect({
           left: `${position.left}px`,
           width: `${position.width}px`,
           maxHeight: `${maxHeight}px`,
-          zIndex: 99999,
+          zIndex: 100000, // Выше модального окна (z-index: 101)
           position: 'fixed',
         }}
       >

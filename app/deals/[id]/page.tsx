@@ -119,19 +119,35 @@ function CustomSelect({
       if (buttonRef.current) {
         const rect = buttonRef.current.getBoundingClientRect()
         const viewportHeight = window.innerHeight
+        const viewportWidth = window.innerWidth
         const dropdownHeight = 256
+        const gap = 8
+        const padding = 16
         const spaceBelow = viewportHeight - rect.bottom
         const spaceAbove = rect.top
-        const openUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow
         
-        let top = openUp 
-          ? rect.top + window.scrollY - dropdownHeight - 8
-          : rect.bottom + window.scrollY + 8
+        // Улучшенная логика: всегда пытаемся открыть вниз, если есть достаточно места
+        const minSpaceForDown = 100
+        const openUp = spaceBelow < minSpaceForDown && spaceAbove > spaceBelow && spaceAbove > dropdownHeight
         
-        const viewportWidth = window.innerWidth
+        // Для fixed позиционирования используем координаты относительно viewport
+        let top: number
+        if (openUp) {
+          top = rect.top - dropdownHeight - gap
+          if (top < padding) {
+            top = padding
+          }
+        } else {
+          top = rect.bottom + gap
+          const maxTop = viewportHeight - dropdownHeight - padding
+          if (top + dropdownHeight > viewportHeight - padding) {
+            top = Math.max(padding, viewportHeight - dropdownHeight - padding)
+          }
+        }
+        
         let left = rect.left
-        const maxLeft = viewportWidth - rect.width - 16
-        left = Math.max(16, Math.min(maxLeft, left))
+        const maxLeft = viewportWidth - rect.width - padding
+        left = Math.max(padding, Math.min(maxLeft, left))
         
         setPosition({
           top,
@@ -191,7 +207,7 @@ function CustomSelect({
         left: `${position.left}px`,
         width: `${position.width}px`,
         maxHeight: '256px',
-        zIndex: 99999,
+        zIndex: 100000, // Выше модального окна
         position: 'fixed',
       }}
     >
