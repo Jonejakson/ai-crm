@@ -189,15 +189,36 @@ function CustomSelect({
         let top = rect.bottom + gap
         
         // КРИТИЧЕСКАЯ ПРОВЕРКА: убеждаемся, что top больше чем rect.top (кнопка)
-        // Если top меньше rect.top, значит что-то пошло не так - принудительно исправляем
-        if (top <= rect.top) {
-          // Если расчет дал неправильный результат, просто ставим позицию ниже кнопки
-          top = rect.bottom + gap
+        // Если top меньше или равен rect.top, значит что-то пошло не так - принудительно исправляем
+        if (top <= rect.top || top <= rect.bottom) {
+          // Если расчет дал неправильный результат, используем альтернативный метод
+          // Вычисляем позицию через offsetTop + offsetHeight + scrollY
+          const buttonElement = buttonRef.current
+          let calculatedTop = buttonElement.offsetTop + buttonElement.offsetHeight
+          
+          // Находим все прокручиваемые родители и добавляем их scrollTop
+          let parent: HTMLElement | null = buttonElement.offsetParent as HTMLElement
+          while (parent) {
+            calculatedTop += parent.scrollTop
+            parent = parent.offsetParent as HTMLElement
+          }
+          
+          // Добавляем scrollY окна
+          calculatedTop += window.scrollY
+          
+          // Используем альтернативный расчет, если он дает правильный результат
+          if (calculatedTop > rect.top) {
+            top = calculatedTop + gap
+          } else {
+            // Если и это не помогло, просто ставим позицию ниже кнопки с запасом
+            top = rect.bottom + gap + 10
+          }
         }
         
-        // Дополнительная проверка: если top получился слишком маленьким, исправляем
-        if (top < rect.bottom) {
-          top = rect.bottom + gap
+        // Финальная проверка: если позиция все еще неправильная, принудительно исправляем
+        if (top <= rect.top || top <= rect.bottom) {
+          // Последняя попытка - просто ставим позицию намного ниже кнопки
+          top = rect.bottom + gap + 20
         }
         
         // На мобильных делаем список на всю ширину с отступами
