@@ -183,9 +183,10 @@ function CustomSelect({
         const padding = 16 // Отступ от краев экрана
         
         // Улучшенная логика: всегда пытаемся открыть вниз, если есть достаточно места
-        // Открываем вверх только если места снизу очень мало (меньше 100px) И места сверху больше
-        const minSpaceForDown = 100 // Минимальное пространство для открытия вниз
-        const openUp = spaceBelow < minSpaceForDown && spaceAbove > spaceBelow && spaceAbove > dropdownHeight
+        // Открываем вверх только если места снизу очень мало (меньше 150px) И места сверху значительно больше
+        const minSpaceForDown = 150 // Минимальное пространство для открытия вниз
+        // Предпочитаем открывать вниз, даже если места немного меньше, если сверху места не намного больше
+        const openUp = spaceBelow < minSpaceForDown && spaceAbove > spaceBelow + 50 && spaceAbove > dropdownHeight + 20
         
         // Для fixed позиционирования используем координаты относительно viewport
         let top: number
@@ -236,6 +237,29 @@ function CustomSelect({
       setTimeout(updatePosition, 0)
       window.addEventListener('resize', updatePosition)
       window.addEventListener('scroll', updatePosition, true)
+      
+      // Находим все прокручиваемые родители и добавляем обработчики прокрутки
+      let parent: HTMLElement | null = buttonRef.current?.parentElement || null
+      const scrollableParents: HTMLElement[] = []
+      
+      while (parent) {
+        const style = window.getComputedStyle(parent)
+        if (style.overflow === 'auto' || style.overflow === 'scroll' || 
+            style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          scrollableParents.push(parent)
+          parent.addEventListener('scroll', updatePosition, true)
+        }
+        parent = parent.parentElement
+      }
+      
+      return () => {
+        window.removeEventListener('resize', updatePosition)
+        window.removeEventListener('scroll', updatePosition, true)
+        // Удаляем обработчики со всех прокручиваемых родителей
+        scrollableParents.forEach(el => {
+          el.removeEventListener('scroll', updatePosition, true)
+        })
+      }
     }
 
     return () => {
