@@ -182,11 +182,10 @@ function CustomSelect({
         const gap = 8
         const padding = 16 // Отступ от краев экрана
         
-        // Улучшенная логика: всегда пытаемся открыть вниз, если есть достаточно места
-        // Открываем вверх только если места снизу очень мало (меньше 150px) И места сверху значительно больше
-        const minSpaceForDown = 150 // Минимальное пространство для открытия вниз
-        // Предпочитаем открывать вниз, даже если места немного меньше, если сверху места не намного больше
-        const openUp = spaceBelow < minSpaceForDown && spaceAbove > spaceBelow + 50 && spaceAbove > dropdownHeight + 20
+        // Упрощенная логика: ВСЕГДА открываем вниз, если есть хотя бы 200px места
+        // Открываем вверх ТОЛЬКО если места снизу меньше 200px И места сверху больше чем снизу на 150px+
+        const minSpaceForDown = 200 // Минимальное пространство для открытия вниз
+        const openUp = spaceBelow < minSpaceForDown && (spaceAbove - spaceBelow) > 150 && spaceAbove > dropdownHeight + 50
         
         // Для fixed позиционирования используем координаты относительно viewport
         let top: number
@@ -198,12 +197,13 @@ function CustomSelect({
             top = padding
           }
         } else {
-          // Открываем вниз: позиция = низ кнопки + отступ
+          // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
           top = rect.bottom + gap
-          // Не даем уйти ниже viewport
-          const maxTop = viewportHeight - dropdownHeight - padding
-          if (top + dropdownHeight > viewportHeight - padding) {
-            top = Math.max(padding, viewportHeight - dropdownHeight - padding)
+          // Если не помещается снизу, ограничиваем высоту, но не меняем направление
+          const maxTop = viewportHeight - padding
+          if (top + dropdownHeight > maxTop) {
+            // Ограничиваем высоту dropdown, но оставляем его внизу
+            // Позиция остается внизу, просто ограничим maxHeight в стилях
           }
         }
         
@@ -311,8 +311,9 @@ function CustomSelect({
       // Если открыт вверх, используем пространство сверху
       availableSpace = topRelativeToViewport - padding
     } else {
-      // Если открыт вниз, используем пространство снизу
-      availableSpace = viewportHeight - topRelativeToViewport - padding
+      // Если открыт вниз, используем пространство снизу от позиции dropdown
+      // position.top - это верх dropdown, считаем от него до низа viewport
+      availableSpace = Math.max(100, viewportHeight - position.top - padding)
     }
     
     // Ограничиваем высоту: минимум 100px, максимум 256px или доступное пространство
