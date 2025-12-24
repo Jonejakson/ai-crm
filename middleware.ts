@@ -135,11 +135,13 @@ export const config = {
     /*
      * Защищаем все маршруты кроме:
      * - api/auth (NextAuth endpoints)
+     * - api/webforms/public (публичные веб-формы)
+     * - api/company/by-inn/public (публичный поиск компании по ИНН)
      * - login (страница входа)
      * - _next/static (статические файлы)
      * - _next/image (оптимизация изображений)
      * - favicon.ico
      */
-    "/((?!api/auth|api/webforms/public|login|manifest|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/webforms/public|api/company/by-inn/public|login|manifest|_next/static|_next/image|favicon.ico).*)",
   ],
 }
