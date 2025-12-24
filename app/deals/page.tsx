@@ -199,12 +199,16 @@ function CustomSelect({
     setIsOpen(false)
   }
 
-  const dropdownContent = isOpen ? (
+  const dropdownContent = isOpen && typeof document !== 'undefined' ? (
     <div
       ref={dropdownRef}
-      className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto max-h-64 z-50"
+      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto max-h-64"
       style={{
+        top: buttonRef.current ? `${buttonRef.current.getBoundingClientRect().bottom + 8}px` : '0px',
+        left: buttonRef.current ? `${buttonRef.current.getBoundingClientRect().left}px` : '0px',
+        width: buttonRef.current ? `${buttonRef.current.getBoundingClientRect().width}px` : 'auto',
         zIndex: 100000,
+        position: 'fixed',
       }}
     >
       {options.map((option) => {
