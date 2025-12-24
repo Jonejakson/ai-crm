@@ -182,30 +182,13 @@ function CustomSelect({
         const gap = 8
         const padding = 16 // Отступ от краев экрана
         
-        // Упрощенная логика: ВСЕГДА открываем вниз, если есть хотя бы 200px места
-        // Открываем вверх ТОЛЬКО если места снизу меньше 200px И места сверху больше чем снизу на 150px+
-        const minSpaceForDown = 200 // Минимальное пространство для открытия вниз
-        const openUp = spaceBelow < minSpaceForDown && (spaceAbove - spaceBelow) > 150 && spaceAbove > dropdownHeight + 50
+        // ПРОСТАЯ ЛОГИКА: ВСЕГДА открываем вниз, без исключений
+        // Это гарантирует, что dropdown всегда будет привязан к кнопке
+        const openUp = false // Никогда не открываем вверх
         
         // Для fixed позиционирования используем координаты относительно viewport
-        let top: number
-        if (openUp) {
-          // Открываем вверх: позиция = верх кнопки - высота dropdown - отступ
-          top = rect.top - dropdownHeight - gap
-          // Не даем уйти выше viewport
-          if (top < padding) {
-            top = padding
-          }
-        } else {
-          // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
-          top = rect.bottom + gap
-          // Если не помещается снизу, ограничиваем высоту, но не меняем направление
-          const maxTop = viewportHeight - padding
-          if (top + dropdownHeight > maxTop) {
-            // Ограничиваем высоту dropdown, но оставляем его внизу
-            // Позиция остается внизу, просто ограничим maxHeight в стилях
-          }
-        }
+        // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
+        let top = rect.bottom + gap
         
         // На мобильных делаем список на всю ширину с отступами
         const isMobile = viewportWidth < 768
