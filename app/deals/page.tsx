@@ -163,7 +163,7 @@ function CustomSelect({
   required?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, openUp: false, topViewport: 0 })
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -183,9 +183,6 @@ function CustomSelect({
         const padding = 16 // Отступ от краев экрана
         
         // ПРОСТАЯ ЛОГИКА: ВСЕГДА открываем вниз, без исключений
-        // Это гарантирует, что dropdown всегда будет привязан к кнопке
-        const openUp = false // Никогда не открываем вверх
-        
         // Для fixed позиционирования используем координаты относительно viewport
         // ВСЕГДА открываем вниз: позиция = низ кнопки + отступ
         let top = rect.bottom + gap
@@ -209,15 +206,15 @@ function CustomSelect({
           top,
           left,
           width,
-          openUp,
-          topViewport: rect.top, // Сохраняем позицию относительно viewport для расчета maxHeight
         })
       }
     }
 
     if (isOpen) {
-      // Небольшая задержка для правильного расчета позиции
-      setTimeout(updatePosition, 0)
+      // Принудительно обновляем позицию сразу и после небольшой задержки
+      updatePosition()
+      setTimeout(updatePosition, 10)
+      setTimeout(updatePosition, 50)
       window.addEventListener('resize', updatePosition)
       window.addEventListener('scroll', updatePosition, true)
       
@@ -284,20 +281,11 @@ function CustomSelect({
     if (typeof window === 'undefined') return null
     
     const viewportHeight = window.innerHeight
-    const topRelativeToViewport = position.topViewport || 0
-    const gap = 8
     const padding = 16
     
-    // Рассчитываем доступное пространство
-    let availableSpace: number
-    if (position.openUp) {
-      // Если открыт вверх, используем пространство сверху
-      availableSpace = topRelativeToViewport - padding
-    } else {
-      // Если открыт вниз, используем пространство снизу от позиции dropdown
-      // position.top - это верх dropdown, считаем от него до низа viewport
-      availableSpace = Math.max(100, viewportHeight - position.top - padding)
-    }
+    // ВСЕГДА открываем вниз - рассчитываем пространство снизу от позиции dropdown
+    // position.top - это верх dropdown, считаем от него до низа viewport
+    const availableSpace = Math.max(100, viewportHeight - position.top - padding)
     
     // Ограничиваем высоту: минимум 100px, максимум 256px или доступное пространство
     const maxHeight = Math.min(256, Math.max(100, availableSpace))
