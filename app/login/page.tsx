@@ -25,6 +25,8 @@ function LoginForm() {
   // Поля для юр лица
   const [companyName, setCompanyName] = useState('')
   const [inn, setInn] = useState('')
+  const [innLoading, setInnLoading] = useState(false)
+  const [innError, setInnError] = useState('')
 
   // Принудительно устанавливаем светлую тему на странице логина
   useEffect(() => {
@@ -39,6 +41,53 @@ function LoginForm() {
       router.refresh()
     }
   }, [status, session, router, searchParams])
+
+  // Функция поиска компании по ИНН
+  const handleInnSearch = async (innValue: string) => {
+    const cleanInn = innValue.replace(/\D/g, '')
+    
+    // Если ИНН меньше 10 цифр, не делаем запрос
+    if (cleanInn.length < 10) {
+      setInnError('')
+      return
+    }
+
+    setInnLoading(true)
+    setInnError('')
+
+    try {
+      // Используем публичный endpoint для регистрации
+      const response = await fetch(`/api/company/by-inn/public?inn=${cleanInn}`)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
+        let errorMessage = errorData.error || 'Ошибка при запросе к API'
+        
+        // Более понятное сообщение для пользователя
+        if (response.status === 404) {
+          errorMessage = 'Компания с таким ИНН не найдена'
+        } else if (response.status === 500) {
+          errorMessage = 'Ошибка при поиске компании. Попробуйте позже.'
+        }
+        
+        setInnError(errorMessage)
+        setInnLoading(false)
+        return
+      }
+      
+      const data = await response.json()
+
+      if (data.name) {
+        setCompanyName(data.name)
+        setInnError('')
+      }
+    } catch (error) {
+      console.error('Error fetching company by INN:', error)
+      setInnError('Ошибка при поиске компании')
+    } finally {
+      setInnLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -244,18 +293,48 @@ function LoginForm() {
                     <label htmlFor="inn" className="block text-sm font-medium text-gray-700">
                       ИНН
                     </label>
-                    <input
-                      id="inn"
-                      name="inn"
-                      type="text"
-                      required={userType === 'legal'}
-                      value={inn}
-                      onChange={(e) => setInn(e.target.value)}
-                      className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-200"
-                      placeholder="1234567890"
-                      maxLength={12}
-                      pattern="[0-9]{10,12}"
-                    />
+                    <div className="relative">
+                      <input
+                        id="inn"
+                        name="inn"
+                        type="text"
+                        required={userType === 'legal'}
+                        value={inn}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setInn(value)
+                          // Автозаполнение при вводе ИНН
+                          if (value.replace(/\D/g, '').length >= 10) {
+                            handleInnSearch(value)
+                          } else {
+                            setInnError('')
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Также проверяем при потере фокуса
+                          if (e.target.value.replace(/\D/g, '').length >= 10) {
+                            handleInnSearch(e.target.value)
+                          }
+                        }}
+                        className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                          innError ? 'border-red-300' : innLoading ? 'border-blue-300' : 'border-gray-300'
+                        } placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-200`}
+                        placeholder="1234567890"
+                        maxLength={12}
+                        pattern="[0-9]{10,12}"
+                      />
+                      {innLoading && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                          <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    {innError && (
+                      <p className="mt-1 text-sm text-red-600">{innError}</p>
+                    )}
                   </div>
                 </>
               )}
