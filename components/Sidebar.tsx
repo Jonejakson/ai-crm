@@ -44,7 +44,10 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
     { id: 'calendar', name: 'Календарь', href: '/calendar', Icon: CalendarIcon },
     { id: 'analytics', name: 'Аналитика', href: '/analytics', Icon: AnalyticsIcon },
     { id: 'activity', name: 'Активность', href: '/activity', Icon: ActivityIcon },
-    { id: 'support', name: 'Поддержка', href: '/support', Icon: DialogsIcon },
+    // Поддержка только для не-owner (у owner есть "Тикеты поддержки" в разделе Операции)
+    ...(!isOwner ? [
+      { id: 'support', name: 'Поддержка', href: '/support', Icon: DialogsIcon },
+    ] : []),
     // Показываем админские разделы только для админов
     ...(isAdmin ? [
       { id: 'email-templates', name: 'Шаблоны писем', href: '/email-templates', Icon: EmailTemplateIcon },
