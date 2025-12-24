@@ -24,7 +24,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const currentContactId = getCurrentContactId(pathname)
   
   // Определяем, является ли текущий путь публичным (не требует авторизации)
-  const isPublicPath = pathname === '/login'
+  const publicPaths = ['/login', '/privacy', '/terms']
+  const isPublicPath = publicPaths.includes(pathname)
   
   // Глобальные клавиатурные сокращения
   useGlobalShortcuts()
@@ -60,8 +61,8 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           }}
         />
         {isPublicPath ? (
-          // Для публичных страниц (login) не показываем Sidebar и Header
-          <div className="min-h-screen bg-[var(--background)]">
+          // Для публичных страниц (login, privacy, terms) не показываем Sidebar и Header
+          <div className="min-h-screen">
             {children}
           </div>
         ) : (

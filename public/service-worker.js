@@ -7,6 +7,9 @@ const RUNTIME_CACHE = 'pocket-crm-runtime-v3';
 const STATIC_ASSETS = [
   '/',
   '/offline',
+  '/privacy',
+  '/terms',
+  '/login',
   '/manifest.webmanifest',
   '/icon.svg',
   '/icon-192x192.png',
@@ -128,6 +131,12 @@ self.addEventListener('fetch', (event) => {
 
   log('Fetch:', request.method, url.pathname);
 
+  // Публичные страницы (privacy, terms, login) - всегда из сети или кэша, без офлайн страницы
+  if (url.pathname === '/privacy' || url.pathname === '/terms' || url.pathname === '/login') {
+    event.respondWith(handlePublicPage(request));
+    return;
+  }
+
   // API запросы - Network First с кэшем
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirstStrategy(request));
@@ -190,6 +199,54 @@ async function cacheFirstStrategy(request) {
       const offlinePage = await caches.match('/offline');
       if (offlinePage) return offlinePage;
     }
+    throw error;
+  }
+}
+
+// Обработка публичных страниц (privacy, terms, login)
+async function handlePublicPage(request) {
+  const url = new URL(request.url);
+  log('Handling public page:', url.pathname);
+  
+  try {
+    // Сначала проверяем кэш
+    let cachedResponse = await caches.match(request, { cacheName: RUNTIME_CACHE });
+    if (!cachedResponse) {
+      cachedResponse = await caches.match(request, { cacheName: CACHE_NAME });
+    }
+    
+    if (cachedResponse) {
+      log('Serving public page from cache:', url.pathname);
+      // Пытаемся обновить кэш в фоне, но не ждем
+      fetch(request).then(networkResponse => {
+        if (networkResponse.ok) {
+          caches.open(RUNTIME_CACHE).then(cache => {
+            cache.put(request, networkResponse.clone());
+          });
+        }
+      }).catch(() => {
+        // Игнорируем ошибки обновления
+      });
+      return cachedResponse;
+    }
+    
+    // Если нет в кэше, пытаемся загрузить из сети
+    log('Cache miss, fetching public page from network:', url.pathname);
+    const networkResponse = await fetch(request);
+    
+    // Кэшируем успешные ответы
+    if (networkResponse.ok) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(request, networkResponse.clone()).catch(err => {
+        log('Cache put error:', err);
+      });
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    log('Public page error:', error.message);
+    // Для публичных страниц не показываем офлайн страницу, просто пробрасываем ошибку
+    // Браузер сам покажет стандартную страницу ошибки
     throw error;
   }
 }

@@ -431,6 +431,32 @@ function LoginForm() {
                 : 'Нет аккаунта? Зарегистрироваться'}
             </button>
           </div>
+
+          {/* Ссылки на юридические документы */}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="flex flex-wrap justify-center gap-4 text-xs text-gray-500">
+              <a 
+                href="/terms" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-600 transition-colors"
+              >
+                Пользовательское соглашение
+              </a>
+              <span className="text-gray-300">•</span>
+              <a 
+                href="/privacy" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-blue-600 transition-colors"
+              >
+                Политика конфиденциальности
+              </a>
+            </div>
+            <p className="text-xs text-gray-400 text-center mt-3">
+              Регистрируясь, вы соглашаетесь с условиями использования сервиса
+            </p>
+          </div>
         </form>
       </div>
     </div>
