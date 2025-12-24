@@ -162,6 +162,7 @@ function CustomSelect({
   required?: boolean
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -169,7 +170,49 @@ function CustomSelect({
   const selectedOption = options.find(opt => opt.value === value)
   const displayText = selectedOption ? selectedOption.label : placeholder
 
-  // Убираем всю сложную логику позиционирования - используем простой absolute
+  useEffect(() => {
+    const updatePosition = () => {
+      if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect()
+        setPosition({
+          top: rect.bottom + 8,
+          left: rect.left,
+          width: rect.width,
+        })
+      }
+    }
+
+    if (isOpen) {
+      updatePosition()
+      const timeout1 = setTimeout(updatePosition, 0)
+      const timeout2 = setTimeout(updatePosition, 10)
+      window.addEventListener('resize', updatePosition)
+      window.addEventListener('scroll', updatePosition, true)
+      
+      // Находим прокручиваемые родители
+      let parent: HTMLElement | null = buttonRef.current?.parentElement || null
+      const scrollableParents: HTMLElement[] = []
+      while (parent) {
+        const style = window.getComputedStyle(parent)
+        if (style.overflow === 'auto' || style.overflow === 'scroll' || 
+            style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          scrollableParents.push(parent)
+          parent.addEventListener('scroll', updatePosition, true)
+        }
+        parent = parent.parentElement
+      }
+      
+      return () => {
+        clearTimeout(timeout1)
+        clearTimeout(timeout2)
+        window.removeEventListener('resize', updatePosition)
+        window.removeEventListener('scroll', updatePosition, true)
+        scrollableParents.forEach(el => {
+          el.removeEventListener('scroll', updatePosition, true)
+        })
+      }
+    }
+  }, [isOpen])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -204,9 +247,9 @@ function CustomSelect({
       ref={dropdownRef}
       className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-xl p-2 space-y-1 overflow-y-auto max-h-64"
       style={{
-        top: buttonRef.current ? `${buttonRef.current.getBoundingClientRect().bottom + 8}px` : '0px',
-        left: buttonRef.current ? `${buttonRef.current.getBoundingClientRect().left}px` : '0px',
-        width: buttonRef.current ? `${buttonRef.current.getBoundingClientRect().width}px` : 'auto',
+        top: `${position.top}px`,
+        left: `${position.left}px`,
+        width: `${position.width}px`,
         zIndex: 100000,
         position: 'fixed',
       }}
