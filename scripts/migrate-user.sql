@@ -53,7 +53,6 @@ BEGIN
     UPDATE "Task" SET "userId" = new_user_id WHERE "userId" = old_user_id;
     UPDATE "Event" SET "userId" = new_user_id WHERE "userId" = old_user_id;
     UPDATE "File" SET "userId" = new_user_id WHERE "userId" = old_user_id;
-    UPDATE "Note" SET "userId" = new_user_id WHERE "userId" = old_user_id;
     
     -- Обновляем компанию
     IF old_company_id IS NOT NULL THEN
