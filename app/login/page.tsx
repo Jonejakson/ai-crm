@@ -396,14 +396,16 @@ function LoginForm() {
               placeholder="Пароль"
               minLength={6}
             />
-            <div className="mt-2 text-right">
-              <Link
-                href="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 underline"
-              >
-                Забыли пароль?
-              </Link>
-            </div>
+            {!isRegister && (
+              <div className="mt-2 text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500 underline transition-colors"
+                >
+                  Забыли пароль?
+                </Link>
+              </div>
+            )}
           </div>
 
           <div>
@@ -427,10 +429,10 @@ function LoginForm() {
           </div>
 
           {!isRegister && (
-            <div className="text-center">
+            <div className="text-center py-2">
               <Link
                 href="/forgot-password"
-                className="text-sm font-medium text-blue-600 hover:text-blue-500 underline"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700 underline decoration-2 hover:decoration-blue-700 transition-all"
               >
                 Забыли пароль?
               </Link>
