@@ -4,7 +4,7 @@ import { checkRateLimit, rateLimitConfigs } from "@/lib/rate-limit"
 
 export async function middleware(request: NextRequest) {
   // Разрешаем доступ к публичным маршрутам
-  const publicPaths = ['/login', '/api/auth', '/api/webforms/public', '/api/health', '/manifest', '/api/company/by-inn/public', '/privacy', '/terms', '/api/admin/reset-password-emergency']
+  const publicPaths = ['/login', '/forgot-password', '/reset-password', '/api/auth', '/api/webforms/public', '/api/health', '/manifest', '/api/company/by-inn/public', '/privacy', '/terms', '/api/admin/reset-password-emergency']
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   // Rate limiting для разных типов endpoints
@@ -142,6 +142,6 @@ export const config = {
      * - _next/image (оптимизация изображений)
      * - favicon.ico
      */
-    "/((?!api/auth|api/webforms/public|api/company/by-inn/public|api/admin/reset-password-emergency|login|manifest|privacy|terms|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/webforms/public|api/company/by-inn/public|api/admin/reset-password-emergency|login|forgot-password|reset-password|manifest|privacy|terms|_next/static|_next/image|favicon.ico).*)",
   ],
 }

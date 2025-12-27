@@ -24,7 +24,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const currentContactId = getCurrentContactId(pathname)
   
   // Определяем, является ли текущий путь публичным (не требует авторизации)
-  const publicPaths = ['/login', '/privacy', '/terms']
+  const publicPaths = ['/login', '/forgot-password', '/reset-password', '/privacy', '/terms']
   const isPublicPath = publicPaths.includes(pathname)
   
   // Глобальные клавиатурные сокращения
