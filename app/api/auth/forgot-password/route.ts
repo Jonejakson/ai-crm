@@ -50,7 +50,10 @@ export async function POST(request: Request) {
       try {
         const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
         
-        await sendEmail({
+        console.log('[forgot-password] Sending email to:', user.email)
+        console.log('[forgot-password] Reset URL:', resetUrl)
+        
+        const emailResult = await sendEmail({
           to: user.email,
           subject: 'Восстановление пароля - Flame CRM',
           html: `
