@@ -396,16 +396,6 @@ function LoginForm() {
               placeholder="Пароль"
               minLength={6}
             />
-            {!isRegister && (
-              <div className="mt-2 text-right">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-500 underline transition-colors"
-                >
-                  Забыли пароль?
-                </Link>
-              </div>
-            )}
           </div>
 
           <div>
