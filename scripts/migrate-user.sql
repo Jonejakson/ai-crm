@@ -53,6 +53,7 @@ BEGIN
     UPDATE "Task" SET "userId" = new_user_id WHERE "userId" = old_user_id;
     UPDATE "Event" SET "userId" = new_user_id WHERE "userId" = old_user_id;
     UPDATE "File" SET "userId" = new_user_id WHERE "userId" = old_user_id;
+    UPDATE "Notification" SET "userId" = new_user_id WHERE "userId" = old_user_id;
     
     -- Компания связана через companyId в User, не нужно обновлять
     
