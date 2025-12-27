@@ -381,17 +381,9 @@ function LoginForm() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Пароль
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-500"
-              >
-                Забыли пароль?
-              </Link>
-            </div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+              Пароль
+            </label>
             <input
               id="password"
               name="password"
@@ -404,6 +396,14 @@ function LoginForm() {
               placeholder="Пароль"
               minLength={6}
             />
+            <div className="mt-2 text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-blue-600 hover:text-blue-500 underline"
+              >
+                Забыли пароль?
+              </Link>
+            </div>
           </div>
 
           <div>
