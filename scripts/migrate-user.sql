@@ -60,11 +60,15 @@ BEGIN
     RAISE NOTICE 'Все связи перенесены на пользователя с ID: %', new_user_id;
 END $$;
 
--- 2. Удаляем всех пользователей, кроме info@flamecrm.ru
+-- 2. Удаляем уведомления старых пользователей перед удалением
+DELETE FROM "Notification" 
+WHERE "userId" IN (SELECT id FROM "User" WHERE email != 'info@flamecrm.ru');
+
+-- 3. Удаляем всех пользователей, кроме info@flamecrm.ru
 DELETE FROM "User" 
 WHERE email != 'info@flamecrm.ru';
 
--- 3. Проверяем результат
+-- 4. Проверяем результат
 SELECT id, email, name, role FROM "User";
 
 COMMIT;
