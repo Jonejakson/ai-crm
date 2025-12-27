@@ -426,6 +426,17 @@ function LoginForm() {
             </button>
           </div>
 
+          {!isRegister && (
+            <div className="text-center">
+              <Link
+                href="/forgot-password"
+                className="text-sm font-medium text-blue-600 hover:text-blue-500 underline"
+              >
+                Забыли пароль?
+              </Link>
+            </div>
+          )}
+
           <div className="text-center">
             <button
               type="button"
