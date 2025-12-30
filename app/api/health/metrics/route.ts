@@ -19,7 +19,6 @@ export async function GET() {
       database: {
         // Получаем статистику из БД
         connections: 0, // Prisma не предоставляет эту информацию напрямую
-        usersCount?: number,
       },
       environment: process.env.NODE_ENV || "development",
     };
