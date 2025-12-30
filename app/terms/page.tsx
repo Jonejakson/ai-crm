@@ -308,6 +308,20 @@ export default function TermsPage() {
               </p>
             </section>
 
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+                14. Контакты и реквизиты
+              </h2>
+              <p className="text-gray-700 dark:text-gray-300 mb-4">
+                Исполнитель (самозанятый):
+              </p>
+              <ul className="list-none text-gray-700 dark:text-gray-300 mb-4">
+                <li className="mb-2"><strong>ФИО:</strong> Помазанова Елена Витальевна</li>
+                <li className="mb-2"><strong>ИНН:</strong> 420207922975</li>
+                <li className="mb-2"><strong>Email:</strong> info@flamecrm.ru</li>
+              </ul>
+            </section>
+
             <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-4">
                 Настоящая Оферта разработана в соответствии с Гражданским кодексом Российской Федерации.

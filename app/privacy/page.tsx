@@ -49,8 +49,9 @@ export default function PrivacyPage() {
                 Контактная информация для связи по вопросам обработки персональных данных:
               </p>
               <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4">
+                <li>ФИО: Помазанова Елена Витальевна</li>
+                <li>ИНН: 420207922975</li>
                 <li>Email: info@flamecrm.ru</li>
-                <li>Адрес: (укажите ваш адрес, если требуется)</li>
               </ul>
             </section>
 
@@ -237,7 +238,9 @@ export default function PrivacyPage() {
                 По всем вопросам, связанным с обработкой персональных данных, Пользователь может обратиться к оператору:
               </p>
               <ul className="list-none text-gray-700 dark:text-gray-300 mb-4">
-                <li className="mb-2">Email: info@flamecrm.ru</li>
+                <li className="mb-2"><strong>ФИО:</strong> Помазанова Елена Витальевна</li>
+                <li className="mb-2"><strong>ИНН:</strong> 420207922975</li>
+                <li className="mb-2"><strong>Email:</strong> info@flamecrm.ru</li>
                 <li className="mb-2">Через форму обратной связи в Сервисе</li>
               </ul>
             </section>
