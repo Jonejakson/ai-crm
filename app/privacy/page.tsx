@@ -43,14 +43,12 @@ export default function PrivacyPage() {
                 2. Оператор персональных данных
               </h2>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                Оператором персональных данных является самозанятый, предоставляющий услуги через Сервис Flame CRM.
+                Оператором персональных данных является самозанятый Помазанова Елена Витальевна, ИНН 420207922975, предоставляющий услуги через Сервис Flame CRM.
               </p>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
                 Контактная информация для связи по вопросам обработки персональных данных:
               </p>
               <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4">
-                <li>ФИО: Помазанова Елена Витальевна</li>
-                <li>ИНН: 420207922975</li>
                 <li>Email: info@flamecrm.ru</li>
               </ul>
             </section>
