@@ -22,6 +22,12 @@ fi
 S3_ENDPOINT="${S3_ENDPOINT:-https://s3.selcdn.ru}"
 S3_REGION="${S3_REGION:-ru-7}"
 
+# Для vHosted адресации Selectel используем другой endpoint формат
+# Если используется vHosted, endpoint должен быть s3.region.storage.selcloud.ru
+if [ -n "$S3_USE_VHOSTED" ] && [ "$S3_USE_VHOSTED" = "true" ]; then
+    S3_ENDPOINT="https://s3.${S3_REGION}.storage.selcloud.ru"
+fi
+
 # Создаем директорию для бэкапов если не существует
 mkdir -p "$BACKUP_DIR"
 
