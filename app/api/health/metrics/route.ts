@@ -19,6 +19,7 @@ export async function GET() {
       database: {
         // Получаем статистику из БД
         connections: 0, // Prisma не предоставляет эту информацию напрямую
+        usersCount?: number,
       },
       environment: process.env.NODE_ENV || "development",
     };
@@ -29,10 +30,7 @@ export async function GET() {
         SELECT COUNT(*) as count FROM "User"
       `;
       if (dbStats && dbStats[0]) {
-        metrics.database = {
-          ...metrics.database,
-          usersCount: Number(dbStats[0].count),
-        };
+        (metrics.database as any).usersCount = Number(dbStats[0].count);
       }
     } catch (error) {
       // Игнорируем ошибки получения статистики
