@@ -17,6 +17,7 @@ if [ -z "$S3_ACCESS_KEY_ID" ] && [ -f "/opt/flamecrm/.env" ]; then
     S3_BUCKET_NAME=$(grep "^S3_BUCKET_NAME=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
     S3_ENDPOINT=$(grep "^S3_ENDPOINT=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
     S3_REGION=$(grep "^S3_REGION=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+    S3_USE_VHOSTED=$(grep "^S3_USE_VHOSTED=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
 fi
 
 S3_ENDPOINT="${S3_ENDPOINT:-https://s3.selcdn.ru}"
@@ -72,36 +73,31 @@ if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB
         log "Загрузка бэкапа в S3..."
         S3_KEY="backups/db/crm_db_backup_$DATE.sql.gz"
         
-        # Используем AWS CLI если установлен
-        if command -v aws &> /dev/null; then
-            # Настраиваем AWS CLI для Selectel
+        # Используем Node.js скрипт для загрузки (более надежно для Selectel)
+        UPLOAD_SCRIPT="$(dirname "$0")/upload-backup-to-s3.js"
+        if [ -f "$UPLOAD_SCRIPT" ] && command -v node &> /dev/null; then
+            log "Загрузка бэкапа в S3 через Node.js..."
+            if node "$UPLOAD_SCRIPT" "$BACKUP_FILE_GZ" >> "$LOG_FILE" 2>&1; then
+                log "Бэкап загружен в S3: s3://$S3_BUCKET_NAME/$S3_KEY"
+            else
+                log "ОШИБКА: Не удалось загрузить бэкап в S3 (проверьте логи выше)"
+            fi
+        elif command -v aws &> /dev/null; then
+            # Fallback на AWS CLI
+            log "Загрузка бэкапа в S3 через AWS CLI..."
             export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID"
             export AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY"
             export AWS_DEFAULT_REGION="$S3_REGION"
             
-            # Загружаем в S3
-            # Для Selectel нужно использовать правильный endpoint
-            # Устанавливаем переменные окружения для AWS CLI
-            export AWS_ENDPOINT_URL_S3="$S3_ENDPOINT"
-            
-            # Загружаем в S3 с правильным endpoint
-            if AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID" \
-               AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY" \
-               AWS_DEFAULT_REGION="$S3_REGION" \
-               aws s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
-               --endpoint-url="$S3_ENDPOINT" \
+            if aws --endpoint-url="$S3_ENDPOINT" \
+               s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
                >> "$LOG_FILE" 2>&1; then
                 log "Бэкап загружен в S3: s3://$S3_BUCKET_NAME/$S3_KEY"
-                
-                # Удаляем локальный бэкап после успешной загрузки (опционально)
-                # Раскомментируйте следующую строку, если хотите удалять локальные бэкапы после загрузки в S3
-                # rm -f "$BACKUP_FILE_GZ"
             else
                 log "ОШИБКА: Не удалось загрузить бэкап в S3 (проверьте логи выше)"
             fi
         else
-            log "ПРЕДУПРЕЖДЕНИЕ: AWS CLI не установлен, пропускаем загрузку в S3"
-            log "Установите AWS CLI: apt-get install -y awscli"
+            log "ПРЕДУПРЕЖДЕНИЕ: Node.js или AWS CLI не установлены, пропускаем загрузку в S3"
         fi
     else
         log "ПРЕДУПРЕЖДЕНИЕ: Переменные S3 не настроены, пропускаем загрузку в S3"
