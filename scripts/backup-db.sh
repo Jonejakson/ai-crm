@@ -74,9 +74,11 @@ if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB
             export AWS_DEFAULT_REGION="$S3_REGION"
             
             # Загружаем в S3
-            if aws s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
-                --endpoint-url="$S3_ENDPOINT" \
+            # Для Selectel нужно использовать правильный endpoint и отключить проверку региона
+            if aws --endpoint-url="$S3_ENDPOINT" \
+                s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
                 --region="$S3_REGION" \
+                --no-verify-ssl \
                 >> "$LOG_FILE" 2>&1; then
                 log "Бэкап загружен в S3: s3://$S3_BUCKET_NAME/$S3_KEY"
                 
