@@ -97,7 +97,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       const contentType = fileRecord.mimeType || 'application/octet-stream'
 
       // Возвращаем файл с правильными заголовками
-      return new NextResponse(fileBuffer, {
+      // Конвертируем Buffer в Uint8Array для NextResponse
+      return new NextResponse(new Uint8Array(fileBuffer), {
         headers: {
           'Content-Type': contentType,
           'Content-Disposition': `inline; filename="${encodeURIComponent(fileRecord.originalName)}"`,
