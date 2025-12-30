@@ -10,6 +10,18 @@ COMPOSE_FILE="${COMPOSE_FILE:-/opt/flamecrm/docker-compose.yml}"
 DB_USER="${DB_USER:-crm_user}"
 DB_NAME="${DB_NAME:-crm_db}"
 
+# Загружаем переменные S3 из .env если они не установлены
+if [ -z "$S3_ACCESS_KEY_ID" ] && [ -f "/opt/flamecrm/.env" ]; then
+    S3_ACCESS_KEY_ID=$(grep "^S3_ACCESS_KEY_ID=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+    S3_SECRET_ACCESS_KEY=$(grep "^S3_SECRET_ACCESS_KEY=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+    S3_BUCKET_NAME=$(grep "^S3_BUCKET_NAME=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+    S3_ENDPOINT=$(grep "^S3_ENDPOINT=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+    S3_REGION=$(grep "^S3_REGION=" /opt/flamecrm/.env | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+fi
+
+S3_ENDPOINT="${S3_ENDPOINT:-https://s3.selcdn.ru}"
+S3_REGION="${S3_REGION:-ru-7}"
+
 # Создаем директорию для бэкапов если не существует
 mkdir -p "$BACKUP_DIR"
 
@@ -56,15 +68,15 @@ if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB
         
         # Используем AWS CLI если установлен
         if command -v aws &> /dev/null; then
-            # Настраиваем AWS CLI для Selectel (если еще не настроено)
+            # Настраиваем AWS CLI для Selectel
             export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID"
             export AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY"
-            export AWS_DEFAULT_REGION="${S3_REGION:-ru-7}"
+            export AWS_DEFAULT_REGION="$S3_REGION"
             
             # Загружаем в S3
             if aws s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
-                --endpoint-url="${S3_ENDPOINT:-https://s3.selcdn.ru}" \
-                --region="${S3_REGION:-ru-7}" \
+                --endpoint-url="$S3_ENDPOINT" \
+                --region="$S3_REGION" \
                 >> "$LOG_FILE" 2>&1; then
                 log "Бэкап загружен в S3: s3://$S3_BUCKET_NAME/$S3_KEY"
                 
@@ -72,12 +84,14 @@ if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB
                 # Раскомментируйте следующую строку, если хотите удалять локальные бэкапы после загрузки в S3
                 # rm -f "$BACKUP_FILE_GZ"
             else
-                log "ОШИБКА: Не удалось загрузить бэкап в S3"
+                log "ОШИБКА: Не удалось загрузить бэкап в S3 (проверьте логи выше)"
             fi
         else
             log "ПРЕДУПРЕЖДЕНИЕ: AWS CLI не установлен, пропускаем загрузку в S3"
             log "Установите AWS CLI: apt-get install -y awscli"
         fi
+    else
+        log "ПРЕДУПРЕЖДЕНИЕ: Переменные S3 не настроены, пропускаем загрузку в S3"
     fi
     
     # Удаляем старые бэкапы (старше RETENTION_DAYS дней)
