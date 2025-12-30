@@ -145,6 +145,10 @@ model User {
   assignedMessagingIntegrations   MessagingIntegration[]   @relation("MessagingIntegrationAssignee")
   assignedAdvertisingIntegrations AdvertisingIntegration[] @relation("AdvertisingIntegrationAssignee")
   supportTickets                  SupportTicket[]
+
+  @@index([companyId]) // Для фильтрации по компании
+  @@index([role]) // Для фильтрации по роли
+  @@index([passwordResetToken]) // Для поиска по токену восстановления
 }
 
 model Contact {
@@ -169,6 +173,11 @@ model Contact {
   events         Event[]
   emailMessages  EmailMessage[]
   tags           ContactTag[]
+
+  @@index([email]) // Для поиска по email
+  @@index([phone]) // Для поиска по телефону
+  @@index([userId]) // Для фильтрации по пользователю
+  @@index([createdAt]) // Для сортировки по дате создания
 }
 
 model Task {
@@ -183,6 +192,12 @@ model Task {
   contactId   Int?
   user        User?     @relation(fields: [userId], references: [id])
   userId      Int?
+
+  @@index([userId]) // Для фильтрации по пользователю
+  @@index([contactId]) // Для фильтрации по контакту
+  @@index([status]) // Для фильтрации по статусу
+  @@index([dueDate]) // Для сортировки по дате выполнения
+  @@index([userId, status]) // Композитный индекс для частых запросов
 }
 
 model Dialog {
@@ -240,6 +255,14 @@ model Deal {
   emailMessages     EmailMessage[]
   externalId        String? // ID в системе учета (1С, МойСклад)
   syncedAt          DateTime? // Время последней синхронизации
+
+  @@index([userId]) // Для фильтрации по пользователю
+  @@index([contactId]) // Для фильтрации по контакту
+  @@index([stage]) // Для фильтрации по этапу
+  @@index([pipelineId]) // Для фильтрации по воронке
+  @@index([createdAt]) // Для сортировки по дате создания
+  @@index([userId, stage]) // Композитный индекс для частых запросов
+  @@index([pipelineId, stage]) // Композитный индекс для фильтрации воронки
 }
 
 model WebForm {
@@ -293,6 +316,11 @@ model Event {
   userId      Int
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([userId]) // Для фильтрации по пользователю
+  @@index([contactId]) // Для фильтрации по контакту
+  @@index([startDate]) // Для сортировки по дате начала
+  @@index([userId, startDate]) // Композитный индекс для календаря
 }
 
 model Notification {
@@ -329,6 +357,13 @@ model EmailMessage {
   contactId          Int?
   deal               Deal?             @relation(fields: [dealId], references: [id])
   dealId             Int?
+
+  @@index([fromEmail]) // Для поиска по отправителю
+  @@index([toEmail]) // Для поиска по получателю
+  @@index([contactId]) // Для фильтрации по контакту
+  @@index([dealId]) // Для фильтрации по сделке
+  @@index([userId]) // Для фильтрации по пользователю
+  @@index([createdAt]) // Для сортировки по дате
 }
 
 model Plan {
@@ -409,6 +444,12 @@ model ActivityLog {
   company     Company  @relation(fields: [companyId], references: [id])
   companyId   Int
   createdAt   DateTime @default(now())
+
+  @@index([userId]) // Для фильтрации по пользователю
+  @@index([companyId]) // Для фильтрации по компании
+  @@index([entityType, entityId]) // Для поиска по сущности
+  @@index([createdAt]) // Для сортировки по дате
+  @@index([companyId, createdAt]) // Композитный индекс для логов компании
 }
 
 model File {
