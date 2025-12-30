@@ -4,6 +4,7 @@ import { join } from 'path'
 import { getCurrentUser, getUserId } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { getDirectWhereCondition } from '@/lib/access-control'
+import { uploadFileToS3, isS3Configured } from '@/lib/storage'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
@@ -107,24 +108,48 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Создаем директорию если не существует
-    try {
-      await mkdir(UPLOAD_DIR, { recursive: true })
-    } catch (error) {
-      // Директория уже существует
-    }
-
     // Генерируем уникальное имя файла
     const timestamp = Date.now()
     const randomStr = Math.random().toString(36).substring(2, 15)
     const fileExtension = file.name.split('.').pop()
     const fileName = `${timestamp}_${randomStr}.${fileExtension}`
-    const filePath = join(UPLOAD_DIR, fileName)
 
-    // Сохраняем файл
+    // Получаем содержимое файла
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filePath, buffer)
+
+    let fileUrl: string
+
+    // Используем S3 если настроено, иначе локальное хранилище
+    if (isS3Configured()) {
+      try {
+        // Загружаем в S3
+        // Используем префикс для организации файлов по типам сущностей
+        const s3Key = `${entityType}/${entityId}/${fileName}`
+        fileUrl = await uploadFileToS3(s3Key, buffer, file.type)
+      } catch (s3Error: any) {
+        console.error('[files][upload] S3 upload error:', s3Error)
+        // Fallback на локальное хранилище при ошибке S3
+        const filePath = join(UPLOAD_DIR, fileName)
+        try {
+          await mkdir(UPLOAD_DIR, { recursive: true })
+          await writeFile(filePath, buffer)
+          fileUrl = `/uploads/${fileName}`
+        } catch (localError) {
+          throw new Error('Failed to upload file to both S3 and local storage')
+        }
+      }
+    } else {
+      // Локальное хранилище
+      try {
+        await mkdir(UPLOAD_DIR, { recursive: true })
+      } catch (error) {
+        // Директория уже существует
+      }
+      const filePath = join(UPLOAD_DIR, fileName)
+      await writeFile(filePath, buffer)
+      fileUrl = `/uploads/${fileName}`
+    }
 
     // Сохраняем информацию о файле в БД
     const userId = getUserId(user)
@@ -132,7 +157,7 @@ export async function POST(request: Request) {
       data: {
         name: fileName,
         originalName: file.name,
-        url: `/uploads/${fileName}`,
+        url: fileUrl,
         size: file.size,
         mimeType: file.type,
         entityType,

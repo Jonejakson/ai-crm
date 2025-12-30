@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises'
 import { join } from 'path'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
+import { getFileFromS3, isS3Configured } from '@/lib/storage'
 
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
 
@@ -70,10 +71,27 @@ export async function GET(request: NextRequest, context: RouteContext) {
       }
     }
 
-    // Читаем файл
-    const filePath = join(UPLOAD_DIR, filename)
+    // Получаем файл
+    let fileBuffer: Buffer
     try {
-      const fileBuffer = await readFile(filePath)
+      // Проверяем, используется ли S3
+      // Если URL начинается с http или S3 настроено, пробуем получить из S3
+      if (isS3Configured()) {
+        try {
+          // Файл в S3 - используем структуру entityType/entityId/filename
+          const s3Key = `${fileRecord.entityType}/${fileRecord.entityId}/${filename}`
+          fileBuffer = await getFileFromS3(s3Key)
+        } catch (s3Error) {
+          // Если не найден в S3, пробуем локальное хранилище (fallback)
+          console.warn('[files][GET] File not found in S3, trying local storage:', s3Error)
+          const filePath = join(UPLOAD_DIR, filename)
+          fileBuffer = await readFile(filePath)
+        }
+      } else {
+        // Локальный файл
+        const filePath = join(UPLOAD_DIR, filename)
+        fileBuffer = await readFile(filePath)
+      }
 
       // Определяем Content-Type
       const contentType = fileRecord.mimeType || 'application/octet-stream'
@@ -88,7 +106,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       })
     } catch (fileError) {
       console.error('[files][GET] File read error:', fileError)
-      return NextResponse.json({ error: 'File not found on disk' }, { status: 404 })
+      return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
   } catch (error: any) {
     console.error('[files][GET]', error)

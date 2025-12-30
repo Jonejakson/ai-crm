@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { getDirectWhereCondition } from '@/lib/access-control'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
+import { deleteFileFromS3, isS3Configured } from '@/lib/storage'
 
 /**
  * Получить файлы для сущности
@@ -123,13 +124,20 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Удаляем файл с диска
+    // Удаляем файл из хранилища
     try {
-      const filePath = join(process.cwd(), 'public', file.url)
-      await unlink(filePath)
+      if (isS3Configured() && file.url.startsWith('http')) {
+        // Файл в S3
+        const s3Key = `${file.entityType}/${file.entityId}/${file.name}`
+        await deleteFileFromS3(s3Key)
+      } else {
+        // Локальный файл
+        const filePath = join(process.cwd(), 'public', file.url)
+        await unlink(filePath)
+      }
     } catch (error) {
-      console.error('Error deleting file from disk:', error)
-      // Продолжаем даже если файл не найден на диске
+      console.error('Error deleting file from storage:', error)
+      // Продолжаем даже если файл не найден
     }
 
     // Удаляем запись из БД

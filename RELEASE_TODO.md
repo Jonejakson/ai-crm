@@ -288,3 +288,4 @@ docker-compose exec -T postgres pg_dump -U crm_user crm_db > backup_$DATE.sql
 
 **Последнее обновление:** 2025-01-27
 
+
