@@ -16,6 +16,11 @@ const getS3Client = () => {
     throw new Error('S3 credentials not configured')
   }
 
+  // Определяем тип адресации из переменной окружения
+  // Если S3_USE_VHOSTED=true, используем vHosted (имя бакета в начале URL)
+  // Иначе используем path-style (имя бакета в конце URL)
+  const useVHosted = process.env.S3_USE_VHOSTED === 'true'
+
   return new S3Client({
     endpoint,
     region,
@@ -23,7 +28,7 @@ const getS3Client = () => {
       accessKeyId,
       secretAccessKey,
     },
-    forcePathStyle: true, // Для Selectel нужно использовать path-style
+    forcePathStyle: !useVHosted, // false для vHosted, true для path-style
   })
 }
 
@@ -63,9 +68,19 @@ export async function uploadFileToS3(
     return `${publicUrl}/${key}`
   }
   
-  // Если нет публичного URL, используем endpoint
+  // Если нет публичного URL, формируем URL в зависимости от типа адресации
   const endpoint = process.env.S3_ENDPOINT || 'https://s3.selcdn.ru'
-  return `${endpoint}/${bucket}/${key}`
+  const useVHosted = process.env.S3_USE_VHOSTED === 'true'
+  
+  if (useVHosted) {
+    // vHosted: bucket.s3.region.storage.selcloud.ru/key
+    // Для Selectel: bucket.s3.ru-7.storage.selcloud.ru/key
+    const region = process.env.S3_REGION || 'ru-1'
+    return `https://${bucket}.s3.${region}.storage.selcloud.ru/${key}`
+  } else {
+    // Path-style: endpoint/bucket/key
+    return `${endpoint}/${bucket}/${key}`
+  }
 }
 
 /**

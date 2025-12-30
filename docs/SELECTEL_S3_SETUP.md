@@ -31,9 +31,14 @@ S3_ACCESS_KEY_ID=ваш_access_key_id
 S3_SECRET_ACCESS_KEY=ваш_secret_access_key
 S3_BUCKET_NAME=flamecrm-files
 S3_ENDPOINT=https://s3.selcdn.ru
-S3_REGION=ru-1
+S3_REGION=ru-7
 S3_PUBLIC_URL=https://ваш-бакет.selcdn.ru
+S3_USE_VHOSTED=false
 ```
+
+**Примечание:**
+- `S3_REGION` - укажите регион вашего бакета (ru-7 для Москвы, ru-3 для Санкт-Петербурга)
+- `S3_USE_VHOSTED` - `false` для Path-Style, `true` для vHosted (выберите в зависимости от настройки бакета)
 
 **Важно:**
 - `S3_PUBLIC_URL` - опционально, если хотите публичный доступ к файлам
