@@ -54,16 +54,29 @@ if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB
         log "Загрузка бэкапа в S3..."
         S3_KEY="backups/db/crm_db_backup_$DATE.sql.gz"
         
-        # Используем AWS CLI если установлен, иначе используем наш скрипт
+        # Используем AWS CLI если установлен
         if command -v aws &> /dev/null; then
-            aws s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
+            # Настраиваем AWS CLI для Selectel (если еще не настроено)
+            export AWS_ACCESS_KEY_ID="$S3_ACCESS_KEY_ID"
+            export AWS_SECRET_ACCESS_KEY="$S3_SECRET_ACCESS_KEY"
+            export AWS_DEFAULT_REGION="${S3_REGION:-ru-7}"
+            
+            # Загружаем в S3
+            if aws s3 cp "$BACKUP_FILE_GZ" "s3://$S3_BUCKET_NAME/$S3_KEY" \
                 --endpoint-url="${S3_ENDPOINT:-https://s3.selcdn.ru}" \
                 --region="${S3_REGION:-ru-7}" \
-                >> "$LOG_FILE" 2>&1 && \
-            log "Бэкап загружен в S3: s3://$S3_BUCKET_NAME/$S3_KEY" || \
-            log "ОШИБКА: Не удалось загрузить бэкап в S3"
+                >> "$LOG_FILE" 2>&1; then
+                log "Бэкап загружен в S3: s3://$S3_BUCKET_NAME/$S3_KEY"
+                
+                # Удаляем локальный бэкап после успешной загрузки (опционально)
+                # Раскомментируйте следующую строку, если хотите удалять локальные бэкапы после загрузки в S3
+                # rm -f "$BACKUP_FILE_GZ"
+            else
+                log "ОШИБКА: Не удалось загрузить бэкап в S3"
+            fi
         else
             log "ПРЕДУПРЕЖДЕНИЕ: AWS CLI не установлен, пропускаем загрузку в S3"
+            log "Установите AWS CLI: apt-get install -y awscli"
         fi
     fi
     
