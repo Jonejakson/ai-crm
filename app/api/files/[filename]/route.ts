@@ -35,19 +35,16 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     // Проверка доступа через entityType
+    // Для файлов, связанных с тикетами поддержки, проверяем доступ
     if (fileRecord.entityType === 'support_ticket_message') {
-      // Проверка через сообщение
-      const message = await prisma.supportTicketMessage.findUnique({
+      // Проверяем через тикет поддержки
+      const ticket = await prisma.supportTicket.findUnique({
         where: { id: fileRecord.entityId },
         include: {
-          ticket: {
-            include: {
-              user: true,
-            },
-          },
+          user: true,
         },
       })
-      if (message && user.role !== 'owner' && message.ticket.userId !== Number(user.id)) {
+      if (ticket && user.role !== 'owner' && ticket.userId !== Number(user.id)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
     }
