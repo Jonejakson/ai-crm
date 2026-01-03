@@ -39,16 +39,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Создаем первое сообщение от пользователя
-    const firstMessage = await prisma.supportTicketMessage.create({
-      data: {
-        ticketId: ticket.id,
-        message: message.trim(),
-        fromEmail: userEmail,
-        fromName: user.name || undefined,
-        isFromAdmin: false,
-      },
-    })
+    // Сообщение уже сохранено в поле message тикета
 
     // Отправляем email на info@flamecrm.ru
     // Используем SMTP_* переменные если есть, иначе MAIL_*
