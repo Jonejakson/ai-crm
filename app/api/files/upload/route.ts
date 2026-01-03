@@ -159,7 +159,6 @@ export async function POST(request: Request) {
         entityType,
         entityId: entityIdNum,
         userId: userId || undefined,
-        messageId: entityType === 'support_ticket_message' ? entityIdNum : undefined,
       },
     })
 
