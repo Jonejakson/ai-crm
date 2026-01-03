@@ -81,23 +81,19 @@ export async function POST(request: Request) {
         break
       }
       case 'support_ticket_message': {
-        // Проверяем доступ к сообщению тикета
-        const message = await prisma.supportTicketMessage.findUnique({
+        // Проверяем доступ к тикету поддержки
+        const ticket = await prisma.supportTicket.findUnique({
           where: { id: entityIdNum },
           include: {
-            ticket: {
-              include: {
-                user: true,
-              },
-            },
+            user: true,
           },
         })
-        if (!message) {
+        if (!ticket) {
           hasAccess = false
           break
         }
         // Owner видит все, пользователь - только свои тикеты
-        hasAccess = user.role === 'owner' || message.ticket.userId === Number(user.id)
+        hasAccess = user.role === 'owner' || ticket.userId === Number(user.id)
         break
       }
       default:
