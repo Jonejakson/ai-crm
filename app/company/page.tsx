@@ -14,6 +14,8 @@ import AdvertisingIntegrationsSection from './AdvertisingIntegrationsSection'
 import MoyskladSection from './MoyskladSection'
 import OneCSection from './OneCSection'
 import MigrationSection from './MigrationSection'
+import PaymentPeriodModal, { PaymentPeriod } from '@/components/PaymentPeriodModal'
+import PaymentTypeModal from '@/components/PaymentTypeModal'
 
 interface User {
   id: number
@@ -63,6 +65,14 @@ export default function CompanyPage() {
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
   const [userSearch, setUserSearch] = useState('')
+  
+  // Модальные окна для оплаты
+  const [periodModalOpen, setPeriodModalOpen] = useState(false)
+  const [typeModalOpen, setTypeModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
+  const [selectedPeriod, setSelectedPeriod] = useState<PaymentPeriod | null>(null)
+  const [selectedPeriodLabel, setSelectedPeriodLabel] = useState('')
+  const [calculatedAmount, setCalculatedAmount] = useState(0)
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -176,18 +186,90 @@ export default function CompanyPage() {
     }
   }
 
-  const handlePlanChange = async (planId: number) => {
+  // Проверка, закончилась ли подписка
+  const isSubscriptionExpired = () => {
+    if (!subscription) return true
+    if (subscription.status === 'CANCELED' || subscription.status === 'PAST_DUE') return true
+    if (subscription.currentPeriodEnd) {
+      return new Date(subscription.currentPeriodEnd) < new Date()
+    }
+    return false
+  }
+
+  // Расчет скидки и итоговой суммы
+  const calculatePriceWithDiscount = (monthlyPrice: number, period: PaymentPeriod) => {
+    const periods: Record<PaymentPeriod, { months: number; discount: number }> = {
+      '1': { months: 1, discount: 0 },
+      '3': { months: 3, discount: 5 },
+      '6': { months: 6, discount: 10 },
+      '12': { months: 12, discount: 20 },
+    }
+    const { months, discount } = periods[period]
+    const total = monthlyPrice * months
+    const discountAmount = (total * discount) / 100
+    return total - discountAmount
+  }
+
+  // Получение метки периода
+  const getPeriodLabel = (period: PaymentPeriod) => {
+    const labels: Record<PaymentPeriod, string> = {
+      '1': '1 месяц',
+      '3': '3 месяца',
+      '6': '6 месяцев',
+      '12': '1 год',
+    }
+    return labels[period]
+  }
+
+  // Обработчик нажатия на кнопку плана
+  const handlePlanButtonClick = (plan: Plan) => {
+    setSelectedPlan(plan)
+    setPeriodModalOpen(true)
+  }
+
+  // Обработчик выбора периода
+  const handlePeriodSelect = (period: PaymentPeriod) => {
+    if (!selectedPlan) return
+    
+    setSelectedPeriod(period)
+    setSelectedPeriodLabel(getPeriodLabel(period))
+    const amount = calculatePriceWithDiscount(selectedPlan.price, period)
+    setCalculatedAmount(amount)
+    setPeriodModalOpen(false)
+    setTypeModalOpen(true)
+  }
+
+  // Обработчик выбора типа плательщика
+  const handlePaymentTypeSelect = async (type: 'individual' | 'legal') => {
+    if (!selectedPlan || !selectedPeriod) return
+
     setBillingError('')
     setBillingMessage('')
     setBillingLoading(true)
+    setTypeModalOpen(false)
+
     try {
-      // Сначала создаем платеж
+      const periods: Record<PaymentPeriod, number> = {
+        '1': 1,
+        '3': 3,
+        '6': 6,
+        '12': 12,
+      }
+      const months = periods[selectedPeriod]
+
+      // Создаем платеж
       const paymentResponse = await fetch('/api/billing/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ planId, billingInterval: 'MONTHLY' }),
+        body: JSON.stringify({
+          planId: selectedPlan.id,
+          billingInterval: months === 12 ? 'YEARLY' : 'MONTHLY',
+          months,
+          amount: calculatedAmount,
+          paymentType: type,
+        }),
       })
 
       const paymentData = await paymentResponse.json()
@@ -200,15 +282,23 @@ export default function CompanyPage() {
         setSubscription(paymentData.subscription)
         const planName = paymentData.subscription?.plan?.name ?? ''
         setBillingMessage(`План «${planName}» успешно активирован! Лимиты обновлены.`)
-        // Обновляем данные
         await fetchBilling()
         await fetchUsers()
         return
       }
 
-      // Если есть URL для оплаты, перенаправляем пользователя
-      if (paymentData.paymentUrl) {
+      // Если выбран физ лицо и есть URL для оплаты, перенаправляем
+      if (type === 'individual' && paymentData.paymentUrl) {
         window.location.href = paymentData.paymentUrl
+        return
+      }
+
+      // Если выбран юр лицо, скачиваем счет
+      if (type === 'legal' && paymentData.invoiceId) {
+        const pdfUrl = `/api/billing/invoice/${paymentData.invoiceId}/pdf`
+        window.open(pdfUrl, '_blank')
+        setBillingMessage('Счет сгенерирован. После оплаты администратор подтвердит платеж.')
+        await fetchBilling()
         return
       }
 
@@ -216,10 +306,14 @@ export default function CompanyPage() {
       await fetchBilling()
       setBillingMessage('Платеж создан. Ожидаем подтверждения...')
     } catch (error: any) {
-      console.error('Error updating plan:', error)
-      setBillingError(error.message || 'Не удалось обновить тариф')
+      console.error('Error processing payment:', error)
+      setBillingError(error.message || 'Не удалось обработать платеж')
     } finally {
       setBillingLoading(false)
+      setSelectedPlan(null)
+      setSelectedPeriod(null)
+      setSelectedPeriodLabel('')
+      setCalculatedAmount(0)
     }
   }
 
@@ -630,15 +724,19 @@ export default function CompanyPage() {
                     ))}
                   </ul>
                   <button
-                    onClick={() => handlePlanChange(plan.id)}
-                    disabled={isCurrent || billingLoading}
+                    onClick={() => handlePlanButtonClick(plan)}
+                    disabled={isCurrent && !isSubscriptionExpired() || billingLoading}
                     className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                      isCurrent
+                      isCurrent && !isSubscriptionExpired()
                         ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
                         : 'bg-[var(--primary)] text-white hover:opacity-90'
                     }`}
                   >
-                    {isCurrent ? 'Текущий план' : 'Начать 14-дневный тест'}
+                    {isCurrent && !isSubscriptionExpired()
+                      ? 'Текущий план'
+                      : isCurrent && isSubscriptionExpired()
+                      ? 'Продлить'
+                      : 'Начать 14-дневный тест'}
                   </button>
                 </div>
               )
@@ -1114,6 +1212,36 @@ export default function CompanyPage() {
       <MoyskladSection />
       <OneCSection />
       <MigrationSection />
+
+      {/* Модальное окно выбора периода оплаты */}
+      {selectedPlan && (
+        <PaymentPeriodModal
+          isOpen={periodModalOpen}
+          onClose={() => {
+            setPeriodModalOpen(false)
+            setSelectedPlan(null)
+          }}
+          onSelect={handlePeriodSelect}
+          monthlyPrice={selectedPlan.price}
+          planName={selectedPlan.name}
+        />
+      )}
+
+      {/* Модальное окно выбора типа плательщика */}
+      {selectedPeriod && (
+        <PaymentTypeModal
+          isOpen={typeModalOpen}
+          onClose={() => {
+            setTypeModalOpen(false)
+            setSelectedPeriod(null)
+            setSelectedPeriodLabel('')
+            setCalculatedAmount(0)
+          }}
+          onSelect={handlePaymentTypeSelect}
+          totalAmount={calculatedAmount}
+          periodLabel={selectedPeriodLabel}
+        />
+      )}
     </div>
   )
 }
