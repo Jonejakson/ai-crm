@@ -22,23 +22,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const ticket = await prisma.supportTicket.findUnique({
       where: { id: ticketId },
       include: {
-        messages: {
-          include: {
-            files: {
-              select: {
-                id: true,
-                name: true,
-                originalName: true,
-                url: true,
-                size: true,
-                mimeType: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
         user: {
           select: {
             id: true,
@@ -64,58 +47,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Если пользователь открыл тикет, отмечаем все сообщения от админа как прочитанные
-    if (user.role !== 'owner' && ticket.userId === Number(user.id)) {
-      await prisma.supportTicketMessage.updateMany({
-        where: {
-          ticketId: ticket.id,
-          isFromAdmin: true,
-          isRead: false,
-        },
-        data: {
-          isRead: true,
-        },
-      })
-    }
-
-    // Обновляем тикет с актуальными данными после обновления isRead
-    const updatedTicket = await prisma.supportTicket.findUnique({
-      where: { id: ticketId },
-      include: {
-        messages: {
-          include: {
-            files: {
-              select: {
-                id: true,
-                name: true,
-                originalName: true,
-                url: true,
-                size: true,
-                mimeType: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-        company: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    })
-
-    return NextResponse.json({ success: true, ticket: updatedTicket })
+    return NextResponse.json({ success: true, ticket })
   } catch (error) {
     console.error('[support][tickets][id][GET]', error)
     return NextResponse.json({ error: 'Не удалось получить тикет' }, { status: 500 })
@@ -161,15 +93,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const isAdmin = user.role === 'owner'
 
-    // Создаем сообщение
-    const ticketMessage = await prisma.supportTicketMessage.create({
+    // Обновляем сообщение в тикете (модель messages не существует)
+    await prisma.supportTicket.update({
+      where: { id: ticket.id },
       data: {
-        ticketId: ticket.id,
         message: message.trim(),
-        fromEmail: user.email,
-        fromName: user.name || undefined,
-        isFromAdmin: isAdmin,
-        isRead: !isAdmin, // Если ответ от owner, помечаем как непрочитанное для пользователя
+        updatedAt: new Date(),
       },
     })
 
@@ -211,12 +140,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (isEmailConfigured()) {
       try {
         const recipientEmail = isAdmin ? ticket.email : SUPPORT_EMAIL
-        const emailSubject = `Re: [${ticket.ticketId}] ${ticket.subject}`
+        const emailSubject = `Re: [${ticket.id}] ${ticket.subject}`
         const emailBody = `
 ${message.trim()}
 
 ---
-Тикет: ${ticket.ticketId}
+Тикет: ${ticket.id}
 Ответьте на это письмо, чтобы добавить ответ в тикет.
         `.trim()
 
@@ -232,7 +161,7 @@ ${message.trim()}
       }
     }
 
-    return NextResponse.json({ success: true, message: ticketMessage })
+    return NextResponse.json({ success: true, message: { message: message.trim() } })
   } catch (error) {
     console.error('[support][tickets][id][POST]', error)
     return NextResponse.json({ error: 'Не удалось отправить ответ' }, { status: 500 })
