@@ -149,10 +149,7 @@ Ticket ID: ${ticketId}
 
     return NextResponse.json({ 
       success: true, 
-      ticket: {
-        ...ticket,
-        firstMessageId: firstMessage.id,
-      }
+      ticket
     })
   } catch (error) {
     console.error('[support][POST]', error)
