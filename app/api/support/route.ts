@@ -194,16 +194,11 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    // Добавляем количество непрочитанных сообщений для каждого тикета
-    const ticketsWithUnread = tickets.map(ticket => {
-      const unreadCount = ticket.messages.filter(
-        msg => msg.isFromAdmin && !msg.isRead
-      ).length
-      return {
-        ...ticket,
-        unreadMessagesCount: unreadCount,
-      }
-    })
+    // Возвращаем тикеты без подсчета непрочитанных (модель messages не существует)
+    const ticketsWithUnread = tickets.map(ticket => ({
+      ...ticket,
+      unreadMessagesCount: 0,
+    }))
 
     return NextResponse.json({ success: true, tickets: ticketsWithUnread })
   } catch (error) {
