@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
         subject: subject.trim(),
         message: message.trim(),
         email: userEmail,
-        ticketId: ticketId,
         companyId: Number(user.companyId),
         userId: Number(user.id),
       },
