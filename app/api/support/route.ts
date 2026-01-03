@@ -174,23 +174,6 @@ export async function GET(request: NextRequest) {
     const tickets = await prisma.supportTicket.findMany({
       where: whereCondition,
       include: {
-        messages: {
-          include: {
-            files: {
-              select: {
-                id: true,
-                name: true,
-                originalName: true,
-                url: true,
-                size: true,
-                mimeType: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
         user: {
           select: {
             id: true,
