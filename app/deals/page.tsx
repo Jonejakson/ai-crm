@@ -11,7 +11,6 @@ import Comments from '@/components/Comments'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import FiltersModal from '@/components/FiltersModal'
-import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal'
 import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import type { CollisionDetection } from '@dnd-kit/core'
@@ -344,11 +343,8 @@ export default function DealsPage() {
     name: '',
     email: '',
     phone: '',
-    company: '',
-    inn: ''
+    company: ''
   })
-  const [innLoading, setInnLoading] = useState(false)
-  const [innError, setInnError] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -363,7 +359,6 @@ export default function DealsPage() {
   const [dealTypes, setDealTypes] = useState<Array<{id: number, name: string}>>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false)
-  const [showRenewalModal, setShowRenewalModal] = useState(false)
   const kanbanScrollRef = useRef<HTMLDivElement>(null)
   const topScrollbarRef = useRef<HTMLDivElement>(null)
 
@@ -458,65 +453,6 @@ export default function DealsPage() {
       }
     } catch (error) {
       console.error('Error fetching deal types:', error)
-    }
-  }
-
-  // Функция поиска компании по ИНН
-  const handleInnSearch = async (inn: string) => {
-    const cleanInn = inn.replace(/\D/g, '')
-    
-    // Если ИНН меньше 10 цифр, не делаем запрос
-    if (cleanInn.length < 10) {
-      setInnError('')
-      return
-    }
-
-    // Валидация: ИНН должен быть 10 или 12 цифр
-    if (cleanInn.length !== 10 && cleanInn.length !== 12) {
-      setInnError('ИНН должен содержать 10 или 12 цифр')
-      return
-    }
-
-    setInnLoading(true)
-    setInnError('')
-
-    try {
-      const response = await fetch(`/api/company/by-inn?inn=${cleanInn}`)
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
-        let errorMessage = errorData.error || 'Ошибка при запросе к API'
-        
-        // Более понятное сообщение для пользователя
-        if (response.status === 404) {
-          errorMessage = 'Компания с таким ИНН не найдена'
-        } else if (response.status === 500) {
-          errorMessage = 'Ошибка при поиске компании. Попробуйте позже.'
-        } else {
-          errorMessage = errorData.error || 'Ошибка при запросе к API'
-        }
-        
-        setInnError(errorMessage)
-        return
-      }
-      
-      const data = await response.json()
-
-      if (data.name) {
-        setNewContactData({
-          ...newContactData,
-          company: data.name,
-          inn: cleanInn
-        })
-        setInnError('')
-      } else {
-        setInnError(data.error || 'Компания не найдена')
-      }
-    } catch (error) {
-      console.error('Error searching company by INN:', error)
-      setInnError('Ошибка при запросе к API')
-    } finally {
-      setInnLoading(false)
     }
   }
 
@@ -926,11 +862,7 @@ export default function DealsPage() {
         toast.success('Сделка успешно создана')
       } else {
         const error = await response.json()
-        if (error.subscriptionExpired) {
-          setShowRenewalModal(true)
-        } else {
-          toast.error(error.error || 'Ошибка при создании сделки')
-        }
+        toast.error(error.error || 'Ошибка при создании сделки')
       }
     } catch (error) {
       console.error('Error creating deal:', error)
@@ -1763,8 +1695,7 @@ export default function DealsPage() {
               <button
                 onClick={() => {
                   setIsNewContactModalOpen(false)
-                  setNewContactData({ name: '', email: '', phone: '', company: '', inn: '' })
-                  setInnError('')
+                  setNewContactData({ name: '', email: '', phone: '', company: '' })
                 }}
                 className="text-[var(--muted)] hover:text-[var(--foreground)]"
               >
@@ -1776,20 +1707,10 @@ export default function DealsPage() {
               onSubmit={async (e) => {
                 e.preventDefault()
                 try {
-                  // Преобразуем пустые строки в null для опциональных полей
-                  const contactDataToSend = {
-                    name: newContactData.name,
-                    email: newContactData.email?.trim() || null,
-                    phone: newContactData.phone?.trim() || null,
-                    company: newContactData.company?.trim() || null,
-                    position: null, // Поле не используется в этой форме
-                    inn: newContactData.inn?.trim() || null,
-                  }
-                  
                   const response = await fetch('/api/contacts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(contactDataToSend),
+                    body: JSON.stringify(newContactData),
                   })
 
                   if (response.ok) {
@@ -1800,8 +1721,7 @@ export default function DealsPage() {
                     setFormData({...formData, contactId: newContact.id.toString()})
                     setContactSearch(newContact.email ? `${newContact.name} (${newContact.email})` : newContact.name)
                     setIsNewContactModalOpen(false)
-                    setNewContactData({ name: '', email: '', phone: '', company: '', inn: '' })
-                    setInnError('')
+                    setNewContactData({ name: '', email: '', phone: '', company: '' })
                     // Открываем модальное окно создания сделки обратно
                     setIsModalOpen(true)
                   } else {
@@ -1824,7 +1744,6 @@ export default function DealsPage() {
                   value={newContactData.name}
                   onChange={(e) => setNewContactData({...newContactData, name: e.target.value})}
                   required
-                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1836,7 +1755,6 @@ export default function DealsPage() {
                   type="email"
                   value={newContactData.email}
                   onChange={(e) => setNewContactData({...newContactData, email: e.target.value})}
-                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1848,46 +1766,9 @@ export default function DealsPage() {
                   type="tel"
                   value={newContactData.phone}
                   onChange={(e) => setNewContactData({...newContactData, phone: e.target.value})}
-                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
-              {/* Поле ИНН */}
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                  ИНН
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={newContactData.inn}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      setNewContactData({...newContactData, inn: value})
-                      // Автоматический поиск при вводе ИНН (10 или 12 цифр)
-                      const cleanInn = value.replace(/\D/g, '')
-                      if (cleanInn.length >= 10) {
-                        handleInnSearch(cleanInn)
-                      } else {
-                        setInnError('')
-                      }
-                    }}
-                    placeholder="Введите ИНН (10 или 12 цифр)"
-                    maxLength={12}
-                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
-                  />
-                  {innLoading && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[var(--primary)]"></div>
-                    </div>
-                  )}
-                </div>
-                {innError && (
-                  <p className="mt-1 text-xs text-red-500">{innError}</p>
-                )}
-              </div>
-
-              {/* Поле Компания */}
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Компания
@@ -1896,8 +1777,6 @@ export default function DealsPage() {
                   type="text"
                   value={newContactData.company}
                   onChange={(e) => setNewContactData({...newContactData, company: e.target.value})}
-                  placeholder="Заполнится автоматически по ИНН"
-                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1906,8 +1785,7 @@ export default function DealsPage() {
                   type="button"
                   onClick={() => {
                     setIsNewContactModalOpen(false)
-                    setNewContactData({ name: '', email: '', phone: '', company: '', inn: '' })
-                    setInnError('')
+                    setNewContactData({ name: '', email: '', phone: '', company: '' })
                   }}
                   className="btn-secondary text-sm"
                 >
@@ -1961,11 +1839,6 @@ export default function DealsPage() {
           setSavedFilters(updated)
           localStorage.setItem('savedFilters_deals', JSON.stringify(updated))
         }}
-      />
-
-      <SubscriptionRenewalModal
-        isOpen={showRenewalModal}
-        onClose={() => setShowRenewalModal(false)}
       />
     </div>
   )

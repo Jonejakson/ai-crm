@@ -4,3 +4,6 @@ ALTER TABLE "Contact" ADD COLUMN IF NOT EXISTS "syncedAt" TIMESTAMP(3);
 
 
 
+
+
+

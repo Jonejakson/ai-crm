@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { PuzzleIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
+import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -62,7 +62,7 @@ export default function CompanyPage() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
-  const [companyInfo, setCompanyInfo] = useState<{ name: string; isLegalEntity: boolean } | null>(null)
+  const [userSearch, setUserSearch] = useState('')
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -100,8 +100,8 @@ export default function CompanyPage() {
     }
 
     if (status === 'authenticated') {
-      // Проверяем, что пользователь админ или owner
-      if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
+      // Проверяем, что пользователь админ
+      if (session?.user?.role !== 'admin') {
         router.push('/')
         return
       }
@@ -122,12 +122,6 @@ export default function CompanyPage() {
       }
       const data = await response.json()
       setUsers(data.users || [])
-      if (data.company) {
-        setCompanyInfo({
-          name: data.company.name,
-          isLegalEntity: data.company.isLegalEntity
-        })
-      }
     } catch (error: any) {
       console.error('Error fetching users:', error)
       setError('Ошибка загрузки пользователей')
@@ -135,7 +129,6 @@ export default function CompanyPage() {
       setLoading(false)
     }
   }
-
 
   const fetchBilling = async () => {
     setBillingLoading(true)
@@ -442,12 +435,19 @@ export default function CompanyPage() {
     )
   }
 
-  if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
+  if (session?.user?.role !== 'admin') {
     return null
   }
 
-  // Убрали фильтрацию, так как поиск удален
-  const filteredUsers = users
+  const filteredUsers = users.filter((user) => {
+    const term = userSearch.toLowerCase().trim()
+    if (!term) return true
+    return (
+      user.name.toLowerCase().includes(term) ||
+      user.email.toLowerCase().includes(term) ||
+      getRoleName(user.role).toLowerCase().includes(term)
+    )
+  })
 
   const roleStats = users.reduce<Record<string, number>>((acc, user) => {
     acc[user.role] = (acc[user.role] || 0) + 1
@@ -475,7 +475,7 @@ export default function CompanyPage() {
     {
       label: 'Фильтр',
       value: `${filteredUsers.length} из ${users.length}`,
-      note: 'Все пользователи',
+      note: userSearch ? 'Применён поиск' : 'Все пользователи',
     },
   ]
 
@@ -536,26 +536,14 @@ export default function CompanyPage() {
       </div>
 
       <section className="space-y-4 mb-8">
-        <div className={`glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between ${
-          subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
-            ? 'border-2 border-red-500 bg-red-50/50' 
-            : ''
-        }`}>
+        <div className="glass-panel rounded-3xl p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Текущий тариф</p>
-            <h2 className={`text-2xl font-semibold ${
-              subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
-                ? 'text-red-600' 
-                : 'text-[var(--foreground)]'
-            }`}>
-              {subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
-                ? 'Подписка закончилась'
-                : subscription?.plan?.name ?? 'План не выбран'}
+            <h2 className="text-2xl font-semibold text-[var(--foreground)]">
+              {subscription?.plan?.name ?? 'План не выбран'}
             </h2>
             <p className="text-sm text-[var(--muted)]">
-              {subscription?.currentPeriodEnd && new Date(subscription.currentPeriodEnd) < new Date()
-                ? 'Продлите подписку для продолжения работы с CRM'
-                : subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
+              {subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
             </p>
           </div>
           <div className="text-sm text-[var(--muted)] text-left md:text-right">
@@ -563,14 +551,8 @@ export default function CompanyPage() {
               <>
                 <p className="text-lg font-semibold text-[var(--foreground)]">{formatPrice(subscription.plan)}</p>
                 {subscription?.currentPeriodEnd && (
-                  <span className={`text-xs ${
-                    new Date(subscription.currentPeriodEnd) < new Date()
-                      ? 'text-red-600 font-semibold'
-                      : 'text-[var(--muted)]'
-                  }`}>
-                    {new Date(subscription.currentPeriodEnd) < new Date()
-                      ? 'Подписка закончилась'
-                      : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`}
+                  <span className="text-xs text-[var(--muted)]">
+                    Продление: {new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}
                   </span>
                 )}
               </>
@@ -747,14 +729,27 @@ export default function CompanyPage() {
 
         {/* Список пользователей */}
         <div className="glass-panel rounded-3xl p-6 space-y-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Команда</p>
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">
-              {companyInfo?.isLegalEntity 
-                ? `Пользователи компании ${companyInfo.name} (${users.length})`
-                : `Пользователи (${users.length})`}
-            </h2>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Команда</p>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">
+                Пользователи компании ({users.length})
+              </h2>
+            </div>
+            <div className="relative w-full md:w-72">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)]" />
+              <input
+                type="text"
+                placeholder="Поиск по имени или email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full rounded-2xl border border-[var(--border)] bg-white/90 pl-10 pr-4 py-2.5 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+              />
+            </div>
           </div>
+          <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
+            Найдено: {filteredUsers.length}
+          </p>
 
           {filteredUsers.length === 0 ? (
             <div className="empty-state">
@@ -763,7 +758,9 @@ export default function CompanyPage() {
               </div>
               <h3 className="empty-state-title">Пользователи не найдены</h3>
               <p className="empty-state-description">
-                Добавьте первого сотрудника, чтобы начать совместную работу.
+                {userSearch
+                  ? 'Сбросьте поиск или добавьте нового пользователя.'
+                  : 'Добавьте первого сотрудника, чтобы начать совместную работу.'}
               </p>
             </div>
           ) : (

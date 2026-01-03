@@ -5,8 +5,6 @@ import { signIn as nextAuthSignIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-type UserType = 'individual' | 'legal'
-
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -16,12 +14,10 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegister, setIsRegister] = useState(false)
-  const [userType, setUserType] = useState<UserType>('individual')
-  
-  // Общие поля
   const [name, setName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  const [userType, setUserType] = useState<'individual' | 'legal'>('individual')
   
   // Поля для юр лица
   const [companyName, setCompanyName] = useState('')
@@ -98,51 +94,35 @@ function LoginForm() {
     if (isRegister) {
       // Регистрация
       try {
-        const registerData: any = {
-          email,
-          password,
-          name: name.trim(), // Только имя
-          lastName: lastName.trim(), // Фамилия отдельно
-          phone,
-          userType,
-        }
-
-        // Добавляем поля для юр лица
-        if (userType === 'legal') {
-          registerData.companyName = companyName
-          registerData.inn = inn
-        }
-
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(registerData),
+          body: JSON.stringify({ email, password, name }),
         })
 
         const data = await res.json()
 
         if (!res.ok) {
-          // Показываем более понятное сообщение об ошибке
-          const errorMessage = data.message || data.error || 'Ошибка при регистрации'
-          setError(errorMessage)
+          setError(data.error || 'Ошибка при регистрации')
           setIsLoading(false)
           return
         }
 
         console.log('Registration successful:', data)
 
-        // После успешной регистрации предлагаем войти вручную
-        // Это более надежно, чем автоматический вход сразу после регистрации
-        setError('')
-        setIsRegister(false) // Переключаем на форму входа
-        setEmail(email) // Сохраняем email для удобства
-        setPassword('') // Очищаем пароль, чтобы пользователь ввел его заново
-        
-        // Показываем успешное сообщение через alert или через состояние
-        alert('Регистрация успешна! Теперь войдите в систему.')
-        
-        setIsLoading(false)
-        return // Завершаем выполнение, не пытаемся автоматически войти
+        // После регистрации автоматически входим
+        const result = await nextAuthSignIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        })
+
+        if (result?.error) {
+          setError('Ошибка при входе после регистрации')
+        } else {
+          router.push('/')
+          router.refresh()
+        }
       } catch (err) {
         setError('Ошибка сети')
       }
@@ -157,9 +137,7 @@ function LoginForm() {
       if (result?.error) {
         setError('Неверный email или пароль')
       } else {
-        // После успешного входа перенаправляем на callbackUrl или на главную
-        const callbackUrl = searchParams.get('callbackUrl') || '/'
-        router.push(callbackUrl)
+        router.push('/')
         router.refresh()
       }
     }
@@ -168,7 +146,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50" data-theme="light">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-xl border border-gray-200 animate-fadeIn">
         <div>
           <h2 className="text-center text-3xl font-bold text-gray-900">
@@ -477,14 +455,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Загрузка...</p>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Загрузка...</div>}>
       <LoginForm />
     </Suspense>
   )

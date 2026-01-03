@@ -35,22 +35,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Только администратор может создавать автоматизации' }, { status: 403 })
   }
 
-  const companyId = Number(currentUser.companyId)
-
-  // Проверка, не истекла ли подписка
-  const { canCreateEntities } = await import('@/lib/subscription-limits')
-  const canCreate = await canCreateEntities(companyId)
-  if (!canCreate.allowed) {
-    return NextResponse.json(
-      { 
-        error: canCreate.message || 'Подписка закончилась',
-        subscriptionExpired: true,
-      },
-      { status: 403 }
-    )
-  }
-
   // Проверка доступа к автоматизациям по тарифу
+  const companyId = Number(currentUser.companyId)
   const automationsAccess = await checkAutomationsAccess(companyId)
   if (!automationsAccess.allowed) {
     return NextResponse.json(

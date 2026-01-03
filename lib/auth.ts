@@ -2,13 +2,13 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 
-// В production НЕ загружаем dotenv - используем переменные из Docker/системы
-// Загружаем переменные окружения только в development
-if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production') {
+// Загружаем переменные окружения ПЕРЕД импортом Prisma
+// Но НЕ импортируем Prisma здесь, чтобы избежать проблем с Edge Runtime
+if (typeof window === 'undefined') {
   try {
-    require('dotenv').config()
+    require('dotenv').config({ override: true })
   } catch (e) {
-    // Игнорируем ошибки загрузки dotenv
+    // dotenv уже загружен
   }
 }
 
@@ -35,13 +35,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.error('❌ Авторизация: отсутствует email или password')
           return null
         }
 
         try {
-          console.log('🔐 Попытка авторизации для:', credentials.email)
-          
           // Получаем Prisma только когда нужно (не в Edge Runtime)
           const prisma = await getPrisma()
           const user = await prisma.user.findUnique({
@@ -54,11 +51,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           })
 
           if (!user) {
-            console.error('❌ Пользователь не найден:', credentials.email)
             return null
           }
-
-          console.log('✅ Пользователь найден:', user.email, 'Роль:', user.role)
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
@@ -66,11 +60,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           )
 
           if (!isPasswordValid) {
-            console.error('❌ Неверный пароль для:', credentials.email)
             return null
           }
 
-          console.log('✅ Авторизация успешна для:', credentials.email)
           return {
             id: user.id.toString(),
             email: user.email,
@@ -79,8 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             companyId: user.companyId.toString(),
           }
         } catch (error: any) {
-          console.error('❌ Ошибка авторизации:', error.message)
-          console.error('Stack:', error.stack)
+          console.error('Ошибка авторизации:', error)
           return null
         }
       }
