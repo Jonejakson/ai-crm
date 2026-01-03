@@ -29,11 +29,6 @@ export async function GET(request: NextRequest) {
       prisma.supportTicket.findMany({
         where,
         include: {
-          messages: {
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
           user: {
             select: {
               id: true,
