@@ -22,14 +22,6 @@ type SupportTicket = {
     id: number
     name: string
   }
-  messages: Array<{
-    id: number
-    message: string
-    fromEmail: string
-    fromName: string | null
-    isFromAdmin: boolean
-    createdAt: string
-  }>
 }
 
 type TicketsData = {
@@ -310,7 +302,7 @@ export default function OpsSupportPage() {
                   <span>{new Date(ticket.createdAt).toLocaleDateString('ru-RU')}</span>
                 </div>
                 <div className="text-xs text-[var(--muted)] mt-1">
-                  Сообщений: {ticket.messages.length}
+                  Тикет #{ticket.id}
                 </div>
               </div>
             ))}
@@ -358,30 +350,11 @@ export default function OpsSupportPage() {
                 </div>
               </div>
 
-              {/* Переписка */}
+              {/* Сообщение */}
               <div className="space-y-3">
-                <h3 className="font-semibold text-[var(--foreground)]">Переписка</h3>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {selectedTicket.messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`p-3 rounded-lg ${
-                        msg.isFromAdmin
-                          ? 'bg-[var(--primary-soft)] border border-[var(--primary)]'
-                          : 'bg-[var(--background-soft)] border border-[var(--border)]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-medium">
-                          {msg.isFromAdmin ? 'Вы (Админ)' : msg.fromName || msg.fromEmail}
-                        </div>
-                        <div className="text-xs text-[var(--muted)]">
-                          {new Date(msg.createdAt).toLocaleString('ru-RU')}
-                        </div>
-                      </div>
-                      <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
-                    </div>
-                  ))}
+                <h3 className="font-semibold text-[var(--foreground)]">Сообщение</h3>
+                <div className="p-4 rounded-lg bg-[var(--background-soft)] border border-[var(--border)]">
+                  <div className="text-sm whitespace-pre-wrap">{selectedTicket.message}</div>
                 </div>
               </div>
 
@@ -404,7 +377,7 @@ export default function OpsSupportPage() {
                     {replying ? 'Отправка...' : 'Отправить ответ'}
                   </button>
                   <div className="text-xs text-[var(--muted)] flex items-center">
-                    Или ответьте на email с тикетом {selectedTicket.ticketId}
+                    Или ответьте на email с тикетом #{selectedTicket.id}
                   </div>
                 </div>
               </div>

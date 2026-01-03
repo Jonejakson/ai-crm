@@ -10,16 +10,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Считаем непрочитанные сообщения от админа в тикетах пользователя
-    const unreadCount = await prisma.supportTicketMessage.count({
-      where: {
-        ticket: {
-          userId: Number(user.id),
-        },
-        isFromAdmin: true,
-        isRead: false,
-      },
-    })
+    // Модель supportTicketMessage не существует, возвращаем 0
+    const unreadCount = 0
 
     return NextResponse.json({ success: true, count: unreadCount })
   } catch (error) {

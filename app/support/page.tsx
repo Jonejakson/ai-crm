@@ -13,23 +13,6 @@ type SupportTicket = {
   createdAt: string
   updatedAt: string
   unreadMessagesCount?: number
-  messages: Array<{
-    id: number
-    message: string
-    fromEmail: string
-    fromName: string | null
-    isFromAdmin: boolean
-    isRead?: boolean
-    createdAt: string
-    files?: Array<{
-      id: number
-      name: string
-      originalName: string
-      url: string
-      size: number
-      mimeType: string
-    }>
-  }>
 }
 
 export default function SupportPage() {
@@ -367,7 +350,7 @@ export default function SupportPage() {
                       </div>
                     </div>
                     <div className="text-xs text-[var(--muted)] mt-2 flex items-center justify-between">
-                      <span>Сообщений: {ticket.messages.length}</span>
+                      <span>Тикет #{ticket.id}</span>
                       <span className="text-[var(--primary)]">
                         {isExpanded ? 'Свернуть' : 'Развернуть'}
                       </span>
