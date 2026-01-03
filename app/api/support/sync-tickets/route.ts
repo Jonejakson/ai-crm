@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { fetchEmailsFromImap } from '@/lib/email/imap-client'
-import { processTicketReplyEmail, shouldProcessAsTicketReply } from '@/lib/support/ticket-email-handler'
-import type { ParsedEmail } from '@/lib/support/ticket-parser'
 import { decryptPassword } from '@/lib/encryption'
-import { getSupportEmailConfig, SUPPORT_EMAIL, isSupportEmailConfigured } from '@/lib/support/config'
+import { getSupportEmailConfig, SUPPORT_EMAIL } from '@/lib/support/config'
 
 /**
  * API для синхронизации ответов на тикеты с почты
@@ -68,39 +66,7 @@ export async function POST(request: NextRequest) {
     // Получаем письма
     const emails = await fetchEmailsFromImap(imapConfig, lastSyncAt)
 
-    let processedTickets = 0
-    let errors: string[] = []
-
-    // Обрабатываем каждое письмо
-    for (const email of emails) {
-      try {
-        const parsedEmail: ParsedEmail = {
-          subject: email.subject,
-          body: email.body,
-          fromEmail: email.fromEmail,
-          fromName: email.from,
-          messageId: email.messageId,
-          inReplyTo: email.threadId,
-          headers: {
-            'To': email.to.join(', ') || SUPPORT_EMAIL,
-            'From': email.fromEmail,
-            ...email.headers,
-          },
-        }
-
-        if (shouldProcessAsTicketReply(parsedEmail, SUPPORT_EMAIL)) {
-          const result = await processTicketReplyEmail(parsedEmail, SUPPORT_EMAIL)
-          if (result.processed) {
-            processedTickets++
-          } else if (result.error) {
-            errors.push(`${email.subject}: ${result.error}`)
-          }
-        }
-      } catch (emailError) {
-        console.error('[sync-tickets][process-email]', emailError)
-        errors.push(`${email.subject}: ${emailError instanceof Error ? emailError.message : 'Unknown error'}`)
-      }
-    }
+    // Обработка тикетов через email временно отключена (модель SupportTicketMessage не существует)
 
     // Обновляем время последней синхронизации
     if (integration) {
@@ -114,9 +80,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      processedTickets,
+      processedTickets: 0,
       totalEmails: emails.length,
-      errors: errors.length > 0 ? errors : undefined,
+      message: 'Ticket processing via email is temporarily disabled',
     })
   } catch (error) {
     console.error('[sync-tickets]', error)
