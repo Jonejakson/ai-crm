@@ -582,9 +582,7 @@ export default function CompanyPage() {
             Управление командой и тарифами
           </h1>
           <p className="text-sm text-[var(--muted)]">
-            {companyInfo?.name 
-              ? 'Контролируйте доступ, роли и подписку Flame CRM из одного окна.'
-              : 'Контролируйте доступ, роли и подписку Flame CRM из одного окна.'}
+            Контролируйте доступ, роли и подписку Flame CRM из одного окна.
           </p>
         </div>
         <a
