@@ -360,70 +360,11 @@ export default function SupportPage() {
                   {/* Раскрывающееся содержимое */}
                   {isExpanded && (
                     <div className="border-t border-[var(--border)] p-4 space-y-4 bg-[var(--background-soft)]">
-                      {/* Переписка */}
+                      {/* Сообщение */}
                       <div className="space-y-3">
-                        <h3 className="font-semibold text-[var(--foreground)]">Переписка</h3>
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto">
-                          {ticket.messages.map((msg) => (
-                            <div
-                              key={msg.id}
-                              className={`p-3 rounded-lg ${
-                                msg.isFromAdmin
-                                  ? 'bg-[var(--primary-soft)] border border-[var(--primary)]'
-                                  : 'bg-white border border-[var(--border)]'
-                              } ${!msg.isRead && msg.isFromAdmin ? 'ring-2 ring-red-300' : ''}`}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="text-sm font-medium">
-                                  {msg.isFromAdmin ? 'Поддержка' : msg.fromName || msg.fromEmail}
-                                  {!msg.isRead && msg.isFromAdmin && (
-                                    <span className="ml-2 text-xs text-red-600">● Новое</span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-[var(--muted)]">
-                                  {new Date(msg.createdAt).toLocaleString('ru-RU')}
-                                </div>
-                              </div>
-                              <div className="text-sm whitespace-pre-wrap">{msg.message}</div>
-                              {/* Прикрепленные файлы */}
-                              {msg.files && msg.files.length > 0 && (
-                                <div className="mt-3 space-y-2">
-                                  {msg.files.map((file) => (
-                                    <div
-                                      key={file.id}
-                                      className="flex items-center gap-2 p-2 bg-white rounded-lg border border-[var(--border)]"
-                                    >
-                                      {file.mimeType.startsWith('image/') ? (
-                                        <img
-                                          src={`/api/files/${file.name}`}
-                                          alt={file.originalName}
-                                          className="w-12 h-12 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                                          onClick={() => window.open(`/api/files/${file.name}`, '_blank')}
-                                        />
-                                      ) : (
-                                        <div className="w-12 h-12 bg-[var(--background-soft)] rounded flex items-center justify-center text-xs">
-                                          📎
-                                        </div>
-                                      )}
-                                      <div className="flex-1 min-w-0">
-                                        <a
-                                          href={`/api/files/${file.name}`}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-sm text-[var(--primary)] hover:underline truncate block"
-                                        >
-                                          {file.originalName}
-                                        </a>
-                                        <div className="text-xs text-[var(--muted)]">
-                                          {formatFileSize(file.size)}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                        <h3 className="font-semibold text-[var(--foreground)]">Сообщение</h3>
+                        <div className="p-4 rounded-lg bg-white border border-[var(--border)]">
+                          <div className="text-sm whitespace-pre-wrap">{ticket.message}</div>
                         </div>
                       </div>
 
