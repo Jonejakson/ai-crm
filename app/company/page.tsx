@@ -52,10 +52,8 @@ interface SubscriptionInfo {
 }
 
 export default function CompanyPage() {
-  console.log('=== COMPANY PAGE COMPONENT LOADED ===')
   const { data: session, status } = useSession()
   const router = useRouter()
-  console.log('=== COMPANY PAGE AFTER HOOKS ===', { status, sessionExists: !!session })
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -106,35 +104,19 @@ export default function CompanyPage() {
   })
 
   useEffect(() => {
-    console.log('Company page useEffect - status:', status)
-    console.log('Company page useEffect - session:', session)
-    console.log('Company page useEffect - role:', session?.user?.role)
-    
     if (status === 'unauthenticated') {
-      console.log('Company page - Unauthenticated, redirecting to login')
       router.push('/login')
       return
     }
 
     if (status === 'authenticated') {
       const userRole = session?.user?.role
-      console.log('Company page - Authenticated, role:', userRole)
-      console.log('Company page - Role check:', {
-        isAdmin: userRole === 'admin',
-        isOwner: userRole === 'owner',
-        roleValue: userRole,
-        roleType: typeof userRole
-      })
       
       // Проверяем, что пользователь админ или owner
       if (userRole !== 'admin' && userRole !== 'owner') {
-        console.log('Company page - Access denied, redirecting to dashboard. Role was:', userRole)
-        // Временно закомментируем редирект для отладки
-        // router.push('/')
-        alert(`Доступ запрещен. Роль: ${userRole || 'не определена'}`)
+        router.push('/')
         return
       }
-      console.log('Company page - Access granted, fetching data')
       fetchUsers()
       fetchBilling()
     }
@@ -538,11 +520,6 @@ export default function CompanyPage() {
     return names[role as keyof typeof names] || role
   }
 
-  // Отладка на раннем этапе
-  console.log('Company page render - status:', status)
-  console.log('Company page render - session:', session)
-  console.log('Company page render - role:', session?.user?.role)
-
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -553,15 +530,10 @@ export default function CompanyPage() {
       </div>
     )
   }
-
-  console.log('Company page - After loading check, role:', session?.user?.role)
   
   if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
-    console.log('Company page - Access denied in render, role is:', session?.user?.role)
     return null
   }
-  
-  console.log('Company page - Access granted, rendering content')
 
   const filteredUsers = users.filter((user) => {
     const term = userSearch.toLowerCase().trim()
