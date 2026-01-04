@@ -52,8 +52,10 @@ interface SubscriptionInfo {
 }
 
 export default function CompanyPage() {
+  console.log('=== COMPANY PAGE COMPONENT LOADED ===')
   const { data: session, status } = useSession()
   const router = useRouter()
+  console.log('=== COMPANY PAGE AFTER HOOKS ===', { status, sessionExists: !!session })
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
