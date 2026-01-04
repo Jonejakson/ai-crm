@@ -147,3 +147,4 @@ docker-compose exec postgres pg_dump -U crm_user crm_db > /tmp/empty_backup.sql
 
 
 
+

@@ -123,3 +123,4 @@ docker-compose exec postgres psql -U crm_user -d crm_db -c "SELECT email, name, 
 
 
 
+

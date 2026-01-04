@@ -110,8 +110,8 @@ export default function CompanyPage() {
     }
 
     if (status === 'authenticated') {
-      // Проверяем, что пользователь админ
-      if (session?.user?.role !== 'admin') {
+      // Проверяем, что пользователь админ или owner
+      if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
         router.push('/')
         return
       }
@@ -529,7 +529,7 @@ export default function CompanyPage() {
     )
   }
 
-  if (session?.user?.role !== 'admin') {
+  if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
     return null
   }
 
