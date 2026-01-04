@@ -16,11 +16,19 @@ export async function GET() {
   }
 
   try {
+    // Для owner не фильтруем по companyId, для admin - фильтруем
+    const isUserOwner = currentUser.role === 'owner'
+    const whereClause: any = {
+      status: { in: ACTIVE_STATUSES },
+    }
+    
+    // Для owner не добавляем фильтр по companyId, для admin - добавляем
+    if (!isUserOwner && currentUser.companyId) {
+      whereClause.companyId = Number(currentUser.companyId)
+    }
+
     const subscription = await prisma.subscription.findFirst({
-      where: {
-        companyId: Number(currentUser.companyId),
-        status: { in: ACTIVE_STATUSES },
-      },
+      where: whereClause,
       include: {
         plan: true,
       },

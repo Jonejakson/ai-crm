@@ -136,6 +136,15 @@ export default function CompanyPage() {
         return
       }
       console.log('ACCESS GRANTED - Fetching data')
+      console.log('CompanyId in session:', session?.user?.companyId)
+      
+      // Проверяем наличие companyId
+      if (!session?.user?.companyId) {
+        console.error('ERROR: companyId is missing in session!')
+        setError('Ошибка: отсутствует информация о компании. Пожалуйста, перелогиньтесь.')
+        return
+      }
+      
       fetchUsers()
       fetchBilling()
     }
@@ -143,19 +152,27 @@ export default function CompanyPage() {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users from /api/admin/users')
       const response = await fetch('/api/admin/users')
+      console.log('Users response status:', response.status)
+      
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error fetching users:', response.status, errorData)
+        
         if (response.status === 403) {
-          router.push('/')
+          setError('Доступ запрещен. Проверьте вашу роль в системе.')
+          // Не делаем редирект сразу, показываем ошибку
           return
         }
-        throw new Error('Ошибка загрузки пользователей')
+        throw new Error(errorData.error || 'Ошибка загрузки пользователей')
       }
       const data = await response.json()
+      console.log('Users data received:', data)
       setUsers(data.users || [])
     } catch (error: any) {
       console.error('Error fetching users:', error)
-      setError('Ошибка загрузки пользователей')
+      setError(error.message || 'Ошибка загрузки пользователей')
     } finally {
       setLoading(false)
     }
@@ -165,13 +182,21 @@ export default function CompanyPage() {
     setBillingLoading(true)
     setBillingError('')
     try {
+      console.log('Fetching billing data')
       const [plansRes, subscriptionRes] = await Promise.all([
         fetch('/api/billing/plans'),
         fetch('/api/billing/subscription'),
       ])
 
+      console.log('Billing responses:', {
+        plans: plansRes.status,
+        subscription: subscriptionRes.status
+      })
+
       if (!plansRes.ok) {
-        throw new Error('Не удалось загрузить список тарифов')
+        const errorData = await plansRes.json().catch(() => ({}))
+        console.error('Error fetching plans:', errorData)
+        throw new Error(errorData.error || 'Не удалось загрузить список тарифов')
       }
 
       const plansData = await plansRes.json()
@@ -180,8 +205,15 @@ export default function CompanyPage() {
       if (subscriptionRes.ok) {
         const subscriptionData = await subscriptionRes.json()
         setSubscription(subscriptionData.subscription || null)
-      } else if (subscriptionRes.status === 401 || subscriptionRes.status === 403) {
-        setSubscription(null)
+      } else {
+        const errorData = await subscriptionRes.json().catch(() => ({}))
+        console.log('Subscription not found or error:', subscriptionRes.status, errorData)
+        if (subscriptionRes.status === 401 || subscriptionRes.status === 403) {
+          setSubscription(null)
+        } else {
+          // Для других ошибок не показываем ошибку, просто нет подписки
+          setSubscription(null)
+        }
       }
     } catch (error: any) {
       console.error('Error fetching billing data:', error)
