@@ -523,6 +523,11 @@ export default function CompanyPage() {
     return names[role as keyof typeof names] || role
   }
 
+  // Отладка на раннем этапе
+  console.log('Company page render - status:', status)
+  console.log('Company page render - session:', session)
+  console.log('Company page render - role:', session?.user?.role)
+
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -534,9 +539,14 @@ export default function CompanyPage() {
     )
   }
 
+  console.log('Company page - After loading check, role:', session?.user?.role)
+  
   if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
+    console.log('Company page - Access denied in render, role is:', session?.user?.role)
     return null
   }
+  
+  console.log('Company page - Access granted, rendering content')
 
   const filteredUsers = users.filter((user) => {
     const term = userSearch.toLowerCase().trim()
