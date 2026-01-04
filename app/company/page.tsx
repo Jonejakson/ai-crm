@@ -110,8 +110,13 @@ export default function CompanyPage() {
     }
 
     if (status === 'authenticated') {
+      // Временная отладка
+      console.log('Company page - Session:', session)
+      console.log('Company page - User role:', session?.user?.role)
+      
       // Проверяем, что пользователь админ или owner
       if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
+        console.log('Company page - Access denied, redirecting to dashboard')
         router.push('/')
         return
       }
