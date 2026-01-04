@@ -104,22 +104,35 @@ export default function CompanyPage() {
   })
 
   useEffect(() => {
+    console.log('Company page useEffect - status:', status)
+    console.log('Company page useEffect - session:', session)
+    console.log('Company page useEffect - role:', session?.user?.role)
+    
     if (status === 'unauthenticated') {
+      console.log('Company page - Unauthenticated, redirecting to login')
       router.push('/login')
       return
     }
 
     if (status === 'authenticated') {
-      // Временная отладка
-      console.log('Company page - Session:', session)
-      console.log('Company page - User role:', session?.user?.role)
+      const userRole = session?.user?.role
+      console.log('Company page - Authenticated, role:', userRole)
+      console.log('Company page - Role check:', {
+        isAdmin: userRole === 'admin',
+        isOwner: userRole === 'owner',
+        roleValue: userRole,
+        roleType: typeof userRole
+      })
       
       // Проверяем, что пользователь админ или owner
-      if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
-        console.log('Company page - Access denied, redirecting to dashboard')
-        router.push('/')
+      if (userRole !== 'admin' && userRole !== 'owner') {
+        console.log('Company page - Access denied, redirecting to dashboard. Role was:', userRole)
+        // Временно закомментируем редирект для отладки
+        // router.push('/')
+        alert(`Доступ запрещен. Роль: ${userRole || 'не определена'}`)
         return
       }
+      console.log('Company page - Access granted, fetching data')
       fetchUsers()
       fetchBilling()
     }
