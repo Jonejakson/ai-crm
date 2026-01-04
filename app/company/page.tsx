@@ -133,12 +133,10 @@ export default function CompanyPage() {
         const errorData = await response.json().catch(() => ({}))
         console.error('Error fetching users:', response.status, errorData)
         
-        if (response.status === 403) {
-          setError('Доступ запрещен. Проверьте вашу роль в системе.')
-          // Не делаем редирект сразу, показываем ошибку
-          return
-        }
-        throw new Error(errorData.error || 'Ошибка загрузки пользователей')
+        // ВРЕМЕННО: не делаем редирект, просто показываем ошибку
+        setError(`Ошибка загрузки пользователей: ${errorData.error || response.status}`)
+        setUsers([]) // Устанавливаем пустой массив
+        return
       }
       const data = await response.json()
       console.log('Users data received:', data)
@@ -146,6 +144,7 @@ export default function CompanyPage() {
     } catch (error: any) {
       console.error('Error fetching users:', error)
       setError(error.message || 'Ошибка загрузки пользователей')
+      setUsers([]) // Устанавливаем пустой массив при ошибке
     } finally {
       setLoading(false)
     }
@@ -1228,15 +1227,16 @@ export default function CompanyPage() {
         </div>
       </section>
 
-      <WebFormsSection />
-      <EmailIntegrationsSection />
-      <WebhookIntegrationsSection />
-      <TelegramBotSection />
-      <WhatsAppSection />
-      <AdvertisingIntegrationsSection />
-      <MoyskladSection />
-      <OneCSection />
-      <MigrationSection />
+      {/* ВРЕМЕННО: закомментированы секции для отладки */}
+      {/* <WebFormsSection /> */}
+      {/* <EmailIntegrationsSection /> */}
+      {/* <WebhookIntegrationsSection /> */}
+      {/* <TelegramBotSection /> */}
+      {/* <WhatsAppSection /> */}
+      {/* <AdvertisingIntegrationsSection /> */}
+      {/* <MoyskladSection /> */}
+      {/* <OneCSection /> */}
+      {/* <MigrationSection /> */}
 
       {/* Модальное окно выбора периода оплаты */}
       {selectedPlan && (
