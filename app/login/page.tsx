@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn as nextAuthSignIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { data: session, status } = useSession()
+  
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -92,12 +93,27 @@ function LoginForm() {
     setIsLoading(true)
 
     if (isRegister) {
-      // Регистрация
+      // Регистрация - отправляем все необходимые поля
       try {
+        const registerData: any = {
+          email,
+          password,
+          name,
+          lastName: lastName || null,
+          phone: phone || '',
+          userType: userType || 'individual',
+        }
+
+        // Для юр лиц добавляем companyName и inn
+        if (userType === 'legal') {
+          registerData.companyName = companyName || ''
+          registerData.inn = inn || ''
+        }
+
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name }),
+          body: JSON.stringify(registerData),
         })
 
         const data = await res.json()
@@ -452,12 +468,3 @@ function LoginForm() {
     </div>
   )
 }
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Загрузка...</div>}>
-      <LoginForm />
-    </Suspense>
-  )
-}
-
