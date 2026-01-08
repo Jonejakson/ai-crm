@@ -108,7 +108,28 @@ export default function Dashboard() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
-  const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
+  const [mounted, setMounted] = useState(false)
+  // Инициализируем метрики с помощью lazy initialization, чтобы избежать проблем с гидратацией
+  const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_FUNNEL_METRICS
+    try {
+      const saved = localStorage.getItem('dashboard_funnel_metrics')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length) {
+          const validIds = parsed.filter((id: string) =>
+            FUNNEL_METRIC_META.some((meta) => meta.id === id)
+          )
+          if (validIds.length) {
+            return validIds
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading funnel metrics:', error)
+    }
+    return DEFAULT_FUNNEL_METRICS
+  })
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
@@ -213,35 +234,20 @@ export default function Dashboard() {
     return null
   }
 
-  // Загружаем сохраненные метрики из localStorage только после монтирования
+  // Отмечаем компонент как смонтированный после первого рендера
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    // Используем небольшую задержку, чтобы убедиться, что компонент полностью смонтирован
-    const timer = setTimeout(() => {
-      try {
-        const saved = localStorage.getItem('dashboard_funnel_metrics')
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length) {
-            const validIds = parsed.filter((id: string) =>
-              FUNNEL_METRIC_META.some((meta) => meta.id === id)
-            )
-            if (validIds.length) {
-              setSelectedFunnelMetrics(validIds)
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error loading funnel metrics:', error)
-      }
-    }, 0)
-    return () => clearTimeout(timer)
+    setMounted(true)
   }, [])
 
+  // Сохраняем метрики в localStorage только после монтирования
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
-  }, [selectedFunnelMetrics])
+    if (!mounted || typeof window === 'undefined') return
+    try {
+      localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
+    } catch (error) {
+      console.error('Error saving funnel metrics:', error)
+    }
+  }, [selectedFunnelMetrics, mounted])
 
   useEffect(() => {
     if (!isMetricsMenuOpen) return
