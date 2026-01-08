@@ -112,6 +112,72 @@ export default function Dashboard() {
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
+  const checkNotifications = useCallback(async () => {
+    try {
+      await fetch('/api/notifications/check', { method: 'POST' })
+    } catch (error) {
+      console.error('Error checking notifications:', error)
+    }
+  }, [])
+
+  const fetchData = useCallback(async () => {
+    // Проверяем, что сессия готова перед запросом данных
+    if (status !== 'authenticated' || !session) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      const contactsUrl = selectedUserId 
+        ? `/api/contacts?userId=${selectedUserId}` 
+        : '/api/contacts'
+      const tasksUrl = selectedUserId 
+        ? `/api/tasks?userId=${selectedUserId}` 
+        : '/api/tasks'
+      const dealsUrl = selectedUserId 
+        ? `/api/deals?userId=${selectedUserId}` 
+        : '/api/deals'
+      
+      const [contactsRes, tasksRes, dealsRes] = await Promise.all([
+        fetch(contactsUrl),
+        fetch(tasksUrl),
+        fetch(dealsUrl)
+      ])
+      
+      // Проверяем статус ответов
+      if (!contactsRes.ok) {
+        console.error('Error fetching contacts:', contactsRes.statusText)
+        setContacts([])
+      } else {
+        const contactsData = await contactsRes.json()
+        setContacts(Array.isArray(contactsData) ? contactsData : [])
+      }
+      
+      if (!tasksRes.ok) {
+        console.error('Error fetching tasks:', tasksRes.statusText)
+        setTasks([])
+      } else {
+        const tasksData = await tasksRes.json()
+        setTasks(Array.isArray(tasksData) ? tasksData : [])
+      }
+
+      if (!dealsRes.ok) {
+        console.error('Error fetching deals:', dealsRes.statusText)
+        setDeals([])
+      } else {
+        const dealsData = await dealsRes.json()
+        setDeals(Array.isArray(dealsData) ? dealsData : [])
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setContacts([])
+      setTasks([])
+      setDeals([])
+    } finally {
+      setLoading(false)
+    }
+  }, [status, session, selectedUserId])
+
   // Проверяем авторизацию
   useEffect(() => {
     if (status === 'loading') {
@@ -187,72 +253,6 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
-
-  const checkNotifications = useCallback(async () => {
-    try {
-      await fetch('/api/notifications/check', { method: 'POST' })
-    } catch (error) {
-      console.error('Error checking notifications:', error)
-    }
-  }, [])
-
-  const fetchData = useCallback(async () => {
-    // Проверяем, что сессия готова перед запросом данных
-    if (status !== 'authenticated' || !session) {
-      return
-    }
-
-    try {
-      setLoading(true)
-      const contactsUrl = selectedUserId 
-        ? `/api/contacts?userId=${selectedUserId}` 
-        : '/api/contacts'
-      const tasksUrl = selectedUserId 
-        ? `/api/tasks?userId=${selectedUserId}` 
-        : '/api/tasks'
-      const dealsUrl = selectedUserId 
-        ? `/api/deals?userId=${selectedUserId}` 
-        : '/api/deals'
-      
-      const [contactsRes, tasksRes, dealsRes] = await Promise.all([
-        fetch(contactsUrl),
-        fetch(tasksUrl),
-        fetch(dealsUrl)
-      ])
-      
-      // Проверяем статус ответов
-      if (!contactsRes.ok) {
-        console.error('Error fetching contacts:', contactsRes.statusText)
-        setContacts([])
-      } else {
-        const contactsData = await contactsRes.json()
-        setContacts(Array.isArray(contactsData) ? contactsData : [])
-      }
-      
-      if (!tasksRes.ok) {
-        console.error('Error fetching tasks:', tasksRes.statusText)
-        setTasks([])
-      } else {
-        const tasksData = await tasksRes.json()
-        setTasks(Array.isArray(tasksData) ? tasksData : [])
-      }
-
-      if (!dealsRes.ok) {
-        console.error('Error fetching deals:', dealsRes.statusText)
-        setDeals([])
-      } else {
-        const dealsData = await dealsRes.json()
-        setDeals(Array.isArray(dealsData) ? dealsData : [])
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error)
-      setContacts([])
-      setTasks([])
-      setDeals([])
-    } finally {
-      setLoading(false)
-    }
-  }, [status, session, selectedUserId])
 
   if (loading) {
     return (
