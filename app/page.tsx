@@ -1,7 +1,7 @@
 // app/page.tsx
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -123,12 +123,12 @@ export default function Dashboard() {
       return
     }
 
-    if (status === 'authenticated') {
+    if (status === 'authenticated' && session) {
       fetchData()
       // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
       checkNotifications()
     }
-  }, [status, session, router, selectedUserId])
+  }, [status, session, router, fetchData, checkNotifications])
 
   // Показываем загрузку пока проверяется авторизация
   if (status === 'loading') {
@@ -147,24 +147,29 @@ export default function Dashboard() {
     return null
   }
 
+  // Загружаем сохраненные метрики из localStorage только после монтирования
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const saved = localStorage.getItem('dashboard_funnel_metrics')
-    if (saved) {
+    // Используем небольшую задержку, чтобы убедиться, что компонент полностью смонтирован
+    const timer = setTimeout(() => {
       try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length) {
-          const validIds = parsed.filter((id: string) =>
-            FUNNEL_METRIC_META.some((meta) => meta.id === id)
-          )
-          if (validIds.length) {
-            setSelectedFunnelMetrics(validIds)
+        const saved = localStorage.getItem('dashboard_funnel_metrics')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          if (Array.isArray(parsed) && parsed.length) {
+            const validIds = parsed.filter((id: string) =>
+              FUNNEL_METRIC_META.some((meta) => meta.id === id)
+            )
+            if (validIds.length) {
+              setSelectedFunnelMetrics(validIds)
+            }
           }
         }
       } catch (error) {
         console.error('Error loading funnel metrics:', error)
       }
-    }
+    }, 0)
+    return () => clearTimeout(timer)
   }, [])
 
   useEffect(() => {
@@ -183,16 +188,22 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
 
-  const checkNotifications = async () => {
+  const checkNotifications = useCallback(async () => {
     try {
       await fetch('/api/notifications/check', { method: 'POST' })
     } catch (error) {
       console.error('Error checking notifications:', error)
     }
-  }
+  }, [])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    // Проверяем, что сессия готова перед запросом данных
+    if (status !== 'authenticated' || !session) {
+      return
+    }
+
     try {
+      setLoading(true)
       const contactsUrl = selectedUserId 
         ? `/api/contacts?userId=${selectedUserId}` 
         : '/api/contacts'
@@ -241,7 +252,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [status, session, selectedUserId])
 
   if (loading) {
     return (
@@ -294,7 +305,8 @@ export default function Dashboard() {
   }
 
   // Вычисляем метрики напрямую без useMemo, чтобы избежать проблем с зависимостями
-  const dealsArr = deals || []
+  // Защита от ошибок при вычислении метрик
+  const dealsArr = Array.isArray(deals) ? deals : []
   const dealsLength = dealsArr.length
   
   let activeDealsCount = 0
@@ -305,7 +317,8 @@ export default function Dashboard() {
   let averageDealAmount = 0
   let funnelMetricDefinitions = FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' }))
   
-  if (Array.isArray(dealsArr) && dealsLength > 0) {
+  try {
+    if (dealsLength > 0) {
     // Вычисляем все метрики один раз
     activeDealsCount = dealsArr.filter(deal => !isClosedStage(deal.stage)).length
     totalDealsAmount = dealsArr.reduce((sum, deal) => sum + (deal.amount || 0), 0)
@@ -360,6 +373,10 @@ export default function Dashboard() {
       }
       return { ...meta, value }
     })
+    }
+  } catch (error) {
+    console.error('Error calculating metrics:', error)
+    // В случае ошибки используем значения по умолчанию
   }
 
   // Вычисляем metricsToDisplay напрямую, без useMemo, чтобы избежать циклов
