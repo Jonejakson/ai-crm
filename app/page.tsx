@@ -107,6 +107,7 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
+  const [dataLoaded, setDataLoaded] = useState(false) // Флаг, что данные хотя бы раз загружены
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
   // НИКОГДА не используем localStorage в инициализации useState - это вызывает проблемы гидратации
@@ -171,11 +172,16 @@ export default function Dashboard() {
         const dealsData = await dealsRes.json()
         setDeals(Array.isArray(dealsData) ? dealsData : [])
       }
+      
+      // Помечаем, что данные загружены (хотя бы один раз)
+      setDataLoaded(true)
     } catch (error) {
       console.error('Error fetching data:', error)
       setContacts([])
       setTasks([])
       setDeals([])
+      // Даже при ошибке помечаем, что попытка загрузки была
+      setDataLoaded(true)
     } finally {
       setLoading(false)
     }
@@ -217,8 +223,16 @@ export default function Dashboard() {
   }
 
   // Отмечаем компонент как смонтированный сразу при монтировании
+  // Также сбрасываем состояние при размонтировании для правильной работы при навигации
   useEffect(() => {
     setMounted(true)
+    
+    // При размонтировании (переход на другую страницу) сбрасываем состояние
+    return () => {
+      setMounted(false)
+      setDataLoaded(false)
+      setLoading(true)
+    }
   }, [])
 
   // Загружаем сохраненные метрики только после монтирования на клиенте
@@ -271,8 +285,8 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
 
-  // Показываем загрузку пока данные не загружены
-  if (loading || status !== 'authenticated' || !session) {
+  // Показываем загрузку пока проверяется авторизация, данные загружаются или компонент не смонтирован
+  if (status === 'loading' || status !== 'authenticated' || !session || loading || !mounted || !dataLoaded) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
