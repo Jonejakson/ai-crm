@@ -454,7 +454,7 @@ export default function Dashboard() {
         {[
           { 
             label: 'Клиенты', 
-            value: contacts.length, 
+            value: String(contacts.length), 
             Icon: UsersIcon, 
             note: `+${newContactsCount} за 7 дней`, 
             accent: 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600',
@@ -462,7 +462,7 @@ export default function Dashboard() {
           },
           { 
             label: 'Активные задачи', 
-            value: pendingTasks, 
+            value: String(pendingTasks), 
             Icon: CheckCircleIcon, 
             note: overdueTasks ? `${overdueTasks} просрочено` : 'Без просрочки', 
             accent: 'bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600',
@@ -470,7 +470,7 @@ export default function Dashboard() {
           },
           { 
             label: 'Активные сделки', 
-            value: activeDealsCount, 
+            value: String(activeDealsCount), 
             Icon: BriefcaseIcon, 
             note: `${openDealsAmount.toLocaleString('ru-RU')} ₽ в работе`, 
             accent: 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600',
@@ -488,7 +488,7 @@ export default function Dashboard() {
           <div key={card.label} className="stat-card flex items-center justify-between gap-4 group">
             <div className="flex-1">
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-2">{card.label}</p>
-              <p className="stat-card-value mb-1 group-hover:scale-105 transition-transform duration-300">{card.value}</p>
+              <p className="stat-card-value mb-1 group-hover:scale-105 transition-transform duration-300">{String(card.value)}</p>
               <p className="text-sm text-[var(--muted)] font-medium">{card.note}</p>
             </div>
             <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 ${card.accent}`}>
@@ -557,7 +557,7 @@ export default function Dashboard() {
             {metricsToDisplay.map((metric) => (
               <div key={metric.id} className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--panel-muted)] to-[var(--surface)] p-5 hover:shadow-md transition-all duration-300 group">
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-3">{metric.label}</p>
-                <p className={`text-3xl font-bold bg-gradient-to-r ${metric.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{metric.value}</p>
+                <p className={`text-3xl font-bold bg-gradient-to-r ${metric.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{String(metric.value || '—')}</p>
               </div>
             ))}
           </div>
