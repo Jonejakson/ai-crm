@@ -216,16 +216,18 @@ export default function Dashboard() {
     return null
   }
 
-  // Отмечаем компонент как смонтированный и загружаем сохраненные метрики
+  // Отмечаем компонент как смонтированный сразу при монтировании
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Загружаем сохраненные метрики только после монтирования на клиенте
   // Используем setTimeout для гарантии, что это происходит после первого рендера
   useEffect(() => {
-    // Используем requestAnimationFrame для гарантии выполнения после первого paint
-    const timer = requestAnimationFrame(() => {
-      setMounted(true)
-      
-      // Загружаем сохраненные метрики только после монтирования на клиенте
-      if (typeof window === 'undefined') return
-      
+    if (!mounted || typeof window === 'undefined') return
+    
+    // Используем setTimeout для загрузки localStorage после первого рендера
+    const timer = setTimeout(() => {
       try {
         const saved = localStorage.getItem('dashboard_funnel_metrics')
         if (saved) {
@@ -243,10 +245,10 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error loading funnel metrics:', error)
       }
-    })
+    }, 0)
     
-    return () => cancelAnimationFrame(timer)
-  }, []) // Не добавляем selectedFunnelMetrics в зависимости, чтобы избежать циклов
+    return () => clearTimeout(timer)
+  }, [mounted]) // Загружаем только после монтирования
 
   // Сохраняем метрики в localStorage только после монтирования
   useEffect(() => {
@@ -269,7 +271,8 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
 
-  if (loading) {
+  // Показываем загрузку пока данные не загружены
+  if (loading || status !== 'authenticated' || !session) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -286,22 +289,42 @@ export default function Dashboard() {
     )
   }
 
-  const pendingTasks = (tasks || []).filter(task => task.status === 'pending').length
-  const overdueTasks = (tasks || []).filter(task => {
-    if (task.status !== 'pending' || !task.dueDate) return false
-    return new Date(task.dueDate) < new Date()
-  }).length
-  const recentContacts = (contacts || []).slice(0, 5)
-  const recentDeals = (deals || []).sort((a, b) => {
-    // Сортируем по дате обновления (новые сверху), если нет updatedAt, используем createdAt
-    const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0)
-    const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0)
-    return dateB - dateA
-  }).slice(0, 5)
+  // Безопасные вычисления с защитой от ошибок
+  const pendingTasks = Array.isArray(tasks) ? tasks.filter(task => task && task.status === 'pending').length : 0
+  const overdueTasks = Array.isArray(tasks) ? tasks.filter(task => {
+    if (!task || task.status !== 'pending' || !task.dueDate) return false
+    try {
+      return new Date(task.dueDate) < new Date()
+    } catch {
+      return false
+    }
+  }).length : 0
+  
+  const recentContacts = Array.isArray(contacts) ? contacts.slice(0, 5) : []
+  const recentDeals = Array.isArray(deals) ? deals
+    .filter(deal => deal != null)
+    .sort((a, b) => {
+      try {
+        // Сортируем по дате обновления (новые сверху), если нет updatedAt, используем createdAt
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0)
+        return dateB - dateA
+      } catch {
+        return 0
+      }
+    })
+    .slice(0, 5) : []
   
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  const newContactsCount = (contacts || []).filter(contact => new Date(contact.createdAt) >= weekAgo).length
+  const newContactsCount = Array.isArray(contacts) ? contacts.filter(contact => {
+    if (!contact || !contact.createdAt) return false
+    try {
+      return new Date(contact.createdAt) >= weekAgo
+    } catch {
+      return false
+    }
+  }).length : 0
 
   const handleMetricToggle = (metricId: string) => {
     setSelectedFunnelMetrics((prev) => {
