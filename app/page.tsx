@@ -223,7 +223,6 @@ export default function Dashboard() {
   }
 
   // Отмечаем компонент как смонтированный сразу при монтировании
-  // Также сбрасываем состояние при размонтировании для правильной работы при навигации
   useEffect(() => {
     setMounted(true)
     
@@ -236,12 +235,11 @@ export default function Dashboard() {
   }, [])
 
   // Загружаем сохраненные метрики только после монтирования на клиенте
-  // Используем setTimeout для гарантии, что это происходит после первого рендера
   useEffect(() => {
-    if (!mounted || typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
     
-    // Используем setTimeout для загрузки localStorage после первого рендера
-    const timer = setTimeout(() => {
+    // Используем requestAnimationFrame для загрузки localStorage после первого рендера
+    const rafId = requestAnimationFrame(() => {
       try {
         const saved = localStorage.getItem('dashboard_funnel_metrics')
         if (saved) {
@@ -259,20 +257,20 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error loading funnel metrics:', error)
       }
-    }, 0)
+    })
     
-    return () => clearTimeout(timer)
-  }, [mounted]) // Загружаем только после монтирования
+    return () => cancelAnimationFrame(rafId)
+  }, []) // Загружаем только один раз после монтирования
 
-  // Сохраняем метрики в localStorage только после монтирования
+  // Сохраняем метрики в localStorage
   useEffect(() => {
-    if (!mounted || typeof window === 'undefined') return
+    if (typeof window === 'undefined') return
     try {
       localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
     } catch (error) {
       console.error('Error saving funnel metrics:', error)
     }
-  }, [selectedFunnelMetrics, mounted])
+  }, [selectedFunnelMetrics])
 
   useEffect(() => {
     if (!isMetricsMenuOpen) return
@@ -285,8 +283,9 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
 
-  // Показываем загрузку пока проверяется авторизация, данные загружаются или компонент не смонтирован
-  if (status !== 'authenticated' || !session || loading || !mounted || !dataLoaded) {
+  // Показываем загрузку пока проверяется авторизация или данные загружаются
+  // НЕ используем mounted здесь, чтобы избежать проблем гидратации
+  if (status !== 'authenticated' || !session || loading || !dataLoaded) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -470,17 +469,17 @@ export default function Dashboard() {
           },
           { 
             label: 'Активные сделки', 
-            value: String(activeDealsCount), 
+            value: String(activeDealsCount || 0), 
             Icon: BriefcaseIcon, 
-            note: `${openDealsAmount.toLocaleString('ru-RU')} ₽ в работе`, 
+            note: `${Number(openDealsAmount || 0).toLocaleString('ru-RU')} ₽ в работе`, 
             accent: 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600',
             gradient: 'from-purple-500 to-purple-600'
           },
           { 
             label: 'Выручка', 
-            value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, 
+            value: `${Number(totalDealsAmount || 0).toLocaleString('ru-RU')} ₽`, 
             Icon: CurrencyIcon, 
-            note: `${wonAmount.toLocaleString('ru-RU')} ₽ закрыто успешно`, 
+            note: `${Number(wonAmount || 0).toLocaleString('ru-RU')} ₽ закрыто успешно`, 
             accent: 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600',
             gradient: 'from-emerald-500 to-emerald-600'
           },
@@ -569,7 +568,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Клиенты</p>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Последние контакты</h2>
             </div>
-            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{recentContacts.length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{String(recentContacts.length || 0)} записей</span>
           </div>
           <div>
             {recentContacts.length === 0 ? (
@@ -590,17 +589,23 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-soft)] to-[var(--primary)] flex items-center justify-center text-[var(--primary)] font-bold text-sm shadow-sm group-hover:scale-110 transition-transform duration-300">
-                            {contact.name.charAt(0).toUpperCase()}
+                            {String(contact.name || '').charAt(0).toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[var(--foreground)] truncate">{contact.name}</p>
-                            <p className="text-xs text-[var(--muted)] truncate">{contact.email}</p>
+                            <p className="font-semibold text-[var(--foreground)] truncate">{String(contact.name || '')}</p>
+                            <p className="text-xs text-[var(--muted)] truncate">{String(contact.email || '')}</p>
                           </div>
                         </div>
-                        <p className="text-sm text-[var(--muted)] ml-[52px]">{contact.company || '—'}</p>
+                        <p className="text-sm text-[var(--muted)] ml-[52px]">{String(contact.company || '—')}</p>
                       </div>
                       <span className="text-xs text-[var(--muted)] font-medium whitespace-nowrap">
-                        {new Date(contact.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        {contact.createdAt ? (() => {
+                          try {
+                            return new Date(contact.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+                          } catch {
+                            return '—'
+                          }
+                        })() : '—'}
                       </span>
                     </div>
                   </div>
@@ -620,7 +625,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Последние сделки</h2>
             </div>
-            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{recentDeals.length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{String(recentDeals.length || 0)} записей</span>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
               {recentDeals.length === 0 ? (
@@ -643,9 +648,9 @@ export default function Dashboard() {
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">{deal.title}</p>
+                          <p className="font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">{String(deal.title || '')}</p>
                           <p className="text-xs text-[var(--muted)] truncate">
-                            {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
+                            {Number(deal.amount || 0).toLocaleString('ru-RU')} {String(deal.currency || '₽')} • {String(deal.stage || '')}
                           </p>
                         </div>
                       </div>
@@ -663,7 +668,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Последние задачи</h2>
             </div>
-            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{(tasks || []).slice(0, 5).length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{String((tasks || []).slice(0, 5).length || 0)} записей</span>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
               {(tasks || []).slice(0, 5).length === 0 ? (
@@ -682,9 +687,15 @@ export default function Dashboard() {
                     <div key={task.id} className="px-6 py-4 hover:bg-[var(--background-soft)] transition-colors duration-200">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[var(--foreground)] truncate">{task.title}</p>
+                          <p className="font-semibold text-[var(--foreground)] truncate">{String(task.title || '')}</p>
                           <p className="text-xs text-[var(--muted)] truncate">
-                            Статус: {task.status === 'completed' ? 'выполнено' : 'в работе'} • {task.dueDate ? `до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : 'без срока'}
+                            Статус: {task.status === 'completed' ? 'выполнено' : 'в работе'} • {task.dueDate ? (() => {
+                              try {
+                                return `до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}`
+                              } catch {
+                                return 'без срока'
+                              }
+                            })() : 'без срока'}
                           </p>
                         </div>
                       </div>
