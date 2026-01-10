@@ -107,12 +107,10 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
-  const [dataLoaded, setDataLoaded] = useState(false) // Флаг, что данные хотя бы раз загружены
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
-  const [mounted, setMounted] = useState(false)
-  // НИКОГДА не используем localStorage в инициализации useState - это вызывает проблемы гидратации
-  // Всегда используем значение по умолчанию, а localStorage читаем только после монтирования
+  // Используем значение по умолчанию, localStorage читаем только на клиенте после монтирования
   const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
+  const [isClient, setIsClient] = useState(false)
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
@@ -169,19 +167,14 @@ export default function Dashboard() {
         console.error('Error fetching deals:', dealsRes.statusText)
         setDeals([])
       } else {
-        const dealsData = await dealsRes.json()
-        setDeals(Array.isArray(dealsData) ? dealsData : [])
+      const dealsData = await dealsRes.json()
+      setDeals(Array.isArray(dealsData) ? dealsData : [])
       }
-      
-      // Помечаем, что данные загружены (хотя бы один раз)
-      setDataLoaded(true)
     } catch (error) {
       console.error('Error fetching data:', error)
       setContacts([])
       setTasks([])
       setDeals([])
-      // Даже при ошибке помечаем, что попытка загрузки была
-      setDataLoaded(true)
     } finally {
       setLoading(false)
     }
@@ -222,55 +215,42 @@ export default function Dashboard() {
     return null
   }
 
-  // Отмечаем компонент как смонтированный сразу при монтировании
+  // Отмечаем, что мы на клиенте после монтирования
   useEffect(() => {
-    setMounted(true)
-    
-    // При размонтировании (переход на другую страницу) сбрасываем состояние
-    return () => {
-      setMounted(false)
-      setDataLoaded(false)
-      setLoading(true)
-    }
+    setIsClient(true)
   }, [])
 
-  // Загружаем сохраненные метрики только после монтирования на клиенте
+  // Загружаем сохраненные метрики только на клиенте после монтирования
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (!isClient) return
     
-    // Используем requestAnimationFrame для загрузки localStorage после первого рендера
-    const rafId = requestAnimationFrame(() => {
-      try {
-        const saved = localStorage.getItem('dashboard_funnel_metrics')
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (Array.isArray(parsed) && parsed.length) {
-            const validIds = parsed.filter((id: string) =>
-              FUNNEL_METRIC_META.some((meta) => meta.id === id)
-            )
-            if (validIds.length && JSON.stringify(validIds) !== JSON.stringify(selectedFunnelMetrics)) {
-              // Обновляем только если значения действительно отличаются
-              setSelectedFunnelMetrics(validIds)
-            }
+    try {
+      const saved = localStorage.getItem('dashboard_funnel_metrics')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length) {
+          const validIds = parsed.filter((id: string) =>
+            FUNNEL_METRIC_META.some((meta) => meta.id === id)
+          )
+          if (validIds.length) {
+            setSelectedFunnelMetrics(validIds)
           }
         }
-      } catch (error) {
-        console.error('Error loading funnel metrics:', error)
       }
-    })
-    
-    return () => cancelAnimationFrame(rafId)
-  }, []) // Загружаем только один раз после монтирования
+    } catch (error) {
+      console.error('Error loading funnel metrics:', error)
+    }
+  }, [isClient])
 
-  // Сохраняем метрики в localStorage
+  // Сохраняем метрики в localStorage только на клиенте
   useEffect(() => {
-    if (typeof window === 'undefined') return
+    if (!isClient) return
     try {
       localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
     } catch (error) {
       console.error('Error saving funnel metrics:', error)
     }
-  }, [selectedFunnelMetrics])
+  }, [selectedFunnelMetrics, isClient])
 
   useEffect(() => {
     if (!isMetricsMenuOpen) return
@@ -284,8 +264,8 @@ export default function Dashboard() {
   }, [isMetricsMenuOpen])
 
   // Показываем загрузку пока проверяется авторизация или данные загружаются
-  // НЕ используем mounted здесь, чтобы избежать проблем гидратации
-  if (status !== 'authenticated' || !session || loading || !dataLoaded) {
+  // На сервере всегда показываем скелетон, чтобы избежать проблем гидратации
+  if (status !== 'authenticated' || !session || loading || !isClient) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -441,7 +421,7 @@ export default function Dashboard() {
       )
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" suppressHydrationWarning>
       <div className="glass-panel px-6 py-5 rounded-3xl">
         <UserFilter 
           selectedUserId={selectedUserId} 
@@ -455,7 +435,7 @@ export default function Dashboard() {
             label: 'Клиенты', 
             value: String(contacts.length), 
             Icon: UsersIcon, 
-            note: `+${newContactsCount} за 7 дней`, 
+            note: `+${String(newContactsCount)} за 7 дней`, 
             accent: 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600',
             gradient: 'from-blue-500 to-blue-600'
           },
@@ -463,7 +443,7 @@ export default function Dashboard() {
             label: 'Активные задачи', 
             value: String(pendingTasks), 
             Icon: CheckCircleIcon, 
-            note: overdueTasks ? `${overdueTasks} просрочено` : 'Без просрочки', 
+            note: overdueTasks ? `${String(overdueTasks)} просрочено` : 'Без просрочки', 
             accent: 'bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600',
             gradient: 'from-amber-500 to-amber-600'
           },
