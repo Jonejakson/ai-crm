@@ -108,9 +108,8 @@ export default function Dashboard() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
-  // Используем значение по умолчанию, localStorage читаем только на клиенте после монтирования
+  // Используем значение по умолчанию, localStorage читаем только после загрузки данных
   const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
-  const [isClient, setIsClient] = useState(false)
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
@@ -215,14 +214,9 @@ export default function Dashboard() {
     return null
   }
 
-  // Отмечаем, что мы на клиенте после монтирования
+  // Загружаем сохраненные метрики только после загрузки данных (на клиенте)
   useEffect(() => {
-    setIsClient(true)
-  }, [])
-
-  // Загружаем сохраненные метрики только на клиенте после монтирования
-  useEffect(() => {
-    if (!isClient) return
+    if (loading || typeof window === 'undefined') return
     
     try {
       const saved = localStorage.getItem('dashboard_funnel_metrics')
@@ -240,17 +234,17 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error loading funnel metrics:', error)
     }
-  }, [isClient])
+  }, [loading])
 
-  // Сохраняем метрики в localStorage только на клиенте
+  // Сохраняем метрики в localStorage
   useEffect(() => {
-    if (!isClient) return
+    if (loading || typeof window === 'undefined') return
     try {
       localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
     } catch (error) {
       console.error('Error saving funnel metrics:', error)
     }
-  }, [selectedFunnelMetrics, isClient])
+  }, [selectedFunnelMetrics, loading])
 
   useEffect(() => {
     if (!isMetricsMenuOpen) return
@@ -264,8 +258,7 @@ export default function Dashboard() {
   }, [isMetricsMenuOpen])
 
   // Показываем загрузку пока проверяется авторизация или данные загружаются
-  // На сервере всегда показываем скелетон, чтобы избежать проблем гидратации
-  if (status !== 'authenticated' || !session || loading || !isClient) {
+  if (status !== 'authenticated' || !session || loading) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -421,7 +414,7 @@ export default function Dashboard() {
       )
 
   return (
-    <div className="space-y-8" suppressHydrationWarning>
+    <div className="space-y-8">
       <div className="glass-panel px-6 py-5 rounded-3xl">
         <UserFilter 
           selectedUserId={selectedUserId} 
