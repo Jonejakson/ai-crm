@@ -286,7 +286,7 @@ export default function Dashboard() {
   }, [isMetricsMenuOpen])
 
   // Показываем загрузку пока проверяется авторизация, данные загружаются или компонент не смонтирован
-  if (status === 'loading' || status !== 'authenticated' || !session || loading || !mounted || !dataLoaded) {
+  if (status !== 'authenticated' || !session || loading || !mounted || !dataLoaded) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
