@@ -31,6 +31,11 @@ enum InvoiceStatus {
   FAILED
 }
 
+enum PayerType {
+  INDIVIDUAL
+  LEGAL
+}
+
 enum AutomationTriggerType {
   DEAL_STAGE_CHANGED
   DEAL_CREATED
@@ -113,6 +118,7 @@ model Company {
   accountingIntegrations  AccountingIntegration[]
   emailTemplates          EmailTemplate[]
   supportTickets          SupportTicket[]
+  invoices                Invoice[]
 }
 
 model User {
@@ -407,15 +413,23 @@ model Subscription {
 }
 
 model Invoice {
-  id             Int           @id @default(autoincrement())
-  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
-  subscriptionId Int
-  amount         Int
-  currency       String        @default("RUB")
-  status         InvoiceStatus @default(PENDING)
-  paidAt         DateTime?
-  externalId     String?
-  createdAt      DateTime      @default(now())
+  id                 Int           @id @default(autoincrement())
+  subscription       Subscription  @relation(fields: [subscriptionId], references: [id])
+  subscriptionId     Int
+  invoiceNumber      String?       @unique // Автоматически генерируемый номер: INV-YYYYMMDD-NNNN
+  paymentPeriodMonths Int          @default(1) // Период оплаты: 1, 3, 6, 12 месяцев
+  company            Company?      @relation(fields: [companyId], references: [id])
+  companyId          Int?
+  payerType          PayerType     @default(INDIVIDUAL) // Тип плательщика: физ лицо или юр лицо
+  amount             Int
+  currency           String        @default("RUB")
+  status             InvoiceStatus @default(PENDING)
+  paidAt             DateTime?
+  externalId         String?
+  createdAt          DateTime      @default(now())
+
+  @@index([invoiceNumber])
+  @@index([companyId])
 }
 
 model Automation {

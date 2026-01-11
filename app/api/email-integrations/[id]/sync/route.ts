@@ -98,7 +98,6 @@ export async function POST(_request: NextRequest, context: RouteContext) {
 
       for (const email of emails) {
         try {
-          // Обычная обработка письма (создание контактов/сделок)
           const result = await processIncomingEmail(email, integration, companyId)
           if (result.contactCreated) createdContacts++
           if (result.dealCreated) createdDeals++

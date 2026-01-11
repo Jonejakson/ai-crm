@@ -79,3 +79,4 @@ echo -e "${GREEN}✅ Деплой завершен успешно!${NC}"
 echo ""
 echo "Проверьте логи: docker-compose logs -f app"
 
+

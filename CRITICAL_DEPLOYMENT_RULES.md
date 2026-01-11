@@ -118,3 +118,4 @@ ssh selectel "cd /opt/flamecrm && git pull && ./scripts/safe-deploy.sh"
 
 *Этот файл должен быть прочитан перед каждым деплоем!*
 
+

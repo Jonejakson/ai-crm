@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import ExtendSubscriptionModal from '@/components/ExtendSubscriptionModal'
 
 type Metrics = {
   ok: boolean
@@ -57,6 +58,8 @@ export default function OpsPage() {
   const [health, setHealth] = useState<{ ok: boolean; startedAt?: string; uptimeSeconds?: number } | null>(null)
   const [usersData, setUsersData] = useState<UsersData | null>(null)
   const [usersLoading, setUsersLoading] = useState(false)
+  const [extendModalOpen, setExtendModalOpen] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState<{ id: number; name: string } | null>(null)
 
   // Проверка доступа - только owner
   useEffect(() => {
@@ -233,7 +236,13 @@ export default function OpsPage() {
                       Компания
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      ID компании
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
                       Пользователей в компании
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
+                      Действия
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
                       Сделок
@@ -290,9 +299,31 @@ export default function OpsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-[var(--foreground)] font-mono">
+                          {user.company.id}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-[var(--foreground)]">
                           {user.company.usersCount}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(() => {
+                          // Показываем кнопку только для первого пользователя компании
+                          const isFirstUserOfCompany = usersData?.users.findIndex(u => u.company.id === user.company.id) === usersData?.users.findIndex(u => u.id === user.id)
+                          return isFirstUserOfCompany ? (
+                            <button
+                              onClick={() => {
+                                setSelectedCompany({ id: user.company.id, name: user.company.name })
+                                setExtendModalOpen(true)
+                              }}
+                              className="btn-secondary text-xs px-3 py-1.5"
+                            >
+                              Продлить подписку
+                            </button>
+                          ) : null
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-[var(--foreground)]">
@@ -341,6 +372,22 @@ export default function OpsPage() {
           </div>
         )}
       </div>
+
+      {/* Модальное окно продления подписки */}
+      {selectedCompany && (
+        <ExtendSubscriptionModal
+          isOpen={extendModalOpen}
+          onClose={() => {
+            setExtendModalOpen(false)
+            setSelectedCompany(null)
+          }}
+          companyId={selectedCompany.id}
+          companyName={selectedCompany.name}
+          onSuccess={() => {
+            loadUsers() // Обновляем список пользователей после продления
+          }}
+        />
+      )}
     </div>
   )
 }

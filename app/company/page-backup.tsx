@@ -14,7 +14,8 @@ import AdvertisingIntegrationsSection from './AdvertisingIntegrationsSection'
 import MoyskladSection from './MoyskladSection'
 import OneCSection from './OneCSection'
 import MigrationSection from './MigrationSection'
-import PaymentPeriodModal from '@/components/PaymentPeriodModal'
+import PaymentPeriodModal, { PaymentPeriod } from '@/components/PaymentPeriodModal'
+import PaymentTypeModal from '@/components/PaymentTypeModal'
 
 interface User {
   id: number
@@ -64,10 +65,14 @@ export default function CompanyPage() {
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
   const [userSearch, setUserSearch] = useState('')
-  const [paymentPeriodModalOpen, setPaymentPeriodModalOpen] = useState(false)
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
-  const [selectedPlanName, setSelectedPlanName] = useState<string>('')
-  const [isLegalEntity, setIsLegalEntity] = useState(false)
+  
+  // Модальные окна для оплаты
+  const [periodModalOpen, setPeriodModalOpen] = useState(false)
+  const [typeModalOpen, setTypeModalOpen] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
+  const [selectedPeriod, setSelectedPeriod] = useState<PaymentPeriod | null>(null)
+  const [selectedPeriodLabel, setSelectedPeriodLabel] = useState('')
+  const [calculatedAmount, setCalculatedAmount] = useState(0)
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -106,12 +111,13 @@ export default function CompanyPage() {
 
     if (status === 'authenticated') {
       const userRole = session?.user?.role
-      // Для owner и других ролей - редирект на главную
-      // Только admin может видеть страницу компании
-      if (userRole !== 'admin') {
-        router.push('/')
-        return
-      }
+      
+      // ВРЕМЕННО: разрешаем доступ всем для отладки
+      // if (userRole !== 'admin' && userRole !== 'owner') {
+      //   router.push('/')
+      //   return
+      // }
+      
       fetchUsers()
       fetchBilling()
     }
@@ -119,19 +125,26 @@ export default function CompanyPage() {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users from /api/admin/users')
       const response = await fetch('/api/admin/users')
+      console.log('Users response status:', response.status)
+      
       if (!response.ok) {
-        if (response.status === 403) {
-          router.push('/')
-          return
-        }
-        throw new Error('Ошибка загрузки пользователей')
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Error fetching users:', response.status, errorData)
+        
+        // ВРЕМЕННО: не делаем редирект, просто показываем ошибку
+        setError(`Ошибка загрузки пользователей: ${errorData.error || response.status}`)
+        setUsers([]) // Устанавливаем пустой массив
+        return
       }
       const data = await response.json()
+      console.log('Users data received:', data)
       setUsers(data.users || [])
     } catch (error: any) {
       console.error('Error fetching users:', error)
-      setError('Ошибка загрузки пользователей')
+      setError(error.message || 'Ошибка загрузки пользователей')
+      setUsers([]) // Устанавливаем пустой массив при ошибке
     } finally {
       setLoading(false)
     }
@@ -141,14 +154,21 @@ export default function CompanyPage() {
     setBillingLoading(true)
     setBillingError('')
     try {
-      const [plansRes, subscriptionRes, companyStatsRes] = await Promise.all([
+      console.log('Fetching billing data')
+      const [plansRes, subscriptionRes] = await Promise.all([
         fetch('/api/billing/plans'),
         fetch('/api/billing/subscription'),
-        fetch('/api/admin/company-stats'),
       ])
 
+      console.log('Billing responses:', {
+        plans: plansRes.status,
+        subscription: subscriptionRes.status
+      })
+
       if (!plansRes.ok) {
-        throw new Error('Не удалось загрузить список тарифов')
+        const errorData = await plansRes.json().catch(() => ({}))
+        console.error('Error fetching plans:', errorData)
+        throw new Error(errorData.error || 'Не удалось загрузить список тарифов')
       }
 
       const plansData = await plansRes.json()
@@ -157,15 +177,14 @@ export default function CompanyPage() {
       if (subscriptionRes.ok) {
         const subscriptionData = await subscriptionRes.json()
         setSubscription(subscriptionData.subscription || null)
-      } else if (subscriptionRes.status === 401 || subscriptionRes.status === 403) {
-        setSubscription(null)
-      }
-
-      // Получаем информацию о компании для определения типа плательщика
-      if (companyStatsRes.ok) {
-        const companyData = await companyStatsRes.json()
-        if (companyData.company?.isLegalEntity !== undefined) {
-          setIsLegalEntity(companyData.company.isLegalEntity)
+      } else {
+        const errorData = await subscriptionRes.json().catch(() => ({}))
+        console.log('Subscription not found or error:', subscriptionRes.status, errorData)
+        if (subscriptionRes.status === 401 || subscriptionRes.status === 403) {
+          setSubscription(null)
+        } else {
+          // Для других ошибок не показываем ошибку, просто нет подписки
+          setSubscription(null)
         }
       }
     } catch (error: any) {
@@ -192,52 +211,90 @@ export default function CompanyPage() {
     }
   }
 
-  const handlePlanChange = (planId: number) => {
-    const plan = plans.find(p => p.id === planId)
-    setSelectedPlanId(planId)
-    setSelectedPlanName(plan?.name || '')
-    setBillingError('')
-    setBillingMessage('')
-    setPaymentPeriodModalOpen(true)
+  // Проверка, закончилась ли подписка
+  const isSubscriptionExpired = () => {
+    if (!subscription) return true
+    if (subscription.status === 'CANCELED' || subscription.status === 'PAST_DUE') return true
+    if (subscription.currentPeriodEnd) {
+      return new Date(subscription.currentPeriodEnd) < new Date()
+    }
+    return false
   }
 
-  const handlePaymentWithPeriod = async (paymentPeriodMonths: 1 | 3 | 6 | 12) => {
-    if (!selectedPlanId) return
+  // Расчет скидки и итоговой суммы
+  const calculatePriceWithDiscount = (monthlyPrice: number, period: PaymentPeriod) => {
+    const periods: Record<PaymentPeriod, { months: number; discount: number }> = {
+      '1': { months: 1, discount: 0 },
+      '3': { months: 3, discount: 5 },
+      '6': { months: 6, discount: 10 },
+      '12': { months: 12, discount: 20 },
+    }
+    const { months, discount } = periods[period]
+    const total = monthlyPrice * months
+    const discountAmount = (total * discount) / 100
+    return total - discountAmount
+  }
+
+  // Получение метки периода
+  const getPeriodLabel = (period: PaymentPeriod) => {
+    const labels: Record<PaymentPeriod, string> = {
+      '1': '1 месяц',
+      '3': '3 месяца',
+      '6': '6 месяцев',
+      '12': '1 год',
+    }
+    return labels[period]
+  }
+
+  // Обработчик нажатия на кнопку плана
+  const handlePlanButtonClick = (plan: Plan) => {
+    setSelectedPlan(plan)
+    setPeriodModalOpen(true)
+  }
+
+  // Обработчик выбора периода
+  const handlePeriodSelect = (period: PaymentPeriod) => {
+    if (!selectedPlan) return
+    
+    setSelectedPeriod(period)
+    setSelectedPeriodLabel(getPeriodLabel(period))
+    const amount = calculatePriceWithDiscount(selectedPlan.price, period)
+    setCalculatedAmount(amount)
+    setPeriodModalOpen(false)
+    setTypeModalOpen(true)
+  }
+
+  // Обработчик выбора типа плательщика
+  const handlePaymentTypeSelect = async (type: 'individual' | 'legal') => {
+    if (!selectedPlan || !selectedPeriod) return
 
     setBillingError('')
     setBillingMessage('')
     setBillingLoading(true)
-    setPaymentPeriodModalOpen(false)
+    setTypeModalOpen(false)
 
     try {
-      // Для юридических лиц используем endpoint генерации счета
-      if (isLegalEntity) {
-        const invoiceResponse = await fetch('/api/billing/invoice/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ planId: selectedPlanId, paymentPeriodMonths }),
-        })
-
-        const invoiceData = await invoiceResponse.json()
-        if (!invoiceResponse.ok) {
-          throw new Error(invoiceData.error || 'Не удалось создать счет')
-        }
-
-        // Показываем сообщение со ссылкой на PDF
-        setBillingMessage(`Счет ${invoiceData.invoice.invoiceNumber} создан. Скачать можно по ссылке: ${invoiceData.pdfUrl}`)
-        await fetchBilling()
-        return
+      const periods: Record<PaymentPeriod, number> = {
+        '1': 1,
+        '3': 3,
+        '6': 6,
+        '12': 12,
       }
+      const months = periods[selectedPeriod]
 
-      // Для физических лиц используем обычный endpoint оплаты
+      // Создаем платеж
       const paymentResponse = await fetch('/api/billing/payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ planId: selectedPlanId, paymentPeriodMonths }),
+        body: JSON.stringify({
+          planId: selectedPlan.id,
+          billingInterval: months === 12 ? 'YEARLY' : 'MONTHLY',
+          months,
+          amount: calculatedAmount,
+          paymentType: type,
+        }),
       })
 
       const paymentData = await paymentResponse.json()
@@ -255,9 +312,18 @@ export default function CompanyPage() {
         return
       }
 
-      // Если есть URL для оплаты, перенаправляем пользователя
-      if (paymentData.paymentUrl) {
+      // Если выбран физ лицо и есть URL для оплаты, перенаправляем
+      if (type === 'individual' && paymentData.paymentUrl) {
         window.location.href = paymentData.paymentUrl
+        return
+      }
+
+      // Если выбран юр лицо, скачиваем счет
+      if (type === 'legal' && paymentData.invoiceId) {
+        const pdfUrl = `/api/billing/invoice/${paymentData.invoiceId}/pdf`
+        window.open(pdfUrl, '_blank')
+        setBillingMessage('Счет сгенерирован. После оплаты администратор подтвердит платеж.')
+        await fetchBilling()
         return
       }
 
@@ -265,12 +331,14 @@ export default function CompanyPage() {
       await fetchBilling()
       setBillingMessage('Платеж создан. Ожидаем подтверждения...')
     } catch (error: any) {
-      console.error('Error updating plan:', error)
-      setBillingError(error.message || 'Не удалось обновить тариф')
+      console.error('Error processing payment:', error)
+      setBillingError(error.message || 'Не удалось обработать платеж')
     } finally {
       setBillingLoading(false)
-      setSelectedPlanId(null)
-      setSelectedPlanName('')
+      setSelectedPlan(null)
+      setSelectedPeriod(null)
+      setSelectedPeriodLabel('')
+      setCalculatedAmount(0)
     }
   }
 
@@ -485,12 +553,11 @@ export default function CompanyPage() {
       </div>
     )
   }
-
-  // Для owner и других ролей - не показываем страницу
-  const userRole = session?.user?.role
-  if (userRole !== 'admin') {
-    return null
-  }
+  
+  // ВРЕМЕННО: убираем проверку роли для отладки
+  // if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
+  //   return null
+  // }
 
   const filteredUsers = users.filter((user) => {
     const term = userSearch.toLowerCase().trim()
@@ -681,15 +748,19 @@ export default function CompanyPage() {
                     ))}
                   </ul>
                   <button
-                    onClick={() => handlePlanChange(plan.id)}
-                    disabled={isCurrent || billingLoading}
+                    onClick={() => handlePlanButtonClick(plan)}
+                    disabled={isCurrent && !isSubscriptionExpired() || billingLoading}
                     className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                      isCurrent
+                      isCurrent && !isSubscriptionExpired()
                         ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
                         : 'bg-[var(--primary)] text-white hover:opacity-90'
                     }`}
                   >
-                    {isCurrent ? 'Текущий план' : 'Начать 14-дневный тест'}
+                    {isCurrent && !isSubscriptionExpired()
+                      ? 'Текущий план'
+                      : isCurrent && isSubscriptionExpired()
+                      ? 'Продлить'
+                      : 'Начать 14-дневный тест'}
                   </button>
                 </div>
               )
@@ -1156,29 +1227,44 @@ export default function CompanyPage() {
         </div>
       </section>
 
-      <WebFormsSection />
-      <EmailIntegrationsSection />
-      <WebhookIntegrationsSection />
-      <TelegramBotSection />
-      <WhatsAppSection />
-      <AdvertisingIntegrationsSection />
-      <MoyskladSection />
-      <OneCSection />
-      <MigrationSection />
+      {/* ВРЕМЕННО: закомментированы секции для отладки */}
+      {/* <WebFormsSection /> */}
+      {/* <EmailIntegrationsSection /> */}
+      {/* <WebhookIntegrationsSection /> */}
+      {/* <TelegramBotSection /> */}
+      {/* <WhatsAppSection /> */}
+      {/* <AdvertisingIntegrationsSection /> */}
+      {/* <MoyskladSection /> */}
+      {/* <OneCSection /> */}
+      {/* <MigrationSection /> */}
 
       {/* Модальное окно выбора периода оплаты */}
-      {selectedPlanId && (
+      {selectedPlan && (
         <PaymentPeriodModal
-          isOpen={paymentPeriodModalOpen}
+          isOpen={periodModalOpen}
           onClose={() => {
-            setPaymentPeriodModalOpen(false)
-            setSelectedPlanId(null)
-            setSelectedPlanName('')
+            setPeriodModalOpen(false)
+            setSelectedPlan(null)
           }}
-          planId={selectedPlanId}
-          planName={selectedPlanName}
-          onConfirm={handlePaymentWithPeriod}
-          isLegalEntity={isLegalEntity}
+          onSelect={handlePeriodSelect}
+          monthlyPrice={selectedPlan.price}
+          planName={selectedPlan.name}
+        />
+      )}
+
+      {/* Модальное окно выбора типа плательщика */}
+      {selectedPeriod && (
+        <PaymentTypeModal
+          isOpen={typeModalOpen}
+          onClose={() => {
+            setTypeModalOpen(false)
+            setSelectedPeriod(null)
+            setSelectedPeriodLabel('')
+            setCalculatedAmount(0)
+          }}
+          onSelect={handlePaymentTypeSelect}
+          totalAmount={calculatedAmount}
+          periodLabel={selectedPeriodLabel}
         />
       )}
     </div>

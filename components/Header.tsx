@@ -86,7 +86,7 @@ export default function Header() {
                 <p className="text-xs text-[var(--muted)]">{session.user.email}</p>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: window.location.origin + '/login' })}
+                onClick={() => signOut({ callbackUrl: '/login' })}
                 className="btn-ghost text-sm px-4"
               >
                 Выйти

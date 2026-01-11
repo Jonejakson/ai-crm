@@ -21,7 +21,7 @@ export default function CustomFieldsPage() {
     )
   }
 
-  if (session?.user?.role !== 'admin' && session?.user?.role !== 'owner') {
+  if (session?.user?.role !== 'admin') {
     router.push('/')
     return null
   }
