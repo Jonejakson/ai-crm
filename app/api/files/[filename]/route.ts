@@ -34,22 +34,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    // Проверка доступа: owner видит все, пользователь - только файлы из своих тикетов
-    if (fileRecord.entityType === 'support_ticket_message') {
-      // Дополнительная проверка через сообщение
-      const message = await prisma.supportTicketMessage.findUnique({
-        where: { id: fileRecord.entityId },
-        include: {
-          ticket: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      })
-      if (message && user.role !== 'owner' && message.ticket.userId !== Number(user.id)) {
-        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      }
+    // Проверка доступа: owner видит все, пользователь - только свои файлы
+    if (user.role !== 'owner' && fileRecord.userId !== Number(user.id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Получаем файл
