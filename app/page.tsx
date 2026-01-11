@@ -197,23 +197,6 @@ export default function Dashboard() {
     }
   }, [status, session, router, fetchData, checkNotifications])
 
-  // Показываем загрузку пока проверяется авторизация
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4" />
-          <p className="text-[var(--muted)]">Загрузка...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Если не авторизован, не показываем контент (будет редирект)
-  if (status === 'unauthenticated') {
-    return null
-  }
-
   // Загружаем сохраненные метрики только после загрузки данных (на клиенте)
   useEffect(() => {
     if (loading || typeof window === 'undefined') return
@@ -256,6 +239,23 @@ export default function Dashboard() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isMetricsMenuOpen])
+
+  // Показываем загрузку пока проверяется авторизация
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-[var(--muted)]">Загрузка...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Если не авторизован, не показываем контент (будет редирект)
+  if (status === 'unauthenticated') {
+    return null
+  }
 
   // Показываем загрузку пока проверяется авторизация или данные загружаются
   if (status !== 'authenticated' || !session || loading) {
