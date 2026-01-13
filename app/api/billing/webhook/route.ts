@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getYooKassaPayment, verifyYooKassaWebhook } from '@/lib/payment'
 import { SubscriptionStatus, InvoiceStatus } from '@prisma/client'
+import { calculatePeriodEnd } from '@/lib/invoice-utils'
 
 /**
  * Webhook для обработки уведомлений от YooKassa
@@ -55,12 +56,17 @@ export async function POST(request: Request) {
         },
       })
 
-      // Активируем подписку
+      // Активируем подписку и обновляем период окончания
       if (invoice.subscription) {
+        const now = new Date()
+        const paymentPeriodMonths = invoice.paymentPeriodMonths || 1
+        const periodEnd = calculatePeriodEnd(now, paymentPeriodMonths)
+        
         await prisma.subscription.update({
           where: { id: invoice.subscriptionId },
           data: {
             status: SubscriptionStatus.ACTIVE,
+            currentPeriodEnd: periodEnd,
           },
         })
       }

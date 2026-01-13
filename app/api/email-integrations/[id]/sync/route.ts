@@ -6,9 +6,6 @@ import { fetchEmailsFromGmail } from "@/lib/email/gmail-client"
 import { fetchEmailsFromOutlook } from "@/lib/email/outlook-client"
 import { processIncomingEmail } from "@/lib/email/processor"
 import { decryptPassword } from "@/lib/encryption"
-import { processTicketReplyEmail, shouldProcessAsTicketReply } from "@/lib/support/ticket-email-handler"
-import type { ParsedEmail } from "@/lib/support/ticket-parser"
-import { SUPPORT_EMAIL } from "@/lib/support/config"
 
 type RouteContext = { params: Promise<{ id: string }> }
 
@@ -98,54 +95,9 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       let processedCount = 0
       let createdContacts = 0
       let createdDeals = 0
-      let processedTickets = 0
 
       for (const email of emails) {
         try {
-          // Преобразуем email в формат для парсера тикетов
-          const parsedEmail: ParsedEmail = {
-            subject: email.subject,
-            body: email.body,
-            fromEmail: email.fromEmail,
-            fromName: email.from,
-            messageId: email.messageId,
-            inReplyTo: email.threadId,
-            headers: {
-              'To': email.to.join(', ') || integration.email,
-              'From': email.fromEmail,
-              ...email.headers,
-            },
-          }
-
-          // Проверяем, является ли это ответом на тикет поддержки
-          if (shouldProcessAsTicketReply(parsedEmail, SUPPORT_EMAIL)) {
-            const ticketResult = await processTicketReplyEmail(parsedEmail, SUPPORT_EMAIL)
-            if (ticketResult.processed) {
-              processedTickets++
-              processedCount++
-              
-              // Сохраняем письмо в базу как обработанное
-              await prisma.emailMessage.create({
-                data: {
-                  subject: email.subject,
-                  body: email.body,
-                  status: 'received',
-                  providerId: email.messageId,
-                  fromEmail: email.fromEmail,
-                  toEmail: integration.email,
-                  messageId: email.messageId,
-                  threadId: email.threadId,
-                  isIncoming: true,
-                  emailIntegrationId: integration.id,
-                },
-              })
-              
-              // Пропускаем обычную обработку для ответов на тикеты
-              continue
-            }
-          }
-
-          // Обычная обработка письма (создание контактов/сделок)
           const result = await processIncomingEmail(email, integration, companyId)
           if (result.contactCreated) createdContacts++
           if (result.dealCreated) createdDeals++
@@ -186,7 +138,6 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         processed: processedCount,
         createdContacts,
         createdDeals,
-        processedTickets,
       })
     } catch (syncError) {
       console.error('[email-sync][sync]', syncError)

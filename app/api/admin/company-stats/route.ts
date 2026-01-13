@@ -26,6 +26,17 @@ export async function GET(req: Request) {
 
     const companyId = parseInt(user.companyId);
 
+    // Получаем информацию о компании
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        id: true,
+        name: true,
+        inn: true,
+        isLegalEntity: true,
+      },
+    });
+
     // Получаем всех пользователей компании
     const companyUsers = await prisma.user.findMany({
       where: { companyId },
@@ -189,9 +200,11 @@ export async function GET(req: Request) {
     };
 
     return NextResponse.json({
-      company: {
+      company: company || {
         id: companyId,
-        name: (await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } }))?.name || 'Unknown',
+        name: 'Unknown',
+        inn: null,
+        isLegalEntity: false,
       },
       users: usersStats,
       contacts: contactsStats,

@@ -29,21 +29,6 @@ export async function GET() {
       },
     })
 
-    // Проверяем, не истекла ли подписка
-    if (subscription && subscription.currentPeriodEnd) {
-      const now = new Date()
-      const periodEnd = new Date(subscription.currentPeriodEnd)
-      if (periodEnd < now) {
-        // Подписка истекла, но возвращаем её для отображения
-        return NextResponse.json({ 
-          subscription: {
-            ...subscription,
-            expired: true,
-          }
-        })
-      }
-    }
-
     return NextResponse.json({ subscription })
   } catch (error) {
     console.error('[billing][subscription][GET]', error)

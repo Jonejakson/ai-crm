@@ -1,7 +1,7 @@
 // app/page.tsx
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -108,91 +108,27 @@ export default function Dashboard() {
   const [deals, setDeals] = useState<Deal[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
+  // Используем значение по умолчанию, localStorage читаем только после загрузки данных
   const [selectedFunnelMetrics, setSelectedFunnelMetrics] = useState<string[]>(DEFAULT_FUNNEL_METRICS)
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
-  // Проверяем авторизацию
-  useEffect(() => {
-    if (status === 'loading') {
-      return // Ждем проверки авторизации
-    }
-
-    if (status === 'unauthenticated') {
-      router.push('/login')
-      return
-    }
-
-    if (status === 'authenticated') {
-      fetchData()
-      // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
-      checkNotifications()
-    }
-  }, [status, session, router, selectedUserId])
-
-  // Показываем загрузку пока проверяется авторизация
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="loading-spinner mx-auto mb-4" />
-          <p className="text-[var(--muted)]">Загрузка...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Если не авторизован, не показываем контент (будет редирект)
-  if (status === 'unauthenticated') {
-    return null
-  }
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const saved = localStorage.getItem('dashboard_funnel_metrics')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length) {
-          const validIds = parsed.filter((id: string) =>
-            FUNNEL_METRIC_META.some((meta) => meta.id === id)
-          )
-          if (validIds.length) {
-            setSelectedFunnelMetrics(validIds)
-          }
-        }
-      } catch (error) {
-        console.error('Error loading funnel metrics:', error)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
-  }, [selectedFunnelMetrics])
-
-  useEffect(() => {
-    if (!isMetricsMenuOpen) return
-    const handleClickOutside = (event: MouseEvent) => {
-      if (metricsMenuRef.current && !metricsMenuRef.current.contains(event.target as Node)) {
-        setIsMetricsMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [isMetricsMenuOpen])
-
-  const checkNotifications = async () => {
+  const checkNotifications = useCallback(async () => {
     try {
       await fetch('/api/notifications/check', { method: 'POST' })
     } catch (error) {
       console.error('Error checking notifications:', error)
     }
-  }
+  }, [])
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
+    // Проверяем, что сессия готова перед запросом данных
+    if (status !== 'authenticated' || !session) {
+      return
+    }
+
     try {
+      setLoading(true)
       const contactsUrl = selectedUserId 
         ? `/api/contacts?userId=${selectedUserId}` 
         : '/api/contacts'
@@ -230,8 +166,8 @@ export default function Dashboard() {
         console.error('Error fetching deals:', dealsRes.statusText)
         setDeals([])
       } else {
-        const dealsData = await dealsRes.json()
-        setDeals(Array.isArray(dealsData) ? dealsData : [])
+      const dealsData = await dealsRes.json()
+      setDeals(Array.isArray(dealsData) ? dealsData : [])
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -241,9 +177,88 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
+  }, [status, session, selectedUserId])
+
+  // Проверяем авторизацию
+  useEffect(() => {
+    if (status === 'loading') {
+      return // Ждем проверки авторизации
+    }
+
+    if (status === 'unauthenticated') {
+      router.push('/login')
+      return
+    }
+
+    if (status === 'authenticated' && session) {
+      fetchData()
+      // Проверяем просроченные задачи и предстоящие события при загрузке дашборда
+      checkNotifications()
+    }
+  }, [status, session, router, fetchData, checkNotifications])
+
+  // Загружаем сохраненные метрики только после загрузки данных (на клиенте)
+  useEffect(() => {
+    if (loading || typeof window === 'undefined') return
+    
+    try {
+      const saved = localStorage.getItem('dashboard_funnel_metrics')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length) {
+          const validIds = parsed.filter((id: string) =>
+            FUNNEL_METRIC_META.some((meta) => meta.id === id)
+          )
+          if (validIds.length) {
+            setSelectedFunnelMetrics(validIds)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading funnel metrics:', error)
+    }
+  }, [loading])
+
+  // Сохраняем метрики в localStorage
+  useEffect(() => {
+    if (loading || typeof window === 'undefined') return
+    try {
+      localStorage.setItem('dashboard_funnel_metrics', JSON.stringify(selectedFunnelMetrics))
+    } catch (error) {
+      console.error('Error saving funnel metrics:', error)
+    }
+  }, [selectedFunnelMetrics, loading])
+
+  useEffect(() => {
+    if (!isMetricsMenuOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (metricsMenuRef.current && !metricsMenuRef.current.contains(event.target as Node)) {
+        setIsMetricsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isMetricsMenuOpen])
+
+  // Показываем загрузку пока проверяется авторизация
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4" />
+          <p className="text-[var(--muted)]">Загрузка...</p>
+        </div>
+      </div>
+    )
   }
 
-  if (loading) {
+  // Если не авторизован, не показываем контент (будет редирект)
+  if (status === 'unauthenticated') {
+    return null
+  }
+
+  // Показываем загрузку пока проверяется авторизация или данные загружаются
+  if (status !== 'authenticated' || !session || loading) {
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -260,22 +275,42 @@ export default function Dashboard() {
     )
   }
 
-  const pendingTasks = (tasks || []).filter(task => task.status === 'pending').length
-  const overdueTasks = (tasks || []).filter(task => {
-    if (task.status !== 'pending' || !task.dueDate) return false
-    return new Date(task.dueDate) < new Date()
-  }).length
-  const recentContacts = (contacts || []).slice(0, 5)
-  const recentDeals = (deals || []).sort((a, b) => {
-    // Сортируем по дате обновления (новые сверху), если нет updatedAt, используем createdAt
-    const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0)
-    const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0)
-    return dateB - dateA
-  }).slice(0, 5)
+  // Безопасные вычисления с защитой от ошибок
+  const pendingTasks = Array.isArray(tasks) ? tasks.filter(task => task && task.status === 'pending').length : 0
+  const overdueTasks = Array.isArray(tasks) ? tasks.filter(task => {
+    if (!task || task.status !== 'pending' || !task.dueDate) return false
+    try {
+      return new Date(task.dueDate) < new Date()
+    } catch {
+      return false
+    }
+  }).length : 0
+  
+  const recentContacts = Array.isArray(contacts) ? contacts.slice(0, 5) : []
+  const recentDeals = Array.isArray(deals) ? deals
+    .filter(deal => deal != null)
+    .sort((a, b) => {
+      try {
+        // Сортируем по дате обновления (новые сверху), если нет updatedAt, используем createdAt
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0)
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0)
+        return dateB - dateA
+      } catch {
+        return 0
+      }
+    })
+    .slice(0, 5) : []
   
   const weekAgo = new Date()
   weekAgo.setDate(weekAgo.getDate() - 7)
-  const newContactsCount = (contacts || []).filter(contact => new Date(contact.createdAt) >= weekAgo).length
+  const newContactsCount = Array.isArray(contacts) ? contacts.filter(contact => {
+    if (!contact || !contact.createdAt) return false
+    try {
+      return new Date(contact.createdAt) >= weekAgo
+    } catch {
+      return false
+    }
+  }).length : 0
 
   const handleMetricToggle = (metricId: string) => {
     setSelectedFunnelMetrics((prev) => {
@@ -294,7 +329,8 @@ export default function Dashboard() {
   }
 
   // Вычисляем метрики напрямую без useMemo, чтобы избежать проблем с зависимостями
-  const dealsArr = deals || []
+  // Защита от ошибок при вычислении метрик
+  const dealsArr = Array.isArray(deals) ? deals : []
   const dealsLength = dealsArr.length
   
   let activeDealsCount = 0
@@ -305,7 +341,8 @@ export default function Dashboard() {
   let averageDealAmount = 0
   let funnelMetricDefinitions = FUNNEL_METRIC_META.map((meta) => ({ ...meta, value: '—' }))
   
-  if (Array.isArray(dealsArr) && dealsLength > 0) {
+  try {
+    if (dealsLength > 0) {
     // Вычисляем все метрики один раз
     activeDealsCount = dealsArr.filter(deal => !isClosedStage(deal.stage)).length
     totalDealsAmount = dealsArr.reduce((sum, deal) => sum + (deal.amount || 0), 0)
@@ -360,6 +397,10 @@ export default function Dashboard() {
       }
       return { ...meta, value }
     })
+    }
+  } catch (error) {
+    console.error('Error calculating metrics:', error)
+    // В случае ошибки используем значения по умолчанию
   }
 
   // Вычисляем metricsToDisplay напрямую, без useMemo, чтобы избежать циклов
@@ -385,33 +426,33 @@ export default function Dashboard() {
         {[
           { 
             label: 'Клиенты', 
-            value: contacts.length, 
+            value: String(contacts.length), 
             Icon: UsersIcon, 
-            note: `+${newContactsCount} за 7 дней`, 
+            note: `+${String(newContactsCount)} за 7 дней`, 
             accent: 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600',
             gradient: 'from-blue-500 to-blue-600'
           },
           { 
             label: 'Активные задачи', 
-            value: pendingTasks, 
+            value: String(pendingTasks), 
             Icon: CheckCircleIcon, 
-            note: overdueTasks ? `${overdueTasks} просрочено` : 'Без просрочки', 
+            note: overdueTasks ? `${String(overdueTasks)} просрочено` : 'Без просрочки', 
             accent: 'bg-gradient-to-br from-amber-50 to-amber-100 text-amber-600',
             gradient: 'from-amber-500 to-amber-600'
           },
           { 
             label: 'Активные сделки', 
-            value: activeDealsCount, 
+            value: String(activeDealsCount || 0), 
             Icon: BriefcaseIcon, 
-            note: `${openDealsAmount.toLocaleString('ru-RU')} ₽ в работе`, 
+            note: `${Number(openDealsAmount || 0).toLocaleString('ru-RU')} ₽ в работе`, 
             accent: 'bg-gradient-to-br from-purple-50 to-purple-100 text-purple-600',
             gradient: 'from-purple-500 to-purple-600'
           },
           { 
             label: 'Выручка', 
-            value: `${totalDealsAmount.toLocaleString('ru-RU')} ₽`, 
+            value: `${Number(totalDealsAmount || 0).toLocaleString('ru-RU')} ₽`, 
             Icon: CurrencyIcon, 
-            note: `${wonAmount.toLocaleString('ru-RU')} ₽ закрыто успешно`, 
+            note: `${Number(wonAmount || 0).toLocaleString('ru-RU')} ₽ закрыто успешно`, 
             accent: 'bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600',
             gradient: 'from-emerald-500 to-emerald-600'
           },
@@ -419,7 +460,7 @@ export default function Dashboard() {
           <div key={card.label} className="stat-card flex items-center justify-between gap-4 group">
             <div className="flex-1">
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-2">{card.label}</p>
-              <p className="stat-card-value mb-1 group-hover:scale-105 transition-transform duration-300">{card.value}</p>
+              <p className="stat-card-value mb-1 group-hover:scale-105 transition-transform duration-300">{String(card.value)}</p>
               <p className="text-sm text-[var(--muted)] font-medium">{card.note}</p>
             </div>
             <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 ${card.accent}`}>
@@ -488,7 +529,7 @@ export default function Dashboard() {
             {metricsToDisplay.map((metric) => (
               <div key={metric.id} className="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--panel-muted)] to-[var(--surface)] p-5 hover:shadow-md transition-all duration-300 group">
                 <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-3">{metric.label}</p>
-                <p className={`text-3xl font-bold bg-gradient-to-r ${metric.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{metric.value}</p>
+                <p className={`text-3xl font-bold bg-gradient-to-r ${metric.color} bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300`}>{String(metric.value || '—')}</p>
               </div>
             ))}
           </div>
@@ -500,7 +541,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Клиенты</p>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Последние контакты</h2>
             </div>
-            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{recentContacts.length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full">{String(recentContacts.length || 0)} записей</span>
           </div>
           <div>
             {recentContacts.length === 0 ? (
@@ -521,17 +562,23 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-1">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-soft)] to-[var(--primary)] flex items-center justify-center text-[var(--primary)] font-bold text-sm shadow-sm group-hover:scale-110 transition-transform duration-300">
-                            {contact.name.charAt(0).toUpperCase()}
+                            {String(contact.name || '').charAt(0).toUpperCase() || '?'}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[var(--foreground)] truncate">{contact.name}</p>
-                            <p className="text-xs text-[var(--muted)] truncate">{contact.email}</p>
+                            <p className="font-semibold text-[var(--foreground)] truncate">{String(contact.name || '')}</p>
+                            <p className="text-xs text-[var(--muted)] truncate">{String(contact.email || '')}</p>
                           </div>
                         </div>
-                        <p className="text-sm text-[var(--muted)] ml-[52px]">{contact.company || '—'}</p>
+                        <p className="text-sm text-[var(--muted)] ml-[52px]">{String(contact.company || '—')}</p>
                       </div>
                       <span className="text-xs text-[var(--muted)] font-medium whitespace-nowrap">
-                        {new Date(contact.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                        {contact.createdAt ? (() => {
+                          try {
+                            return new Date(contact.createdAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+                          } catch {
+                            return '—'
+                          }
+                        })() : '—'}
                       </span>
                     </div>
                   </div>
@@ -551,7 +598,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Сделки</p>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Последние сделки</h2>
             </div>
-            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{recentDeals.length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{String(recentDeals.length || 0)} записей</span>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
               {recentDeals.length === 0 ? (
@@ -574,9 +621,9 @@ export default function Dashboard() {
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">{deal.title}</p>
+                          <p className="font-semibold text-[var(--foreground)] truncate group-hover:text-[var(--primary)] transition-colors">{String(deal.title || '')}</p>
                           <p className="text-xs text-[var(--muted)] truncate">
-                            {deal.amount.toLocaleString('ru-RU')} {deal.currency} • {deal.stage}
+                            {Number(deal.amount || 0).toLocaleString('ru-RU')} {String(deal.currency || '₽')} • {String(deal.stage || '')}
                           </p>
                         </div>
                       </div>
@@ -594,7 +641,7 @@ export default function Dashboard() {
               <p className="text-xs uppercase tracking-[0.1em] text-[var(--muted)] font-bold mb-1">Задачи</p>
               <h2 className="text-xl font-bold text-[var(--foreground)]">Последние задачи</h2>
             </div>
-            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{(tasks || []).slice(0, 5).length} записей</span>
+            <span className="text-xs font-semibold text-[var(--muted)] bg-[var(--background-soft)] px-3 py-1 rounded-full whitespace-nowrap">{String((tasks || []).slice(0, 5).length || 0)} записей</span>
           </div>
           <div className="overflow-y-auto max-h-[600px]">
               {(tasks || []).slice(0, 5).length === 0 ? (
@@ -613,9 +660,15 @@ export default function Dashboard() {
                     <div key={task.id} className="px-6 py-4 hover:bg-[var(--background-soft)] transition-colors duration-200">
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-[var(--foreground)] truncate">{task.title}</p>
+                          <p className="font-semibold text-[var(--foreground)] truncate">{String(task.title || '')}</p>
                           <p className="text-xs text-[var(--muted)] truncate">
-                            Статус: {task.status === 'completed' ? 'выполнено' : 'в работе'} • {task.dueDate ? `до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : 'без срока'}
+                            Статус: {task.status === 'completed' ? 'выполнено' : 'в работе'} • {task.dueDate ? (() => {
+                              try {
+                                return `до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}`
+                              } catch {
+                                return 'без срока'
+                              }
+                            })() : 'без срока'}
                           </p>
                         </div>
                       </div>

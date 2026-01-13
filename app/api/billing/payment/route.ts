@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { createYooKassaPayment, isYooKassaConfigured } from '@/lib/payment'
-import { SubscriptionStatus, BillingInterval } from '@prisma/client'
+import { SubscriptionStatus, BillingInterval, PayerType } from '@prisma/client'
+import { generateInvoiceNumber, calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
 
 /**
  * Создать платеж для подписки
@@ -30,14 +31,22 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { planId, billingInterval = 'MONTHLY', periodMonths = 1 } = body as {
+    const { planId, paymentPeriodMonths = 1, billingInterval } = body as {
       planId?: number
-      billingInterval?: 'MONTHLY' | 'YEARLY'
-      periodMonths?: 1 | 3 | 6 | 12
+      paymentPeriodMonths?: 1 | 3 | 6 | 12 // Новое поле для периода оплаты
+      billingInterval?: 'MONTHLY' | 'YEARLY' // Устаревшее, оставлено для совместимости
     }
 
     if (!planId) {
       return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
+    }
+
+    // Валидация периода оплаты
+    if (![1, 3, 6, 12].includes(paymentPeriodMonths)) {
+      return NextResponse.json(
+        { error: 'Payment period must be 1, 3, 6, or 12 months' },
+        { status: 400 }
+      )
     }
 
     const plan = await prisma.plan.findUnique({
@@ -48,38 +57,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
 
-    // Рассчитываем цену с учетом скидок
-    // Месячные тарифы поднимаем на 20%
-    const monthlyPrice = Math.round(plan.price * 1.2)
-    
-    // Скидки: 3 месяца - 5%, 6 месяцев - 10%, 12 месяцев - 15%
-    const discounts: Record<number, number> = {
-      1: 0,
-      3: 0.05,
-      6: 0.10,
-      12: 0.15,
+    // Получаем информацию о компании
+    const company = await prisma.company.findUnique({
+      where: { id: Number(currentUser.companyId) },
+      select: { id: true, isLegalEntity: true, name: true, inn: true },
+    })
+
+    if (!company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
-    
-    const discount = discounts[periodMonths] || 0
-    const totalPrice = Math.round(monthlyPrice * periodMonths * (1 - discount))
+
+    // Определяем тип плательщика
+    const payerType = company.isLegalEntity ? PayerType.LEGAL : PayerType.INDIVIDUAL
+
+    // Рассчитываем сумму платежа
+    const paymentAmount = calculatePaymentAmount(plan.price, paymentPeriodMonths)
 
     // В режиме разработки или если план бесплатный, сразу активируем подписку
     const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
     if (plan.price === 0 || isDevMode) {
       const now = new Date()
-      const nextPeriod = new Date(now)
-      if (periodMonths === 12) {
-        nextPeriod.setFullYear(nextPeriod.getFullYear() + 1)
-      } else {
-        nextPeriod.setMonth(nextPeriod.getMonth() + periodMonths)
-      }
+      const nextPeriod = calculatePeriodEnd(now, paymentPeriodMonths)
 
       const subscription = await prisma.subscription.create({
         data: {
           companyId: Number(currentUser.companyId),
           planId: plan.id,
           status: SubscriptionStatus.ACTIVE,
-          billingInterval: periodMonths === 12 ? BillingInterval.YEARLY : BillingInterval.MONTHLY,
+          billingInterval: BillingInterval.MONTHLY, // Используем MONTHLY для всех периодов
           currentPeriodEnd: nextPeriod,
         },
         include: {
@@ -89,10 +94,15 @@ export async function POST(request: Request) {
 
       // В режиме разработки также создаем счет как оплаченный
       if (isDevMode && plan.price > 0) {
+        const invoiceNumber = await generateInvoiceNumber()
         await prisma.invoice.create({
           data: {
             subscriptionId: subscription.id,
-            amount: totalPrice,
+            invoiceNumber,
+            paymentPeriodMonths,
+            companyId: company.id,
+            payerType,
+            amount: paymentAmount,
             currency: plan.currency,
             status: 'PAID',
             paidAt: new Date(),
@@ -103,30 +113,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ subscription, paymentUrl: null })
     }
 
+    // Для юридических лиц возвращаем ошибку - нужно использовать /api/billing/invoice/generate
+    if (payerType === PayerType.LEGAL) {
+      return NextResponse.json(
+        { error: 'Legal entities must use invoice generation endpoint' },
+        { status: 400 }
+      )
+    }
+
     // Создаем подписку со статусом TRIAL (будет активирована после оплаты)
     const now = new Date()
-    const nextPeriod = new Date(now)
-    if (periodMonths === 12) {
-      nextPeriod.setFullYear(nextPeriod.getFullYear() + 1)
-    } else {
-      nextPeriod.setMonth(nextPeriod.getMonth() + periodMonths)
-    }
+    const nextPeriod = calculatePeriodEnd(now, paymentPeriodMonths)
 
     const subscription = await prisma.subscription.create({
       data: {
         companyId: Number(currentUser.companyId),
         planId: plan.id,
         status: SubscriptionStatus.TRIAL,
-        billingInterval: periodMonths === 12 ? BillingInterval.YEARLY : BillingInterval.MONTHLY,
+        billingInterval: BillingInterval.MONTHLY, // Используем MONTHLY для всех периодов
         currentPeriodEnd: nextPeriod,
       },
     })
 
-    // Создаем счет
+    // Генерируем номер счета и создаем счет
+    const invoiceNumber = await generateInvoiceNumber()
     const invoice = await prisma.invoice.create({
       data: {
         subscriptionId: subscription.id,
-        amount: totalPrice,
+        invoiceNumber,
+        paymentPeriodMonths,
+        companyId: company.id,
+        payerType,
+        amount: paymentAmount,
         currency: plan.currency,
         status: 'PENDING',
       },
@@ -137,14 +155,16 @@ export async function POST(request: Request) {
     const returnUrl = `${baseUrl}/billing/success?invoiceId=${invoice.id}`
     const cancelUrl = `${baseUrl}/billing/cancel?invoiceId=${invoice.id}`
 
-    const periodLabel = periodMonths === 12 
-      ? 'Годовая' 
-      : periodMonths === 1 
-        ? 'Месячная' 
-        : `На ${periodMonths} ${periodMonths === 3 || periodMonths === 6 ? 'месяца' : 'месяцев'}`
+    const periodLabel = paymentPeriodMonths === 1 
+      ? '1 месяц' 
+      : paymentPeriodMonths === 3 
+      ? '3 месяца' 
+      : paymentPeriodMonths === 6 
+      ? '6 месяцев' 
+      : '12 месяцев'
 
     const payment = await createYooKassaPayment(
-      totalPrice,
+      paymentAmount,
       plan.currency,
       `Подписка ${plan.name} - ${periodLabel}`,
       returnUrl,
@@ -171,6 +191,9 @@ export async function POST(request: Request) {
       paymentUrl: payment.confirmation?.confirmation_url || null,
       paymentId: payment.id,
       invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      amount: paymentAmount,
+      paymentPeriodMonths,
     })
   } catch (error: any) {
     console.error('[billing][payment][POST]', error)

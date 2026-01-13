@@ -115,22 +115,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const companyId = parseInt(user.companyId);
-
-    // Проверка, не истекла ли подписка
-    const { canCreateEntities } = await import('@/lib/subscription-limits');
-    const canCreate = await canCreateEntities(companyId);
-    if (!canCreate.allowed) {
-      return NextResponse.json(
-        { 
-          error: canCreate.message || "Подписка закончилась",
-          subscriptionExpired: true,
-        },
-        { status: 403 }
-      );
-    }
-
     // Проверка лимита сделок
+    const companyId = parseInt(user.companyId);
     const { checkDealLimit } = await import("@/lib/subscription-limits");
     const dealLimitCheck = await checkDealLimit(companyId);
     if (!dealLimitCheck.allowed) {
