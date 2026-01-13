@@ -10,7 +10,7 @@ type UserType = 'individual' | 'legal'
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session, status } = useSession()
+  const { data: session, status, update: updateSession } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -92,6 +92,12 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Защита от двойной отправки
+    if (isLoading) {
+      return
+    }
+    
     setError('')
     setIsLoading(true)
 
@@ -145,6 +151,7 @@ function LoginForm() {
         return // Завершаем выполнение, не пытаемся автоматически войти
       } catch (err) {
         setError('Ошибка сети')
+        setIsLoading(false)
       }
     } else {
       // Вход
@@ -156,12 +163,30 @@ function LoginForm() {
 
       if (result?.error) {
         setError('Неверный email или пароль')
-      } else {
-        // После успешного входа перенаправляем на callbackUrl или на главную
-        const callbackUrl = searchParams.get('callbackUrl') || '/'
+        setIsLoading(false)
+        return
+      }
+
+      // После успешного входа обновляем сессию и перенаправляем
+      const callbackUrl = searchParams.get('callbackUrl') || '/'
+      
+      try {
+        // Принудительно обновляем сессию, чтобы она точно установилась
+        await updateSession()
+        
+        // Небольшая задержка для гарантии установки cookie
+        await new Promise(resolve => setTimeout(resolve, 50))
+        
+        // Перенаправляем на целевую страницу
         router.push(callbackUrl)
         router.refresh()
+      } catch (error) {
+        console.error('Ошибка при обновлении сессии:', error)
+        // В случае ошибки все равно перенаправляем - сессия должна быть установлена
+        window.location.href = callbackUrl
       }
+      
+      return // Не устанавливаем isLoading в false, так как происходит перезагрузка
     }
 
     setIsLoading(false)
@@ -402,7 +427,9 @@ function LoginForm() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-all duration-200 active:scale-95"
+              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 active:scale-95 ${
+                isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+              }`}
             >
               {isLoading ? (
                 <span className="flex items-center">
