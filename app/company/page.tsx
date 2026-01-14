@@ -803,7 +803,7 @@ export default function CompanyPage() {
                       ? 'Ожидание подтверждения оплаты...'
                       : isCurrent
                       ? 'Продлить'
-                      : 'Начать 14-дневный тест'}
+                      : 'Перейти'}
                   </button>
                 </div>
               )
