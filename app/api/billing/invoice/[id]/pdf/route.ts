@@ -2,15 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 
+// Используем Node.js runtime для работы с pdfkit
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 /**
  * Генерация PDF счета для подписки
  */
 async function generateInvoicePdf(invoice: any, subscription: any, company: any, plan: any) {
-  const pdfkitModule = (await import('pdfkit')) as any
-  const PDFKit = pdfkitModule.default || pdfkitModule
-  const doc = new PDFKit({ margin: 40 })
-  const chunks: Buffer[] = []
-  doc.on('data', (c: Buffer) => chunks.push(c))
+  try {
+    const pdfkitModule = (await import('pdfkit')) as any
+    const PDFKit = pdfkitModule.default || pdfkitModule
+    
+    if (!PDFKit) {
+      throw new Error('PDFKit module not found')
+    }
+    
+    const doc = new PDFKit({ margin: 40 })
+    const chunks: Buffer[] = []
+    doc.on('data', (c: Buffer) => chunks.push(c))
 
   // Заголовок
   doc.fontSize(20).text('СЧЕТ НА ОПЛАТУ', { align: 'center' }).moveDown()
@@ -69,9 +79,13 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
   doc.fontSize(10).text(`ID плательщика в системе: ${invoice.companyId}`, { align: 'left' })
   doc.text(`Номер счета: ${invoice.invoiceNumber || invoice.id}`, { align: 'left' })
 
-  doc.end()
-  await new Promise((resolve) => doc.on('end', resolve))
-  return Buffer.concat(chunks)
+    doc.end()
+    await new Promise((resolve) => doc.on('end', resolve))
+    return Buffer.concat(chunks)
+  } catch (error: any) {
+    console.error('[generateInvoicePdf] Error:', error)
+    throw new Error(`PDF generation failed: ${error?.message || 'Unknown error'}`)
+  }
 }
 
 type RouteContext = { params: Promise<{ id: string }> }
@@ -93,6 +107,7 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
             company: true,
           },
         },
+        company: true, // Добавляем прямую связь с компанией
       },
     })
 
@@ -102,17 +117,32 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
 
     // Проверяем доступ: либо админ компании, либо owner
     const isOwner = currentUser.role === 'owner'
-    const isCompanyAdmin = currentUser.role === 'admin' && invoice.subscription.companyId === Number(currentUser.companyId)
+    const invoiceCompanyId = invoice.companyId || invoice.subscription?.companyId
+    const isCompanyAdmin = currentUser.role === 'admin' && invoiceCompanyId === Number(currentUser.companyId)
 
     if (!isOwner && !isCompanyAdmin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Получаем данные компании (из subscription или напрямую)
+    const company = invoice.company || invoice.subscription?.company
+    if (!company) {
+      console.error('[billing][invoice][pdf][GET] Company not found for invoice:', invoice.id)
+      return NextResponse.json({ error: 'Company data not found' }, { status: 500 })
+    }
+
+    // Получаем план (из subscription)
+    const plan = invoice.subscription?.plan
+    if (!plan) {
+      console.error('[billing][invoice][pdf][GET] Plan not found for invoice:', invoice.id)
+      return NextResponse.json({ error: 'Plan data not found' }, { status: 500 })
+    }
+
     const pdf = await generateInvoicePdf(
       invoice,
       invoice.subscription,
-      invoice.subscription.company,
-      invoice.subscription.plan
+      company,
+      plan
     )
 
     const filename = `invoice-${invoice.invoiceNumber || invoice.id}.pdf`
@@ -123,8 +153,19 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('[billing][invoice][pdf][GET]', error)
-    return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 })
+    console.error('[billing][invoice][pdf][GET] Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+    })
+    return NextResponse.json(
+      { 
+        error: 'Failed to generate PDF',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
+      { status: 500 }
+    )
   }
 }
