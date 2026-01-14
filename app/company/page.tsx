@@ -302,11 +302,9 @@ export default function CompanyPage() {
       // Если платеж создан, но URL нет, обновляем подписку
       await fetchBilling()
       setBillingMessage('Платеж создан. Ожидаем подтверждения...')
-      setCheckingPayment(true)
     } catch (error: any) {
       console.error('Error updating plan:', error)
       setBillingError(error.message || 'Не удалось обновить тариф')
-      setCheckingPayment(false)
     } finally {
       setBillingLoading(false)
       setSelectedPlanId(null)
