@@ -17,10 +17,9 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
       const pdfkitModule = await import('pdfkit')
       PDFKit = pdfkitModule.default || pdfkitModule
       
-      if (!PDFKit) {
-        // Пробуем CommonJS импорт
-        const pdfkitCJS = require('pdfkit')
-        PDFKit = pdfkitCJS.default || pdfkitCJS
+      // Если default не найден, пробуем получить из модуля напрямую
+      if (!PDFKit && typeof pdfkitModule === 'function') {
+        PDFKit = pdfkitModule
       }
     } catch (importError: any) {
       console.error('[generateInvoicePdf] Import error:', importError)
