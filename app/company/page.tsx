@@ -68,6 +68,8 @@ export default function CompanyPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedPlanName, setSelectedPlanName] = useState<string>('')
   const [isLegalEntity, setIsLegalEntity] = useState(false)
+  const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
+  const [checkingPayment, setCheckingPayment] = useState(false)
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -98,6 +100,50 @@ export default function CompanyPage() {
     confirmPassword: ''
   })
 
+  // Функция для проверки статуса оплаты счета
+  const startPaymentStatusCheck = async (invoiceId: number) => {
+    const maxAttempts = 60 // Проверяем до 60 раз (5 минут при интервале 5 секунд)
+    let attempts = 0
+
+    const checkStatus = async () => {
+      if (attempts >= maxAttempts) {
+        setCheckingPayment(false)
+        setBillingMessage('Проверка статуса оплаты завершена. Если оплата была произведена, подписка будет активирована автоматически.')
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/billing/invoice/${invoiceId}`)
+        if (response.ok) {
+          const data = await response.json()
+          const invoiceStatus = data.invoice?.status
+          
+          if (invoiceStatus === 'PAID') {
+            setCheckingPayment(false)
+            setBillingMessage('Оплата подтверждена! Подписка активирована.')
+            await fetchBilling()
+            return
+          } else if (invoiceStatus === 'FAILED') {
+            setCheckingPayment(false)
+            setBillingError('Оплата не была завершена. Пожалуйста, попробуйте снова.')
+            await fetchBilling()
+            return
+          }
+        }
+
+        attempts++
+        // Проверяем каждые 5 секунд
+        setTimeout(checkStatus, 5000)
+      } catch (error) {
+        console.error('Error checking payment status:', error)
+        attempts++
+        setTimeout(checkStatus, 5000)
+      }
+    }
+
+    checkStatus()
+  }
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login')
@@ -114,6 +160,31 @@ export default function CompanyPage() {
       }
       fetchUsers()
       fetchBilling()
+      
+      // Проверяем неоплаченные счета и запускаем проверку статуса, если нужно
+      const checkPendingInvoices = async () => {
+        try {
+          const response = await fetch('/api/billing/invoices/pending')
+          if (response.ok) {
+            const data = await response.json()
+            const invoices = data.invoices || []
+            if (invoices.length > 0) {
+              setPendingInvoices(invoices)
+              // Запускаем проверку статуса для самого свежего счета
+              const latestInvoice = invoices[0]
+              if (latestInvoice && latestInvoice.status === 'PENDING') {
+                setCheckingPayment(true)
+                startPaymentStatusCheck(latestInvoice.id)
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error checking pending invoices:', error)
+        }
+      }
+      
+      // Проверяем неоплаченные счета через небольшую задержку после загрузки
+      setTimeout(checkPendingInvoices, 1000)
     }
   }, [status, session, router])
 
@@ -141,10 +212,11 @@ export default function CompanyPage() {
     setBillingLoading(true)
     setBillingError('')
     try {
-      const [plansRes, subscriptionRes, companyStatsRes] = await Promise.all([
+      const [plansRes, subscriptionRes, companyStatsRes, pendingInvoicesRes] = await Promise.all([
         fetch('/api/billing/plans'),
         fetch('/api/billing/subscription'),
         fetch('/api/admin/company-stats'),
+        fetch('/api/billing/invoices/pending'),
       ])
 
       if (!plansRes.ok) {
@@ -167,6 +239,12 @@ export default function CompanyPage() {
         if (companyData.company?.isLegalEntity !== undefined) {
           setIsLegalEntity(companyData.company.isLegalEntity)
         }
+      }
+
+      // Получаем неоплаченные счета
+      if (pendingInvoicesRes.ok) {
+        const invoicesData = await pendingInvoicesRes.json()
+        setPendingInvoices(invoicesData.invoices || [])
       }
     } catch (error: any) {
       console.error('Error fetching billing data:', error)
@@ -225,9 +303,13 @@ export default function CompanyPage() {
           throw new Error(invoiceData.error || 'Не удалось создать счет')
         }
 
-        // Показываем сообщение со ссылкой на PDF
-        setBillingMessage(`Счет ${invoiceData.invoice.invoiceNumber} создан. Скачать можно по ссылке: ${invoiceData.pdfUrl}`)
+        // Показываем сообщение со ссылкой на PDF и статус ожидания
+        setBillingMessage(`Счет ${invoiceData.invoice.invoiceNumber} создан. Скачать можно по ссылке: ${invoiceData.pdfUrl}. Ожидаем подтверждения оплаты.`)
+        setCheckingPayment(true)
         await fetchBilling()
+        
+        // Начинаем проверку статуса оплаты
+        startPaymentStatusCheck(invoiceData.invoice.id)
         return
       }
 
@@ -264,11 +346,14 @@ export default function CompanyPage() {
       // Если платеж создан, но URL нет, обновляем подписку
       await fetchBilling()
       setBillingMessage('Платеж создан. Ожидаем подтверждения...')
+      setCheckingPayment(true)
     } catch (error: any) {
       console.error('Error updating plan:', error)
       setBillingError(error.message || 'Не удалось обновить тариф')
+      setCheckingPayment(false)
     } finally {
       setBillingLoading(false)
+      setSelectedPlanId(null)
       setSelectedPlanId(null)
       setSelectedPlanName('')
     }
@@ -584,6 +669,31 @@ export default function CompanyPage() {
             {billingMessage}
           </div>
         )}
+        {checkingPayment && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-800">
+            <div className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-amber-600 border-t-transparent"></div>
+              <span className="font-medium">Ожидание подтверждения оплаты...</span>
+            </div>
+            {isLegalEntity && (
+              <p className="text-sm mt-2 text-amber-700">
+                Для юридических лиц оплата может занять некоторое время. Мы уведомим вас, как только получим подтверждение.
+              </p>
+            )}
+          </div>
+        )}
+        {pendingInvoices.length > 0 && !checkingPayment && (
+          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-800">
+            <div className="font-medium mb-2">Ожидаются оплаты:</div>
+            {pendingInvoices.map((invoice) => (
+              <div key={invoice.id} className="text-sm text-amber-700">
+                Счет №{invoice.invoiceNumber || invoice.id} на сумму{' '}
+                {invoice.amount ? (invoice.amount / 100).toLocaleString('ru-RU') : '0'} {invoice.currency || '₽'} -{' '}
+                <span className="font-medium">Ожидание оплаты</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <section className="space-y-4 mb-8">
@@ -682,14 +792,18 @@ export default function CompanyPage() {
                   </ul>
                   <button
                     onClick={() => handlePlanChange(plan.id)}
-                    disabled={isCurrent || billingLoading}
+                    disabled={isCurrent || billingLoading || checkingPayment}
                     className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
                       isCurrent
-                        ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                        ? 'bg-green-50 text-green-700 border border-green-200'
                         : 'bg-[var(--primary)] text-white hover:opacity-90'
-                    }`}
+                    } ${checkingPayment ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isCurrent ? 'Текущий план' : 'Начать 14-дневный тест'}
+                    {checkingPayment && isCurrent
+                      ? 'Ожидание подтверждения оплаты...'
+                      : isCurrent
+                      ? 'Продлить'
+                      : 'Начать 14-дневный тест'}
                   </button>
                 </div>
               )
