@@ -47,7 +47,14 @@ export async function GET() {
       },
     })
 
-    return NextResponse.json({ invoices })
+    // Добавляем pdfUrl для каждого счета
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://flamecrm.ru'
+    const invoicesWithPdfUrl = invoices.map((invoice) => ({
+      ...invoice,
+      pdfUrl: `${baseUrl}/api/billing/invoice/${invoice.id}/pdf`,
+    }))
+
+    return NextResponse.json({ invoices: invoicesWithPdfUrl })
   } catch (error: any) {
     console.error('[billing][invoices][pending][GET]', error)
     return NextResponse.json(

@@ -86,9 +86,16 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
   // Примечание
   doc.fontSize(10).text('Примечание: Оплата производится по реквизитам, указанным в договоре.', { align: 'left' })
   
-  // ID плательщика для подтверждения оплаты
+  // Назначение платежа с ID клиента
   doc.moveDown()
-  doc.fontSize(10).text(`ID плательщика в системе: ${invoice.companyId}`, { align: 'left' })
+  doc.fontSize(12).font('Helvetica-Bold').text('Назначение платежа:', { align: 'left' })
+  doc.fontSize(11).font('Helvetica')
+  const paymentPurpose = `Оплата подписки ${plan.name} за ${periodLabel}. ID клиента: ${invoice.companyId || company.id}. Счет №${invoice.invoiceNumber || invoice.id}`
+  doc.text(paymentPurpose, { align: 'left' })
+  
+  // Дополнительная информация
+  doc.moveDown()
+  doc.fontSize(10).text(`ID плательщика в системе: ${invoice.companyId || company.id}`, { align: 'left' })
   doc.text(`Номер счета: ${invoice.invoiceNumber || invoice.id}`, { align: 'left' })
 
     doc.end()
