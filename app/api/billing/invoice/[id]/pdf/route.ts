@@ -11,11 +11,24 @@ export const dynamic = 'force-dynamic'
  */
 async function generateInvoicePdf(invoice: any, subscription: any, company: any, plan: any) {
   try {
-    const pdfkitModule = (await import('pdfkit')) as any
-    const PDFKit = pdfkitModule.default || pdfkitModule
+    // Динамический импорт pdfkit
+    let PDFKit: any
+    try {
+      const pdfkitModule = await import('pdfkit')
+      PDFKit = pdfkitModule.default || pdfkitModule
+      
+      if (!PDFKit) {
+        // Пробуем CommonJS импорт
+        const pdfkitCJS = require('pdfkit')
+        PDFKit = pdfkitCJS.default || pdfkitCJS
+      }
+    } catch (importError: any) {
+      console.error('[generateInvoicePdf] Import error:', importError)
+      throw new Error(`Failed to import pdfkit: ${importError?.message || 'Unknown error'}`)
+    }
     
     if (!PDFKit) {
-      throw new Error('PDFKit module not found')
+      throw new Error('PDFKit module not found after import')
     }
     
     const doc = new PDFKit({ margin: 40 })
