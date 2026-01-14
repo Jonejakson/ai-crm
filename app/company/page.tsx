@@ -279,7 +279,7 @@ export default function CompanyPage() {
     setPaymentPeriodModalOpen(true)
   }
 
-  const handlePaymentWithPeriod = async (paymentPeriodMonths: 1 | 3 | 6 | 12) => {
+  const handlePaymentWithPeriod = async (paymentPeriodMonths: 1 | 3 | 6 | 12, paymentMethod?: 'yookassa' | 'invoice') => {
     if (!selectedPlanId) return
 
     setBillingError('')
@@ -288,32 +288,37 @@ export default function CompanyPage() {
     setPaymentPeriodModalOpen(false)
 
     try {
-      // Для юридических лиц используем endpoint генерации счета
+      // Для юридических лиц проверяем выбранный способ оплаты
       if (isLegalEntity) {
-        const invoiceResponse = await fetch('/api/billing/invoice/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ planId: selectedPlanId, paymentPeriodMonths }),
-        })
+        // Если выбран способ "счет", используем endpoint генерации счета
+        if (paymentMethod === 'invoice') {
+          const invoiceResponse = await fetch('/api/billing/invoice/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ planId: selectedPlanId, paymentPeriodMonths }),
+          })
 
-        const invoiceData = await invoiceResponse.json()
-        if (!invoiceResponse.ok) {
-          throw new Error(invoiceData.error || 'Не удалось создать счет')
+          const invoiceData = await invoiceResponse.json()
+          if (!invoiceResponse.ok) {
+            throw new Error(invoiceData.error || 'Не удалось создать счет')
+          }
+
+          // Показываем сообщение со ссылкой на PDF и статус ожидания
+          setBillingMessage(`Счет ${invoiceData.invoice.invoiceNumber || invoiceData.invoice.id} создан. Скачать можно по ссылке: ${invoiceData.pdfUrl}. Ожидаем подтверждения оплаты.`)
+          setCheckingPayment(true)
+          await fetchBilling()
+          
+          // Начинаем проверку статуса оплаты
+          startPaymentStatusCheck(invoiceData.invoice.id)
+          return
         }
-
-        // Показываем сообщение со ссылкой на PDF и статус ожидания
-        setBillingMessage(`Счет ${invoiceData.invoice.invoiceNumber} создан. Скачать можно по ссылке: ${invoiceData.pdfUrl}. Ожидаем подтверждения оплаты.`)
-        setCheckingPayment(true)
-        await fetchBilling()
-        
-        // Начинаем проверку статуса оплаты
-        startPaymentStatusCheck(invoiceData.invoice.id)
-        return
+        // Если выбран способ "YooKassa", используем обычный endpoint оплаты
+        // (продолжаем выполнение ниже)
       }
 
-      // Для физических лиц используем обычный endpoint оплаты
+      // Для физических лиц и юридических лиц с оплатой через YooKassa используем обычный endpoint оплаты
       const paymentResponse = await fetch('/api/billing/payment', {
         method: 'POST',
         headers: {
