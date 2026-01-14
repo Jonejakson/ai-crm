@@ -124,7 +124,10 @@ export default function CompanyPage() {
           if (response.ok) {
             const data = await response.json()
             const invoices = data.invoices || []
+            console.log('[CompanyPage] Pending invoices loaded:', invoices)
             setPendingInvoices(invoices)
+          } else {
+            console.error('[CompanyPage] Failed to load pending invoices:', response.status)
           }
         } catch (error) {
           console.error('Error checking pending invoices:', error)
