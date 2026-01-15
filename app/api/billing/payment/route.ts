@@ -113,13 +113,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ subscription, paymentUrl: null })
     }
 
-    // Для юридических лиц возвращаем ошибку - нужно использовать /api/billing/invoice/generate
-    if (payerType === PayerType.LEGAL) {
-      return NextResponse.json(
-        { error: 'Legal entities must use invoice generation endpoint' },
-        { status: 400 }
-      )
-    }
+    // Для юридических лиц тоже разрешаем оплату через YooKassa (если выбрано в UI).
+    // Альтернативный путь для юрлиц — выставление счета через /api/billing/invoice/generate.
 
     // Создаем подписку со статусом TRIAL (будет активирована после оплаты)
     const now = new Date()
@@ -151,9 +146,9 @@ export async function POST(request: Request) {
     })
 
     // Создаем платеж в YooKassa
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://ai-crm-flame.vercel.app'
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://flamecrm.ru'
     const returnUrl = `${baseUrl}/billing/success?invoiceId=${invoice.id}`
-    const cancelUrl = `${baseUrl}/billing/cancel?invoiceId=${invoice.id}`
+    // cancelUrl пока не используется (но можно добавить страницу /billing/cancel при необходимости)
 
     const periodLabel = paymentPeriodMonths === 1 
       ? '1 месяц' 
