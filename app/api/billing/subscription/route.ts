@@ -3,11 +3,15 @@ import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
 import { BillingInterval, SubscriptionStatus } from '@prisma/client'
 
-const ACTIVE_STATUSES = [
-  SubscriptionStatus.ACTIVE,
-  SubscriptionStatus.TRIAL,
-  SubscriptionStatus.PAST_DUE,
-]
+/**
+ * ВАЖНО:
+ * - TRIAL в системе используется для реального 14-дневного пробного периода (имеет trialEndsAt),
+ *   но также ранее использовался как "ожидается оплата" при создании неоплаченного инвойса.
+ * - Чтобы не было ситуации "выбил ошибку → обновил страницу → тариф сам поменялся и продлился",
+ *   мы считаем текущей подпиской только:
+ *   1) ACTIVE и не истекшую по currentPeriodEnd
+ *   2) TRIAL только если есть trialEndsAt и он не истек, и при этом нет PENDING инвойсов
+ */
 
 export async function GET() {
   const currentUser = await getCurrentUser()
@@ -16,20 +20,41 @@ export async function GET() {
   }
 
   try {
-    const subscription = await prisma.subscription.findFirst({
+    const now = new Date()
+
+    // 1) Сначала ищем реально активную подписку
+    const activeSubscription = await prisma.subscription.findFirst({
       where: {
         companyId: Number(currentUser.companyId),
-        status: { in: ACTIVE_STATUSES },
+        status: SubscriptionStatus.ACTIVE,
+        OR: [
+          { currentPeriodEnd: null },
+          { currentPeriodEnd: { gt: now } },
+        ],
       },
-      include: {
-        plan: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ subscription })
+    if (activeSubscription) {
+      return NextResponse.json({ subscription: activeSubscription })
+    }
+
+    // 2) Если активной нет — возвращаем пробную (только настоящую trial) и только без неоплаченных инвойсов
+    const trialSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: Number(currentUser.companyId),
+        status: SubscriptionStatus.TRIAL,
+        trialEndsAt: { not: null, gt: now },
+        invoices: {
+          none: { status: 'PENDING' },
+        },
+      },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return NextResponse.json({ subscription: trialSubscription || null })
   } catch (error) {
     console.error('[billing][subscription][GET]', error)
     return NextResponse.json({ error: 'Failed to load subscription' }, { status: 500 })
@@ -62,50 +87,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
     }
 
-    const now = new Date()
-    const nextPeriod = new Date(now)
-    nextPeriod.setMonth(nextPeriod.getMonth() + 1)
-
-    const activeSubscription = await prisma.subscription.findFirst({
-      where: {
-        companyId: Number(currentUser.companyId),
-        status: { in: ACTIVE_STATUSES },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        plan: true,
-      },
-    })
-
-    if (activeSubscription && activeSubscription.planId === plan.id) {
-      return NextResponse.json({ subscription: activeSubscription })
+    // Защита от "самопереключения" платных тарифов без оплаты.
+    // Платные планы должны активироваться через /api/billing/payment или /api/billing/invoice/generate.
+    if (plan.price > 0) {
+      return NextResponse.json(
+        { error: 'Paid plans must be activated via payment. Use /api/billing/payment or /api/billing/invoice/generate' },
+        { status: 400 }
+      )
     }
 
-    const subscription = await prisma.$transaction(async (tx) => {
-      if (activeSubscription) {
-        await tx.subscription.update({
-          where: { id: activeSubscription.id },
-          data: {
-            status: SubscriptionStatus.CANCELED,
-            cancelAtPeriodEnd: true,
-          },
-        })
-      }
-
-      return tx.subscription.create({
-        data: {
-          companyId: Number(currentUser.companyId),
-          planId: plan.id,
-          status: SubscriptionStatus.ACTIVE,
-          billingInterval: BillingInterval.MONTHLY,
-          currentPeriodEnd: nextPeriod,
-        },
-        include: {
-          plan: true,
-        },
-      })
+    // Для бесплатного плана разрешаем мгновенную активацию (без платежа)
+    const subscription = await prisma.subscription.create({
+      data: {
+        companyId: Number(currentUser.companyId),
+        planId: plan.id,
+        status: SubscriptionStatus.ACTIVE,
+        billingInterval: BillingInterval.MONTHLY,
+        currentPeriodEnd: null, // бесплатный план без окончания периода
+      },
+      include: { plan: true },
     })
 
     return NextResponse.json({ subscription })

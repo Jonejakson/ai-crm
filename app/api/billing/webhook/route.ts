@@ -68,13 +68,18 @@ export async function POST(request: Request) {
       if (invoice.subscription) {
         const now = new Date()
         const paymentPeriodMonths = invoice.paymentPeriodMonths || 1
-        const periodEnd = calculatePeriodEnd(now, paymentPeriodMonths)
-        
+        const baseDate =
+          invoice.subscription.currentPeriodEnd && invoice.subscription.currentPeriodEnd > now
+            ? invoice.subscription.currentPeriodEnd
+            : now
+        const periodEnd = calculatePeriodEnd(baseDate, paymentPeriodMonths)
+
         await prisma.subscription.update({
           where: { id: invoice.subscriptionId },
           data: {
             status: SubscriptionStatus.ACTIVE,
             currentPeriodEnd: periodEnd,
+            trialEndsAt: null,
           },
         })
       }

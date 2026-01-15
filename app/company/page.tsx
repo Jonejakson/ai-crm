@@ -752,7 +752,7 @@ export default function CompanyPage() {
                   </ul>
                   <button
                     onClick={() => handlePlanChange(plan.id)}
-                    disabled={isCurrent || billingLoading}
+                    disabled={billingLoading}
                     className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
                       isCurrent
                         ? 'bg-green-50 text-green-700 border border-green-200'

@@ -49,12 +49,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    // Находим активную подписку компании
-    const ACTIVE_STATUSES = [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL]
+    // Находим активную подписку компании (только ACTIVE)
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
         companyId: company.id,
-        status: { in: ACTIVE_STATUSES },
+        status: SubscriptionStatus.ACTIVE,
       },
       include: {
         plan: true,
@@ -75,21 +74,8 @@ export async function POST(request: Request) {
     const paymentAmount = calculatePaymentAmount(plan.price, paymentPeriodMonths)
     const payerType = company.isLegalEntity ? PayerType.LEGAL : PayerType.INDIVIDUAL
 
-    // Вычисляем новую дату окончания
-    const currentPeriodEnd = activeSubscription.currentPeriodEnd || new Date()
-    const newPeriodEnd = calculatePeriodEnd(currentPeriodEnd, paymentPeriodMonths)
-
-    // Обновляем подписку: продлеваем период
-    const updatedSubscription = await prisma.subscription.update({
-      where: { id: activeSubscription.id },
-      data: {
-        currentPeriodEnd: newPeriodEnd,
-        status: SubscriptionStatus.ACTIVE, // Убеждаемся, что статус ACTIVE
-      },
-      include: {
-        plan: true,
-      },
-    })
+    // Подписку НЕ продлеваем до подтверждения оплаты.
+    // Продление делается в webhook (для YooKassa) или вручную (для счетов юрлиц).
 
     // Создаем счет для продления
     const invoiceNumber = await generateInvoiceNumber()
@@ -168,9 +154,9 @@ export async function POST(request: Request) {
         payerType: payerType,
       },
       subscription: {
-        id: updatedSubscription.id,
-        currentPeriodEnd: updatedSubscription.currentPeriodEnd?.toISOString() || null,
-        plan: updatedSubscription.plan.name,
+        id: activeSubscription.id,
+        currentPeriodEnd: activeSubscription.currentPeriodEnd?.toISOString() || null,
+        plan: activeSubscription.plan.name,
       },
       paymentUrl, // null для юр лиц, URL для физ лиц
       pdfUrl: payerType === PayerType.LEGAL 
