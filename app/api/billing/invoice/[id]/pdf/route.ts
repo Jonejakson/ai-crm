@@ -132,6 +132,21 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
       if (SELLER.account) recLines.push(`р/с: ${SELLER.account}`)
       if (SELLER.corrAccount) recLines.push(`к/с: ${SELLER.corrAccount}`)
       recLines.forEach((l) => doc.fontSize(10).text(l, left, doc.y, { lineGap }))
+      doc.moveDown(0.6)
+
+      // Важное предупреждение для идентификации оплаты
+      doc.font(fontBold)
+      doc.fillColor('#B91C1C')
+      doc
+        .fontSize(11)
+        .text(
+          'ВАЖНО!!! ПРИ ОПЛАТЕ ПРОСИМ ВАС УКАЗЫВАТЬ ВАШ ID В НАЗНАЧЕНИИ ПЛАТЕЖА. ИНАЧЕ ПРОЦЕСС ПРОДЛЕНИЯ ПОДПИСКИ МОЖЕТ ЗАТЯНУТЬСЯ.',
+          left,
+          doc.y,
+          { width: contentWidth }
+        )
+      doc.fillColor('black')
+      doc.font(fontRegular)
       doc.moveDown(0.8)
     }
 
