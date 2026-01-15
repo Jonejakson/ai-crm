@@ -10,7 +10,15 @@ import { calculatePeriodEnd } from '@/lib/invoice-utils'
 export async function POST(request: Request) {
   try {
     const body = await request.text()
-    const signature = request.headers.get('x-yookassa-signature') || ''
+    // YooKassa/ЮMoney могут присылать подпись разными заголовками в разных окружениях.
+    // Пробуем несколько вариантов, чтобы не зависеть от точного имени.
+    const signature =
+      request.headers.get('x-yookassa-signature') ||
+      request.headers.get('x-yoomoney-signature') ||
+      request.headers.get('x-yoomoney-signature-sha256') ||
+      request.headers.get('x-content-signature') ||
+      request.headers.get('content-signature') ||
+      ''
 
     // Проверяем подпись (в production обязательно!)
     // В development тоже проверяем, если YOOKASSA_SECRET_KEY установлен

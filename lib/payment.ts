@@ -149,16 +149,27 @@ export function verifyYooKassaWebhook(
       return process.env.NODE_ENV !== 'production'
     }
 
-    // YooKassa использует HMAC-SHA256
-    // Формат подписи: <algorithm>=<signature>
-    // Например: sha256=abc123...
-    const parts = signature.split('=')
-    if (parts.length !== 2 || parts[0] !== 'sha256') {
-      console.error('[payment] Неверный формат подписи YooKassa')
+    // YooKassa использует HMAC-SHA256.
+    // Встречаются форматы:
+    // - "sha256=<hex>"
+    // - "<hex>" (без префикса)
+    let receivedSignature = ''
+    const trimmed = (signature || '').trim()
+    if (!trimmed) {
+      console.error('[payment] Пустая подпись YooKassa')
       return false
     }
 
-    const receivedSignature = parts[1]
+    if (trimmed.includes('=')) {
+      const parts = trimmed.split('=')
+      if (parts.length !== 2 || parts[0] !== 'sha256') {
+        console.error('[payment] Неверный формат подписи YooKassa')
+        return false
+      }
+      receivedSignature = parts[1]
+    } else {
+      receivedSignature = trimmed
+    }
 
     // Создаем HMAC-SHA256 подпись
     const crypto = require('crypto')
