@@ -124,7 +124,6 @@ export default function CompanyPage() {
           if (response.ok) {
             const data = await response.json()
             const invoices = data.invoices || []
-            console.log('[CompanyPage] Pending invoices loaded:', invoices)
             setPendingInvoices(invoices)
           } else {
             console.error('[CompanyPage] Failed to load pending invoices:', response.status)
@@ -633,7 +632,10 @@ export default function CompanyPage() {
               <div key={invoice.id} className="text-sm text-amber-700 mb-1">
                 Счет №{invoice.invoiceNumber || invoice.id} на сумму{' '}
                 <span className="font-semibold">
-                  {invoice.amount ? (invoice.amount / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) : '0'} {invoice.currency || '₽'}
+                  {invoice.amount
+                    ? Number(invoice.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                    : '0,00'}{' '}
+                  {invoice.currency || '₽'}
                 </span>
                 {' '}- <span className="font-medium">Ожидание оплаты</span>
                 {invoice.pdfUrl && (
