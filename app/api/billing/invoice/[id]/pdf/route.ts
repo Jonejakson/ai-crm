@@ -67,9 +67,8 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
       throw new Error(`Font files not found. regular=${fontRegular} bold=${fontBold}`)
     }
 
-    doc.registerFont('DejaVu', fontRegular)
-    doc.registerFont('DejaVuBold', fontBold)
-    doc.font('DejaVu')
+    // Важно: используем font(<path>) напрямую, чтобы pdfkit точно встроил TTF и корректно отрисовал кириллицу.
+    doc.font(fontRegular)
 
     const pageWidth = doc.page.width
     const margin = (doc as any).options?.margin ?? 40
@@ -82,9 +81,9 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
     const clientId = invoice.companyId || company.id
 
     // Заголовок
-    doc.font('DejaVuBold')
+    doc.font(fontBold)
     doc.fontSize(16).text(`Счет на оплату № ${invoiceNo} от ${invoiceDate}`, left, doc.y, { width: contentWidth, align: 'center' })
-    doc.font('DejaVu')
+    doc.font(fontRegular)
     doc.moveDown(0.8)
 
     // Поставщик / Покупатель
@@ -97,9 +96,9 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
     doc.rect(left, blockY, contentWidth, rowH).stroke()
 
     // Поставщик
-    doc.font('DejaVuBold')
+    doc.font(fontBold)
     doc.fontSize(10).text('Поставщик:', left + 6, blockY + 8, { width: labelW })
-    doc.font('DejaVu')
+    doc.font(fontRegular)
     doc.fontSize(10).text(
       `${SELLER.type} ${SELLER.fio}, ИНН ${SELLER.inn}`,
       left + 6 + labelW,
@@ -108,9 +107,9 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
     )
 
     // Покупатель
-    doc.font('DejaVuBold')
+    doc.font(fontBold)
     doc.fontSize(10).text('Покупатель:', left + 6, blockY + 26, { width: labelW })
-    doc.font('DejaVu')
+    doc.font(fontRegular)
     const buyerInn = company?.inn ? `, ИНН ${company.inn}` : ''
     doc.fontSize(10).text(
       `${company?.name || '—'}${buyerInn}`,
@@ -123,9 +122,9 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
 
     // Банковские реквизиты (если заданы)
     if (SELLER.bankName || SELLER.bik || SELLER.account || SELLER.corrAccount) {
-      doc.font('DejaVuBold')
+      doc.font(fontBold)
       doc.fontSize(11).text('Реквизиты получателя:', left, doc.y)
-      doc.font('DejaVu')
+      doc.font(fontRegular)
       doc.moveDown(0.4)
       const recLines: string[] = []
       if (SELLER.bankName) recLines.push(`Банк: ${SELLER.bankName}`)
@@ -157,7 +156,7 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
 
     const headerH = 22
     doc.rect(left, tableTop, contentWidth, headerH).stroke()
-    doc.font('DejaVuBold')
+    doc.font(fontBold)
     doc.fontSize(10)
     doc.text('№', x.n + 6, tableTop + 6, { width: col.n - 12 })
     doc.text('Товары (работы, услуги)', x.name + 6, tableTop + 6, { width: col.name - 12 })
@@ -184,7 +183,7 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
     doc.moveTo(x.price, rowY).lineTo(x.price, rowY + rowH2).stroke()
     doc.moveTo(x.sum, rowY).lineTo(x.sum, rowY + rowH2).stroke()
 
-    doc.font('DejaVu')
+    doc.font(fontRegular)
     const serviceName = `Оплата услуг CRM системы Flame CRM за ${periodLabel} (ID клиента: ${clientId})`
     doc.fontSize(10)
     doc.text('1', x.n + 6, rowY + 8, { width: col.n - 12 })
@@ -197,16 +196,16 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
     doc.y = rowY + rowH2 + 10
 
     // Итого
-    doc.font('DejaVuBold')
+    doc.font(fontBold)
     doc.fontSize(11).text(`Итого: ${formatRub(Number(invoice.amount || 0))} ${invoice.currency || 'RUB'}`, left, doc.y, { width: contentWidth, align: 'right' })
-    doc.font('DejaVu')
+    doc.font(fontRegular)
     doc.fontSize(10).text('НДС не облагается (самозанятый).', left, doc.y + 4, { width: contentWidth, align: 'right' })
     doc.moveDown(1.2)
 
     // Назначение платежа
-    doc.font('DejaVuBold')
+    doc.font(fontBold)
     doc.fontSize(11).text('Назначение платежа:', left, doc.y)
-    doc.font('DejaVu')
+    doc.font(fontRegular)
     doc.fontSize(10).text(`Оплата услуг CRM системы Flame CRM. ID клиента: ${clientId}.`, left, doc.y + 2, { width: contentWidth })
     doc.moveDown(0.8)
 
@@ -285,6 +284,8 @@ export async function GET(request: NextRequest, ctx: RouteContext) {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store, max-age=0',
+        Pragma: 'no-cache',
       },
     })
   } catch (error: any) {
