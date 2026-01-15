@@ -45,6 +45,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# pdfkit требует встроенные AFM-файлы (метрики шрифтов). В standalone-сборке они не попадают в output tracing,
+# поэтому явно копируем их в место, откуда pdfkit пытается их читать.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pdfkit/js/data ./.next/server/chunks/data
+
 USER nextjs
 
 EXPOSE 3000
