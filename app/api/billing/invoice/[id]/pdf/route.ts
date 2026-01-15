@@ -12,10 +12,10 @@ const SELLER = {
   fio: 'Помазанова Елена Витальевна',
   inn: '420207922975',
   // Банковские реквизиты (если хотите — пришлите, и я подставлю в .env)
-  bankName: process.env.BILLING_SELLER_BANK_NAME || '',
-  bik: process.env.BILLING_SELLER_BIK || '',
-  account: process.env.BILLING_SELLER_ACCOUNT || '',
-  corrAccount: process.env.BILLING_SELLER_CORR_ACCOUNT || '',
+  bankName: process.env.BILLING_SELLER_BANK_NAME || 'АО "ТБанк"',
+  bik: process.env.BILLING_SELLER_BIK || '044525974',
+  account: process.env.BILLING_SELLER_ACCOUNT || '40817810700104741948',
+  corrAccount: process.env.BILLING_SELLER_CORR_ACCOUNT || '30101810145250000974',
 }
 
 function formatRub(amountRub: number) {
