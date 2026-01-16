@@ -41,10 +41,7 @@ docker-compose exec -T app npx -y prisma@6.19.0 migrate deploy || {
 
 echo ""
 echo "🔧 Генерация Prisma Client..."
-docker-compose exec -T app npx -y prisma@6.19.0 generate || {
-    echo "⚠️  Ошибка при генерации Prisma Client. Попробуйте вручную:"
-    echo "   docker-compose exec app npx -y prisma@6.19.0 generate"
-}
+echo "ℹ️  Пропускаем prisma generate на сервере (делается на стадии сборки образа)."
 
 echo ""
 echo "✅ Обновление завершено!"
