@@ -265,6 +265,22 @@ export default function CompanyPage() {
 
           // Обновляем список pending invoices
           await fetchBilling()
+
+          // Автоматически скачиваем PDF счета (без необходимости выходить и жать "Скачать счет")
+          const pdfUrl: string | undefined =
+            invoiceData?.pdfUrl || (invoiceData?.invoice?.id ? `/api/billing/invoice/${invoiceData.invoice.id}/pdf` : undefined)
+          if (pdfUrl && typeof window !== 'undefined') {
+            const filename = invoiceData?.invoice?.invoiceNumber
+              ? `invoice-${invoiceData.invoice.invoiceNumber}.pdf`
+              : 'invoice.pdf'
+            const a = document.createElement('a')
+            a.href = pdfUrl
+            a.download = filename
+            a.rel = 'noopener noreferrer'
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+          }
           
           // Не показываем сообщение и не запускаем проверку статуса
           // Пользователь может выбрать другой тариф/срок/способ оплаты
