@@ -570,7 +570,11 @@ export default function CompanyPage() {
       value: subscription?.currentPeriodEnd
         ? new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
         : '—',
-      note: subscription?.currentPeriodEnd ? 'Автопродление активно' : 'Ещё не настроено',
+      note: subscription?.currentPeriodEnd
+        ? pendingInvoices.length > 0
+          ? 'Оплачено до (есть счета в ожидании)'
+          : 'Оплачено до'
+        : 'Ещё не настроено',
     },
     {
       label: 'Фильтр',

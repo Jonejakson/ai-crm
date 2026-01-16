@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { SubscriptionStatus, BillingInterval, PayerType } from '@prisma/client'
-import { generateInvoiceNumber, calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
+import { generateInvoiceNumber, calculatePaymentAmount } from '@/lib/invoice-utils'
 
 /**
  * Генерация счета для юридических лиц
@@ -65,9 +65,8 @@ export async function POST(request: Request) {
     // Рассчитываем сумму платежа
     const paymentAmount = calculatePaymentAmount(plan.price, paymentPeriodMonths)
 
-    // Создаем подписку со статусом TRIAL (будет активирована после оплаты)
-    const now = new Date()
-    const nextPeriod = calculatePeriodEnd(now, paymentPeriodMonths)
+    // Создаем подписку в ожидании оплаты.
+    // ВАЖНО: НЕ выставляем currentPeriodEnd заранее, иначе будет казаться, что подписка продлена без оплаты.
 
     const subscription = await prisma.subscription.create({
       data: {
@@ -75,7 +74,7 @@ export async function POST(request: Request) {
         planId: plan.id,
         status: SubscriptionStatus.TRIAL,
         billingInterval: BillingInterval.MONTHLY,
-        currentPeriodEnd: nextPeriod,
+        currentPeriodEnd: null,
       },
       include: {
         plan: true,

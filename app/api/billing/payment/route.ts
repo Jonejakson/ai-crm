@@ -117,9 +117,9 @@ export async function POST(request: Request) {
     // Для юридических лиц тоже разрешаем оплату через YooKassa (если выбрано в UI).
     // Альтернативный путь для юрлиц — выставление счета через /api/billing/invoice/generate.
 
-    // Создаем подписку со статусом TRIAL (будет активирована после оплаты)
-    const now = new Date()
-    const nextPeriod = calculatePeriodEnd(now, paymentPeriodMonths)
+    // Создаем подписку в ожидании оплаты.
+    // ВАЖНО: НЕ выставляем currentPeriodEnd заранее, иначе UI будет выглядеть так,
+    // будто подписка уже "продлена" без факта оплаты.
 
     const subscription = await prisma.subscription.create({
       data: {
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
         planId: plan.id,
         status: SubscriptionStatus.TRIAL,
         billingInterval: BillingInterval.MONTHLY, // Используем MONTHLY для всех периодов
-        currentPeriodEnd: nextPeriod,
+        currentPeriodEnd: null,
       },
     })
 
