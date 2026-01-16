@@ -172,8 +172,12 @@ export default function DealsPage() {
     name: '',
     email: '',
     phone: '',
-    company: ''
+    position: '',
+    inn: '',
+    company: '',
   })
+  const [innLoading, setInnLoading] = useState(false)
+  const [innError, setInnError] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     amount: '',
@@ -300,6 +304,62 @@ export default function DealsPage() {
     }
 
   }, [selectedUserId, selectedPipeline])
+
+  // Поиск компании по ИНН (как на странице Контактов)
+  const handleInnSearch = async (inn: string) => {
+    const cleanInn = inn.replace(/\D/g, '')
+    if (cleanInn.length < 10) {
+      setInnError('')
+      return
+    }
+
+    setInnLoading(true)
+    setInnError('')
+    try {
+      const response = await fetch(`/api/company/by-inn?inn=${cleanInn}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Ошибка при запросе к API' }))
+        let errorMessage = errorData.error || 'Ошибка при запросе к API'
+        if (response.status === 403) {
+          errorMessage = 'Проблема с доступом к API. Проверьте настройки DADATA_API_KEY.'
+        } else if (response.status === 503) {
+          errorMessage = 'API ключ не настроен. Обратитесь к администратору.'
+        } else if (response.status === 404) {
+          errorMessage = 'Компания с таким ИНН не найдена'
+        }
+        setInnError(errorMessage)
+        return
+      }
+
+      const data = await response.json()
+      if (data?.name) {
+        setNewContactData((prev) => ({
+          ...prev,
+          company: data.name,
+          inn: cleanInn,
+        }))
+        setInnError('')
+      } else {
+        setInnError(data?.error || 'Компания не найдена')
+      }
+    } catch (error) {
+      console.error('Error searching company by INN:', error)
+      setInnError('Ошибка при запросе к API')
+    } finally {
+      setInnLoading(false)
+    }
+  }
+
+  const handleNewContactInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setNewContactData((prev) => ({ ...prev, inn: value }))
+    const cleanInn = value.replace(/\D/g, '')
+    if (cleanInn.length === 10 || cleanInn.length === 12) {
+      handleInnSearch(cleanInn)
+    } else {
+      setInnError('')
+    }
+  }
 
   useEffect(() => {
     fetchUsers()
@@ -1520,11 +1580,12 @@ export default function DealsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[101]">
           <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-[var(--foreground)]">Новый клиент</h3>
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">Добавить клиента</h3>
               <button
                 onClick={() => {
                   setIsNewContactModalOpen(false)
-                  setNewContactData({ name: '', email: '', phone: '', company: '' })
+                  setNewContactData({ name: '', email: '', phone: '', position: '', inn: '', company: '' })
+                  setInnError('')
                 }}
                 className="text-[var(--muted)] hover:text-[var(--foreground)]"
               >
@@ -1550,7 +1611,8 @@ export default function DealsPage() {
                     setFormData({...formData, contactId: newContact.id.toString()})
                     setContactSearch(newContact.email ? `${newContact.name} (${newContact.email})` : newContact.name)
                     setIsNewContactModalOpen(false)
-                    setNewContactData({ name: '', email: '', phone: '', company: '' })
+                    setNewContactData({ name: '', email: '', phone: '', position: '', inn: '', company: '' })
+                    setInnError('')
                     // Открываем модальное окно создания сделки обратно
                     setIsModalOpen(true)
                   } else {
@@ -1578,12 +1640,13 @@ export default function DealsPage() {
 
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
                   value={newContactData.email}
                   onChange={(e) => setNewContactData({...newContactData, email: e.target.value})}
+                  required
                 />
               </div>
 
@@ -1600,12 +1663,46 @@ export default function DealsPage() {
 
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  Должность
+                </label>
+                <input
+                  value={newContactData.position}
+                  onChange={(e) => setNewContactData({...newContactData, position: e.target.value})}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  ИНН
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newContactData.inn}
+                    onChange={handleNewContactInnChange}
+                    placeholder="Введите ИНН (10 или 12 цифр)"
+                    maxLength={12}
+                  />
+                  {innLoading && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="loading-spinner"></div>
+                    </div>
+                  )}
+                </div>
+                {innError && (
+                  <p className="mt-1 text-xs text-red-500">{innError}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Компания
                 </label>
                 <input
                   type="text"
                   value={newContactData.company}
                   onChange={(e) => setNewContactData({...newContactData, company: e.target.value})}
+                  placeholder="Заполнится автоматически по ИНН"
                 />
               </div>
 
@@ -1614,7 +1711,8 @@ export default function DealsPage() {
                   type="button"
                   onClick={() => {
                     setIsNewContactModalOpen(false)
-                    setNewContactData({ name: '', email: '', phone: '', company: '' })
+                    setNewContactData({ name: '', email: '', phone: '', position: '', inn: '', company: '' })
+                    setInnError('')
                   }}
                   className="btn-secondary text-sm"
                 >
@@ -1624,7 +1722,7 @@ export default function DealsPage() {
                   type="submit"
                   className="btn-primary text-sm"
                 >
-                  Создать клиента
+                  Добавить
                 </button>
               </div>
             </form>
