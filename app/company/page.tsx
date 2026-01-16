@@ -234,7 +234,10 @@ export default function CompanyPage() {
     setPaymentPeriodModalOpen(true)
   }
 
-  const handlePaymentWithPeriod = async (paymentPeriodMonths: 1 | 3 | 6 | 12, paymentMethod?: 'yookassa' | 'invoice') => {
+  const handlePaymentWithPeriod = async (
+    paymentPeriodMonths: 1 | 3 | 6 | 12,
+    paymentMethod?: 'yookassa' | 'sbp' | 'invoice'
+  ) => {
     if (!selectedPlanId) return
 
     setBillingError('')
@@ -277,7 +280,11 @@ export default function CompanyPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ planId: selectedPlanId, paymentPeriodMonths }),
+        body: JSON.stringify({
+          planId: selectedPlanId,
+          paymentPeriodMonths,
+          ...(paymentMethod === 'sbp' ? { paymentMethodType: 'sbp' } : {}),
+        }),
       })
 
       const paymentData = await paymentResponse.json()
@@ -309,7 +316,6 @@ export default function CompanyPage() {
       setBillingError(error.message || 'Не удалось обновить тариф')
     } finally {
       setBillingLoading(false)
-      setSelectedPlanId(null)
       setSelectedPlanId(null)
       setSelectedPlanName('')
     }

@@ -8,7 +8,10 @@ interface PaymentPeriodModalProps {
   onClose: () => void
   planId: number
   planName: string
-  onConfirm: (paymentPeriodMonths: 1 | 3 | 6 | 12, paymentMethod?: 'yookassa' | 'invoice') => void
+  onConfirm: (
+    paymentPeriodMonths: 1 | 3 | 6 | 12,
+    paymentMethod?: 'yookassa' | 'sbp' | 'invoice'
+  ) => void
   isLegalEntity?: boolean
 }
 
@@ -28,15 +31,11 @@ export default function PaymentPeriodModal({
   isLegalEntity = false,
 }: PaymentPeriodModalProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<1 | 3 | 6 | 12>(1)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'yookassa' | 'invoice'>('yookassa')
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'yookassa' | 'sbp' | 'invoice'>('yookassa')
   const [loading, setLoading] = useState(false)
 
   const handleConfirm = () => {
-    if (isLegalEntity) {
-      onConfirm(selectedPeriod, selectedPaymentMethod)
-    } else {
-      onConfirm(selectedPeriod)
-    }
+    onConfirm(selectedPeriod, selectedPaymentMethod)
     setLoading(true)
   }
 
@@ -44,7 +43,7 @@ export default function PaymentPeriodModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isLegalEntity ? 'Сформировать счет' : 'Оплатить подписку'}
+      title={isLegalEntity ? 'Оплата / счет' : 'Оплата подписки'}
       size="md"
     >
       <div className="p-6 space-y-6">
@@ -54,28 +53,45 @@ export default function PaymentPeriodModal({
           <div className="text-lg font-semibold text-[var(--foreground)]">{planName}</div>
         </div>
 
-        {/* Выбор способа оплаты для юридических лиц */}
-        {isLegalEntity && (
-          <div>
-            <label className="block text-sm font-semibold text-[var(--foreground)] mb-3">
-              Способ оплаты:
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setSelectedPaymentMethod('yookassa')}
-                disabled={loading}
-                className={`
-                  px-4 py-3 rounded-2xl border-2 transition-all
-                  ${
-                    selectedPaymentMethod === 'yookassa'
-                      ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
-                      : 'border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[var(--primary-soft)]'
-                  }
-                  ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                Оплатить через YooKassa
-              </button>
+        {/* Способ оплаты */}
+        <div>
+          <label className="block text-sm font-semibold text-[var(--foreground)] mb-3">
+            Способ оплаты:
+          </label>
+          <div className={`grid gap-3 ${isLegalEntity ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <button
+              onClick={() => setSelectedPaymentMethod('yookassa')}
+              disabled={loading}
+              className={`
+                px-4 py-3 rounded-2xl border-2 transition-all
+                ${
+                  selectedPaymentMethod === 'yookassa'
+                    ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
+                    : 'border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[var(--primary-soft)]'
+                }
+                ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+              `}
+            >
+              YooKassa
+            </button>
+
+            <button
+              onClick={() => setSelectedPaymentMethod('sbp')}
+              disabled={loading}
+              className={`
+                px-4 py-3 rounded-2xl border-2 transition-all
+                ${
+                  selectedPaymentMethod === 'sbp'
+                    ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
+                    : 'border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[var(--primary-soft)]'
+                }
+                ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+              `}
+            >
+              СБП
+            </button>
+
+            {isLegalEntity && (
               <button
                 onClick={() => setSelectedPaymentMethod('invoice')}
                 disabled={loading}
@@ -89,11 +105,11 @@ export default function PaymentPeriodModal({
                   ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 `}
               >
-                Сформировать счет
+                Счет
               </button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Выбор периода */}
         <div>
@@ -141,7 +157,11 @@ export default function PaymentPeriodModal({
               : isLegalEntity
               ? selectedPaymentMethod === 'invoice'
                 ? 'Сформировать счет'
+                : selectedPaymentMethod === 'sbp'
+                ? 'Оплатить через СБП'
                 : 'Оплатить через YooKassa'
+              : selectedPaymentMethod === 'sbp'
+              ? 'Оплатить через СБП'
               : 'Оплатить'}
           </button>
         </div>

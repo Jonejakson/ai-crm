@@ -31,10 +31,11 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { planId, paymentPeriodMonths = 1, billingInterval } = body as {
+    const { planId, paymentPeriodMonths = 1, billingInterval, paymentMethodType } = body as {
       planId?: number
       paymentPeriodMonths?: 1 | 3 | 6 | 12 // Новое поле для периода оплаты
       billingInterval?: 'MONTHLY' | 'YEARLY' // Устаревшее, оставлено для совместимости
+      paymentMethodType?: 'sbp'
     }
 
     if (!planId) {
@@ -167,7 +168,8 @@ export async function POST(request: Request) {
         invoiceId: invoice.id.toString(),
         subscriptionId: subscription.id.toString(),
         companyId: currentUser.companyId,
-      }
+      },
+      paymentMethodType ? { paymentMethodType } : undefined
     )
 
     // Сохраняем ID платежа в счете

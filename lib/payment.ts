@@ -40,6 +40,10 @@ interface CreatePaymentRequest {
     currency: string // "RUB"
   }
   description: string
+  capture?: boolean
+  payment_method_data?: {
+    type: 'sbp'
+  }
   confirmation: {
     type: 'redirect'
     return_url: string
@@ -69,7 +73,10 @@ export async function createYooKassaPayment(
   currency: string,
   description: string,
   returnUrl: string,
-  metadata?: Record<string, string>
+  metadata?: Record<string, string>,
+  options?: {
+    paymentMethodType?: 'sbp'
+  }
 ): Promise<YooKassaPayment> {
   const { shopId, secretKey } = getYooKassaConfig()
 
@@ -79,6 +86,10 @@ export async function createYooKassaPayment(
       currency: currency.toUpperCase(),
     },
     description,
+    capture: true,
+    ...(options?.paymentMethodType
+      ? { payment_method_data: { type: options.paymentMethodType } }
+      : {}),
     confirmation: {
       type: 'redirect',
       return_url: returnUrl,
