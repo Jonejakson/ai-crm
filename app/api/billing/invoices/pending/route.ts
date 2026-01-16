@@ -45,6 +45,7 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
+      take: 3,
     })
 
     // Добавляем pdfUrl для каждого счета

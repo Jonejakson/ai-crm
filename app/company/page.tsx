@@ -633,8 +633,8 @@ export default function CompanyPage() {
         )}
         {pendingInvoices.length > 0 && (
           <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-800">
-            <div className="font-medium mb-2">Ожидаются оплаты:</div>
-            {pendingInvoices.map((invoice) => (
+            <div className="font-medium mb-2">Ожидаются оплаты (последние 3):</div>
+            {pendingInvoices.slice(0, 3).map((invoice) => (
               <div key={invoice.id} className="text-sm text-amber-700 mb-1">
                 Счет №{invoice.invoiceNumber || invoice.id} на сумму{' '}
                 <span className="font-semibold">
