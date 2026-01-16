@@ -32,16 +32,18 @@ sleep 15
 # Применение миграций
 echo ""
 echo "📦 Применение миграций базы данных..."
-docker-compose exec -T app npx prisma migrate deploy || {
+# Важно: используем Prisma CLI той же major-версии, что и в проекте,
+# чтобы избежать ошибок Prisma 7+ (P1012) при использовании schema.prisma.
+docker-compose exec -T app npx -y prisma@6.19.0 migrate deploy || {
     echo "⚠️  Ошибка при применении миграций. Попробуйте вручную:"
-    echo "   docker-compose exec app npx prisma migrate deploy"
+    echo "   docker-compose exec app npx -y prisma@6.19.0 migrate deploy"
 }
 
 echo ""
 echo "🔧 Генерация Prisma Client..."
-docker-compose exec -T app npx prisma generate || {
+docker-compose exec -T app npx -y prisma@6.19.0 generate || {
     echo "⚠️  Ошибка при генерации Prisma Client. Попробуйте вручную:"
-    echo "   docker-compose exec app npx prisma generate"
+    echo "   docker-compose exec app npx -y prisma@6.19.0 generate"
 }
 
 echo ""
