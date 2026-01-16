@@ -4,13 +4,13 @@ import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import { createPortal } from 'react-dom'
 import FilesManager from '@/components/FilesManager'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Comments from '@/components/Comments'
 import toast from 'react-hot-toast'
 import { replaceTemplateVariables, type TemplateContext } from '@/lib/email-template-utils'
+import { CustomSelect } from '@/components/CustomSelect'
 
 interface Deal {
   id: number
@@ -91,191 +91,6 @@ interface DealType {
 
 interface Stage {
   name: string
-}
-
-// Компонент CustomSelect (скопирован из deals/page.tsx)
-function CustomSelect({
-  value,
-  onChange,
-  options,
-  placeholder = 'Выберите...',
-  required = false,
-}: {
-  value: string
-  onChange: (value: string) => void
-  options: Array<{ value: string; label: string }>
-  placeholder?: string
-  required?: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, openUp: false })
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  const displayText = options.find(opt => opt.value === value)?.label || placeholder
-
-  useEffect(() => {
-    const updatePosition = () => {
-      if (buttonRef.current) {
-        const rect = buttonRef.current.getBoundingClientRect()
-        const viewportHeight = window.innerHeight
-        const viewportWidth = window.innerWidth
-        const dropdownHeight = 256
-        const gap = 8
-        const padding = 16
-        const spaceBelow = viewportHeight - rect.bottom
-        const spaceAbove = rect.top
-        
-        // Улучшенная логика: всегда пытаемся открыть вниз, если есть достаточно места
-        const minSpaceForDown = 100
-        const openUp = spaceBelow < minSpaceForDown && spaceAbove > spaceBelow && spaceAbove > dropdownHeight
-        
-        // Для fixed позиционирования используем координаты относительно viewport
-        let top: number
-        if (openUp) {
-          top = rect.top - dropdownHeight - gap
-          if (top < padding) {
-            top = padding
-          }
-        } else {
-          top = rect.bottom + gap
-          const maxTop = viewportHeight - dropdownHeight - padding
-          if (top + dropdownHeight > viewportHeight - padding) {
-            top = Math.max(padding, viewportHeight - dropdownHeight - padding)
-          }
-        }
-        
-        let left = rect.left
-        const maxLeft = viewportWidth - rect.width - padding
-        left = Math.max(padding, Math.min(maxLeft, left))
-        
-        setPosition({
-          top,
-          left,
-          width: rect.width,
-          openUp,
-        })
-      }
-    }
-
-    if (isOpen) {
-      setTimeout(updatePosition, 0)
-      window.addEventListener('resize', updatePosition)
-      window.addEventListener('scroll', updatePosition, true)
-    }
-
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current && 
-        !dropdownRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false)
-      }
-    }
-
-    if (isOpen) {
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside)
-      }, 0)
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen])
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue)
-    setIsOpen(false)
-  }
-
-  const dropdownContent = isOpen && typeof document !== 'undefined' && (
-    <div
-      ref={dropdownRef}
-      className="fixed rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-lg p-2 space-y-1 max-h-64 overflow-y-auto"
-      style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        width: `${position.width}px`,
-        maxHeight: '256px',
-        zIndex: 100000, // Выше модального окна
-        position: 'fixed',
-      }}
-    >
-      {options.map((option) => {
-        const isSelected = value === option.value
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => handleSelect(option.value)}
-            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
-              isSelected
-                ? 'bg-[var(--primary-soft)] text-[var(--primary)] font-semibold'
-                : 'hover:bg-[var(--background-soft)] text-[var(--foreground)]'
-            }`}
-          >
-            {option.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-
-  return (
-    <>
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className={`w-full px-4 py-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] placeholder:text-[var(--muted-soft)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)] transition-all duration-300 text-left flex items-center justify-between ${
-            !value ? 'text-[var(--muted-soft)]' : ''
-          }`}
-          style={{ boxShadow: 'var(--shadow-sm)' }}
-          onMouseEnter={() => {
-            if (buttonRef.current) {
-              buttonRef.current.style.boxShadow = 'var(--shadow)'
-            }
-          }}
-          onMouseLeave={() => {
-            if (buttonRef.current) {
-              buttonRef.current.style.boxShadow = 'var(--shadow-sm)'
-            }
-          }}
-        >
-          <span className="truncate">{displayText}</span>
-          <span className={`transition-transform duration-200 ml-2 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-        {required && (
-          <select
-            required
-            value={value}
-            onChange={() => {}}
-            className="absolute opacity-0 pointer-events-none w-0 h-0"
-            tabIndex={-1}
-            aria-hidden="true"
-          >
-            {options.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        )}
-      </div>
-      {typeof window !== 'undefined' && createPortal(dropdownContent, document.body)}
-    </>
-  )
 }
 
 export default function DealDetailPage() {
