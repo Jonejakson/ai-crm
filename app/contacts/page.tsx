@@ -738,7 +738,7 @@ export default function ContactsPage() {
                         value={(formData as any)[field]}
                         onChange={handleChange}
                         required={field === 'name' || field === 'email'}
-                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0 focus:outline-none transition-all"
                       />
                     </div>
                   ))}
@@ -756,7 +756,7 @@ export default function ContactsPage() {
                         onChange={handleInnChange}
                         placeholder="Введите ИНН (10 или 12 цифр)"
                         maxLength={12}
-                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                        className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0 focus:outline-none transition-all"
                       />
                       {innLoading && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -780,7 +780,7 @@ export default function ContactsPage() {
                       value={formData.company}
                       onChange={handleChange}
                       placeholder="Заполнится автоматически по ИНН"
-                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
+                      className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0 focus:outline-none transition-all"
                     />
                   </div>
 
