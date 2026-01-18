@@ -1635,6 +1635,7 @@ export default function DealsPage() {
                   value={newContactData.name}
                   onChange={(e) => setNewContactData({...newContactData, name: e.target.value})}
                   required
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1647,6 +1648,7 @@ export default function DealsPage() {
                   value={newContactData.email}
                   onChange={(e) => setNewContactData({...newContactData, email: e.target.value})}
                   required
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1658,6 +1660,7 @@ export default function DealsPage() {
                   type="tel"
                   value={newContactData.phone}
                   onChange={(e) => setNewContactData({...newContactData, phone: e.target.value})}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1668,6 +1671,7 @@ export default function DealsPage() {
                 <input
                   value={newContactData.position}
                   onChange={(e) => setNewContactData({...newContactData, position: e.target.value})}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
@@ -1682,6 +1686,7 @@ export default function DealsPage() {
                     onChange={handleNewContactInnChange}
                     placeholder="Введите ИНН (10 или 12 цифр)"
                     maxLength={12}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   />
                   {innLoading && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -1703,6 +1708,7 @@ export default function DealsPage() {
                   value={newContactData.company}
                   onChange={(e) => setNewContactData({...newContactData, company: e.target.value})}
                   placeholder="Заполнится автоматически по ИНН"
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
 
