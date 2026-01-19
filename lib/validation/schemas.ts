@@ -6,7 +6,9 @@ import { z } from 'zod'
 
 // Базовые схемы
 export const emailSchema = z.string().email('Неверный формат email').optional().nullable()
-export const phoneSchema = z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Неверный формат телефона').optional().nullable()
+// Телефон: принимаем "человеческие" форматы (8-xxx-..., +7 ..., пробелы, скобки),
+// нормализация делается в API. Здесь — только базовые ограничения по длине.
+export const phoneSchema = z.string().max(50, 'Телефон слишком длинный').optional().nullable()
 export const urlSchema = z.string().url('Неверный формат URL').optional().nullable()
 
 // Контакты

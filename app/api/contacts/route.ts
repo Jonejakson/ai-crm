@@ -5,6 +5,34 @@ import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
 import { checkContactLimit } from "@/lib/subscription-limits";
 
+function normalizePhone(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null
+  if (typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+
+  // Удаляем типовые разделители, оставляем + и цифры
+  let cleaned = trimmed.replace(/[^\d+]/g, '')
+
+  // Если несколько плюсов — оставляем только первый в начале
+  if (cleaned.includes('+')) {
+    cleaned = cleaned.replace(/\+/g, '')
+    cleaned = `+${cleaned}`
+  }
+
+  // Частый кейс РФ: "8XXXXXXXXXX" -> "+7XXXXXXXXXX"
+  const digitsOnly = cleaned.replace(/\D/g, '')
+  if (digitsOnly.length === 11 && digitsOnly.startsWith('8')) {
+    return `+7${digitsOnly.slice(1)}`
+  }
+
+  // Если уже начинается с + — оставляем как есть (после чистки)
+  if (cleaned.startsWith('+')) return cleaned
+
+  // Иначе сохраняем как просто цифры (без +) — чтобы не ломать международные кейсы
+  return digitsOnly || null
+}
+
 // ❶ Получить все контакты (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
   try {
@@ -100,6 +128,9 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
+    if (body && typeof body === 'object') {
+      body.phone = normalizePhone((body as any).phone)
+    }
     
     // Валидация с помощью Zod
     const validationResult = validateRequest(createContactSchema, body);
@@ -178,6 +209,9 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
+    if (body && typeof body === 'object') {
+      body.phone = normalizePhone((body as any).phone)
+    }
     
     // Валидация с помощью Zod
     const validationResult = validateRequest(updateContactSchema, body);

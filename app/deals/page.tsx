@@ -1617,7 +1617,7 @@ export default function DealsPage() {
                     setIsModalOpen(true)
                   } else {
                     const error = await response.json()
-                    alert(error.error || 'Ошибка при создании клиента')
+                    alert(error.message || error.error || 'Ошибка при создании клиента')
                   }
                 } catch (error) {
                   console.error('Error creating contact:', error)
