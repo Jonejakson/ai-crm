@@ -194,6 +194,14 @@ export const createUserSchema = z.object({
   path: ['inn'], // Показываем ошибку на поле ИНН
 })
 
+// Создание пользователя админом внутри компании (без полей регистрации)
+export const createCompanyUserSchema = z.object({
+  email: z.string().email('Неверный формат email'),
+  password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
+  name: z.string().min(1, 'Имя обязательно').max(255),
+  role: z.enum(['admin', 'manager', 'user']).optional().default('manager'),
+})
+
 export const updateUserSchema = createUserSchema.partial().extend({
   id: z.number().int().positive(),
 }).omit({ password: true }) // Пароль обновляется отдельно

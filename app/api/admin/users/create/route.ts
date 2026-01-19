@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/get-session";
 import { isAdmin } from "@/lib/access-control";
 import { checkUserLimit } from "@/lib/subscription-limits";
-import { validateRequest, createUserSchema } from "@/lib/validation";
+import { validateRequest, createCompanyUserSchema } from "@/lib/validation";
 
 /**
  * Создать пользователя в компании (только для админа)
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const companyId = parseInt(user.companyId);
 
     // Валидация с помощью Zod
-    const validationResult = validateRequest(createUserSchema, { ...rawBody, companyId });
+    const validationResult = validateRequest(createCompanyUserSchema, rawBody);
     
     if (validationResult instanceof NextResponse) {
       return validationResult;

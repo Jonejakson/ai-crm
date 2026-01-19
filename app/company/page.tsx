@@ -355,7 +355,7 @@ export default function CompanyPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Ошибка создания пользователя')
+        throw new Error(data.message || data.error || 'Ошибка создания пользователя')
       }
 
       setSuccess(`Пользователь ${data.user.name} успешно создан!`)
