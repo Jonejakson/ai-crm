@@ -19,15 +19,14 @@ const pickSubscription = <T extends { status: string; updatedAt: Date }>(subs: T
   })[0]
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request) {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!isOwner(user.email)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const companyId = Number(params.id)
+  const url = new URL(request.url)
+  const idFromPath = url.pathname.split('/').filter(Boolean).pop()
+  const companyId = Number(idFromPath)
   if (!companyId || Number.isNaN(companyId)) {
     return NextResponse.json({ error: 'Invalid company id' }, { status: 400 })
   }
