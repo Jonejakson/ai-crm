@@ -243,8 +243,10 @@ export default function DealDetailPage() {
 
   const buildTaskDueDate = (date: string, time: string) => {
     if (!date) return null
-    if (!time) return date
-    return `${date}T${time}`
+    const t = time && time.trim() ? time.trim() : '00:00'
+    const d = new Date(`${date}T${t}:00`)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toISOString()
   }
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -274,7 +276,7 @@ export default function DealDetailPage() {
         fetchDealData()
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка создания задачи')
+        toast.error(error.message || error.error || 'Ошибка создания задачи')
       }
     } catch (error) {
       console.error('Error creating task:', error)

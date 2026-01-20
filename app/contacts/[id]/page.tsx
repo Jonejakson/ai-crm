@@ -299,8 +299,10 @@ export default function ContactDetailPage() {
 
   const buildContactTaskDueDate = (date: string, time: string) => {
     if (!date) return null
-    if (!time) return date
-    return `${date}T${time}`
+    const t = time && time.trim() ? time.trim() : '00:00'
+    const d = new Date(`${date}T${t}:00`)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toISOString()
   }
 
   const handleCreateTask = async (e: React.FormEvent) => {
@@ -327,9 +329,13 @@ export default function ContactDetailPage() {
         setIsTaskModalOpen(false)
         setTaskFormData({ title: '', description: '', dueDate: '', dueTime: '' })
         fetchContactData() // Обновляем задачи
+      } else {
+        const error = await response.json().catch(() => ({} as any))
+        alert(error.message || error.error || 'Ошибка создания задачи')
       }
     } catch (error) {
       console.error('Error creating task:', error)
+      alert('Ошибка создания задачи')
     }
   }
 

@@ -328,8 +328,10 @@ export default function TasksPage() {
 
   const buildDueDateValue = (date: string, time: string) => {
     if (!date) return null
-    if (!time) return date
-    return `${date}T${time}`
+    const t = time && time.trim() ? time.trim() : '00:00'
+    const d = new Date(`${date}T${t}:00`)
+    if (Number.isNaN(d.getTime())) return null
+    return d.toISOString()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -363,7 +365,7 @@ export default function TasksPage() {
         toast.success('Задача успешно создана')
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка при создании задачи')
+        toast.error(error.message || error.error || 'Ошибка при создании задачи')
       }
     } catch (error) {
       console.error('Error creating task:', error)
@@ -391,11 +393,12 @@ export default function TasksPage() {
 
     // Получаем новую дату из категории
     const newDate = getDateFromCategory(newCategoryId)
-    const newDueDate = newDate ? newDate.toISOString().split('T')[0] : null
+    const newDueDate = newDate ? new Date(`${newDate.toISOString().split('T')[0]}T00:00:00`).toISOString() : null
 
     // Если дата не изменилась, ничего не делаем
     const currentDueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : null
-    if (currentDueDate === newDueDate) {
+    const nextDueDate = newDueDate ? new Date(newDueDate).toISOString().split('T')[0] : null
+    if (currentDueDate === nextDueDate) {
       return
     }
 
@@ -425,7 +428,7 @@ export default function TasksPage() {
         toast.success('Статус задачи обновлен')
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка при обновлении задачи')
+        toast.error(error.message || error.error || 'Ошибка при обновлении задачи')
         await fetchData()
       }
     } catch (error) {
@@ -448,7 +451,7 @@ export default function TasksPage() {
         toast.success('Задача успешно удалена')
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка при удалении задачи')
+        toast.error(error.message || error.error || 'Ошибка при удалении задачи')
       }
     } catch (error) {
       console.error('Error deleting task:', error)
@@ -481,7 +484,7 @@ export default function TasksPage() {
         toast.success('Статус задачи обновлен')
       } else {
         const error = await response.json()
-        toast.error(error.error || 'Ошибка при обновлении задачи')
+        toast.error(error.message || error.error || 'Ошибка при обновлении задачи')
       }
     } catch (error) {
       console.error('Error updating task:', error)
