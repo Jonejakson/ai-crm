@@ -21,6 +21,9 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/webforms/public')) {
       // Публичные веб-формы - строгий лимит
       rateLimitConfig = rateLimitConfigs.public
+    } else if (pathname.startsWith('/api/ops') || pathname.startsWith('/api/owner')) {
+      // Внутренние эндпоинты владельца/операций
+      rateLimitConfig = rateLimitConfigs.admin
     } else if (pathname.startsWith('/api/webhooks') || pathname.includes('/webhook')) {
       // Webhook endpoints - средний лимит
       rateLimitConfig = rateLimitConfigs.webhook
@@ -33,12 +36,16 @@ export async function middleware(request: NextRequest) {
     rateLimitResult = await checkRateLimit(request, {
       ...rateLimitConfig,
       keyGenerator: (req) => {
-        // Для авторизованных пользователей используем их ID (упрощенно через IP, чтобы не парсить cookie)
-        const sessionToken = req.headers.get('cookie')?.includes('session-token')
+        // Для авторизованных пользователей используем сессионный токен, иначе IP
+        const cookies = req.headers.get('cookie') || ''
+        const sessionTokenMatch = cookies.match(
+          /(?:^|;\s*)(authjs\.session-token|__Secure-authjs\.session-token|next-auth\.session-token|__Secure-next-auth\.session-token)=([^;]+)/
+        )
+        const sessionToken = sessionTokenMatch?.[2]
         const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                   req.headers.get('x-real-ip') || 
                   'unknown'
-        return sessionToken ? `user:${ip}` : `anon:${ip}`
+        return sessionToken ? `user:${sessionToken}` : `anon:${ip}`
       },
     })
     
