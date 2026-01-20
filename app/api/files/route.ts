@@ -6,6 +6,8 @@ import { unlink } from 'fs/promises'
 import { join } from 'path'
 import { deleteFileFromS3, isS3Configured } from '@/lib/storage'
 
+const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
+
 /**
  * Получить файлы для сущности
  */
@@ -118,26 +120,72 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    // Проверяем доступ (только владелец или админ)
+    // Проверяем доступ:
+    // - owner видит всё
+    // - admin компании может удалять
+    // - uploader может удалять
+    // - иначе: разрешаем удаление только если есть доступ к сущности (deal/contact/task/event)
+    //   (это важно для командной работы в одной компании)
     const userId = parseInt(user.id)
-    if (file.userId !== userId && user.role !== 'admin') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    const isOwner = user.role === 'owner'
+    const isAdmin = user.role === 'admin'
+    const isUploader = !!file.userId && file.userId === userId
+
+    if (!isOwner && !isAdmin && !isUploader) {
+      const whereCondition = await getDirectWhereCondition()
+      let hasAccess = false
+      switch (file.entityType) {
+        case 'contact':
+          hasAccess = !!(await prisma.contact.findFirst({
+            where: { id: Number(file.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'deal':
+          hasAccess = !!(await prisma.deal.findFirst({
+            where: { id: Number(file.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'task':
+          hasAccess = !!(await prisma.task.findFirst({
+            where: { id: Number(file.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'event':
+          hasAccess = !!(await prisma.event.findFirst({
+            where: { id: Number(file.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        default:
+          hasAccess = false
+      }
+
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      }
     }
 
     // Удаляем файл из хранилища
     try {
-      if (isS3Configured() && file.url.startsWith('http')) {
-        // Файл в S3
+      if (isS3Configured()) {
+        // Если S3 настроено — пробуем удалить из S3 (даже если url хранится как /api/files/...)
         const s3Key = `${file.entityType}/${file.entityId}/${file.name}`
         await deleteFileFromS3(s3Key)
-      } else {
-        // Локальный файл
-        const filePath = join(process.cwd(), 'public', file.url)
-        await unlink(filePath)
       }
     } catch (error) {
       console.error('Error deleting file from storage:', error)
       // Продолжаем даже если файл не найден
+    }
+
+    // Локальный файл (fallback). После перехода на url=/api/files/... удалять по file.url нельзя.
+    try {
+      const filePath = join(UPLOAD_DIR, file.name)
+      await unlink(filePath)
+    } catch (error) {
+      // ignore
     }
 
     // Удаляем запись из БД

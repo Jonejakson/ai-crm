@@ -106,7 +106,8 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
       })
 
       if (!deleteResponse.ok) {
-        throw new Error('Ошибка удаления файла')
+        const data = await deleteResponse.json().catch(() => ({} as any))
+        throw new Error(data.message || data.error || 'Ошибка удаления файла')
       }
 
       // Перезагружаем файлы

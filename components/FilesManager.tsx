@@ -103,7 +103,8 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
       if (response.ok) {
         await fetchFiles()
       } else {
-        alert('Ошибка при удалении файла')
+        const error = await response.json().catch(() => ({} as any))
+        alert(error.message || error.error || 'Ошибка при удалении файла')
       }
     } catch (error) {
       console.error('Error deleting file:', error)
