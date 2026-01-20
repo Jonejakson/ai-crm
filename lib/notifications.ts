@@ -29,20 +29,20 @@ export async function createNotification(params: CreateNotificationParams) {
 }
 
 // Создать уведомление о просроченной задаче
-export async function checkOverdueTasks() {
+export async function checkOverdueTasks(opts?: { userId?: number; companyId?: number }) {
   try {
     const now = new Date();
     
     // Находим все просроченные задачи (статус не 'completed')
     const overdueTasks = await prisma.task.findMany({
       where: {
-        status: {
-          not: 'completed'
-        },
+        status: { notIn: ['completed', 'cancelled'] },
         dueDate: {
           not: null,
           lt: now
-        }
+        },
+        ...(opts?.userId ? { userId: opts.userId } : {}),
+        ...(opts?.companyId ? { user: { companyId: opts.companyId } } : {}),
       },
       include: {
         user: true,
@@ -68,18 +68,29 @@ export async function checkOverdueTasks() {
         });
 
         if (!existingNotification) {
-          const dueDate = new Date(task.dueDate);
-          dueDate.setHours(0, 0, 0, 0);
-          const nowDate = new Date(now);
-          nowDate.setHours(0, 0, 0, 0);
-          const daysOverdue = Math.floor((nowDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+          const dueDate = new Date(task.dueDate)
+          const overdueMs = now.getTime() - dueDate.getTime()
+          const daysOverdue = Math.floor(overdueMs / (1000 * 60 * 60 * 24))
+          const hoursOverdue = Math.floor(overdueMs / (1000 * 60 * 60))
+          const minutesOverdue = Math.floor(overdueMs / (1000 * 60))
           
           const contactName = task.contact?.name || 'неизвестного контакта';
+
+          let suffix = ''
+          if (daysOverdue > 0) {
+            suffix = ` на ${daysOverdue} ${daysOverdue === 1 ? 'день' : daysOverdue < 5 ? 'дня' : 'дней'}`
+          } else if (hoursOverdue > 0) {
+            suffix = ` на ${hoursOverdue} ${hoursOverdue === 1 ? 'час' : hoursOverdue < 5 ? 'часа' : 'часов'}`
+          } else if (minutesOverdue > 0) {
+            suffix = ` на ${minutesOverdue} мин.`
+          } else {
+            suffix = ''
+          }
           
           await createNotification({
             userId: task.userId,
             title: 'Просроченная задача',
-            message: `Задача "${task.title}" для ${contactName} просрочена${daysOverdue > 0 ? ` на ${daysOverdue} ${daysOverdue === 1 ? 'день' : daysOverdue < 5 ? 'дня' : 'дней'}` : ''}`,
+            message: `Задача "${task.title}" для ${contactName} просрочена${suffix}`,
             type: 'warning',
             entityType: 'task',
             entityId: task.id
@@ -95,7 +106,7 @@ export async function checkOverdueTasks() {
 }
 
 // Создать уведомление о предстоящем событии
-export async function checkUpcomingEvents() {
+export async function checkUpcomingEvents(opts?: { userId?: number; companyId?: number }) {
   try {
     const now = new Date();
     const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
@@ -105,7 +116,9 @@ export async function checkUpcomingEvents() {
         startDate: {
           gte: now,
           lte: oneHourLater
-        }
+        },
+        ...(opts?.userId ? { userId: opts.userId } : {}),
+        ...(opts?.companyId ? { user: { companyId: opts.companyId } } : {}),
       },
       include: {
         user: true

@@ -6,10 +6,16 @@ import { getCurrentUser, getUserId } from "@/lib/get-session";
 // Может быть вызвана без авторизации для проверки всех пользователей
 export async function POST() {
   try {
-    // Проверяем уведомления для всех пользователей
+    const user = await getCurrentUser()
+    const userId = getUserId(user)
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Проверяем уведомления только для текущего пользователя
     await Promise.all([
-      checkOverdueTasks(),
-      checkUpcomingEvents()
+      checkOverdueTasks({ userId }),
+      checkUpcomingEvents({ userId })
     ]);
     
     return NextResponse.json({ success: true, message: "Notifications checked and created" });
@@ -26,9 +32,15 @@ export async function POST() {
 // GET метод для проверки уведомлений (для совместимости)
 export async function GET() {
   try {
+    const user = await getCurrentUser()
+    const userId = getUserId(user)
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     await Promise.all([
-      checkOverdueTasks(),
-      checkUpcomingEvents()
+      checkOverdueTasks({ userId }),
+      checkUpcomingEvents({ userId })
     ]);
     
     return NextResponse.json({ success: true, message: "Notifications checked and created" });

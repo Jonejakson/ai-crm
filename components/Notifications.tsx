@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNotifications } from '@/hooks/useNotifications'
 import NotificationToast from './NotificationToast'
 import { BellIcon, SuccessIcon, ErrorIcon, InfoIcon } from './Icons'
@@ -8,6 +8,31 @@ import { BellIcon, SuccessIcon, ErrorIcon, InfoIcon } from './Icons'
 export default function Notifications() {
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [pushSupported, setPushSupported] = useState(false)
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default')
+
+  useEffect(() => {
+    const supported = typeof window !== 'undefined' && 'Notification' in window
+    setPushSupported(supported)
+    if (supported) {
+      setPushPermission(Notification.permission)
+    }
+  }, [])
+
+  const maybeShowBrowserNotification = (notification: any) => {
+    if (!pushSupported) return
+    if (pushPermission !== 'granted') return
+    // Если вкладка активна — достаточно toast'а
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') return
+
+    try {
+      new Notification(notification.title || 'Уведомление', {
+        body: notification.message,
+      })
+    } catch {
+      // ignore
+    }
+  }
   
   const {
     notifications,
@@ -21,6 +46,8 @@ export default function Notifications() {
   } = useNotifications({
     pollingInterval: 10000, // 10 секунд
     showToasts: true,
+    checkInterval: 60000, // раз в минуту создаём overdue/upcoming на сервере
+    onNewNotification: (n) => maybeShowBrowserNotification(n),
   })
 
   const handleMarkAllAsRead = async () => {
@@ -41,6 +68,8 @@ export default function Notifications() {
 
   // Toast уведомления для новых уведомлений
   const activeToasts = newNotifications.slice(0, 3) // Максимум 3 toast одновременно
+
+  const showEnablePush = useMemo(() => pushSupported && pushPermission !== 'granted', [pushSupported, pushPermission])
 
   return (
     <>
@@ -63,15 +92,32 @@ export default function Notifications() {
               <h3 className="font-semibold text-gray-900">
                 Уведомления {unreadCount > 0 && `(${unreadCount})`}
               </h3>
-              {unreadCount > 0 && (
-                <button
-                  onClick={handleMarkAllAsRead}
-                  disabled={loading}
-                  className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                >
-                  Отметить все как прочитанные
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {showEnablePush && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const permission = await Notification.requestPermission()
+                        setPushPermission(permission)
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    className="text-sm text-[var(--primary)] hover:underline"
+                  >
+                    Включить push
+                  </button>
+                )}
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    disabled={loading}
+                    className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                  >
+                    Отметить все как прочитанные
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="overflow-y-auto flex-1">

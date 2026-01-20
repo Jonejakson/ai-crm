@@ -94,10 +94,18 @@ const TASK_CATEGORIES = [
 function getTaskCategory(dueDate: string | null): string {
   if (!dueDate) return 'no_date'
   
-  const today = new Date()
+  const now = new Date()
+  const due = new Date(dueDate)
+
+  // Просрочено по времени (важно для задач "сегодня", но с прошедшим временем)
+  if (!Number.isNaN(due.getTime()) && due.getTime() < now.getTime()) {
+    return 'overdue'
+  }
+
+  const today = new Date(now)
   today.setHours(0, 0, 0, 0)
-  
-  const taskDate = new Date(dueDate)
+
+  const taskDate = new Date(due)
   taskDate.setHours(0, 0, 0, 0)
   
   const diffTime = taskDate.getTime() - today.getTime()

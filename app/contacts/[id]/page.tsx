@@ -682,7 +682,13 @@ export default function ContactDetailPage() {
                         <div>
                           <p className="text-sm font-semibold text-slate-900">{task.title}</p>
                           <p className="text-xs text-slate-500">
-                            Статус: {task.status}{task.dueDate ? ` • до ${new Date(task.dueDate).toLocaleDateString('ru-RU')}` : ''}
+                            Статус: {task.status}{task.dueDate ? ` • до ${new Date(task.dueDate).toLocaleString('ru-RU', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}` : ''}
                           </p>
                         </div>
                         <span className="text-xs text-slate-400">

@@ -18,6 +18,7 @@ interface UseNotificationsOptions {
   pollingInterval?: number // интервал опроса в миллисекундах
   showToasts?: boolean // показывать ли toast уведомления
   onNewNotification?: (notification: Notification) => void
+  checkInterval?: number // интервал проверки генерации уведомлений на сервере
 }
 
 export function useNotifications(options: UseNotificationsOptions = {}) {
@@ -25,16 +26,31 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     pollingInterval = 10000, // 10 секунд по умолчанию
     showToasts = true,
     onNewNotification,
+    checkInterval = 60000, // раз в минуту
   } = options
 
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [newNotifications, setNewNotifications] = useState<Notification[]>([])
   const lastFetchTime = useRef<Date | null>(null)
+  const lastCheckTime = useRef<number>(0)
   const router = useRouter()
+
+  const maybeCheckServerNotifications = useCallback(async () => {
+    const now = Date.now()
+    if (now - lastCheckTime.current < checkInterval) return
+    lastCheckTime.current = now
+    try {
+      await fetch('/api/notifications/check', { method: 'POST' })
+    } catch (error) {
+      // не блокируем UI из-за фоновой проверки
+      console.error('Error checking notifications:', error)
+    }
+  }, [checkInterval])
 
   const fetchNotifications = useCallback(async () => {
     try {
+      await maybeCheckServerNotifications()
       const response = await fetch('/api/notifications?unreadOnly=false')
       if (response.ok) {
         const data = await response.json()
@@ -63,7 +79,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     } catch (error) {
       console.error('Error fetching notifications:', error)
     }
-  }, [showToasts, onNewNotification])
+  }, [showToasts, onNewNotification, maybeCheckServerNotifications])
 
   useEffect(() => {
     fetchNotifications()
