@@ -160,6 +160,11 @@ export default function DealsPage() {
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false)
   const [isPipelineManagerOpen, setIsPipelineManagerOpen] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
+  const formatContactLabel = (contact: Contact) => {
+    const main = (contact.company && contact.company.trim()) ? contact.company : contact.name
+    const email = contact.email ? ` (${contact.email})` : ''
+    return `${main}${email}`
+  }
   const [selectedPipeline, setSelectedPipeline] = useState<number | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null)
@@ -803,9 +808,7 @@ export default function DealsPage() {
       dealTypeId: deal.dealType?.id ? deal.dealType.id.toString() : '',
       pipelineId: deal.pipeline?.id ? deal.pipeline.id.toString() : ''
     })
-    setContactSearch(
-      deal.contact.email ? `${deal.contact.name} (${deal.contact.email})` : deal.contact.name
-    )
+    setContactSearch(formatContactLabel(deal.contact as any))
     setIsModalOpen(true)
   }
 
@@ -1332,17 +1335,18 @@ export default function DealsPage() {
                           )
                           if (found) {
                             setFormData({...formData, contactId: found.id.toString()})
+                            setContactSearch(formatContactLabel(found))
                           }
                         }}
                         onFocus={() => {
                           if (formData.contactId) {
                             const selected = contacts.find(c => c.id.toString() === formData.contactId)
                             if (selected) {
-                              setContactSearch(selected.email ? `${selected.name} (${selected.email})` : selected.name)
+                              setContactSearch(formatContactLabel(selected))
                             }
                           }
                         }}
-                        placeholder="Введите имя или email для поиска..."
+                        placeholder="Введите название компании, имя или email для поиска..."
                       />
                       {contactSearch && (
                         <div className="absolute z-10 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -1358,15 +1362,15 @@ export default function DealsPage() {
                                 key={contact.id}
                                 onClick={() => {
                                   setFormData({...formData, contactId: contact.id.toString()})
-                                  setContactSearch(contact.email ? `${contact.name} (${contact.email})` : contact.name)
+                                  setContactSearch(formatContactLabel(contact))
                                 }}
                                 className="p-3 hover:bg-[var(--background-soft)] cursor-pointer border-b border-[var(--border)] last:border-b-0 transition-colors"
                               >
-                                <div className="font-medium text-[var(--foreground)]">{contact.name}</div>
+                                <div className="font-medium text-[var(--foreground)]">{contact.company || contact.name}</div>
                                 {contact.email && (
                                   <div className="text-sm text-[var(--muted)]">{contact.email}</div>
                                 )}
-                                {contact.company && (
+                                {contact.company && contact.company !== contact.name && (
                                   <div className="text-xs text-[var(--muted-soft)]">{contact.company}</div>
                                 )}
                               </div>
@@ -1609,7 +1613,7 @@ export default function DealsPage() {
                     await fetchData()
                     // Выбираем нового клиента в форме сделки
                     setFormData({...formData, contactId: newContact.id.toString()})
-                    setContactSearch(newContact.email ? `${newContact.name} (${newContact.email})` : newContact.name)
+                    setContactSearch(formatContactLabel(newContact))
                     setIsNewContactModalOpen(false)
                     setNewContactData({ name: '', email: '', phone: '', position: '', inn: '', company: '' })
                     setInnError('')
