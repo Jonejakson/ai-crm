@@ -26,6 +26,9 @@ services:
     container_name: crm_app
     ports:
       - "3000:3000"
+    volumes:
+      # Persist uploaded files between container rebuilds/restarts
+      - uploads_data:/app/public/uploads
     environment:
       # База данных - используем напрямую из .env
       DATABASE_URL: ${DATABASE_URL}
@@ -88,6 +91,7 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
 
 networks:
   crm_network:

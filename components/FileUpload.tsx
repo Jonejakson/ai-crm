@@ -135,6 +135,14 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
     return <FilePdfIcon className="w-6 h-6" />
   }
 
+  const getFileHref = (file: FileItem, opts?: { download?: boolean }) => {
+    const base = file.url?.startsWith('/api/files/')
+      ? file.url
+      : `/api/files/${encodeURIComponent(file.name)}`
+    if (opts?.download) return `${base}?download=1`
+    return base
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -177,7 +185,7 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
                 <span className="flex items-center">{getFileIcon(file.mimeType)}</span>
                 <div className="flex-1 min-w-0">
                   <a
-                    href={file.url}
+                    href={getFileHref(file)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-medium text-gray-900 hover:text-blue-600 truncate block"

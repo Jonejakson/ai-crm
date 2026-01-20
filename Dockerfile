@@ -49,6 +49,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # поэтому явно копируем их в место, откуда pdfkit пытается их читать.
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/pdfkit/js/data ./.next/server/chunks/data
 
+# Локальные загрузки: создаём директорию и выставляем права.
+# Важно для docker volume: при первом создании volume Docker инициализирует его из образа вместе с правами.
+RUN mkdir -p /app/public/uploads && chown -R nextjs:nodejs /app/public/uploads
+
 USER nextjs
 
 EXPOSE 3000

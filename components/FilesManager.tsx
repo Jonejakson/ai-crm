@@ -28,6 +28,7 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
+  const [imageFailed, setImageFailed] = useState<Record<number, boolean>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
@@ -129,6 +130,16 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
     return mimeType.startsWith('image/')
   }
 
+  const getFileHref = (file: File, opts?: { download?: boolean }) => {
+    const base = file.url?.startsWith('/api/files/')
+      ? file.url
+      : `/api/files/${encodeURIComponent(file.name)}`
+    if (opts?.download) {
+      return `${base}?download=1`
+    }
+    return base
+  }
+
   // Drag and drop handlers
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -223,17 +234,18 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
               <div className="flex-shrink-0">
                 {isImage(file.mimeType) ? (
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
-                    <img
-                      src={file.url}
-                      alt={file.originalName}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Если изображение не загрузилось, показываем иконку
-                        e.currentTarget.style.display = 'none'
-                        const icon = getFileIcon(file.mimeType)
-                        e.currentTarget.parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center">${icon}</div>`
-                      }}
-                    />
+                    {imageFailed[file.id] ? (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {getFileIcon(file.mimeType)}
+                      </div>
+                    ) : (
+                      <img
+                        src={getFileHref(file)}
+                        alt={file.originalName}
+                        className="w-full h-full object-cover"
+                        onError={() => setImageFailed((prev) => ({ ...prev, [file.id]: true }))}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="w-16 h-16 rounded-lg bg-[var(--background-soft)] flex items-center justify-center text-3xl">
@@ -263,24 +275,22 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
               {/* Действия */}
               <div className="flex items-center gap-2">
                 <a
-                  href={file.url}
+                  href={getFileHref(file, { download: true })}
                   download={file.originalName}
                   className="px-3 py-2 rounded-lg text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
                   title="Скачать"
                 >
                   ⬇️
                 </a>
-                {isImage(file.mimeType) && (
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-2 rounded-lg text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
-                    title="Открыть в новой вкладке"
-                  >
-                    👁️
-                  </a>
-                )}
+                <a
+                  href={getFileHref(file)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-lg text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
+                  title="Открыть в новой вкладке"
+                >
+                  👁️
+                </a>
                 <button
                   onClick={() => handleDelete(file.id)}
                   className="px-3 py-2 rounded-lg text-sm text-[var(--error)] hover:bg-[var(--error-soft)] transition-colors opacity-0 group-hover:opacity-100"

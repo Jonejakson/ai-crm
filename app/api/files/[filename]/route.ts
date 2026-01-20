@@ -4,6 +4,7 @@ import { join } from 'path'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { getFileFromS3, isS3Configured } from '@/lib/storage'
+import { getDirectWhereCondition } from '@/lib/access-control'
 
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
 
@@ -34,9 +35,48 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    // Проверка доступа: owner видит все, пользователь - только свои файлы
-    if (user.role !== 'owner' && fileRecord.userId !== Number(user.id)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    // Проверка доступа: owner видит всё. Для остальных проверяем доступ к сущности,
+    // чтобы файлы были доступны всем пользователям компании, имеющим доступ к deal/contact/task/event.
+    if (user.role !== 'owner') {
+      const whereCondition = await getDirectWhereCondition()
+      let hasAccess = false
+
+      switch (fileRecord.entityType) {
+        case 'contact':
+          hasAccess = !!(await prisma.contact.findFirst({
+            where: { id: Number(fileRecord.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'deal':
+          hasAccess = !!(await prisma.deal.findFirst({
+            where: { id: Number(fileRecord.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'task':
+          hasAccess = !!(await prisma.task.findFirst({
+            where: { id: Number(fileRecord.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'event':
+          hasAccess = !!(await prisma.event.findFirst({
+            where: { id: Number(fileRecord.entityId), ...whereCondition },
+            select: { id: true },
+          }))
+          break
+        case 'support_ticket_message':
+          // Пока только owner
+          hasAccess = false
+          break
+        default:
+          hasAccess = false
+      }
+
+      if (!hasAccess) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
 
     // Получаем файл
@@ -64,13 +104,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
       // Определяем Content-Type
       const contentType = fileRecord.mimeType || 'application/octet-stream'
 
+      const isDownload = request.nextUrl.searchParams.get('download') === '1'
+      const dispositionType = isDownload ? 'attachment' : 'inline'
+
       // Возвращаем файл с правильными заголовками
       // Конвертируем Buffer в Uint8Array для NextResponse
       return new NextResponse(new Uint8Array(fileBuffer), {
         headers: {
           'Content-Type': contentType,
-          'Content-Disposition': `inline; filename="${encodeURIComponent(fileRecord.originalName)}"`,
-          'Cache-Control': 'public, max-age=31536000, immutable',
+          'Content-Disposition': `${dispositionType}; filename="${encodeURIComponent(fileRecord.originalName)}"`,
+          'Cache-Control': 'private, no-store, max-age=0',
+          Pragma: 'no-cache',
         },
       })
     } catch (fileError) {

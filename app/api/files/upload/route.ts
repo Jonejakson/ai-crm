@@ -104,7 +104,9 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    let fileUrl: string
+    // В БД храним URL на защищённый endpoint, чтобы ссылки работали стабильно
+    // (и не ломались из-за middleware, S3 приватности или локальных путей).
+    const fileUrl = `/api/files/${fileName}`
 
     // Используем S3 если настроено, иначе локальное хранилище
     if (isS3Configured()) {
@@ -112,7 +114,7 @@ export async function POST(request: Request) {
         // Загружаем в S3
         // Используем префикс для организации файлов по типам сущностей
         const s3Key = `${entityType}/${entityId}/${fileName}`
-        fileUrl = await uploadFileToS3(s3Key, buffer, file.type)
+        await uploadFileToS3(s3Key, buffer, file.type)
       } catch (s3Error: any) {
         console.error('[files][upload] S3 upload error:', s3Error)
         // Fallback на локальное хранилище при ошибке S3
@@ -120,7 +122,6 @@ export async function POST(request: Request) {
         try {
           await mkdir(UPLOAD_DIR, { recursive: true })
           await writeFile(filePath, buffer)
-          fileUrl = `/uploads/${fileName}`
         } catch (localError) {
           throw new Error('Failed to upload file to both S3 and local storage')
         }
@@ -134,7 +135,6 @@ export async function POST(request: Request) {
       }
       const filePath = join(UPLOAD_DIR, fileName)
       await writeFile(filePath, buffer)
-      fileUrl = `/uploads/${fileName}`
     }
 
     // Сохраняем информацию о файле в БД
