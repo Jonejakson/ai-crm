@@ -322,13 +322,23 @@ export default function TasksPage() {
         : '/api/contacts'
       
       const [tasksRes, contactsRes] = await Promise.all([
-        fetch(tasksUrl).then(res => res.json()),
-        fetch(contactsUrl).then(res => res.json())
+        fetch(tasksUrl).then(async (res) => {
+          if (!res.ok) return []
+          const data = await res.json().catch(() => [])
+          return Array.isArray(data) ? data : []
+        }),
+        fetch(contactsUrl).then(async (res) => {
+          if (!res.ok) return []
+          const data = await res.json().catch(() => [])
+          return Array.isArray(data) ? data : []
+        }),
       ])
-      setTasks(tasksRes)
-      setContacts(contactsRes)
+
+      setTasks(tasksRes as any)
+      setContacts(contactsRes as any)
     } catch (error) {
       console.error('Error fetching data:', error)
+      toast.error('Не удалось загрузить задачи. Попробуйте обновить страницу.')
     } finally {
       setLoading(false)
     }
