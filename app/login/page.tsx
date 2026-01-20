@@ -8,12 +8,7 @@ import Link from 'next/link'
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-<<<<<<< HEAD
   const { data: session, status, update: updateSession } = useSession()
-=======
-  const { data: session, status } = useSession()
-  
->>>>>>> 02ee2d0e2f0245f444da86b3501f48eb5d2f7f67
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -39,8 +34,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (status === 'authenticated' && session) {
       const callbackUrl = searchParams.get('callbackUrl') || '/'
-      router.push(callbackUrl)
-      router.refresh()
+      // Полный переход надежнее после смены аккаунта (куки и session state могут обновиться с лагом)
+      window.location.replace(callbackUrl)
     }
   }, [status, session, router, searchParams])
 
@@ -146,8 +141,7 @@ export default function LoginPage() {
         if (result?.error) {
           setError('Ошибка при входе после регистрации')
         } else {
-          router.push('/')
-          router.refresh()
+          window.location.replace('/')
         }
       } catch (err) {
         setError('Ошибка сети')
@@ -171,19 +165,16 @@ export default function LoginPage() {
       const callbackUrl = searchParams.get('callbackUrl') || '/'
       
       try {
-        // Принудительно обновляем сессию, чтобы она точно установилась
-        await updateSession()
-        
-        // Небольшая задержка для гарантии установки cookie
-        await new Promise(resolve => setTimeout(resolve, 50))
-        
-        // Перенаправляем на целевую страницу
-        router.push(callbackUrl)
-        router.refresh()
+        // Принудительно обновляем сессию, если доступно (NextAuth v5)
+        if (typeof updateSession === 'function') {
+          await updateSession()
+        }
+        // Надёжный переход без "подвисания" до ручного refresh
+        window.location.replace(callbackUrl)
       } catch (error) {
         console.error('Ошибка при обновлении сессии:', error)
         // В случае ошибки все равно перенаправляем - сессия должна быть установлена
-        window.location.href = callbackUrl
+        window.location.replace(callbackUrl)
       }
       
       return // Не устанавливаем isLoading в false, так как происходит перезагрузка

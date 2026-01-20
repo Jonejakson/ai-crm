@@ -11,6 +11,7 @@ export default function Header() {
   const { data: session } = useSession()
   const { theme, toggleTheme } = useTheme()
   const [unreadSupportCount, setUnreadSupportCount] = useState(0)
+  const [signingOut, setSigningOut] = useState(false)
   const currentDate = new Date().toLocaleDateString('ru-RU', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -86,7 +87,16 @@ export default function Header() {
                 <p className="text-xs text-[var(--muted)]">{session.user.email}</p>
               </div>
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={async () => {
+                  if (signingOut) return
+                  setSigningOut(true)
+                  try {
+                    await signOut({ redirect: true, callbackUrl: '/login' })
+                  } finally {
+                    // Fallback на случай "подвисания" клиента
+                    window.location.replace('/login')
+                  }
+                }}
                 className="btn-ghost text-sm px-4"
               >
                 Выйти
