@@ -9,61 +9,58 @@ export async function middleware(request: NextRequest) {
   
   // Rate limiting для разных типов endpoints
   const pathname = request.nextUrl.pathname
+  const isApiPath = pathname.startsWith('/api/')
   
-  // Определяем тип endpoint и применяем соответствующий rate limit
-  let rateLimitConfig = rateLimitConfigs.api // По умолчанию
-  
-  if (pathname.startsWith('/api/webforms/public')) {
-    // Публичные веб-формы - строгий лимит
-    rateLimitConfig = rateLimitConfigs.public
-  } else if (pathname.startsWith('/api/webhooks') || pathname.includes('/webhook')) {
-    // Webhook endpoints - средний лимит
-    rateLimitConfig = rateLimitConfigs.webhook
-  } else if (pathname.startsWith('/api/')) {
-    // Остальные API endpoints - стандартный лимит
-    rateLimitConfig = rateLimitConfigs.api
-  }
-  
-  // Проверяем rate limit
-  const rateLimitResult = await checkRateLimit(request, {
-    ...rateLimitConfig,
-    keyGenerator: (req) => {
-      // Для авторизованных пользователей используем их ID
-      const sessionToken = req.headers.get('cookie')?.includes('authjs.session-token')
-      if (sessionToken) {
-        // Пытаемся извлечь user ID из cookie (упрощенная версия)
-        // В реальности лучше использовать JWT декодирование
+  // Важно: rate limit применяем ТОЛЬКО к API endpoints.
+  // Иначе страницы (/deals и т.п.) могут отдавать 429 JSON вместо HTML при активной работе.
+  let rateLimitResult = { success: true, limit: 0, remaining: 0, reset: 0 }
+  if (isApiPath) {
+    // Определяем тип endpoint и применяем соответствующий rate limit
+    let rateLimitConfig = rateLimitConfigs.api // По умолчанию
+    
+    if (pathname.startsWith('/api/webforms/public')) {
+      // Публичные веб-формы - строгий лимит
+      rateLimitConfig = rateLimitConfigs.public
+    } else if (pathname.startsWith('/api/webhooks') || pathname.includes('/webhook')) {
+      // Webhook endpoints - средний лимит
+      rateLimitConfig = rateLimitConfigs.webhook
+    } else if (pathname.startsWith('/api/notifications')) {
+      // Уведомления могут опрашиваться часто на клиенте
+      rateLimitConfig = rateLimitConfigs.authenticated
+    }
+    
+    // Проверяем rate limit
+    rateLimitResult = await checkRateLimit(request, {
+      ...rateLimitConfig,
+      keyGenerator: (req) => {
+        // Для авторизованных пользователей используем их ID (упрощенно через IP, чтобы не парсить cookie)
+        const sessionToken = req.headers.get('cookie')?.includes('session-token')
         const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                   req.headers.get('x-real-ip') || 
                   'unknown'
-        return `user:${ip}`
-      }
-      // Для неавторизованных используем IP
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                req.headers.get('x-real-ip') || 
-                'unknown'
-      return `anon:${ip}`
-    },
-  })
-  
-  // Если превышен лимит, возвращаем ошибку
-  if (!rateLimitResult.success) {
-    return NextResponse.json(
-      {
-        error: 'Too Many Requests',
-        message: 'Превышен лимит запросов. Попробуйте позже.',
-        retryAfter: Math.ceil((rateLimitResult.reset - Date.now()) / 1000),
+        return sessionToken ? `user:${ip}` : `anon:${ip}`
       },
-      {
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': String(rateLimitResult.limit),
-          'X-RateLimit-Remaining': String(rateLimitResult.remaining),
-          'X-RateLimit-Reset': String(rateLimitResult.reset),
-          'Retry-After': String(Math.ceil((rateLimitResult.reset - Date.now()) / 1000)),
+    })
+    
+    // Если превышен лимит, возвращаем ошибку
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        {
+          error: 'Too Many Requests',
+          message: 'Превышен лимит запросов. Попробуйте позже.',
+          retryAfter: Math.ceil((rateLimitResult.reset - Date.now()) / 1000),
         },
-      }
-    )
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': String(rateLimitResult.limit),
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+            'X-RateLimit-Reset': String(rateLimitResult.reset),
+            'Retry-After': String(Math.ceil((rateLimitResult.reset - Date.now()) / 1000)),
+          },
+        }
+      )
+    }
   }
   
   // Создаем response с заголовками rate limit
@@ -95,9 +92,11 @@ export async function middleware(request: NextRequest) {
       })()
   
   // Добавляем заголовки rate limit
-  response.headers.set('X-RateLimit-Limit', String(rateLimitResult.limit))
-  response.headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining))
-  response.headers.set('X-RateLimit-Reset', String(rateLimitResult.reset))
+  if (isApiPath) {
+    response.headers.set('X-RateLimit-Limit', String(rateLimitResult.limit))
+    response.headers.set('X-RateLimit-Remaining', String(rateLimitResult.remaining))
+    response.headers.set('X-RateLimit-Reset', String(rateLimitResult.reset))
+  }
   
   // Security headers
   response.headers.set('X-Frame-Options', 'DENY')
