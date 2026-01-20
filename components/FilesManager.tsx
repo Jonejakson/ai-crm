@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { FilePdfIcon, FileExcelIcon, TrashIcon } from './Icons'
+import { DownloadIcon, EyeIcon, FilePdfIcon, FileExcelIcon, TrashIcon } from './Icons'
 
 interface File {
   id: number
@@ -277,23 +277,23 @@ export default function FilesManager({ entityType, entityId }: FilesManagerProps
                 <a
                   href={getFileHref(file, { download: true })}
                   download={file.originalName}
-                  className="px-3 py-2 rounded-lg text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
+                  className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
                   title="Скачать"
                 >
-                  ⬇️
+                  <DownloadIcon className="w-4 h-4" />
                 </a>
                 <a
                   href={getFileHref(file)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-2 rounded-lg text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] transition-colors"
+                  className="p-2 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
                   title="Открыть в новой вкладке"
                 >
-                  👁️
+                  <EyeIcon className="w-4 h-4" />
                 </a>
                 <button
                   onClick={() => handleDelete(file.id)}
-                  className="px-3 py-2 rounded-lg text-sm text-[var(--error)] hover:bg-[var(--error-soft)] transition-colors opacity-0 group-hover:opacity-100"
+                  className="p-2 rounded-lg text-[var(--error)] hover:bg-[var(--error-soft)] transition-colors opacity-0 group-hover:opacity-100"
                   title="Удалить"
                 >
                   <TrashIcon className="w-4 h-4" />

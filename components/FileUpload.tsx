@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { FilePdfIcon, FileExcelIcon, TrashIcon } from './Icons'
+import { DownloadIcon, EyeIcon, FilePdfIcon, FileExcelIcon, TrashIcon } from './Icons'
 
 interface FileUploadProps {
   entityType: 'contact' | 'deal' | 'task' | 'event'
@@ -199,13 +199,31 @@ export default function FileUpload({ entityType, entityId, onUploadComplete }: F
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => handleDelete(file.id)}
-                className="ml-4 px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Удалить"
-              >
-                <TrashIcon className="w-4 h-4" />
-              </button>
+              <div className="ml-4 flex items-center gap-2">
+                <a
+                  href={getFileHref(file)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  title="Открыть"
+                >
+                  <EyeIcon className="w-4 h-4" />
+                </a>
+                <a
+                  href={getFileHref(file, { download: true })}
+                  className="p-2 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  title="Скачать"
+                >
+                  <DownloadIcon className="w-4 h-4" />
+                </a>
+                <button
+                  onClick={() => handleDelete(file.id)}
+                  className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                  title="Удалить"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           ))}
         </div>
