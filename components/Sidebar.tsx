@@ -36,30 +36,30 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   const userName = session?.user?.name || 'Пользователь'
   const userEmail = session?.user?.email || 'email@company.com'
 
-  const menuItems = [
-    { id: 'dashboard', name: 'Дашборд', href: '/', Icon: DashboardIcon },
-    { id: 'deals', name: 'Сделки', href: '/deals', Icon: DealsIcon },
-    { id: 'contacts', name: 'Клиенты', href: '/contacts', Icon: ContactsIcon },
-    { id: 'tasks', name: 'Задачи', href: '/tasks', Icon: TasksIcon },
-    { id: 'calendar', name: 'Календарь', href: '/calendar', Icon: CalendarIcon },
-    { id: 'analytics', name: 'Аналитика', href: '/analytics', Icon: AnalyticsIcon },
-    { id: 'activity', name: 'Активность', href: '/activity', Icon: ActivityIcon },
-    // Поддержка только для не-owner (у owner есть "Тикеты поддержки" в разделе Операции)
-    ...(!isOwner ? [
-      { id: 'support', name: 'Поддержка', href: '/support', Icon: DialogsIcon },
-    ] : []),
-    // Показываем админские разделы только для админов
-    ...(isAdmin ? [
-      { id: 'email-templates', name: 'Шаблоны писем', href: '/email-templates', Icon: EmailTemplateIcon },
-      { id: 'automations', name: 'Автоматизации', href: '/automations', Icon: AutomationsIcon },
-      { id: 'company', name: 'Компания', href: '/company', Icon: CompanyIcon },
-    ] : []),
-    // Операции только для owner
-    ...(isOwner ? [
-      { id: 'ops', name: 'Операции', href: '/ops', Icon: ActivityIcon },
-      { id: 'ops-support', name: 'Тикеты поддержки', href: '/ops/support', Icon: DialogsIcon },
-    ] : []),
-  ]
+  const menuItems = isOwner
+    ? [
+        { id: 'owner', name: 'Компании', href: '/owner', Icon: CompanyIcon },
+        { id: 'ops', name: 'Здоровье системы', href: '/ops', Icon: ActivityIcon },
+        { id: 'ops-support', name: 'Тикеты поддержки', href: '/ops/support', Icon: DialogsIcon },
+      ]
+    : [
+        { id: 'dashboard', name: 'Дашборд', href: '/', Icon: DashboardIcon },
+        { id: 'deals', name: 'Сделки', href: '/deals', Icon: DealsIcon },
+        { id: 'contacts', name: 'Клиенты', href: '/contacts', Icon: ContactsIcon },
+        { id: 'tasks', name: 'Задачи', href: '/tasks', Icon: TasksIcon },
+        { id: 'calendar', name: 'Календарь', href: '/calendar', Icon: CalendarIcon },
+        { id: 'analytics', name: 'Аналитика', href: '/analytics', Icon: AnalyticsIcon },
+        { id: 'activity', name: 'Активность', href: '/activity', Icon: ActivityIcon },
+        { id: 'support', name: 'Поддержка', href: '/support', Icon: DialogsIcon },
+        // Показываем админские разделы только для админов
+        ...(isAdmin
+          ? [
+              { id: 'email-templates', name: 'Шаблоны писем', href: '/email-templates', Icon: EmailTemplateIcon },
+              { id: 'automations', name: 'Автоматизации', href: '/automations', Icon: AutomationsIcon },
+              { id: 'company', name: 'Компания', href: '/company', Icon: CompanyIcon },
+            ]
+          : []),
+      ]
 
   const SidebarContent = () => (
     <>
