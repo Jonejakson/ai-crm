@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { isOwner as isOwnerEmail } from '@/lib/owner'
 
 type Ticket = {
   id: number
+  ticketId?: string | null
   subject: string
   message: string
   email: string
@@ -15,6 +16,14 @@ type Ticket = {
   updatedAt: string
   company: { id: number; name: string }
   user: { id: number; name: string; email: string } | null
+  messages?: Array<{
+    id: number
+    message: string
+    fromEmail: string
+    fromName: string | null
+    isFromAdmin: boolean
+    createdAt: string
+  }>
 }
 
 const statusTabs = [
@@ -50,6 +59,10 @@ export default function OpsSupportPage() {
   const [syncing, setSyncing] = useState(false)
   const [activeStatus, setActiveStatus] = useState('all')
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null)
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [replySending, setReplySending] = useState(false)
 
   const isOwner = session?.user?.role === 'owner' || isOwnerEmail(session?.user?.email)
 
@@ -88,6 +101,47 @@ export default function OpsSupportPage() {
     }
   }
 
+  const loadTicketDetails = async (ticketId: number) => {
+    try {
+      setDetailsLoading(true)
+      const res = await fetch(`/api/support/tickets/${ticketId}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Не удалось загрузить тикет')
+      }
+      const data = await res.json()
+      setSelectedTicket(data.ticket as Ticket)
+    } catch (e: any) {
+      setError(e?.message || 'Не удалось загрузить тикет')
+      setSelectedTicket(null)
+    } finally {
+      setDetailsLoading(false)
+    }
+  }
+
+  const handleReply = async () => {
+    if (!selectedTicketId || !replyText.trim()) return
+    try {
+      setReplySending(true)
+      const res = await fetch(`/api/support/tickets/${selectedTicketId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: replyText.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || 'Не удалось отправить ответ')
+      }
+      setReplyText('')
+      await loadTicketDetails(selectedTicketId)
+      await loadTickets()
+    } catch (e: any) {
+      setError(e?.message || 'Не удалось отправить ответ')
+    } finally {
+      setReplySending(false)
+    }
+  }
+
   const handleSync = async () => {
     try {
       setSyncing(true)
@@ -110,10 +164,14 @@ export default function OpsSupportPage() {
     }
   }, [status, isOwner, activeStatus])
 
-  const selectedTicket = useMemo(
-    () => tickets.find((ticket) => ticket.id === selectedTicketId) || null,
-    [tickets, selectedTicketId]
-  )
+  useEffect(() => {
+    if (selectedTicketId) {
+      loadTicketDetails(selectedTicketId)
+    } else {
+      setSelectedTicket(null)
+    }
+  }, [selectedTicketId])
+
 
   return (
     <div className="p-6 space-y-6">
@@ -196,7 +254,11 @@ export default function OpsSupportPage() {
 
         <div className="lg:col-span-2">
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 min-h-[520px]">
-            {!selectedTicket ? (
+            {detailsLoading && selectedTicketId ? (
+              <div className="text-sm text-[var(--muted)] text-center py-20">
+                Загрузка тикета…
+              </div>
+            ) : !selectedTicket ? (
               <div className="text-sm text-[var(--muted)] text-center py-20">
                 Выберите тикет для просмотра
               </div>
@@ -208,7 +270,8 @@ export default function OpsSupportPage() {
                       {selectedTicket.subject}
                     </h2>
                     <p className="text-xs text-[var(--muted)]">
-                      #{selectedTicket.id} · {new Date(selectedTicket.createdAt).toLocaleString()}
+                      {selectedTicket.ticketId ? selectedTicket.ticketId : `#${selectedTicket.id}`} ·{' '}
+                      {new Date(selectedTicket.createdAt).toLocaleString()}
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${statusBadge(selectedTicket.status)}`}>
@@ -230,8 +293,24 @@ export default function OpsSupportPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm text-[var(--foreground)] whitespace-pre-wrap">
-                  {selectedTicket.message}
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4 text-sm text-[var(--foreground)] whitespace-pre-wrap">
+                    {selectedTicket.message}
+                  </div>
+                  {(selectedTicket.messages || []).map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`rounded-xl border border-[var(--border)] p-4 text-sm whitespace-pre-wrap ${
+                        msg.isFromAdmin ? 'bg-[var(--primary-soft)]/40' : 'bg-[var(--background)]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs text-[var(--muted)] mb-2">
+                        <span>{msg.fromName || msg.fromEmail}</span>
+                        <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                      </div>
+                      <div className="text-[var(--foreground)]">{msg.message}</div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="flex items-center justify-end">
@@ -243,6 +322,29 @@ export default function OpsSupportPage() {
                   >
                     Ответить по email
                   </a>
+                </div>
+
+                <div className="rounded-2xl border border-[var(--border)] bg-[var(--background)] p-4 space-y-3">
+                  <label className="text-sm font-semibold text-[var(--foreground)]">Ответить в CRM</label>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    rows={4}
+                    placeholder="Введите ответ..."
+                    className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0 focus:outline-none focus-visible:border-[var(--primary)] focus-visible:ring-0 focus-visible:outline-none transition-all"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-[var(--muted)]">
+                      Ответ будет сохранен в CRM и отправлен на email клиента (если SMTP настроен).
+                    </p>
+                    <button
+                      onClick={handleReply}
+                      disabled={replySending || !replyText.trim()}
+                      className="btn-secondary text-sm"
+                    >
+                      {replySending ? 'Отправка…' : 'Отправить ответ'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

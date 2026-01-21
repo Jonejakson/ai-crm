@@ -8,6 +8,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const generateTicketId = () =>
+    `TKT-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+
   try {
     const { subject, message, email } = await request.json()
     if (!subject || subject.trim().length < 3) {
@@ -17,13 +20,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Опишите вопрос (мин 10 символов)' }, { status: 400 })
     }
 
+    const senderEmail = (email || user.email || '').trim()
+    const ticketId = generateTicketId()
+
     const ticket = await prisma.supportTicket.create({
       data: {
+        ticketId,
         subject: subject.trim(),
         message: message.trim(),
-        email: (email || user.email || '').trim(),
+        email: senderEmail,
         companyId: Number(user.companyId),
         userId: Number(user.id),
+        messages: {
+          create: {
+            message: message.trim(),
+            fromEmail: senderEmail,
+            fromName: user.name || null,
+            isFromAdmin: false,
+          },
+        },
       },
     })
 

@@ -477,6 +477,8 @@ model File {
   entityId     Int
   user         User?    @relation(fields: [userId], references: [id])
   userId       Int?
+  message      SupportTicketMessage? @relation(fields: [messageId], references: [id])
+  messageId    Int?
   createdAt    DateTime @default(now())
 }
 
@@ -493,6 +495,7 @@ model Comment {
 
 model SupportTicket {
   id        Int      @id @default(autoincrement())
+  ticketId  String?  @unique
   subject   String
   message   String
   email     String
@@ -501,10 +504,27 @@ model SupportTicket {
   companyId Int
   user      User?    @relation(fields: [userId], references: [id])
   userId    Int?
+  messages  SupportTicketMessage[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([companyId, status])
+}
+
+model SupportTicketMessage {
+  id             Int      @id @default(autoincrement())
+  ticket         SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId       Int
+  message        String
+  fromEmail      String
+  fromName       String?
+  isFromAdmin    Boolean  @default(false)
+  emailMessageId String?
+  isRead         Boolean  @default(false)
+  files          File[]
+  createdAt      DateTime @default(now())
+
+  @@index([ticketId])
 }
 
 model Tag {
