@@ -1,6 +1,7 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
+import { isOwner } from "@/lib/owner"
 
 // Загружаем переменные окружения ПЕРЕД импортом Prisma
 // Но НЕ импортируем Prisma здесь, чтобы избежать проблем с Edge Runtime
@@ -63,11 +64,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
+          const role = isOwner(user.email) ? 'owner' : user.role
+
           return {
             id: user.id.toString(),
             email: user.email,
             name: user.name,
-            role: user.role,
+            role,
             companyId: user.companyId.toString(),
           }
         } catch (error: any) {
@@ -89,6 +92,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id
         token.role = (user as any).role
         token.companyId = (user as any).companyId
+        token.email = (user as any).email
+      }
+      if (token.email && isOwner(String(token.email))) {
+        token.role = 'owner'
       }
       return token
     },
@@ -97,6 +104,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.companyId = token.companyId as string
+        if (session.user.email && isOwner(session.user.email)) {
+          session.user.role = 'owner'
+        }
       }
       return session
     },
