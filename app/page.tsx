@@ -113,6 +113,12 @@ export default function Dashboard() {
   const [isMetricsMenuOpen, setIsMetricsMenuOpen] = useState(false)
   const metricsMenuRef = useRef<HTMLDivElement | null>(null)
 
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.role === 'owner') {
+      router.replace('/owner')
+    }
+  }, [status, session, router])
+
   const checkNotifications = useCallback(async () => {
     try {
       await fetch('/api/notifications/check', { method: 'POST' })
