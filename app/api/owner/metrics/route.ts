@@ -6,7 +6,9 @@ import { isOwner } from '@/lib/owner'
 export async function GET() {
   const user = await getCurrentUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isOwner(user.email)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  if (user.role !== 'owner' && !isOwner(user.email)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   try {
     const now = new Date()

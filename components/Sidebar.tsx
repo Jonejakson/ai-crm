@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { getActiveSection } from '@/lib/utils'
+import { isOwner as isOwnerEmail } from '@/lib/owner'
 import {
   DashboardIcon,
   DealsIcon,
@@ -32,7 +33,7 @@ export default function Sidebar({ currentContactId }: SidebarProps) {
   const pathname = usePathname()
   const activeSection = getActiveSection(pathname)
   const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'owner'
-  const isOwner = session?.user?.role === 'owner'
+  const isOwner = session?.user?.role === 'owner' || isOwnerEmail(session?.user?.email)
   const userName = session?.user?.name || 'Пользователь'
   const userEmail = session?.user?.email || 'email@company.com'
 

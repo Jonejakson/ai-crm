@@ -15,6 +15,11 @@ export async function middleware(request: NextRequest) {
   // Иначе страницы (/deals и т.п.) могут отдавать 429 JSON вместо HTML при активной работе.
   let rateLimitResult = { success: true, limit: 0, remaining: 0, reset: 0 }
   if (isApiPath) {
+    const skipRateLimit =
+      pathname.startsWith('/api/ops') ||
+      pathname.startsWith('/api/owner') ||
+      pathname.startsWith('/api/support')
+
     // Определяем тип endpoint и применяем соответствующий rate limit
     let rateLimitConfig = rateLimitConfigs.api // По умолчанию
     
@@ -32,22 +37,24 @@ export async function middleware(request: NextRequest) {
       rateLimitConfig = rateLimitConfigs.authenticated
     }
     
-    // Проверяем rate limit
-    rateLimitResult = await checkRateLimit(request, {
-      ...rateLimitConfig,
-      keyGenerator: (req) => {
-        // Для авторизованных пользователей используем сессионный токен, иначе IP
-        const cookies = req.headers.get('cookie') || ''
-        const sessionTokenMatch = cookies.match(
-          /(?:^|;\s*)(authjs\.session-token|__Secure-authjs\.session-token|next-auth\.session-token|__Secure-next-auth\.session-token)=([^;]+)/
-        )
-        const sessionToken = sessionTokenMatch?.[2]
-        const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                  req.headers.get('x-real-ip') || 
-                  'unknown'
-        return sessionToken ? `user:${sessionToken}` : `anon:${ip}`
-      },
-    })
+    if (!skipRateLimit) {
+      // Проверяем rate limit
+      rateLimitResult = await checkRateLimit(request, {
+        ...rateLimitConfig,
+        keyGenerator: (req) => {
+          // Для авторизованных пользователей используем сессионный токен, иначе IP
+          const cookies = req.headers.get('cookie') || ''
+          const sessionTokenMatch = cookies.match(
+            /(?:^|;\s*)(authjs\.session-token|__Secure-authjs\.session-token|next-auth\.session-token|__Secure-next-auth\.session-token)=([^;]+)/
+          )
+          const sessionToken = sessionTokenMatch?.[2]
+          const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                    req.headers.get('x-real-ip') || 
+                    'unknown'
+          return sessionToken ? `user:${sessionToken}` : `anon:${ip}`
+        },
+      })
+    }
     
     // Если превышен лимит, возвращаем ошибку
     if (!rateLimitResult.success) {
