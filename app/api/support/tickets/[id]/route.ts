@@ -5,7 +5,7 @@ import { isOwner } from '@/lib/owner'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser()
   if (!user) {
@@ -15,7 +15,8 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const ticketId = Number(params.id)
+  const { id } = await params
+  const ticketId = Number(id)
   if (!ticketId || Number.isNaN(ticketId)) {
     return NextResponse.json({ error: 'Invalid ticket id' }, { status: 400 })
   }
@@ -42,7 +43,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getCurrentUser()
   if (!user) {
@@ -52,7 +53,8 @@ export async function PATCH(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const ticketId = Number(params.id)
+  const { id } = await params
+  const ticketId = Number(id)
   if (!ticketId || Number.isNaN(ticketId)) {
     return NextResponse.json({ error: 'Invalid ticket id' }, { status: 400 })
   }
