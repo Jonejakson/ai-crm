@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ensureDefaultPlans } from '@/lib/billing-setup'
 
 export async function GET() {
   try {
+    await ensureDefaultPlans(prisma)
     const plans = await prisma.plan.findMany({
       orderBy: { price: 'asc' },
     })

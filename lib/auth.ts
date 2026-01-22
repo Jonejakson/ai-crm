@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { isOwner } from "@/lib/owner"
+import { ensureTrialOnFirstLogin } from "@/lib/billing-setup"
 
 // Загружаем переменные окружения ПЕРЕД импортом Prisma
 // Но НЕ импортируем Prisma здесь, чтобы избежать проблем с Edge Runtime
@@ -65,6 +66,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }
 
           const role = isOwner(user.email) ? 'owner' : user.role
+
+          if (role !== 'owner' && user.companyId && user.company?.name !== 'Физ лица') {
+            try {
+              await ensureTrialOnFirstLogin(prisma, user.companyId)
+            } catch (error) {
+              console.error('Ошибка инициализации пробной подписки:', error)
+            }
+          }
 
           return {
             id: user.id.toString(),
