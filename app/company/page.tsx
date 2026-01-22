@@ -69,6 +69,10 @@ export default function CompanyPage() {
   const [selectedPlanName, setSelectedPlanName] = useState<string>('')
   const [isLegalEntity, setIsLegalEntity] = useState(false)
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
+  const isTrialActive =
+    subscription?.status === 'TRIAL' &&
+    !!subscription?.currentPeriodEnd &&
+    new Date(subscription.currentPeriodEnd) > new Date()
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -232,6 +236,41 @@ export default function CompanyPage() {
     setBillingError('')
     setBillingMessage('')
     setPaymentPeriodModalOpen(true)
+  }
+
+  const handleTrialSwitch = async (planId: number) => {
+    setBillingError('')
+    setBillingMessage('')
+    setBillingLoading(true)
+
+    try {
+      const response = await fetch('/api/billing/subscription', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId }),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Не удалось переключить тариф')
+      }
+
+      if (data.subscription) {
+        setSubscription(data.subscription)
+        const planName = data.subscription?.plan?.name ?? ''
+        setBillingMessage(`Пробный тариф переключен на «${planName}».`)
+      }
+
+      await fetchBilling()
+      await fetchUsers()
+    } catch (error: any) {
+      console.error('Error switching trial plan:', error)
+      setBillingError(error.message || 'Не удалось переключить тариф')
+    } finally {
+      setBillingLoading(false)
+    }
   }
 
   const handlePaymentWithPeriod = async (
@@ -699,7 +738,9 @@ export default function CompanyPage() {
                 <p className="text-lg font-semibold text-[var(--foreground)]">{formatPrice(subscription.plan)}</p>
                 {subscription?.currentPeriodEnd && (
                   <span className="text-xs text-[var(--muted)]">
-                    Продление: {new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}
+                    {isTrialActive
+                      ? `Пробный период до: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`
+                      : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`}
                   </span>
                 )}
               </>
@@ -755,9 +796,11 @@ export default function CompanyPage() {
                       <span className="inline-flex items-center gap-2 rounded-full bg-[var(--background-soft)] px-3 py-1 text-xs font-semibold text-[var(--foreground)]">
                         План {tier}
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-100">
-                        14 дней бесплатно
-                      </span>
+                      {isTrialActive && (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-semibold border border-emerald-100">
+                          14 дней бесплатно
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-2xl font-semibold text-[var(--foreground)]">{plan.name}</h3>
                     <p className="text-sm text-[var(--muted)]">
@@ -765,7 +808,9 @@ export default function CompanyPage() {
                     </p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-semibold text-[var(--foreground)]">{formatPrice(plan)}</p>
-                      <span className="text-xs text-[var(--muted)]">после пробного периода</span>
+                      {isTrialActive && (
+                        <span className="text-xs text-[var(--muted)]">после пробного периода</span>
+                      )}
                     </div>
                   </div>
                   <ul className="space-y-2 text-sm text-[var(--muted)] flex-1">
@@ -776,17 +821,38 @@ export default function CompanyPage() {
                       </li>
                     ))}
                   </ul>
-                  <button
-                    onClick={() => handlePlanChange(plan.id)}
-                    disabled={billingLoading}
-                    className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                      isCurrent
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-[var(--primary)] text-white hover:opacity-90'
-                    }`}
-                  >
-                    {isCurrent ? 'Продлить' : 'Перейти'}
-                  </button>
+                  {isTrialActive ? (
+                    <div className="flex flex-col gap-2">
+                      {!isCurrent && (
+                        <button
+                          onClick={() => handleTrialSwitch(plan.id)}
+                          disabled={billingLoading}
+                          className="w-full rounded-2xl px-4 py-2 text-sm font-medium transition border border-[var(--border)] bg-white text-[var(--foreground)] hover:bg-[var(--background-soft)]"
+                        >
+                          Переключить на пробный
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handlePlanChange(plan.id)}
+                        disabled={billingLoading}
+                        className="w-full rounded-2xl px-4 py-2 text-sm font-medium transition bg-[var(--primary)] text-white hover:opacity-90"
+                      >
+                        Оформить подписку
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handlePlanChange(plan.id)}
+                      disabled={billingLoading}
+                      className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
+                        isCurrent
+                          ? 'bg-green-50 text-green-700 border border-green-200'
+                          : 'bg-[var(--primary)] text-white hover:opacity-90'
+                      }`}
+                    >
+                      {isCurrent ? 'Продлить' : 'Перейти'}
+                    </button>
+                  )}
                 </div>
               )
             })
