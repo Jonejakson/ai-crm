@@ -195,7 +195,7 @@ export default function CompanyPage() {
       }
 
       const plansData = await safeJson<{ plans?: Plan[] }>(plansRes)
-      setPlans(plansData.plans || [])
+      setPlans(plansData?.plans || [])
 
       if (subscriptionRes.ok) {
         const subscriptionData = await safeJson<{ subscription?: SubscriptionInfo | null }>(subscriptionRes)
