@@ -103,6 +103,18 @@ export default function CompanyPage() {
     confirmPassword: ''
   })
 
+  const safeJson = async <T,>(response: Response): Promise<T | null> => {
+    const text = await response.text()
+    if (!text) {
+      return null
+    }
+    try {
+      return JSON.parse(text) as T
+    } catch {
+      return null
+    }
+  }
+
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -126,8 +138,8 @@ export default function CompanyPage() {
         try {
           const response = await fetch('/api/billing/invoices/pending')
           if (response.ok) {
-            const data = await response.json()
-            const invoices = data.invoices || []
+            const data = await safeJson<{ invoices?: any[] }>(response)
+            const invoices = data?.invoices || []
             setPendingInvoices(invoices)
           } else {
             console.error('[CompanyPage] Failed to load pending invoices:', response.status)
@@ -182,19 +194,19 @@ export default function CompanyPage() {
         throw new Error('Не удалось загрузить список тарифов')
       }
 
-      const plansData = await plansRes.json()
+      const plansData = await safeJson<{ plans?: Plan[] }>(plansRes)
       setPlans(plansData.plans || [])
 
       if (subscriptionRes.ok) {
-        const subscriptionData = await subscriptionRes.json()
-        setSubscription(subscriptionData.subscription || null)
+        const subscriptionData = await safeJson<{ subscription?: SubscriptionInfo | null }>(subscriptionRes)
+        setSubscription(subscriptionData?.subscription || null)
       } else if (subscriptionRes.status === 401 || subscriptionRes.status === 403) {
         setSubscription(null)
       }
 
       // Получаем информацию о компании для определения типа плательщика
       if (companyStatsRes.ok) {
-        const companyData = await companyStatsRes.json()
+        const companyData = await safeJson<{ company?: { isLegalEntity?: boolean } }>(companyStatsRes)
         if (companyData.company?.isLegalEntity !== undefined) {
           setIsLegalEntity(companyData.company.isLegalEntity)
         }
@@ -202,8 +214,8 @@ export default function CompanyPage() {
 
       // Получаем неоплаченные счета
       if (pendingInvoicesRes.ok) {
-        const invoicesData = await pendingInvoicesRes.json()
-        setPendingInvoices(invoicesData.invoices || [])
+        const invoicesData = await safeJson<{ invoices?: any[] }>(pendingInvoicesRes)
+        setPendingInvoices(invoicesData?.invoices || [])
       }
     } catch (error: any) {
       console.error('Error fetching billing data:', error)
