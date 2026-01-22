@@ -207,7 +207,7 @@ export default function CompanyPage() {
       // Получаем информацию о компании для определения типа плательщика
       if (companyStatsRes.ok) {
         const companyData = await safeJson<{ company?: { isLegalEntity?: boolean } }>(companyStatsRes)
-        if (companyData.company?.isLegalEntity !== undefined) {
+        if (companyData?.company?.isLegalEntity !== undefined) {
           setIsLegalEntity(companyData.company.isLegalEntity)
         }
       }
