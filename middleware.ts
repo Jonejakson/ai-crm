@@ -50,7 +50,12 @@ export async function middleware(request: NextRequest) {
     const sessionToken = sessionTokenCookie?.value
     const forwardedFor = request.headers.get('x-forwarded-for')
     const ipFromHeader = forwardedFor ? forwardedFor.split(',')[0]?.trim() : undefined
-    const ip = ipFromHeader || request.headers.get('x-real-ip') || request.ip || 'unknown'
+    const ip =
+      ipFromHeader ||
+      request.headers.get('x-real-ip') ||
+      request.headers.get('cf-connecting-ip') ||
+      request.headers.get('true-client-ip') ||
+      'unknown'
     const rateLimitKey = sessionToken ? `user:${sessionToken}` : `anon:${ip}`
 
     if (!skipRateLimit) {
