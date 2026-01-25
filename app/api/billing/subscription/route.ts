@@ -115,3 +115,64 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  if (currentUser.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { planId } = body as { planId?: number }
+
+  if (!planId) {
+    return NextResponse.json({ error: 'Plan is required' }, { status: 400 })
+  }
+
+  try {
+    const now = new Date()
+
+    const trialSubscription = await prisma.subscription.findFirst({
+      where: {
+        companyId: Number(currentUser.companyId),
+        status: SubscriptionStatus.TRIAL,
+        trialEndsAt: { not: null, gt: now },
+        invoices: {
+          none: { status: 'PENDING' },
+        },
+      },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    if (!trialSubscription) {
+      return NextResponse.json({ error: 'No active trial found' }, { status: 409 })
+    }
+
+    if (trialSubscription.planId === planId) {
+      return NextResponse.json({ subscription: trialSubscription })
+    }
+
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId },
+    })
+
+    if (!plan) {
+      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+    }
+
+    const updatedSubscription = await prisma.subscription.update({
+      where: { id: trialSubscription.id },
+      data: { planId: plan.id },
+      include: { plan: true },
+    })
+
+    return NextResponse.json({ subscription: updatedSubscription })
+  } catch (error) {
+    console.error('[billing][subscription][PATCH]', error)
+    return NextResponse.json({ error: 'Failed to update trial subscription' }, { status: 500 })
+  }
+}

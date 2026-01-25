@@ -1,0 +1,3 @@
+﻿feat: billing, owner, and support updates
+
+Apply pending billing changes, trial switching, owner dashboard/support ticket updates, and related UI/infra adjustments.

@@ -264,12 +264,12 @@ export default function CompanyPage() {
         body: JSON.stringify({ planId }),
       })
 
-      const data = await response.json()
+      const data = await safeJson<{ subscription?: SubscriptionInfo; error?: string }>(response)
       if (!response.ok) {
-        throw new Error(data.error || 'Не удалось переключить тариф')
+        throw new Error(data?.error || `Не удалось переключить тариф (HTTP ${response.status})`)
       }
 
-      if (data.subscription) {
+      if (data?.subscription) {
         setSubscription(data.subscription)
         const planName = data.subscription?.plan?.name ?? ''
         setBillingMessage(`Пробный тариф переключен на «${planName}».`)
