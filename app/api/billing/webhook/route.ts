@@ -38,7 +38,10 @@ export async function POST(request: Request) {
     if (event.type === 'notification' && event.event === 'payment.succeeded') {
       const payment = event.object
 
-      // Получаем счет по externalId
+      // ВАЖНО: "Invoice" создается только для способа оплаты "Счёт".
+      // Для YooKassa/СБП мы можем не иметь Invoice (см. /api/billing/payment).
+      //
+      // 1) Пытаемся найти счёт по externalId (старый/инвойсный путь)
       const invoice = await prisma.invoice.findFirst({
         where: { externalId: payment.id },
         include: {
@@ -50,39 +53,68 @@ export async function POST(request: Request) {
         },
       })
 
-      if (!invoice) {
-        console.error('[webhook] Invoice not found for payment:', payment.id)
-        return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
-      }
-
-      // Обновляем статус счета
-      await prisma.invoice.update({
-        where: { id: invoice.id },
-        data: {
-          status: InvoiceStatus.PAID,
-          paidAt: new Date(),
-        },
-      })
-
-      // Активируем подписку и обновляем период окончания
-      if (invoice.subscription) {
-        const now = new Date()
-        const paymentPeriodMonths = invoice.paymentPeriodMonths || 1
-        const baseDate =
-          invoice.subscription.currentPeriodEnd && invoice.subscription.currentPeriodEnd > now
-            ? invoice.subscription.currentPeriodEnd
-            : now
-        const periodEnd = calculatePeriodEnd(baseDate, paymentPeriodMonths)
-
-        await prisma.subscription.update({
-          where: { id: invoice.subscriptionId },
+      if (invoice) {
+        // Обновляем статус счета
+        await prisma.invoice.update({
+          where: { id: invoice.id },
           data: {
-            status: SubscriptionStatus.ACTIVE,
-            currentPeriodEnd: periodEnd,
-            trialEndsAt: null,
+            status: InvoiceStatus.PAID,
+            paidAt: new Date(),
           },
         })
+
+        // Активируем подписку и обновляем период окончания
+        if (invoice.subscription) {
+          const now = new Date()
+          const paymentPeriodMonths = invoice.paymentPeriodMonths || 1
+          const baseDate =
+            invoice.subscription.currentPeriodEnd && invoice.subscription.currentPeriodEnd > now
+              ? invoice.subscription.currentPeriodEnd
+              : now
+          const periodEnd = calculatePeriodEnd(baseDate, paymentPeriodMonths)
+
+          await prisma.subscription.update({
+            where: { id: invoice.subscriptionId },
+            data: {
+              status: SubscriptionStatus.ACTIVE,
+              currentPeriodEnd: periodEnd,
+              trialEndsAt: null,
+            },
+          })
+        }
+
+        return NextResponse.json({ success: true })
       }
+
+      // 2) Без Invoice: ищем подписку по metadata.subscriptionId или externalSubscriptionId
+      const subscriptionIdRaw = payment?.metadata?.subscriptionId
+      const subscriptionId = subscriptionIdRaw ? Number(subscriptionIdRaw) : null
+
+      const subscription = subscriptionId
+        ? await prisma.subscription.findUnique({ where: { id: subscriptionId } })
+        : await prisma.subscription.findFirst({ where: { externalSubscriptionId: payment.id } })
+
+      if (!subscription) {
+        console.error('[webhook] Subscription not found for payment:', payment.id)
+        return NextResponse.json({ error: 'Subscription not found' }, { status: 404 })
+      }
+
+      const periodRaw = payment?.metadata?.paymentPeriodMonths
+      const paymentPeriodMonths = periodRaw ? Number(periodRaw) : 1
+      const safePeriod = [1, 3, 6, 12].includes(paymentPeriodMonths) ? (paymentPeriodMonths as 1 | 3 | 6 | 12) : 1
+
+      const now = new Date()
+      const baseDate = subscription.currentPeriodEnd && subscription.currentPeriodEnd > now ? subscription.currentPeriodEnd : now
+      const periodEnd = calculatePeriodEnd(baseDate, safePeriod)
+
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodEnd: periodEnd,
+          trialEndsAt: null,
+        },
+      })
 
       return NextResponse.json({ success: true })
     }
@@ -102,6 +134,19 @@ export async function POST(request: Request) {
             status: InvoiceStatus.FAILED,
           },
         })
+        return NextResponse.json({ success: true })
+      }
+
+      // Если оплаты нет (YooKassa/СБП), удаляем временную подписку,
+      // чтобы не копить "попытки оплаты" и не показывать их в UI.
+      const subscriptionIdRaw = payment?.metadata?.subscriptionId
+      const subscriptionId = subscriptionIdRaw ? Number(subscriptionIdRaw) : null
+      const subscription = subscriptionId
+        ? await prisma.subscription.findUnique({ where: { id: subscriptionId } })
+        : await prisma.subscription.findFirst({ where: { externalSubscriptionId: payment.id } })
+
+      if (subscription) {
+        await prisma.subscription.delete({ where: { id: subscription.id } })
       }
 
       return NextResponse.json({ success: true })

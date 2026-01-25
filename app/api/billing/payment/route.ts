@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { createYooKassaPayment, isYooKassaConfigured } from '@/lib/payment'
 import { SubscriptionStatus, BillingInterval, PayerType } from '@prisma/client'
-import { generateInvoiceNumber, calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
+import { calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
 
 /**
  * Создать платеж для подписки
@@ -93,33 +93,14 @@ export async function POST(request: Request) {
         },
       })
 
-      // В режиме разработки также создаем счет как оплаченный
-      if (isDevMode && plan.price > 0) {
-        const invoiceNumber = await generateInvoiceNumber()
-        await prisma.invoice.create({
-          data: {
-            subscriptionId: subscription.id,
-            invoiceNumber,
-            paymentPeriodMonths,
-            companyId: company.id,
-            payerType,
-            amount: paymentAmount,
-            currency: plan.currency,
-            status: 'PAID',
-            paidAt: new Date(),
-          },
-        })
-      }
-
       return NextResponse.json({ subscription, paymentUrl: null })
     }
 
-    // Для юридических лиц тоже разрешаем оплату через YooKassa (если выбрано в UI).
-    // Альтернативный путь для юрлиц — выставление счета через /api/billing/invoice/generate.
-
-    // Создаем подписку в ожидании оплаты.
-    // ВАЖНО: НЕ выставляем currentPeriodEnd заранее, иначе UI будет выглядеть так,
-    // будто подписка уже "продлена" без факта оплаты.
+    // ВАЖНО: "Счёт" (Invoice) НЕ создаём тут никогда.
+    // Инвойсы должны генерироваться/сохраняться ТОЛЬКО при выборе способа оплаты "Счёт"
+    // через /api/billing/invoice/generate.
+    //
+    // Для YooKassa/СБП создаём временную подписку и платёж; при отмене платежа подписка будет удалена в webhook.
 
     const subscription = await prisma.subscription.create({
       data: {
@@ -131,25 +112,11 @@ export async function POST(request: Request) {
       },
     })
 
-    // Генерируем номер счета и создаем счет
-    const invoiceNumber = await generateInvoiceNumber()
-    const invoice = await prisma.invoice.create({
-      data: {
-        subscriptionId: subscription.id,
-        invoiceNumber,
-        paymentPeriodMonths,
-        companyId: company.id,
-        payerType,
-        amount: paymentAmount,
-        currency: plan.currency,
-        status: 'PENDING',
-      },
-    })
-
     // Создаем платеж в YooKassa
     const baseUrl = process.env.NEXTAUTH_URL || 'https://flamecrm.ru'
-    const returnUrl = `${baseUrl}/billing/success?invoiceId=${invoice.id}`
-    // cancelUrl пока не используется (но можно добавить страницу /billing/cancel при необходимости)
+    // Требование: при отмене оплаты пользователь просто возвращается в меню компании.
+    // YooKassa использует return_url для возврата в браузер — используем /company.
+    const returnUrl = `${baseUrl}/company`
 
     const periodLabel = paymentPeriodMonths === 1 
       ? '1 месяц' 
@@ -165,18 +132,14 @@ export async function POST(request: Request) {
       `Подписка ${plan.name} - ${periodLabel}`,
       returnUrl,
       {
-        invoiceId: invoice.id.toString(),
         subscriptionId: subscription.id.toString(),
         companyId: currentUser.companyId,
+        planId: plan.id.toString(),
+        paymentPeriodMonths: paymentPeriodMonths.toString(),
+        payerType: payerType.toString(),
       },
       paymentMethodType ? { paymentMethodType } : undefined
     )
-
-    // Сохраняем ID платежа в счете
-    await prisma.invoice.update({
-      where: { id: invoice.id },
-      data: { externalId: payment.id },
-    })
 
     // Сохраняем ID платежа в подписке
     await prisma.subscription.update({
@@ -187,10 +150,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       paymentUrl: payment.confirmation?.confirmation_url || null,
       paymentId: payment.id,
-      invoiceId: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
       amount: paymentAmount,
       paymentPeriodMonths,
+      subscriptionId: subscription.id,
     })
   } catch (error: any) {
     console.error('[billing][payment][POST]', error)
