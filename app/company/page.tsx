@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
 import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
@@ -69,6 +69,8 @@ export default function CompanyPage() {
   const [selectedPlanName, setSelectedPlanName] = useState<string>('')
   const [isLegalEntity, setIsLegalEntity] = useState(false)
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
+  const didInitRef = useRef(false)
+  const pendingInvoicesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isTrialActive =
     subscription?.status === 'TRIAL' &&
     !!subscription?.currentPeriodEnd &&
@@ -103,7 +105,7 @@ export default function CompanyPage() {
     confirmPassword: ''
   })
 
-  const safeJson = async <T,>(response: Response): Promise<T | null> => {
+  const safeJson = useCallback(async <T,>(response: Response): Promise<T | null> => {
     const text = await response.text()
     if (!text) {
       return null
@@ -113,53 +115,23 @@ export default function CompanyPage() {
     } catch {
       return null
     }
-  }
+  }, [])
 
-
-  useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login')
-      return
-    }
-
-    if (status === 'authenticated') {
-      const userRole = session?.user?.role
-      // Для owner и других ролей - редирект на главную
-      // Только admin может видеть страницу компании
-      if (userRole !== 'admin') {
-        router.push('/')
-        return
+  const fetchPendingInvoices = useCallback(async () => {
+    try {
+      const response = await fetch('/api/billing/invoices/pending')
+      if (response.ok) {
+        const data = await safeJson<{ invoices?: any[] }>(response)
+        setPendingInvoices(data?.invoices || [])
+      } else {
+        console.error('[CompanyPage] Failed to load pending invoices:', response.status)
       }
-      fetchUsers()
-      fetchBilling()
-      
-      // Проверяем неоплаченные счета (без автоматической проверки статуса)
-      const checkPendingInvoices = async () => {
-        try {
-          const response = await fetch('/api/billing/invoices/pending')
-          if (response.ok) {
-            const data = await safeJson<{ invoices?: any[] }>(response)
-            const invoices = data?.invoices || []
-            setPendingInvoices(invoices)
-          } else {
-            console.error('[CompanyPage] Failed to load pending invoices:', response.status)
-          }
-        } catch (error) {
-          console.error('Error checking pending invoices:', error)
-        }
-      }
-      
-      // Проверяем неоплаченные счета через небольшую задержку после загрузки
-      setTimeout(checkPendingInvoices, 1000)
-      
-      // Периодически проверяем статус pending invoices (каждые 30 секунд)
-      const intervalId = setInterval(checkPendingInvoices, 30000)
-      
-      return () => clearInterval(intervalId)
+    } catch (error) {
+      console.error('Error checking pending invoices:', error)
     }
-  }, [status, session, router])
+  }, [safeJson])
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/users')
       if (!response.ok) {
@@ -177,17 +149,16 @@ export default function CompanyPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [router])
 
-  const fetchBilling = async () => {
+  const fetchBilling = useCallback(async () => {
     setBillingLoading(true)
     setBillingError('')
     try {
-      const [plansRes, subscriptionRes, companyStatsRes, pendingInvoicesRes] = await Promise.all([
+      const [plansRes, subscriptionRes, companyStatsRes] = await Promise.all([
         fetch('/api/billing/plans'),
         fetch('/api/billing/subscription'),
         fetch('/api/admin/company-stats'),
-        fetch('/api/billing/invoices/pending'),
       ])
 
       if (!plansRes.ok) {
@@ -212,18 +183,59 @@ export default function CompanyPage() {
         }
       }
 
-      // Получаем неоплаченные счета
-      if (pendingInvoicesRes.ok) {
-        const invoicesData = await safeJson<{ invoices?: any[] }>(pendingInvoicesRes)
-        setPendingInvoices(invoicesData?.invoices || [])
-      }
+      // Обновляем неоплаченные счета (отдельным запросом)
+      await fetchPendingInvoices()
     } catch (error: any) {
       console.error('Error fetching billing data:', error)
       setBillingError(error.message || 'Не удалось загрузить данные по тарифу')
     } finally {
       setBillingLoading(false)
     }
-  }
+  }, [fetchPendingInvoices, safeJson])
+
+  const stopPendingInvoicesPolling = useCallback(() => {
+    if (pendingInvoicesIntervalRef.current) {
+      clearInterval(pendingInvoicesIntervalRef.current)
+      pendingInvoicesIntervalRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    // Всегда останавливаем поллинг если статус/роль меняются
+    if (status !== 'authenticated' || session?.user?.role !== 'admin') {
+      stopPendingInvoicesPolling()
+      didInitRef.current = false
+    }
+
+    if (status === 'unauthenticated') {
+      router.push('/login')
+      return
+    }
+
+    if (status === 'authenticated') {
+      const userRole = session?.user?.role
+      // Для owner и других ролей - редирект на главную
+      // Только admin может видеть страницу компании
+      if (userRole !== 'admin') {
+        router.push('/')
+        return
+      }
+
+      // Защита от многократной инициализации (useSession может обновлять объект session)
+      if (!didInitRef.current) {
+        didInitRef.current = true
+        fetchUsers()
+        fetchBilling()
+      }
+
+      // Периодически проверяем неоплаченные счета (каждые 30 секунд)
+      if (!pendingInvoicesIntervalRef.current) {
+        pendingInvoicesIntervalRef.current = setInterval(fetchPendingInvoices, 30000)
+      }
+
+      return () => stopPendingInvoicesPolling()
+    }
+  }, [fetchBilling, fetchPendingInvoices, fetchUsers, router, session?.user?.role, status, stopPendingInvoicesPolling])
 
   const formatPrice = (plan: Plan) => {
     if (!plan.price || plan.price <= 0) {
