@@ -67,7 +67,11 @@ done
 echo ""
 
 echo "6️⃣  Применение миграций базы данных (если необходимо)..."
-docker-compose exec -T app npx prisma migrate deploy 2>/dev/null || echo "   Миграции уже применены или не требуются"
+PRISMA_VERSION="6.19.0"
+echo "   Используем Prisma CLI v${PRISMA_VERSION}"
+if ! docker-compose exec -T app npx "prisma@${PRISMA_VERSION}" migrate deploy; then
+    handle_error "Не удалось применить миграции базы данных"
+fi
 echo -e "${GREEN}✅ Проверка миграций завершена${NC}"
 echo ""
 
