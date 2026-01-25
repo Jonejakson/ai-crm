@@ -88,22 +88,28 @@ export async function middleware(request: NextRequest) {
   }
   
   // Создаем response с заголовками rate limit
-  const response = isPublicPath 
+  const response = isPublicPath
     ? NextResponse.next()
     : (() => {
         // Проверяем наличие сессионной cookie (NextAuth v5 использует разные имена в зависимости от окружения)
         // Проверяем все возможные варианты имен cookie
         const allCookies = request.cookies.getAll()
-        const sessionToken = allCookies.find(cookie => 
-          cookie.name === 'authjs.session-token' || 
-          cookie.name === '__Secure-authjs.session-token' ||
-          cookie.name === 'next-auth.session-token' ||
-          cookie.name === '__Secure-next-auth.session-token' ||
-          cookie.name.includes('session-token')
+        const sessionToken = allCookies.find(
+          (cookie) =>
+            cookie.name === 'authjs.session-token' ||
+            cookie.name === '__Secure-authjs.session-token' ||
+            cookie.name === 'next-auth.session-token' ||
+            cookie.name === '__Secure-next-auth.session-token' ||
+            cookie.name.includes('session-token')
         )
-        
-        // Если нет сессионной cookie, перенаправляем на страницу входа
+
+        // Если нет сессионной cookie:
+        // - для API возвращаем 401 JSON (не редиректим на HTML /login, иначе это ломает fetch + может попасть в SW cache)
+        // - для страниц редиректим на /login
         if (!sessionToken) {
+          if (isApiPath) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+          }
           const loginUrl = new URL('/login', request.url)
           // Сохраняем URL, на который пользователь пытался зайти, чтобы вернуться после входа
           if (request.nextUrl.pathname !== '/') {
@@ -111,7 +117,7 @@ export async function middleware(request: NextRequest) {
           }
           return NextResponse.redirect(loginUrl)
         }
-        
+
         return NextResponse.next()
       })()
   
