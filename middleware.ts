@@ -37,31 +37,27 @@ export async function middleware(request: NextRequest) {
       rateLimitConfig = rateLimitConfigs.authenticated
     }
     
+    // Готовим стабильный ключ для rate limit (одинаковый для всех запросов этого request)
+    // Важно: checkRateLimit типизирован как Request, поэтому cookie берем из внешнего NextRequest.
+    const allCookies = request.cookies.getAll()
+    const sessionTokenCookie = allCookies.find((cookie) =>
+      cookie.name === 'authjs.session-token' ||
+      cookie.name === '__Secure-authjs.session-token' ||
+      cookie.name === 'next-auth.session-token' ||
+      cookie.name === '__Secure-next-auth.session-token' ||
+      cookie.name.includes('session-token')
+    )
+    const sessionToken = sessionTokenCookie?.value
+    const forwardedFor = request.headers.get('x-forwarded-for')
+    const ipFromHeader = forwardedFor ? forwardedFor.split(',')[0]?.trim() : undefined
+    const ip = ipFromHeader || request.headers.get('x-real-ip') || request.ip || 'unknown'
+    const rateLimitKey = sessionToken ? `user:${sessionToken}` : `anon:${ip}`
+
     if (!skipRateLimit) {
       // Проверяем rate limit
       rateLimitResult = await checkRateLimit(request, {
         ...rateLimitConfig,
-        keyGenerator: (req) => {
-          // Для авторизованных пользователей используем сессионный токен, иначе IP.
-          // Важно: парсить Cookie-заголовок вручную ненадежно; используем req.cookies.
-          const allCookies = req.cookies.getAll()
-          const sessionTokenCookie = allCookies.find((cookie) =>
-            cookie.name === 'authjs.session-token' ||
-            cookie.name === '__Secure-authjs.session-token' ||
-            cookie.name === 'next-auth.session-token' ||
-            cookie.name === '__Secure-next-auth.session-token' ||
-            cookie.name.includes('session-token')
-          )
-
-          const sessionToken = sessionTokenCookie?.value
-
-          // IP: сначала x-forwarded-for/x-real-ip (если настроены прокси), иначе req.ip, иначе fallback.
-          const forwardedFor = req.headers.get('x-forwarded-for')
-          const ipFromHeader = forwardedFor ? forwardedFor.split(',')[0]?.trim() : undefined
-          const ip = ipFromHeader || req.headers.get('x-real-ip') || req.ip || 'unknown'
-
-          return sessionToken ? `user:${sessionToken}` : `anon:${ip}`
-        },
+        keyGenerator: () => rateLimitKey,
       })
     }
     
