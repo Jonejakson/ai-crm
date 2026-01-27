@@ -20,26 +20,6 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/api/owner') ||
       pathname.startsWith('/api/support')
 
-    // Определяем тип endpoint и применяем соответствующий rate limit
-    let rateLimitConfig = rateLimitConfigs.api // По умолчанию
-    
-    if (pathname.startsWith('/api/webforms/public')) {
-      // Публичные веб-формы - строгий лимит
-      rateLimitConfig = rateLimitConfigs.public
-    } else if (pathname.startsWith('/api/admin')) {
-      // Админские endpoints могут часто дергаться из UI (таблицы, настройки)
-      rateLimitConfig = rateLimitConfigs.admin
-    } else if (pathname.startsWith('/api/ops') || pathname.startsWith('/api/owner')) {
-      // Внутренние эндпоинты владельца/операций
-      rateLimitConfig = rateLimitConfigs.admin
-    } else if (pathname.startsWith('/api/webhooks') || pathname.includes('/webhook')) {
-      // Webhook endpoints - средний лимит
-      rateLimitConfig = rateLimitConfigs.webhook
-    } else if (pathname.startsWith('/api/notifications')) {
-      // Уведомления могут опрашиваться часто на клиенте
-      rateLimitConfig = rateLimitConfigs.authenticated
-    }
-    
     // Готовим стабильный ключ для rate limit (одинаковый для всех запросов этого request)
     // Важно: checkRateLimit типизирован как Request, поэтому cookie берем из внешнего NextRequest.
     const allCookies = request.cookies.getAll()
@@ -59,7 +39,31 @@ export async function middleware(request: NextRequest) {
       request.headers.get('cf-connecting-ip') ||
       request.headers.get('true-client-ip') ||
       'unknown'
+    const isAuthenticatedRequest = Boolean(sessionToken)
     const rateLimitKey = sessionToken ? `user:${sessionToken}` : `anon:${ip}`
+
+    // Определяем тип endpoint и применяем соответствующий rate limit
+    // По умолчанию:
+    // - для авторизованных даем больше лимит (UI может делать параллельные запросы)
+    // - для анонимных оставляем общий лимит
+    let rateLimitConfig = isAuthenticatedRequest ? rateLimitConfigs.authenticated : rateLimitConfigs.api
+    
+    if (pathname.startsWith('/api/webforms/public')) {
+      // Публичные веб-формы - строгий лимит
+      rateLimitConfig = rateLimitConfigs.public
+    } else if (pathname.startsWith('/api/admin')) {
+      // Админские endpoints могут часто дергаться из UI (таблицы, настройки)
+      rateLimitConfig = rateLimitConfigs.admin
+    } else if (pathname.startsWith('/api/ops') || pathname.startsWith('/api/owner')) {
+      // Внутренние эндпоинты владельца/операций
+      rateLimitConfig = rateLimitConfigs.admin
+    } else if (pathname.startsWith('/api/webhooks') || pathname.includes('/webhook')) {
+      // Webhook endpoints - средний лимит
+      rateLimitConfig = rateLimitConfigs.webhook
+    } else if (pathname.startsWith('/api/notifications')) {
+      // Уведомления могут опрашиваться часто на клиенте
+      rateLimitConfig = rateLimitConfigs.authenticated
+    }
 
     if (!skipRateLimit) {
       // Проверяем rate limit
@@ -71,11 +75,26 @@ export async function middleware(request: NextRequest) {
     
     // Если превышен лимит, возвращаем ошибку
     if (!rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
+      // Логируем причину 429, чтобы найти источник спама запросов
+      // (не выводим session token целиком)
+      console.warn(
+        '[rate-limit]',
+        JSON.stringify({
+          path: pathname,
+          keyType: isAuthenticatedRequest ? 'user' : 'anon',
+          ip,
+          limit: rateLimitResult.limit,
+          remaining: rateLimitResult.remaining,
+          retryAfter,
+          userAgent: (request.headers.get('user-agent') || '').slice(0, 120),
+        })
+      )
       return NextResponse.json(
         {
           error: 'Too Many Requests',
           message: 'Превышен лимит запросов. Попробуйте позже.',
-          retryAfter: Math.ceil((rateLimitResult.reset - Date.now()) / 1000),
+          retryAfter,
         },
         {
           status: 429,
@@ -83,7 +102,10 @@ export async function middleware(request: NextRequest) {
             'X-RateLimit-Limit': String(rateLimitResult.limit),
             'X-RateLimit-Remaining': String(rateLimitResult.remaining),
             'X-RateLimit-Reset': String(rateLimitResult.reset),
-            'Retry-After': String(Math.ceil((rateLimitResult.reset - Date.now()) / 1000)),
+            'Retry-After': String(retryAfter),
+            // Debug headers (safe, no secrets)
+            'X-RateLimit-Path': pathname,
+            'X-RateLimit-KeyType': isAuthenticatedRequest ? 'user' : 'anon',
           },
         }
       )
