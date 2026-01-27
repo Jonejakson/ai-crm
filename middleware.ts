@@ -26,6 +26,9 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/webforms/public')) {
       // Публичные веб-формы - строгий лимит
       rateLimitConfig = rateLimitConfigs.public
+    } else if (pathname.startsWith('/api/admin')) {
+      // Админские endpoints могут часто дергаться из UI (таблицы, настройки)
+      rateLimitConfig = rateLimitConfigs.admin
     } else if (pathname.startsWith('/api/ops') || pathname.startsWith('/api/owner')) {
       // Внутренние эндпоинты владельца/операций
       rateLimitConfig = rateLimitConfigs.admin
