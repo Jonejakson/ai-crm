@@ -4,7 +4,22 @@ import { checkRateLimit, rateLimitConfigs } from "@/lib/rate-limit"
 
 export async function middleware(request: NextRequest) {
   // Разрешаем доступ к публичным маршрутам
-  const publicPaths = ['/login', '/forgot-password', '/reset-password', '/api/auth', '/api/webforms/public', '/api/health', '/manifest', '/api/company/by-inn/public', '/privacy', '/terms', '/api/admin/reset-password-emergency']
+  const publicPaths = [
+    '/login',
+    '/forgot-password',
+    '/reset-password',
+    '/api/auth',
+    '/api/webforms/public',
+    '/api/health',
+    '/manifest',
+    '/api/company/by-inn/public',
+    '/privacy',
+    '/terms',
+    '/api/admin/reset-password-emergency',
+    // Webhooks должны быть публичными (без сессии), иначе Telegram/Meta получат 401
+    '/api/messaging/telegram-bot/webhook',
+    '/api/messaging/whatsapp/webhook',
+  ]
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   
   // Rate limiting для разных типов endpoints

@@ -123,6 +123,10 @@ export default function TelegramBotSection() {
       setError('Bot token обязателен')
       return
     }
+    if (!formState.defaultAssigneeId) {
+      setError('Выберите ответственного')
+      return
+    }
 
     setProcessing(true)
     setError(null)
@@ -286,6 +290,11 @@ export default function TelegramBotSection() {
                     )}
                     {integration.defaultPipeline && (
                       <div>Воронка: {integration.defaultPipeline.name}</div>
+                    )}
+                    {integration.defaultAssignee && (
+                      <div>
+                        Ответственный: {integration.defaultAssignee.name} ({integration.defaultAssignee.email})
+                      </div>
                     )}
                   </div>
                 </div>

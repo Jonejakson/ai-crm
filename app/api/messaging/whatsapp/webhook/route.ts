@@ -53,8 +53,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    // Находим активную WhatsApp интеграцию
-    const integration = await prisma.messagingIntegration.findFirst({
+    // Multi-tenant:
+    // 1) пытаемся сузить выбор по phone_number_id (лежит в payload value.metadata.phone_number_id)
+    // 2) затем (если есть подпись) выбираем интеграцию, у которой подпись валидна
+    const signature = request.headers.get('x-hub-signature-256')
+
+    const phoneNumberIdFromPayload: string | null = (() => {
+      try {
+        for (const entry of body.entry || []) {
+          for (const change of entry.changes || []) {
+            const id = change?.value?.metadata?.phone_number_id
+            if (id) return String(id)
+          }
+        }
+        return null
+      } catch {
+        return null
+      }
+    })()
+
+    const activeIntegrations = await prisma.messagingIntegration.findMany({
       where: {
         platform: 'WHATSAPP',
         isActive: true,
@@ -67,24 +85,33 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (!integration || !integration.botToken) {
-      console.warn("[whatsapp-webhook] No active integration found")
-      return NextResponse.json({ ok: true })
+    const candidates = phoneNumberIdFromPayload
+      ? activeIntegrations.filter((i) => String((i.settings as any)?.phoneNumberId || '') === phoneNumberIdFromPayload)
+      : activeIntegrations
+
+    let integration: (typeof activeIntegrations)[number] | null = null
+    if (signature) {
+      for (const candidate of candidates) {
+        if (!candidate.webhookSecret) continue
+        const isValid = await verifyWhatsAppWebhookSignature(bodyText, signature, candidate.webhookSecret)
+        if (isValid) {
+          integration = candidate
+          break
+        }
+      }
     }
 
-    // Проверяем подпись webhook'а, если webhookSecret настроен
-    if (integration.webhookSecret) {
-      const signature = request.headers.get('x-hub-signature-256')
-      const isValid = await verifyWhatsAppWebhookSignature(
-        bodyText,
-        signature,
-        integration.webhookSecret
-      )
-      
-      if (!isValid) {
-        console.error("[whatsapp-webhook] Invalid signature")
-        return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
+    if (!integration) {
+      // Фолбэк: если остался ровно один кандидат, используем его.
+      // Если кандидатов несколько — не угадываем, чтобы не смешивать компании.
+      if (candidates.length === 1) {
+        integration = candidates[0]
       }
+    }
+
+    if (!integration || !integration.botToken) {
+      console.warn("[whatsapp-webhook] No matching integration found")
+      return NextResponse.json({ ok: true })
     }
 
     // Обрабатываем каждую запись
@@ -127,7 +154,7 @@ async function processWhatsAppMessage(message: any, integration: any) {
     if (formattedPhone) {
       const existing = await prisma.contact.findFirst({
         where: {
-          phone: formattedPhone,
+          OR: [{ whatsappId: phoneNumber }, { phone: formattedPhone }],
           user: {
             companyId: integration.companyId,
           },
@@ -141,6 +168,7 @@ async function processWhatsAppMessage(message: any, integration: any) {
           data: {
             name: existing.name || `WhatsApp ${phoneNumber}`,
             phone: formattedPhone,
+            whatsappId: phoneNumber,
             userId: existing.userId || integration.defaultAssigneeId || null,
           },
         })
@@ -165,6 +193,7 @@ async function processWhatsAppMessage(message: any, integration: any) {
           data: {
             name: `WhatsApp ${phoneNumber}`,
             phone: formattedPhone,
+            whatsappId: phoneNumber,
             userId: assignedUserId,
           },
         })

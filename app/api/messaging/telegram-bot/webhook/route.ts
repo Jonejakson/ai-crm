@@ -26,8 +26,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
-    // Находим активную Telegram интеграцию
-    const integration = await prisma.messagingIntegration.findFirst({
+    // Важно (multi-tenant):
+    // Telegram не присылает идентификатор бота в payload, поэтому однозначно определяем компанию
+    // по заголовку x-telegram-bot-api-secret-token (secret_token задается при setWebhook).
+    const incomingSecretToken = request.headers.get('x-telegram-bot-api-secret-token')
+
+    const activeIntegrations = await prisma.messagingIntegration.findMany({
       where: {
         platform: 'TELEGRAM',
         isActive: true,
@@ -40,56 +44,65 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    let integration = null as (typeof activeIntegrations)[number] | null
+    if (incomingSecretToken) {
+      for (const candidate of activeIntegrations) {
+        if (!candidate.webhookSecret) continue
+        const decryptedSecret = decrypt(candidate.webhookSecret)
+        if (incomingSecretToken === decryptedSecret) {
+          integration = candidate
+          break
+        }
+      }
+    } else if (activeIntegrations.length === 1) {
+      // Фолбэк для старых настроек (без secret_token).
+      // Если интеграций несколько — не угадываем, чтобы не смешивать компании.
+      integration = activeIntegrations[0]
+    }
+
     if (!integration || !integration.botToken) {
       console.warn("[telegram-webhook] No active integration found")
       return NextResponse.json({ ok: true })
     }
 
-    // Проверяем webhook secret, если он настроен
-    // Telegram не использует стандартную подпись, но можно проверить через secret_token
-    // Если webhookSecret настроен, проверяем его
-    if (integration.webhookSecret) {
-      // Telegram может отправлять secret_token в заголовке или в теле запроса
-      // Для дополнительной безопасности проверяем наличие секрета
-      const secretToken = request.headers.get('x-telegram-bot-api-secret-token')
-      if (secretToken) {
-        const decryptedSecret = decrypt(integration.webhookSecret)
-        if (secretToken !== decryptedSecret) {
-          console.error("[telegram-webhook] Invalid secret token")
-          return NextResponse.json({ error: "Invalid secret token" }, { status: 403 })
-        }
+    // Если у интеграции есть webhookSecret, а токен не совпал — не обрабатываем
+    if (integration.webhookSecret && incomingSecretToken) {
+      const decryptedSecret = decrypt(integration.webhookSecret)
+      if (incomingSecretToken !== decryptedSecret) {
+        console.error("[telegram-webhook] Invalid secret token")
+        return NextResponse.json({ error: "Invalid secret token" }, { status: 403 })
       }
-      // Если secret_token не передан, но webhookSecret настроен - это нормально
-      // Telegram может не отправлять его, если не настроен в Bot API
     }
 
     // Извлекаем данные пользователя
-    const phone = from.phone_number || null
     const firstName = from.first_name || ""
     const lastName = from.last_name || ""
-    const name = `${firstName} ${lastName}`.trim() || `User ${from.id}`
     const username = from.username || null
+    const baseName = `${firstName} ${lastName}`.trim()
+    const name =
+      baseName ||
+      (username ? `Telegram @${username}` : "") ||
+      `Telegram user ${from.id}`
+
+    // Telegram НЕ отдает номер телефона по умолчанию.
+    // Телефон возможен только если пользователь сам отправил контакт.
+    const contactPhoneRaw: string | null = message.contact?.phone_number || null
+    const normalizedPhone =
+      contactPhoneRaw
+        ? (contactPhoneRaw.startsWith("+") ? contactPhoneRaw : `+${contactPhoneRaw}`)
+        : null
+
+    const telegramChatId = chatId ? String(chatId) : null
 
     // Находим или создаем контакт
     let contact = null
     let isNewContact = false
 
-    if (phone || username) {
-      const whereConditions: any[] = []
-      if (phone) {
-        whereConditions.push({ phone })
-      }
-      if (username) {
-        // Можно добавить поле username в Contact, если нужно
-        // Пока ищем только по телефону
-      }
-
+    if (telegramChatId) {
       const existing = await prisma.contact.findFirst({
         where: {
-          OR: whereConditions.length > 0 ? whereConditions : [{ phone: null }],
-          user: {
-            companyId: integration.companyId,
-          },
+          telegramChatId,
+          user: { companyId: integration.companyId },
         },
       })
 
@@ -99,7 +112,8 @@ export async function POST(request: NextRequest) {
           where: { id: existing.id },
           data: {
             name: name || existing.name,
-            phone: phone || existing.phone,
+            phone: normalizedPhone || existing.phone,
+            telegramChatId,
             userId: existing.userId || integration.defaultAssigneeId || null,
           },
         })
@@ -123,7 +137,8 @@ export async function POST(request: NextRequest) {
         contact = await prisma.contact.create({
           data: {
             name,
-            phone,
+            phone: normalizedPhone,
+            telegramChatId,
             userId: assignedUserId,
           },
         })

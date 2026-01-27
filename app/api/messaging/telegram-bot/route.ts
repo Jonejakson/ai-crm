@@ -65,6 +65,9 @@ export async function POST(request: Request) {
     if (!body.botToken || !body.botToken.trim()) {
       return NextResponse.json({ error: "Bot token is required" }, { status: 400 })
     }
+    if (!body.defaultAssigneeId) {
+      return NextResponse.json({ error: "Выберите ответственного" }, { status: 400 })
+    }
 
     // Проверяем валидность токена через Telegram API
     try {
@@ -95,7 +98,7 @@ export async function POST(request: Request) {
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
-        defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
+        defaultAssigneeId: Number(body.defaultAssigneeId),
         settings: body.settings || null,
       },
       create: {
@@ -106,7 +109,7 @@ export async function POST(request: Request) {
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
-        defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
+        defaultAssigneeId: Number(body.defaultAssigneeId),
         settings: body.settings || null,
         companyId,
       },

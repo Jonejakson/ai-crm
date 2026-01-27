@@ -1,7 +1,8 @@
 import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
-import { decrypt } from "@/lib/encryption"
+import { decrypt, encrypt } from "@/lib/encryption"
+import crypto from "node:crypto"
 
 // Установить webhook URL в Telegram
 export async function POST(request: NextRequest) {
@@ -35,6 +36,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Telegram bot integration not found" }, { status: 404 })
     }
 
+    // Гарантируем наличие webhookSecret (для secret_token)
+    let webhookSecretPlain: string | null = null
+    if (integration.webhookSecret) {
+      webhookSecretPlain = decrypt(integration.webhookSecret)
+    } else {
+      webhookSecretPlain = crypto.randomUUID()
+      await prisma.messagingIntegration.update({
+        where: { id: integration.id },
+        data: { webhookSecret: encrypt(webhookSecretPlain) },
+      })
+    }
+
     // Устанавливаем webhook в Telegram
     const botToken = decrypt(integration.botToken)
     const setWebhookResponse = await fetch(
@@ -44,6 +57,9 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: webhookUrl.trim(),
+          // Telegram будет присылать этот токен в заголовке x-telegram-bot-api-secret-token
+          // Это позволяет безопасно и однозначно определить компанию (multi-tenant)
+          secret_token: webhookSecretPlain,
         }),
       }
     )

@@ -74,6 +74,9 @@ export async function POST(request: Request) {
     if (!body.phoneNumberId || !body.phoneNumberId.trim()) {
       return NextResponse.json({ error: "Phone Number ID is required" }, { status: 400 })
     }
+    if (!body.defaultAssigneeId) {
+      return NextResponse.json({ error: "Выберите ответственного" }, { status: 400 })
+    }
 
     // Upsert интеграцию
     const integration = await prisma.messagingIntegration.upsert({
@@ -90,7 +93,7 @@ export async function POST(request: Request) {
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
-        defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
+        defaultAssigneeId: Number(body.defaultAssigneeId),
         webhookSecret: body.webhookVerifyToken ? encrypt(body.webhookVerifyToken.trim()) : null,
         settings: {
           phoneNumberId: body.phoneNumberId.trim(),
@@ -106,7 +109,7 @@ export async function POST(request: Request) {
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
-        defaultAssigneeId: body.defaultAssigneeId ? Number(body.defaultAssigneeId) : null,
+        defaultAssigneeId: Number(body.defaultAssigneeId),
         webhookSecret: body.webhookVerifyToken ? encrypt(body.webhookVerifyToken.trim()) : null,
         settings: {
           phoneNumberId: body.phoneNumberId.trim(),
