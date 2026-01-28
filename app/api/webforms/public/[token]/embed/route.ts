@@ -4,6 +4,26 @@ import { sanitizeFormFields } from "@/lib/webforms"
 
 type RouteContext = { params: Promise<{ token: string }> }
 
+function getPublicOrigin(request: NextRequest) {
+  const envBase =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.APP_URL ||
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_BASE_URL
+
+  if (envBase) return envBase.replace(/\/$/, "")
+
+  const xfProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
+  const xfHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+  const host = xfHost || request.headers.get("host")
+
+  const proto = xfProto || request.nextUrl.protocol.replace(":", "") || "https"
+
+  if (host) return `${proto}://${host}`
+
+  return new URL(request.url).origin
+}
+
 export async function GET(
   request: NextRequest,
   context: RouteContext
@@ -21,7 +41,7 @@ export async function GET(
       })
     }
 
-    const origin = new URL(request.url).origin
+    const origin = getPublicOrigin(request)
     const config = sanitizeFormFields(form.fields)
     const script = buildEmbedScript({
       token: form.token,
@@ -275,6 +295,23 @@ function buildEmbedScript(config: {
   const triggerBtn = document.createElement('button');
   triggerBtn.textContent = CONFIG.buttonText || 'Оставить заявку';
   triggerBtn.type = 'button';
+  // Кастомизация кнопки через data-атрибуты контейнера:
+  // data-button-width="240" | "240px" | "100%"
+  // data-button-height="48" | "48px"
+  // data-button-font-size="16" | "16px"
+  // data-button-padding="14px 28px"
+  function normalizeCssSize(val) {
+    if (!val) return null;
+    const v = String(val).trim();
+    if (!v) return null;
+    if (/^\\d+$/.test(v)) return v + 'px';
+    return v;
+  }
+  const btnWidth = normalizeCssSize(target.getAttribute('data-button-width'));
+  const btnHeight = normalizeCssSize(target.getAttribute('data-button-height'));
+  const btnFontSize = normalizeCssSize(target.getAttribute('data-button-font-size'));
+  const btnPadding = (target.getAttribute('data-button-padding') || '').trim();
+
   triggerBtn.style.padding = '14px 28px';
   triggerBtn.style.borderRadius = '12px';
   triggerBtn.style.border = 'none';
@@ -284,6 +321,15 @@ function buildEmbedScript(config: {
   triggerBtn.style.cursor = 'pointer';
   triggerBtn.style.fontSize = '16px';
   triggerBtn.style.transition = 'opacity 0.2s, transform 0.2s';
+  if (btnWidth) triggerBtn.style.width = btnWidth;
+  if (btnHeight) {
+    triggerBtn.style.height = btnHeight;
+    triggerBtn.style.display = 'inline-flex';
+    triggerBtn.style.alignItems = 'center';
+    triggerBtn.style.justifyContent = 'center';
+  }
+  if (btnFontSize) triggerBtn.style.fontSize = btnFontSize;
+  if (btnPadding) triggerBtn.style.padding = btnPadding;
   triggerBtn.addEventListener('mouseenter', function() { 
     triggerBtn.style.opacity = '0.9';
     triggerBtn.style.transform = 'translateY(-2px)';

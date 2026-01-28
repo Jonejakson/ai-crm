@@ -256,40 +256,49 @@ export default function WebFormsSection() {
 
   function getEmbedSnippet(form: WebFormDto) {
     const base = origin || 'https://your-domain.com'
-    let snippet = `<div class="pocketcrm-form" data-webform-token="${form.token}"`
-    
-    // Добавляем примеры кастомизации цветов в комментарии с подробными описаниями
-    snippet += `\n  <!-- ============================================ -->
-  <!-- ОПЦИОНАЛЬНО: Кастомизация цветов формы -->
-  <!-- Раскомментируйте нужные строки и укажите свои цвета -->
-  <!-- ============================================ -->
-  
-  <!-- Основной цвет: используется для кнопки отправки (левая часть градиента) и обводки полей при фокусе -->
-  <!-- data-primary-color="#10b981" -->
-  
-  <!-- Вторичный цвет: используется для кнопки отправки (правая часть градиента) -->
-  <!-- data-secondary-color="#0ea5e9" -->
-  
-  <!-- Цвет фонового затемнения: цвет полупрозрачного слоя за попапом (только для режима "кнопка с попапом") -->
-  <!-- data-overlay-color="rgba(0, 0, 0, 0.5)" -->
-  
-  <!-- Цвет текста: цвет всех текстовых меток и заголовков в форме -->
-  <!-- data-text-color="#111827" -->
-  
-  <!-- Цвет границ: цвет рамок полей ввода в неактивном состоянии -->
-  <!-- data-border-color="#d1d5db" -->
-  
-  <!-- Цвет успеха: цвет сообщения об успешной отправке формы -->
-  <!-- data-success-color="#059669" -->
-  
-  <!-- Цвет ошибки: цвет сообщения об ошибке при отправке формы -->
-  <!-- data-error-color="#b91c1c" -->
-  
-  <!-- Цвет фона: цвет фона попапа (только для режима "кнопка с попапом") -->
-  <!-- data-bg-color="#ffffff" -->`
-    
-    snippet += `></div>\n<script async src="${base}/api/webforms/public/${form.token}/embed"></script>`
-    return snippet
+    const embedUrl = `${base}/api/webforms/public/${form.token}/embed`
+
+    // ВАЖНО: сниппет должен быть валидным HTML. Нельзя вставлять комментарии внутрь открывающего тега <div ...>
+    const workingSnippet = [
+      `<div class="pocketcrm-form" data-webform-token="${form.token}"></div>`,
+      `<script async src="${embedUrl}"></script>`,
+    ].join('\n')
+
+    // Опциональные примеры кастомизации оставляем в комментарии (вне тега), чтобы не ломать разметку.
+    const customizationHelp = `<!-- ============================================ -->
+<!-- ОПЦИОНАЛЬНО: кастомизация виджета -->
+<!-- Добавьте data-атрибуты в DIV контейнер -->
+<!-- ============================================ -->
+
+<!-- Цвета -->
+<!-- data-primary-color="#10b981"      Основной цвет (градиент слева + фокус) -->
+<!-- data-secondary-color="#0ea5e9"    Вторичный цвет (градиент справа) -->
+<!-- data-overlay-color="rgba(0,0,0,0.5)" Затемнение фона (только для popup) -->
+<!-- data-text-color="#111827"        Цвет текста -->
+<!-- data-border-color="#d1d5db"      Цвет границ полей -->
+<!-- data-success-color="#059669"     Цвет успеха -->
+<!-- data-error-color="#b91c1c"       Цвет ошибки -->
+<!-- data-bg-color="#ffffff"          Цвет фона попапа (только для popup) -->
+
+<!-- Кнопка (только для режима "Кнопка с попапом") -->
+<!-- data-button-width="260"          ширина: 260 | 260px | 100% -->
+<!-- data-button-height="54"          высота: 54 | 54px -->
+<!-- data-button-font-size="18"       размер шрифта: 18 | 18px -->
+<!-- data-button-padding="0 24px"     padding CSS -->
+
+<!-- Пример (можно заменить ваш DIV на этот и поменять значения):
+<div class="pocketcrm-form"
+  data-webform-token="${form.token}"
+  data-primary-color="#10b981"
+  data-secondary-color="#0ea5e9"
+  data-button-width="260"
+  data-button-height="54"
+  data-button-font-size="18"
+  data-button-padding="0 24px"
+></div>
+-->`
+
+    return `${workingSnippet}\n\n${customizationHelp}`
   }
 
   async function copySnippet(form: WebFormDto) {
@@ -424,7 +433,7 @@ export default function WebFormsSection() {
                         {getEmbedSnippet(form)}
                       </pre>
                       <p className="mt-3 text-[10px] text-[var(--muted)]">
-                        <InfoIcon className="w-4 h-4 inline mr-1" /> <strong>Совет:</strong> Раскомментируйте строки с data-атрибутами для кастомизации цветов под ваш сайт
+                        <InfoIcon className="w-4 h-4 inline mr-1" /> <strong>Совет:</strong> Используйте data-атрибуты для кастомизации цветов и (в popup режиме) размеров кнопки под ваш сайт
                       </p>
                     </>
                   )}

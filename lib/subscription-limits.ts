@@ -135,16 +135,6 @@ export async function checkContactLimit(companyId: number): Promise<{
     }
   }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    return {
-      allowed: true,
-      current: 0,
-      limit: null,
-    }
-  }
-
   // Получаем все контакты компании (через пользователей)
   const companyUsers = await prisma.user.findMany({
     where: { companyId },
@@ -158,25 +148,8 @@ export async function checkContactLimit(companyId: number): Promise<{
     },
   })
 
-  // Если лимит null, значит без ограничений
-  if (plan.contactLimit === null) {
-    return {
-      allowed: true,
-      current: contactCount,
-      limit: null,
-    }
-  }
-
-  const allowed = contactCount < plan.contactLimit
-
-  return {
-    allowed,
-    current: contactCount,
-    limit: plan.contactLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит контактов (${plan.contactLimit.toLocaleString('ru-RU')}). Обновите тариф для добавления большего количества контактов.`,
-  }
+  // Функциональность одинакова на всех тарифах; лимиты по контактам не применяем.
+  return { allowed: true, current: contactCount, limit: null }
 }
 
 /**
@@ -202,39 +175,12 @@ export async function checkPipelineLimit(companyId: number): Promise<{
     }
   }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    return {
-      allowed: true,
-      current: 0,
-      limit: null,
-    }
-  }
-
   const pipelineCount = await prisma.pipeline.count({
     where: { companyId },
   })
 
-  // Если лимит null, значит без ограничений
-  if (plan.pipelineLimit === null) {
-    return {
-      allowed: true,
-      current: pipelineCount,
-      limit: null,
-    }
-  }
-
-  const allowed = pipelineCount < plan.pipelineLimit
-
-  return {
-    allowed,
-    current: pipelineCount,
-    limit: plan.pipelineLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит воронок (${plan.pipelineLimit}). Обновите тариф для создания большего количества воронок.`,
-  }
+  // Функциональность одинакова на всех тарифах; лимиты по воронкам не применяем.
+  return { allowed: true, current: pipelineCount, limit: null }
 }
 
 /**
@@ -244,30 +190,10 @@ export async function checkAutomationsAccess(companyId: number): Promise<{
   allowed: boolean
   message?: string
 }> {
-  // В режиме разработки разрешаем все
-  // Используем DEV_MODE для явного включения режима разработки (работает и в Vercel)
-  const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  if (isDevMode) {
-    return {
-      allowed: true,
-    }
-  }
-
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  // Автоматизации доступны только в плане PRO
-  const allowed = plan.slug === 'PRO'
-
-  return {
-    allowed,
-    message: allowed
-      ? undefined
-      : 'Автоматизации доступны только в тарифе Pro. Обновите тариф для использования этой функции.',
-  }
+  // Бизнес-правило: функциональность одинакова для всех тарифов.
+  // Цена зависит только от количества пользователей.
+  void companyId
+  return { allowed: true }
 }
 
 /**
@@ -300,16 +226,6 @@ export async function checkDealLimit(companyId: number): Promise<{
     }
   }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    return {
-      allowed: true,
-      current: 0,
-      limit: null,
-    }
-  }
-
   const companyUsers = await prisma.user.findMany({
     where: { companyId },
     select: { id: true },
@@ -322,24 +238,8 @@ export async function checkDealLimit(companyId: number): Promise<{
     },
   })
 
-  if (plan.dealLimit === null) {
-    return {
-      allowed: true,
-      current: dealCount,
-      limit: null,
-    }
-  }
-
-  const allowed = dealCount < plan.dealLimit
-
-  return {
-    allowed,
-    current: dealCount,
-    limit: plan.dealLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит открытых сделок (${plan.dealLimit.toLocaleString('ru-RU')}). Обновите тариф для добавления большего количества сделок.`,
-  }
+  // Функциональность одинакова на всех тарифах; лимиты по сделкам не применяем.
+  return { allowed: true, current: dealCount, limit: null }
 }
 
 /**
@@ -357,47 +257,11 @@ export async function checkWebFormsAccess(companyId: number): Promise<{
   //   return { allowed: true }
   // }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkWebFormsAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkWebFormsAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Веб-формы доступны только в планах TEAM и PRO
-  if (plan.slug === 'LITE') {
-    console.log('[checkWebFormsAccess] Доступ запрещен для тарифа LITE')
-    return {
-      allowed: false,
-      message: 'Веб-формы доступны только в тарифах Team и Pro. Обновите тариф для использования этой функции.',
-    }
-  }
-
-  // Проверяем лимит веб-форм
+  // Функциональность доступна на любом тарифе; лимиты по функциям не применяем.
   const webFormCount = await prisma.webForm.count({
     where: { companyId },
   })
-
-  if (plan.webFormLimit === null) {
-    return {
-      allowed: true,
-      current: webFormCount,
-      limit: null,
-    }
-  }
-
-  const allowed = webFormCount < plan.webFormLimit
-
-  return {
-    allowed,
-    current: webFormCount,
-    limit: plan.webFormLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит веб-форм (${plan.webFormLimit}). Обновите тариф для создания большего количества форм.`,
-  }
+  return { allowed: true, current: webFormCount, limit: null }
 }
 
 /**
@@ -415,47 +279,11 @@ export async function checkEmailIntegrationsAccess(companyId: number): Promise<{
   //   return { allowed: true }
   // }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkEmailIntegrationsAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkEmailIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Email интеграции доступны только в планах TEAM и PRO
-  if (plan.slug === 'LITE') {
-    console.log('[checkEmailIntegrationsAccess] Доступ запрещен для тарифа LITE')
-    return {
-      allowed: false,
-      message: 'Email интеграции доступны только в тарифах Team и Pro. Обновите тариф для использования этой функции.',
-    }
-  }
-
-  // Проверяем лимит email интеграций
+  // Функциональность доступна на любом тарифе; лимиты по функциям не применяем.
   const emailIntegrationCount = await prisma.emailIntegration.count({
     where: { companyId },
   })
-
-  if (plan.emailIntegrationLimit === null) {
-    return {
-      allowed: true,
-      current: emailIntegrationCount,
-      limit: null,
-    }
-  }
-
-  const allowed = emailIntegrationCount < plan.emailIntegrationLimit
-
-  return {
-    allowed,
-    current: emailIntegrationCount,
-    limit: plan.emailIntegrationLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит email интеграций (${plan.emailIntegrationLimit}). Обновите тариф для подключения большего количества аккаунтов.`,
-  }
+  return { allowed: true, current: emailIntegrationCount, limit: null }
 }
 
 /**
@@ -465,34 +293,9 @@ export async function checkMessagingIntegrationsAccess(companyId: number): Promi
   allowed: boolean
   message?: string
 }> {
-  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
-  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  // if (isDevMode) {
-  //   return { allowed: true }
-  // }
-
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkMessagingIntegrationsAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkMessagingIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Telegram/WhatsApp доступны только в плане PRO
-  const allowed = plan.slug === 'PRO'
-  
-  if (!allowed) {
-    console.log('[checkMessagingIntegrationsAccess] Доступ запрещен для тарифа:', plan.slug)
-  }
-
-  return {
-    allowed,
-    message: allowed
-      ? undefined
-      : 'Telegram и WhatsApp интеграции доступны только в тарифе Pro. Обновите тариф для использования этой функции.',
-  }
+  // Функциональность доступна на любом тарифе; цена зависит только от количества пользователей.
+  void companyId
+  return { allowed: true }
 }
 
 /**
@@ -502,34 +305,8 @@ export async function checkAdvertisingIntegrationsAccess(companyId: number): Pro
   allowed: boolean
   message?: string
 }> {
-  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
-  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  // if (isDevMode) {
-  //   return { allowed: true }
-  // }
-
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkAdvertisingIntegrationsAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkAdvertisingIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Рекламные интеграции доступны только в плане PRO
-  const allowed = plan.slug === 'PRO'
-  
-  if (!allowed) {
-    console.log('[checkAdvertisingIntegrationsAccess] Доступ запрещен для тарифа:', plan.slug)
-  }
-
-  return {
-    allowed,
-    message: allowed
-      ? undefined
-      : 'Рекламные интеграции (Yandex.Direct, Avito, Google Ads) доступны только в тарифе Pro. Обновите тариф для использования этой функции.',
-  }
+  void companyId
+  return { allowed: true }
 }
 
 /**
@@ -539,34 +316,8 @@ export async function checkAccountingIntegrationsAccess(companyId: number): Prom
   allowed: boolean
   message?: string
 }> {
-  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
-  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  // if (isDevMode) {
-  //   return { allowed: true }
-  // }
-
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkAccountingIntegrationsAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkAccountingIntegrationsAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Учетные системы доступны только в плане PRO
-  const allowed = plan.slug === 'PRO'
-  
-  if (!allowed) {
-    console.log('[checkAccountingIntegrationsAccess] Доступ запрещен для тарифа:', plan.slug)
-  }
-
-  return {
-    allowed,
-    message: allowed
-      ? undefined
-      : 'Интеграции с учетными системами (МойСклад, 1С, Bitrix24) доступны только в тарифе Pro. Обновите тариф для использования этой функции.',
-  }
+  void companyId
+  return { allowed: true }
 }
 
 /**
@@ -584,47 +335,11 @@ export async function checkWebhookAccess(companyId: number): Promise<{
   //   return { allowed: true }
   // }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkWebhookAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkWebhookAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Webhook API доступен только в планах TEAM и PRO
-  if (plan.slug === 'LITE') {
-    console.log('[checkWebhookAccess] Доступ запрещен для тарифа LITE')
-    return {
-      allowed: false,
-      message: 'Webhook API доступен только в тарифах Team и Pro. Обновите тариф для использования этой функции.',
-    }
-  }
-
-  // Проверяем лимит webhook'ов
+  // Функциональность доступна на любом тарифе; лимиты по функциям не применяем.
   const webhookCount = await prisma.webhookIntegration.count({
     where: { companyId },
   })
-
-  if (plan.webhookLimit === null) {
-    return {
-      allowed: true,
-      current: webhookCount,
-      limit: null,
-    }
-  }
-
-  const allowed = webhookCount < plan.webhookLimit
-
-  return {
-    allowed,
-    current: webhookCount,
-    limit: plan.webhookLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит webhook'ов (${plan.webhookLimit}). Обновите тариф для создания большего количества webhook'ов.`,
-  }
+  return { allowed: true, current: webhookCount, limit: null }
 }
 
 /**
@@ -634,34 +349,8 @@ export async function checkAIAssistantAccess(companyId: number): Promise<{
   allowed: boolean
   message?: string
 }> {
-  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
-  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  // if (isDevMode) {
-  //   return { allowed: true }
-  // }
-
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkAIAssistantAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkAIAssistantAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // AI Ассистент доступен только в плане PRO
-  const allowed = plan.slug === 'PRO'
-  
-  if (!allowed) {
-    console.log('[checkAIAssistantAccess] Доступ запрещен для тарифа:', plan.slug)
-  }
-
-  return {
-    allowed,
-    message: allowed
-      ? undefined
-      : 'AI Ассистент доступен только в тарифе Pro. Обновите тариф для использования этой функции.',
-  }
+  void companyId
+  return { allowed: true }
 }
 
 /**
@@ -671,34 +360,8 @@ export async function checkMigrationAccess(companyId: number): Promise<{
   allowed: boolean
   message?: string
 }> {
-  // ВАЖНО: Не отключаем проверки в dev режиме для тестирования тарифов
-  // const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
-  // if (isDevMode) {
-  //   return { allowed: true }
-  // }
-
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    console.log('[checkMigrationAccess] План не найден для companyId:', companyId)
-    return { allowed: false, message: 'План не найден' }
-  }
-
-  console.log('[checkMigrationAccess] План компании:', plan.slug, 'companyId:', companyId)
-
-  // Миграция данных доступна только в плане PRO
-  const allowed = plan.slug === 'PRO'
-  
-  if (!allowed) {
-    console.log('[checkMigrationAccess] Доступ запрещен для тарифа:', plan.slug)
-  }
-
-  return {
-    allowed,
-    message: allowed
-      ? undefined
-      : 'Миграция данных из других CRM доступна только в тарифе Pro. Обновите тариф для использования этой функции.',
-  }
+  void companyId
+  return { allowed: true }
 }
 
 /**
@@ -722,48 +385,12 @@ export async function checkCustomFieldsLimit(companyId: number): Promise<{
     }
   }
 
-  const plan = await getCompanyPlan(companyId)
-  
-  if (!plan) {
-    return {
-      allowed: true,
-      current: 0,
-      limit: null,
-    }
-  }
-
-  // Кастомные поля доступны только в планах TEAM и PRO
-  if (plan.slug === 'LITE') {
-    return {
-      allowed: false,
-      current: 0,
-      limit: null,
-      message: 'Кастомные поля доступны только в тарифах Team и Pro. Обновите тариф для использования этой функции.',
-    }
-  }
-
   const customFieldCount = await prisma.customField.count({
     where: { companyId },
   })
 
-  if (plan.customFieldLimit === null) {
-    return {
-      allowed: true,
-      current: customFieldCount,
-      limit: null,
-    }
-  }
-
-  const allowed = customFieldCount < plan.customFieldLimit
-
-  return {
-    allowed,
-    current: customFieldCount,
-    limit: plan.customFieldLimit,
-    message: allowed
-      ? undefined
-      : `Достигнут лимит кастомных полей (${plan.customFieldLimit}). Обновите тариф для создания большего количества полей.`,
-  }
+  // Функциональность одинакова на всех тарифах; лимиты по кастомным полям не применяем.
+  return { allowed: true, current: customFieldCount, limit: null }
 }
 
 /**

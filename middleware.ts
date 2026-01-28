@@ -16,9 +16,13 @@ export async function middleware(request: NextRequest) {
     '/privacy',
     '/terms',
     '/api/admin/reset-password-emergency',
-    // Webhooks должны быть публичными (без сессии), иначе Telegram/Meta получат 401
+    // Webhooks должны быть публичными (без сессии), иначе внешние системы получат 401
+    '/api/webhooks/incoming',
+    '/api/billing/webhook',
     '/api/messaging/telegram-bot/webhook',
     '/api/messaging/whatsapp/webhook',
+    '/api/advertising/avito/webhook',
+    '/api/advertising/yandex-direct/webhook',
   ]
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
   

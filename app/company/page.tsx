@@ -6,7 +6,6 @@ import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import WebFormsSection from './WebFormsSection'
-import EmailIntegrationsSection from './EmailIntegrationsSection'
 import WebhookIntegrationsSection from './WebhookIntegrationsSection'
 import TelegramBotSection from './TelegramBotSection'
 import WhatsAppSection from './WhatsAppSection'
@@ -1343,7 +1342,7 @@ export default function CompanyPage() {
       </section>
 
       <WebFormsSection />
-      <EmailIntegrationsSection />
+      {/* Email-интеграции временно скрыты (функционал не удалён) */}
       <WebhookIntegrationsSection />
       <TelegramBotSection />
       <WhatsAppSection />

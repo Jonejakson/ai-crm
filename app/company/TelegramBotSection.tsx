@@ -229,7 +229,7 @@ export default function TelegramBotSection() {
       <div className="glass-panel rounded-3xl p-6 space-y-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">Telegram Bot</h2>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Telegram Bot (на стадии бета-тестирования)</h2>
             <p className="text-sm text-[var(--muted)]">
               Подключите Telegram бота для автоматического получения заявок от клиентов.
             </p>
@@ -263,7 +263,7 @@ export default function TelegramBotSection() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold text-[var(--foreground)]">
-                      Telegram Bot
+                      Telegram Bot (на стадии бета-тестирования)
                     </h3>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${

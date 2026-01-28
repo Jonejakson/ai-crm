@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { sanitizeFormFields } from "@/lib/webforms"
 import { parsePipelineStages } from "@/lib/pipelines"
 import { processAutomations } from "@/lib/automations"
+import { createNotification } from "@/lib/notifications"
 
 const allowedOriginsEnv =
   process.env.WEBFORM_ALLOWED_ORIGINS ||
@@ -144,6 +145,48 @@ export async function POST(request: NextRequest, context: RouteContext) {
         userId: assignedUserId,
       },
     })
+
+    // Создаем уведомление о новой заявке (встроенные веб-формы не требуют настроек автоматизаций)
+    const contactName = contactResult.contact.name || "Новый клиент"
+    const title = "Новая заявка с сайта"
+    const message = `Форма «${form.name}»: ${contactName}`
+
+    // Всегда уведомляем ответственного по заявке
+    await createNotification({
+      userId: assignedUserId,
+      title,
+      message,
+      type: "info",
+      entityType: "deal",
+      entityId: deal.id,
+    })
+
+    // Если в форме не задан ответственный — дополнительно уведомляем админов/менеджеров компании,
+    // чтобы заявка точно не потерялась.
+    if (!form.defaultAssigneeId) {
+      const watchers = await prisma.user.findMany({
+        where: {
+          companyId: form.companyId,
+          role: { in: ["admin", "manager"] },
+        },
+        select: { id: true },
+      })
+      await Promise.all(
+        watchers
+          .map((u) => u.id)
+          .filter((id) => id !== assignedUserId)
+          .map((userId) =>
+            createNotification({
+              userId,
+              title,
+              message,
+              type: "info",
+              entityType: "deal",
+              entityId: deal.id,
+            })
+          )
+      )
+    }
 
     if (contactResult.isNew) {
       await processAutomations("CONTACT_CREATED", {
