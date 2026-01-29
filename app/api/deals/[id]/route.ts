@@ -30,6 +30,20 @@ export async function GET(
         ...whereCondition,
       },
       include: {
+        moyskladItems: {
+          select: {
+            id: true,
+            moyskladOrderId: true,
+            positionId: true,
+            assortmentId: true,
+            name: true,
+            quantity: true,
+            priceKopecks: true,
+            sumKopecks: true,
+            updatedAt: true,
+          },
+          orderBy: { updatedAt: 'desc' },
+        },
         contact: {
           select: {
             id: true,

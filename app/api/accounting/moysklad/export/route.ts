@@ -3,6 +3,13 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { decrypt } from "@/lib/encryption"
 
+function extractIdFromHref(href?: string): string | null {
+  if (!href) return null
+  const parts = href.split('/').filter(Boolean)
+  const last = parts[parts.length - 1]
+  return last || null
+}
+
 // Выгрузить контакт в МойСклад
 export async function POST(request: NextRequest) {
   try {
@@ -191,6 +198,87 @@ export async function POST(request: NextRequest) {
           const errorData = await orderResponse.json().catch(() => ({}))
           console.error('[moysklad][export][order]', errorData)
           // Не прерываем процесс, если заказ не создался/обновился
+        }
+      }
+
+      // Если mode=sync — подтягиваем позиции заказа и сохраняем в CRM (чтобы видеть товары в сделке)
+      if (mode === 'sync' && orderId) {
+        try {
+          const positionsResp = await fetch(
+            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000`,
+            {
+              headers: {
+                'Authorization': `Basic ${authString}`,
+                'Content-Type': 'application/json',
+              },
+              cache: 'no-store',
+            }
+          )
+
+          if (positionsResp.ok) {
+            const positions = await positionsResp.json()
+            const rows: any[] = Array.isArray(positions?.rows) ? positions.rows : []
+            const positionIds: string[] = []
+
+            for (const row of rows) {
+              const positionId = String(row.id)
+              positionIds.push(positionId)
+
+              const assortmentHref: string | undefined = row.assortment?.meta?.href
+              const assortmentId =
+                row.assortment?.id ? String(row.assortment.id) : extractIdFromHref(assortmentHref)
+
+              const name =
+                row.assortment?.name ||
+                row.name ||
+                (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
+
+              const quantity = typeof row.quantity === 'number' ? row.quantity : Number(row.quantity || 0)
+              const priceKopecks = typeof row.price === 'number' ? row.price : Number(row.price || 0)
+              const sumKopecks = typeof row.sum === 'number' ? row.sum : Number(row.sum || 0)
+
+              await prisma.dealMoyskladItem.upsert({
+                where: {
+                  dealId_positionId: {
+                    dealId: deal.id,
+                    positionId,
+                  },
+                },
+                update: {
+                  moyskladOrderId: String(orderId),
+                  assortmentId,
+                  name,
+                  quantity,
+                  priceKopecks,
+                  sumKopecks,
+                },
+                create: {
+                  dealId: deal.id,
+                  moyskladOrderId: String(orderId),
+                  positionId,
+                  assortmentId,
+                  name,
+                  quantity,
+                  priceKopecks,
+                  sumKopecks,
+                },
+              })
+            }
+
+            // Удаляем позиции, которых больше нет в заказе
+            await prisma.dealMoyskladItem.deleteMany({
+              where: {
+                dealId: deal.id,
+                moyskladOrderId: String(orderId),
+                ...(positionIds.length ? { positionId: { notIn: positionIds } } : {}),
+              },
+            })
+          } else {
+            const errorData = await positionsResp.json().catch(() => ({}))
+            console.error('[moysklad][export][positions]', errorData)
+          }
+        } catch (e) {
+          console.error('[moysklad][export][positions]', e)
         }
       }
     }

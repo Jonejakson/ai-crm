@@ -261,6 +261,7 @@ model Deal {
   emailMessages     EmailMessage[]
   externalId        String? // ID в системе учета (1С, МойСклад)
   syncedAt          DateTime? // Время последней синхронизации
+  moyskladItems     DealMoyskladItem[]
 
   @@index([userId]) // Для фильтрации по пользователю
   @@index([contactId]) // Для фильтрации по контакту
@@ -269,6 +270,28 @@ model Deal {
   @@index([createdAt]) // Для сортировки по дате создания
   @@index([userId, stage]) // Композитный индекс для частых запросов
   @@index([pipelineId, stage]) // Композитный индекс для фильтрации воронки
+}
+
+model DealMoyskladItem {
+  id             Int      @id @default(autoincrement())
+  deal           Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId         Int
+
+  // МойСклад
+  moyskladOrderId String
+  positionId      String
+  assortmentId    String?
+  name            String
+  quantity        Float    @default(0)
+  priceKopecks    Int      @default(0)
+  sumKopecks      Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealId, positionId])
+  @@index([dealId])
+  @@index([moyskladOrderId])
 }
 
 model WebForm {

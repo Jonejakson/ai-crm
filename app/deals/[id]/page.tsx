@@ -49,6 +49,17 @@ interface Deal {
     id: number
     name: string
   } | null
+  moyskladItems?: Array<{
+    id: number
+    moyskladOrderId: string
+    positionId: string
+    assortmentId: string | null
+    name: string
+    quantity: number
+    priceKopecks: number
+    sumKopecks: number
+    updatedAt: string
+  }>
 }
 
 interface Task {
@@ -705,6 +716,56 @@ export default function DealDetailPage() {
                 )}
               </div>
             </div>
+
+            {deal.externalId && (
+              <div className="card">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h2 className="text-lg font-semibold">МойСклад: позиции заказа</h2>
+                  <button onClick={handleSyncMoysklad} className="btn-secondary text-sm">
+                    Обновить
+                  </button>
+                </div>
+                {!deal.moyskladItems || deal.moyskladItems.length === 0 ? (
+                  <p className="text-sm text-[var(--muted)]">
+                    Позиции не загружены. Нажми «Обновить из МойСклад», чтобы подтянуть состав заказа.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-xs uppercase tracking-wide text-[var(--muted)]">
+                      <div>Номенклатура</div>
+                      <div className="text-right">Кол-во</div>
+                      <div className="text-right">Сумма</div>
+                    </div>
+                    {deal.moyskladItems.map((it) => (
+                      <div
+                        key={it.id}
+                        className="grid grid-cols-[1fr_auto_auto] gap-3 border-t border-[var(--border)] pt-2 text-sm"
+                      >
+                        <div className="min-w-0">
+                          <div className="truncate text-[var(--foreground)]">{it.name}</div>
+                          {it.assortmentId && (
+                            <div className="text-xs text-[var(--muted)] truncate">ID: {it.assortmentId}</div>
+                          )}
+                        </div>
+                        <div className="text-right tabular-nums">{Number(it.quantity).toLocaleString('ru-RU')}</div>
+                        <div className="text-right tabular-nums">
+                          {Math.round((it.sumKopecks || 0) / 100).toLocaleString('ru-RU')} {deal.currency}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="border-t border-[var(--border)] pt-2 flex items-center justify-between text-sm">
+                      <span className="text-[var(--muted)]">Итого</span>
+                      <span className="font-semibold tabular-nums">
+                        {Math.round(
+                          (deal.moyskladItems.reduce((acc, it) => acc + (it.sumKopecks || 0), 0) || 0) / 100
+                        ).toLocaleString('ru-RU')}{' '}
+                        {deal.currency}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="card">
               <h2 className="text-lg font-semibold mb-4">Информация о сделке</h2>

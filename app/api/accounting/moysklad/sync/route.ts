@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
   const url = new URL(request.url)
   const limitParam = parseInt(url.searchParams.get('limit') || '20', 10)
   const perIntegrationLimit = Math.min(Math.max(limitParam, 1), 50) // 1..50
+  const dealIdParam = url.searchParams.get('dealId')
+  const singleDealId = dealIdParam ? Number(dealIdParam) : null
 
   try {
     const integrations = await prisma.accountingIntegration.findMany({
@@ -50,9 +52,17 @@ export async function POST(request: NextRequest) {
 
       // Используем raw SQL для получения сделок с externalId (если поле существует)
       const deals = await prisma.$queryRawUnsafe<Array<{ id: number; externalId: string | null; amount: number }>>(
-        `SELECT id, "externalId", amount FROM "Deal" WHERE "externalId" IS NOT NULL AND "userId" IN (SELECT id FROM "User" WHERE "companyId" = $1) ORDER BY "updatedAt" DESC LIMIT $2`,
-        integ.companyId,
-        perIntegrationLimit
+        singleDealId
+          ? `SELECT id, "externalId", amount FROM "Deal"
+             WHERE id = $1 AND "externalId" IS NOT NULL
+             AND "userId" IN (SELECT id FROM "User" WHERE "companyId" = $2)
+             LIMIT 1`
+          : `SELECT id, "externalId", amount FROM "Deal"
+             WHERE "externalId" IS NOT NULL
+             AND "userId" IN (SELECT id FROM "User" WHERE "companyId" = $1)
+             ORDER BY "updatedAt" DESC
+             LIMIT $2`,
+        ...(singleDealId ? [singleDealId, integ.companyId] : [integ.companyId, perIntegrationLimit])
       )
 
       let updated = 0
@@ -91,6 +101,73 @@ export async function POST(request: NextRequest) {
             })
           }
           updated++
+
+          // Позиции заказа → сохраняем в DealMoyskladItem
+          try {
+            const positionsResp = await fetch(
+              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000`,
+              {
+                headers: {
+                  Authorization: `Basic ${authString}`,
+                  'Content-Type': 'application/json',
+                },
+                cache: 'no-store',
+              }
+            )
+            if (!positionsResp.ok) {
+              continue
+            }
+            const positions = await positionsResp.json()
+            const rows: any[] = Array.isArray(positions?.rows) ? positions.rows : []
+            const positionIds: string[] = []
+
+            for (const row of rows) {
+              const positionId = String(row.id)
+              positionIds.push(positionId)
+              const href: string | undefined = row.assortment?.meta?.href
+              const assortmentId =
+                row.assortment?.id ? String(row.assortment.id) : (href ? href.split('/').filter(Boolean).pop() : null)
+              const name =
+                row.assortment?.name ||
+                row.name ||
+                (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
+              const quantity = typeof row.quantity === 'number' ? row.quantity : Number(row.quantity || 0)
+              const priceKopecks = typeof row.price === 'number' ? row.price : Number(row.price || 0)
+              const sumKopecks = typeof row.sum === 'number' ? row.sum : Number(row.sum || 0)
+
+              await prisma.dealMoyskladItem.upsert({
+                where: { dealId_positionId: { dealId: d.id, positionId } },
+                update: {
+                  moyskladOrderId: String(d.externalId),
+                  assortmentId,
+                  name,
+                  quantity,
+                  priceKopecks,
+                  sumKopecks,
+                },
+                create: {
+                  dealId: d.id,
+                  moyskladOrderId: String(d.externalId),
+                  positionId,
+                  assortmentId,
+                  name,
+                  quantity,
+                  priceKopecks,
+                  sumKopecks,
+                },
+              })
+            }
+
+            await prisma.dealMoyskladItem.deleteMany({
+              where: {
+                dealId: d.id,
+                moyskladOrderId: String(d.externalId),
+                ...(positionIds.length ? { positionId: { notIn: positionIds } } : {}),
+              },
+            })
+          } catch {
+            // не ломаем sync, если таблицы еще нет или API не отдает позиции
+          }
         } catch (e) {
           errors++
           continue

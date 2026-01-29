@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import FilesManager from '@/components/FilesManager'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
+import toast from 'react-hot-toast'
 
 interface Contact {
   id: number
@@ -128,6 +129,27 @@ export default function ContactDetailPage() {
   const [reassignSubmitting, setReassignSubmitting] = useState(false)
 
   const isAdmin = session?.user?.role === 'admin'
+
+  const handleExportToMoysklad = async () => {
+    if (!contactId) return
+    try {
+      const response = await fetch('/api/accounting/moysklad/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactId: Number(contactId) }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        toast.success(data.message || 'Контакт выгружен в МойСклад')
+        await fetchContactData()
+      } else {
+        toast.error(data.error || 'Ошибка при выгрузке в МойСклад')
+      }
+    } catch (e) {
+      console.error('Error exporting contact to Moysklad:', e)
+      toast.error('Ошибка при выгрузке в МойСклад')
+    }
+  }
 
   useEffect(() => {
     if (contactId) {
@@ -474,6 +496,9 @@ export default function ContactDetailPage() {
               ✉️ Отправить письмо
             </button>
           )}
+          <button onClick={handleExportToMoysklad} className="btn-secondary">
+            Выгрузить в МойСклад
+          </button>
           <button
             onClick={() => setIsTaskModalOpen(true)}
             className="btn-primary"
