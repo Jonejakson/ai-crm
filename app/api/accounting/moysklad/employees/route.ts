@@ -2,32 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
 import { decrypt } from '@/lib/encryption'
-
-function normalizeMoyskladSecret(input: string): string {
-  let s = (input || '').trim()
-  if (!s) return s
-  s = s.replace(/^(Bearer|Token)\s+/i, '').trim()
-  if (s.startsWith('{') && s.endsWith('}')) {
-    try {
-      const obj: any = JSON.parse(s)
-      const candidate =
-        obj?.token ??
-        obj?.access_token ??
-        obj?.accessToken ??
-        obj?.apiKey ??
-        obj?.apikey ??
-        obj?.api_key ??
-        obj?.password
-      if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
-    } catch {
-      // ignore
-    }
-  }
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    s = s.slice(1, -1).trim()
-  }
-  return s
-}
+import { normalizeMoyskladSecret, makeMoyskladHeaders, type MoyskladAuthMode } from '@/lib/moysklad-auth'
 
 // Список сотрудников МойСклад (для маппинга владельца/ответственного)
 export async function GET() {
@@ -51,15 +26,14 @@ export async function GET() {
       return NextResponse.json({ error: 'МойСклад интеграция не настроена' }, { status: 404 })
     }
 
-    const apiSecret = normalizeMoyskladSecret(await decrypt(integration.apiSecret))
+    const apiSecret = normalizeMoyskladSecret(await decrypt(integration.apiSecret)).secret
     const apiToken = integration.apiToken
-    const authString = Buffer.from(`${apiToken}:${apiSecret}`).toString('base64')
     const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
+    const mode: MoyskladAuthMode = (integration.settings as any)?.moyskladAuthMode === 'bearer' ? 'bearer' : 'basic'
 
     const resp = await fetch(`${baseUrl}/entity/employee?limit=1000`, {
       headers: {
-        Authorization: `Basic ${authString}`,
-        'Content-Type': 'application/json',
+        ...makeMoyskladHeaders({ mode, login: apiToken, secret: apiSecret }),
       },
       cache: 'no-store',
     })

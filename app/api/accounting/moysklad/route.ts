@@ -3,44 +3,7 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { encrypt } from "@/lib/encryption"
 import { checkAccountingIntegrationsAccess } from "@/lib/subscription-limits"
-
-function normalizeMoyskladSecret(input: string): string {
-  let s = (input || '').trim()
-  if (!s) return s
-
-  // Часто пользователи вставляют "Bearer xxx" или "Token xxx"
-  s = s.replace(/^(Bearer|Token)\s+/i, '').trim()
-
-  // Иногда токен копируют как JSON (например {"token":"..."} или {"access_token":"..."})
-  if (s.startsWith('{') && s.endsWith('}')) {
-    try {
-      const obj: any = JSON.parse(s)
-      const candidate =
-        obj?.token ??
-        obj?.access_token ??
-        obj?.accessToken ??
-        obj?.apiKey ??
-        obj?.apikey ??
-        obj?.api_key ??
-        obj?.password
-      if (typeof candidate === 'string' && candidate.trim()) {
-        return candidate.trim()
-      }
-    } catch {
-      // ignore
-    }
-  }
-
-  // Если строка в кавычках — убираем
-  if (
-    (s.startsWith('"') && s.endsWith('"')) ||
-    (s.startsWith("'") && s.endsWith("'"))
-  ) {
-    s = s.slice(1, -1).trim()
-  }
-
-  return s
-}
+import { normalizeMoyskladSecret, makeMoyskladHeaders, type MoyskladAuthMode } from "@/lib/moysklad-auth"
 
 // Получить МойСклад интеграцию компании
 export async function GET() {
@@ -99,9 +62,7 @@ export async function POST(request: Request) {
     // - Password (API ключ)
     // Или можно использовать токен доступа
     
-    if (!body.login || !body.login.trim()) {
-      return NextResponse.json({ error: "Login обязателен" }, { status: 400 })
-    }
+    const login = String(body.login || '').trim()
 
     // Проверяем, существует ли уже интеграция
     const existing = await prisma.accountingIntegration.findFirst({
@@ -112,7 +73,8 @@ export async function POST(request: Request) {
     })
 
     // Если обновляем и пароль не указан, используем старый
-    let passwordToUse = normalizeMoyskladSecret(body.password || '')
+    const normalized = normalizeMoyskladSecret(body.password || '')
+    let passwordToUse = normalized.secret
     if (existing && (!passwordToUse || passwordToUse === '')) {
       passwordToUse = existing.apiSecret || ''
     }
@@ -123,13 +85,25 @@ export async function POST(request: Request) {
 
     // Проверяем подключение к МойСклад API
     try {
-      const authString = Buffer.from(`${body.login.trim()}:${passwordToUse}`).toString('base64')
-      const testResponse = await fetch('https://api.moysklad.ru/api/remap/1.2/entity/organization', {
-        headers: {
-          'Authorization': `Basic ${authString}`,
-          'Content-Type': 'application/json',
-        },
+      const testUrl = 'https://api.moysklad.ru/api/remap/1.2/entity/organization'
+
+      let mode: MoyskladAuthMode = 'basic'
+      let testResponse = await fetch(testUrl, {
+        headers: makeMoyskladHeaders({ mode, login, secret: passwordToUse }),
+        cache: 'no-store',
       })
+
+      // Если юзер вставил OAuth/Bearer-токен — пробуем Bearer
+      if (!testResponse.ok && normalized.hintedMode === 'bearer') {
+        const bearerResponse = await fetch(testUrl, {
+          headers: makeMoyskladHeaders({ mode: 'bearer', secret: passwordToUse }),
+          cache: 'no-store',
+        })
+        if (bearerResponse.ok) {
+          mode = 'bearer'
+          testResponse = bearerResponse
+        }
+      }
 
       if (!testResponse.ok) {
         const errorData = await testResponse.json().catch(() => ({}))
@@ -137,6 +111,12 @@ export async function POST(request: Request) {
           errorData?.errors?.[0]?.error ||
           `Неверные учетные данные МойСклад (HTTP ${testResponse.status})`
         return NextResponse.json({ error: msg }, { status: 400 })
+      }
+
+      // Запоминаем режим авторизации
+      body.settings = {
+        ...(body.settings || {}),
+        moyskladAuthMode: mode,
       }
     } catch (testError) {
       return NextResponse.json({ error: "Не удалось подключиться к МойСклад API" }, { status: 400 })
@@ -152,7 +132,7 @@ export async function POST(request: Request) {
       },
       update: {
         name: body.name?.trim() || null,
-        apiToken: body.login.trim(), // Сохраняем login как apiToken (не шифруем, это публичный email)
+        apiToken: login || null, // Сохраняем login как apiToken (не шифруем)
         apiSecret: encrypt(passwordToUse), // Шифруем пароль/API ключ (нормализованный)
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,
@@ -167,7 +147,7 @@ export async function POST(request: Request) {
       create: {
         platform: 'MOYSKLAD',
         name: body.name?.trim() || null,
-        apiToken: body.login.trim(),
+        apiToken: login || null,
         apiSecret: encrypt(passwordToUse),
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,

@@ -2,32 +2,7 @@ import { NextResponse, NextRequest } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { decrypt } from "@/lib/encryption"
-
-function normalizeMoyskladSecret(input: string): string {
-  let s = (input || '').trim()
-  if (!s) return s
-  s = s.replace(/^(Bearer|Token)\s+/i, '').trim()
-  if (s.startsWith('{') && s.endsWith('}')) {
-    try {
-      const obj: any = JSON.parse(s)
-      const candidate =
-        obj?.token ??
-        obj?.access_token ??
-        obj?.accessToken ??
-        obj?.apiKey ??
-        obj?.apikey ??
-        obj?.api_key ??
-        obj?.password
-      if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
-    } catch {
-      // ignore
-    }
-  }
-  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
-    s = s.slice(1, -1).trim()
-  }
-  return s
-}
+import { normalizeMoyskladSecret, makeMoyskladHeaders, type MoyskladAuthMode } from "@/lib/moysklad-auth"
 
 function extractIdFromHref(href?: string): string | null {
   if (!href) return null
@@ -78,10 +53,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "МойСклад интеграция не настроена" }, { status: 404 })
     }
 
-    const apiSecret = normalizeMoyskladSecret(await decrypt(integration.apiSecret))
+    const apiSecret = normalizeMoyskladSecret(await decrypt(integration.apiSecret)).secret
     const apiToken = integration.apiToken // Не шифруется, это публичный email
-    const authString = Buffer.from(`${apiToken}:${apiSecret}`).toString('base64')
     const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
+    const authMode: MoyskladAuthMode =
+      (integration.settings as any)?.moyskladAuthMode === 'bearer' ? 'bearer' : 'basic'
+    const authHeaders = makeMoyskladHeaders({ mode: authMode, login: apiToken, secret: apiSecret })
 
     const settings: any = integration.settings || {}
     const userIdToEmployeeId: Record<string, string> = settings.userIdToEmployeeId || {}
@@ -137,8 +114,7 @@ export async function POST(request: NextRequest) {
       const createResponse = await fetch(`${baseUrl}/entity/counterparty`, {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${authString}`,
-          'Content-Type': 'application/json',
+          ...authHeaders,
         },
         body: JSON.stringify(counterpartyData),
       })
@@ -176,8 +152,7 @@ export async function POST(request: NextRequest) {
         if (orderId) {
           const orderResp = await fetch(`${baseUrl}/entity/customerorder/${orderId}`, {
             headers: {
-              'Authorization': `Basic ${authString}`,
-              'Content-Type': 'application/json',
+              ...authHeaders,
             },
           })
           if (orderResp.ok) {
@@ -212,8 +187,7 @@ export async function POST(request: NextRequest) {
         const orderResponse = await fetch(orderUrl, {
           method: orderMethod,
           headers: {
-            'Authorization': `Basic ${authString}`,
-            'Content-Type': 'application/json',
+            ...authHeaders,
           },
           body: JSON.stringify(orderData),
         })
@@ -254,8 +228,7 @@ export async function POST(request: NextRequest) {
             `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000`,
             {
               headers: {
-                'Authorization': `Basic ${authString}`,
-                'Content-Type': 'application/json',
+                ...authHeaders,
               },
               cache: 'no-store',
             }
