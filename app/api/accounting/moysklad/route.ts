@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/get-session"
 import { encrypt } from "@/lib/encryption"
 import { checkAccountingIntegrationsAccess } from "@/lib/subscription-limits"
 import { normalizeMoyskladSecret, makeMoyskladHeaders, type MoyskladAuthMode } from "@/lib/moysklad-auth"
+import { decrypt } from "@/lib/encryption"
 
 // Получить МойСклад интеграцию компании
 export async function GET() {
@@ -72,14 +73,17 @@ export async function POST(request: Request) {
       },
     })
 
-    // Если обновляем и пароль не указан, используем старый
-    const normalized = normalizeMoyskladSecret(body.password || '')
-    let passwordToUse = normalized.secret
-    if (existing && (!passwordToUse || passwordToUse === '')) {
-      passwordToUse = existing.apiSecret || ''
-    }
+    const hasPasswordInput = typeof body.password === 'string' && body.password.trim() !== ''
+    const normalizedFromInput = normalizeMoyskladSecret(body.password || '')
+    const normalizedFromExisting = existing?.apiSecret
+      ? normalizeMoyskladSecret(await decrypt(existing.apiSecret))
+      : { secret: '', hintedMode: 'basic' as const }
 
-    if (!passwordToUse) {
+    // Если пароль не указан — используем существующий (в расшифрованном виде)
+    const normalized = hasPasswordInput ? normalizedFromInput : normalizedFromExisting
+    const secretToUse = normalized.secret
+
+    if (!secretToUse) {
       return NextResponse.json({ error: "Password/API ключ обязателен" }, { status: 400 })
     }
 
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
       let basicResp: Response | null = null
       if (login) {
         basicResp = await fetch(testUrl, {
-          headers: makeMoyskladHeaders({ mode, login, secret: passwordToUse }),
+          headers: makeMoyskladHeaders({ mode, login, secret: secretToUse }),
           cache: 'no-store',
         })
         testResponse = basicResp
@@ -109,7 +113,7 @@ export async function POST(request: Request) {
 
       // 2) Пробуем Bearer (для токена доступа JSON API)
       const bearerResp = await fetch(testUrl, {
-        headers: makeMoyskladHeaders({ mode: 'bearer', secret: passwordToUse }),
+        headers: makeMoyskladHeaders({ mode: 'bearer', secret: secretToUse }),
         cache: 'no-store',
       })
 
@@ -156,6 +160,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Не удалось подключиться к МойСклад API" }, { status: 400 })
     }
 
+    const commonData = {
+      name: body.name?.trim() || null,
+      apiToken: login || null, // Сохраняем login как apiToken (не шифруем)
+      isActive: body.isActive !== false,
+      syncContacts: body.syncContacts !== false,
+      syncDeals: body.syncDeals !== false,
+      syncProducts: body.syncProducts === true,
+      autoSync: body.autoSync === true,
+      syncInterval: body.syncInterval || 60,
+      contactMapping: body.contactMapping || null,
+      dealMapping: body.dealMapping || null,
+      settings: body.settings || null,
+    }
+
     // Upsert интеграцию
     const integration = await prisma.accountingIntegration.upsert({
       where: {
@@ -165,33 +183,13 @@ export async function POST(request: Request) {
         }
       },
       update: {
-        name: body.name?.trim() || null,
-        apiToken: login || null, // Сохраняем login как apiToken (не шифруем)
-        apiSecret: encrypt(passwordToUse), // Шифруем пароль/API ключ (нормализованный)
-        isActive: body.isActive !== false,
-        syncContacts: body.syncContacts !== false,
-        syncDeals: body.syncDeals !== false,
-        syncProducts: body.syncProducts === true,
-        autoSync: body.autoSync === true,
-        syncInterval: body.syncInterval || 60,
-        contactMapping: body.contactMapping || null,
-        dealMapping: body.dealMapping || null,
-        settings: body.settings || null,
+        ...commonData,
+        ...(hasPasswordInput ? { apiSecret: encrypt(secretToUse) } : {}),
       },
       create: {
         platform: 'MOYSKLAD',
-        name: body.name?.trim() || null,
-        apiToken: login || null,
-        apiSecret: encrypt(passwordToUse),
-        isActive: body.isActive !== false,
-        syncContacts: body.syncContacts !== false,
-        syncDeals: body.syncDeals !== false,
-        syncProducts: body.syncProducts === true,
-        autoSync: body.autoSync === true,
-        syncInterval: body.syncInterval || 60,
-        contactMapping: body.contactMapping || null,
-        dealMapping: body.dealMapping || null,
-        settings: body.settings || null,
+        ...commonData,
+        apiSecret: encrypt(secretToUse),
         companyId,
       },
     })
