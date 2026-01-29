@@ -87,34 +87,64 @@ export async function POST(request: Request) {
     try {
       const testUrl = 'https://api.moysklad.ru/api/remap/1.2/entity/organization'
 
+      const readMsError = async (resp: Response | null) => {
+        if (!resp) return { status: 0, error: 'no_response' as string }
+        const status = resp.status
+        const data = await resp.json().catch(() => ({} as any))
+        const error = data?.errors?.[0]?.error || data?.error || null
+        return { status, error: error ? String(error) : null }
+      }
+
       // 1) Пробуем Basic, если есть логин
       let mode: MoyskladAuthMode = 'basic'
       let testResponse: Response | null = null
+      let basicResp: Response | null = null
       if (login) {
-        testResponse = await fetch(testUrl, {
+        basicResp = await fetch(testUrl, {
           headers: makeMoyskladHeaders({ mode, login, secret: passwordToUse }),
           cache: 'no-store',
         })
+        testResponse = basicResp
       }
 
-      // 2) Если Basic не подошел (или логин не задан) — пробуем Bearer (для JSON API токенов тоже встречается)
-      if (!testResponse || !testResponse.ok) {
-        const bearerResponse = await fetch(testUrl, {
-          headers: makeMoyskladHeaders({ mode: 'bearer', secret: passwordToUse }),
-          cache: 'no-store',
-        })
-        if (bearerResponse.ok) {
-          mode = 'bearer'
-          testResponse = bearerResponse
-        }
+      // 2) Пробуем Bearer (для токена доступа JSON API)
+      const bearerResp = await fetch(testUrl, {
+        headers: makeMoyskladHeaders({ mode: 'bearer', secret: passwordToUse }),
+        cache: 'no-store',
+      })
+
+      // Выбираем работающий режим
+      if (basicResp?.ok) {
+        mode = 'basic'
+        testResponse = basicResp
+      } else if (bearerResp.ok) {
+        mode = 'bearer'
+        testResponse = bearerResp
+      } else {
+        const basicInfo = await readMsError(basicResp)
+        const bearerInfo = await readMsError(bearerResp)
+        return NextResponse.json(
+          {
+            error:
+              bearerInfo.error ||
+              basicInfo.error ||
+              `Неверные учетные данные МойСклад (basic HTTP ${basicInfo.status}, bearer HTTP ${bearerInfo.status})`,
+            details: {
+              tried: { basic: Boolean(login), bearer: true },
+              basic: { status: basicInfo.status, error: basicInfo.error },
+              bearer: { status: bearerInfo.status, error: bearerInfo.error },
+              hint:
+                'Если токен создан в разделе "Токены доступа к JSON API", обычно работает Bearer. Если используете API-ключ/пароль пользователя — Basic.',
+            },
+          },
+          { status: 400 }
+        )
       }
 
-      if (!testResponse || !testResponse.ok) {
-        const errorData = await (testResponse?.json().catch(() => ({})) ?? Promise.resolve({}))
-        const msg =
-          errorData?.errors?.[0]?.error ||
-          `Неверные учетные данные МойСклад (HTTP ${testResponse?.status || 0})`
-        return NextResponse.json({ error: msg }, { status: 400 })
+      // safety
+      if (!testResponse?.ok) {
+        const info = await readMsError(testResponse)
+        return NextResponse.json({ error: info.error || `Неверные учетные данные МойСклад (HTTP ${info.status})` }, { status: 400 })
       }
 
       // Запоминаем режим авторизации
