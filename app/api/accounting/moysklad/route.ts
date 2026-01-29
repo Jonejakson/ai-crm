@@ -4,6 +4,44 @@ import { getCurrentUser } from "@/lib/get-session"
 import { encrypt } from "@/lib/encryption"
 import { checkAccountingIntegrationsAccess } from "@/lib/subscription-limits"
 
+function normalizeMoyskladSecret(input: string): string {
+  let s = (input || '').trim()
+  if (!s) return s
+
+  // Часто пользователи вставляют "Bearer xxx" или "Token xxx"
+  s = s.replace(/^(Bearer|Token)\s+/i, '').trim()
+
+  // Иногда токен копируют как JSON (например {"token":"..."} или {"access_token":"..."})
+  if (s.startsWith('{') && s.endsWith('}')) {
+    try {
+      const obj: any = JSON.parse(s)
+      const candidate =
+        obj?.token ??
+        obj?.access_token ??
+        obj?.accessToken ??
+        obj?.apiKey ??
+        obj?.apikey ??
+        obj?.api_key ??
+        obj?.password
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim()
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // Если строка в кавычках — убираем
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim()
+  }
+
+  return s
+}
+
 // Получить МойСклад интеграцию компании
 export async function GET() {
   try {
@@ -74,7 +112,7 @@ export async function POST(request: Request) {
     })
 
     // Если обновляем и пароль не указан, используем старый
-    let passwordToUse = body.password?.trim()
+    let passwordToUse = normalizeMoyskladSecret(body.password || '')
     if (existing && (!passwordToUse || passwordToUse === '')) {
       passwordToUse = existing.apiSecret || ''
     }
@@ -94,7 +132,11 @@ export async function POST(request: Request) {
       })
 
       if (!testResponse.ok) {
-        return NextResponse.json({ error: "Неверные учетные данные МойСклад" }, { status: 400 })
+        const errorData = await testResponse.json().catch(() => ({}))
+        const msg =
+          errorData?.errors?.[0]?.error ||
+          `Неверные учетные данные МойСклад (HTTP ${testResponse.status})`
+        return NextResponse.json({ error: msg }, { status: 400 })
       }
     } catch (testError) {
       return NextResponse.json({ error: "Не удалось подключиться к МойСклад API" }, { status: 400 })
@@ -111,7 +153,7 @@ export async function POST(request: Request) {
       update: {
         name: body.name?.trim() || null,
         apiToken: body.login.trim(), // Сохраняем login как apiToken (не шифруем, это публичный email)
-        apiSecret: encrypt(passwordToUse), // Шифруем пароль/API ключ
+        apiSecret: encrypt(passwordToUse), // Шифруем пароль/API ключ (нормализованный)
         isActive: body.isActive !== false,
         syncContacts: body.syncContacts !== false,
         syncDeals: body.syncDeals !== false,

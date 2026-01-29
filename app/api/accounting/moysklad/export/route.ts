@@ -3,6 +3,32 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { decrypt } from "@/lib/encryption"
 
+function normalizeMoyskladSecret(input: string): string {
+  let s = (input || '').trim()
+  if (!s) return s
+  s = s.replace(/^(Bearer|Token)\s+/i, '').trim()
+  if (s.startsWith('{') && s.endsWith('}')) {
+    try {
+      const obj: any = JSON.parse(s)
+      const candidate =
+        obj?.token ??
+        obj?.access_token ??
+        obj?.accessToken ??
+        obj?.apiKey ??
+        obj?.apikey ??
+        obj?.api_key ??
+        obj?.password
+      if (typeof candidate === 'string' && candidate.trim()) return candidate.trim()
+    } catch {
+      // ignore
+    }
+  }
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim()
+  }
+  return s
+}
+
 function extractIdFromHref(href?: string): string | null {
   if (!href) return null
   const parts = href.split('/').filter(Boolean)
@@ -52,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "МойСклад интеграция не настроена" }, { status: 404 })
     }
 
-    const apiSecret = await decrypt(integration.apiSecret)
+    const apiSecret = normalizeMoyskladSecret(await decrypt(integration.apiSecret))
     const apiToken = integration.apiToken // Не шифруется, это публичный email
     const authString = Buffer.from(`${apiToken}:${apiSecret}`).toString('base64')
     const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
