@@ -87,14 +87,18 @@ export async function POST(request: Request) {
     try {
       const testUrl = 'https://api.moysklad.ru/api/remap/1.2/entity/organization'
 
+      // 1) Пробуем Basic, если есть логин
       let mode: MoyskladAuthMode = 'basic'
-      let testResponse = await fetch(testUrl, {
-        headers: makeMoyskladHeaders({ mode, login, secret: passwordToUse }),
-        cache: 'no-store',
-      })
+      let testResponse: Response | null = null
+      if (login) {
+        testResponse = await fetch(testUrl, {
+          headers: makeMoyskladHeaders({ mode, login, secret: passwordToUse }),
+          cache: 'no-store',
+        })
+      }
 
-      // Если юзер вставил OAuth/Bearer-токен — пробуем Bearer
-      if (!testResponse.ok && normalized.hintedMode === 'bearer') {
+      // 2) Если Basic не подошел (или логин не задан) — пробуем Bearer (для JSON API токенов тоже встречается)
+      if (!testResponse || !testResponse.ok) {
         const bearerResponse = await fetch(testUrl, {
           headers: makeMoyskladHeaders({ mode: 'bearer', secret: passwordToUse }),
           cache: 'no-store',
@@ -105,11 +109,11 @@ export async function POST(request: Request) {
         }
       }
 
-      if (!testResponse.ok) {
-        const errorData = await testResponse.json().catch(() => ({}))
+      if (!testResponse || !testResponse.ok) {
+        const errorData = await (testResponse?.json().catch(() => ({})) ?? Promise.resolve({}))
         const msg =
           errorData?.errors?.[0]?.error ||
-          `Неверные учетные данные МойСклад (HTTP ${testResponse.status})`
+          `Неверные учетные данные МойСклад (HTTP ${testResponse?.status || 0})`
         return NextResponse.json({ error: msg }, { status: 400 })
       }
 
