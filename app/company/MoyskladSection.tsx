@@ -16,12 +16,25 @@ interface MoyskladIntegration {
   autoSync: boolean
   syncInterval: number
   lastSyncAt: string | null
+  settings?: any
+}
+
+type CompanyUser = { id: number; name: string; email: string; role: string }
+type MoyskladEmployee = { id: string; name: string; email: string | null; archived: boolean }
+
+function getInitialUserIdToEmployeeId(integration: MoyskladIntegration | null): Record<string, string> {
+  const settings = (integration?.settings as any) || {}
+  const raw = settings.userIdToEmployeeId
+  return raw && typeof raw === 'object' ? raw : {}
 }
 
 export default function MoyskladSection() {
   const [integration, setIntegration] = useState<MoyskladIntegration | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [users, setUsers] = useState<CompanyUser[]>([])
+  const [employees, setEmployees] = useState<MoyskladEmployee[]>([])
+  const [mapping, setMapping] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState({
     name: '',
     login: '',
@@ -37,6 +50,14 @@ export default function MoyskladSection() {
   useEffect(() => {
     fetchIntegration()
   }, [])
+
+  useEffect(() => {
+    if (!integration) return
+    setMapping(getInitialUserIdToEmployeeId(integration))
+    fetchUsers()
+    fetchEmployees()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [integration?.id])
 
   const fetchIntegration = async () => {
     try {
@@ -66,6 +87,49 @@ export default function MoyskladSection() {
     }
   }
 
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/admin/users')
+      if (!response.ok) return
+      const data = await response.json()
+      const list = Array.isArray(data?.users) ? data.users : []
+      setUsers(
+        list.map((u: any) => ({
+          id: Number(u.id),
+          name: String(u.name || u.email || ''),
+          email: String(u.email || ''),
+          role: String(u.role || ''),
+        }))
+      )
+    } catch (e) {
+      console.error('Error fetching company users:', e)
+    }
+  }
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/accounting/moysklad/employees')
+      if (!response.ok) return
+      const data = await response.json()
+      const list = Array.isArray(data) ? data : []
+      setEmployees(
+        list
+          .map((e: any) => ({
+            id: String(e.id),
+            name: String(e.name || ''),
+            email: e.email ? String(e.email) : null,
+            archived: Boolean(e.archived),
+          }))
+          .sort((a: MoyskladEmployee, b: MoyskladEmployee) => {
+            if (a.archived !== b.archived) return a.archived ? 1 : -1
+            return a.name.localeCompare(b.name, 'ru')
+          })
+      )
+    } catch (e) {
+      console.error('Error fetching Moysklad employees:', e)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -74,7 +138,13 @@ export default function MoyskladSection() {
       const response = await fetch('/api/accounting/moysklad', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          settings: {
+            ...(integration?.settings || {}),
+            userIdToEmployeeId: mapping,
+          },
+        }),
       })
 
       if (response.ok) {
@@ -207,6 +277,57 @@ export default function MoyskladSection() {
             />
             <span className="text-sm">Синхронизировать товары (в разработке)</span>
           </label>
+        </div>
+
+        <div className="border-t pt-4 space-y-3">
+          <h4 className="text-sm font-semibold">Владелец/ответственный в МойСклад (по менеджерам)</h4>
+          <p className="text-sm text-[var(--muted)]">
+            CRM использует один доступ (админ), но при выгрузке проставляет владельца заказа/контрагента как сотрудника МойСклад.
+            Тогда менеджер видит только свои документы (если права в МойСклад ограничены по владельцу).
+          </p>
+
+          {users.length === 0 ? (
+            <p className="text-sm text-[var(--muted)]">Пользователи компании не загружены.</p>
+          ) : employees.length === 0 ? (
+            <p className="text-sm text-[var(--muted)]">
+              Сотрудники МойСклад не загружены (проверь учётные данные и доступ к API).
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {users
+                .filter((u) => u.role !== 'owner')
+                .map((u) => (
+                  <div key={u.id} className="grid grid-cols-1 md:grid-cols-2 gap-2 items-center">
+                    <div className="text-sm">
+                      <div className="font-medium">{u.name}</div>
+                      <div className="text-xs text-[var(--muted)]">{u.email}</div>
+                    </div>
+                    <select
+                      className="w-full"
+                      value={mapping[String(u.id)] || ''}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setMapping((prev) => {
+                          const next = { ...prev }
+                          if (!value) delete next[String(u.id)]
+                          else next[String(u.id)] = value
+                          return next
+                        })
+                      }}
+                    >
+                      <option value="">— Не назначать владельца —</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.archived ? '[архив] ' : ''}
+                          {emp.name}
+                          {emp.email ? ` (${emp.email})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
 
         {integration && integration.lastSyncAt && (

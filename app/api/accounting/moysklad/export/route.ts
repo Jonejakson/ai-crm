@@ -10,6 +10,16 @@ function extractIdFromHref(href?: string): string | null {
   return last || null
 }
 
+function employeeMeta(baseUrl: string, employeeId: string) {
+  return {
+    meta: {
+      href: `${baseUrl}/entity/employee/${employeeId}`,
+      type: 'employee',
+      mediaType: 'application/json',
+    },
+  }
+}
+
 // Выгрузить контакт в МойСклад
 export async function POST(request: NextRequest) {
   try {
@@ -46,6 +56,10 @@ export async function POST(request: NextRequest) {
     const apiToken = integration.apiToken // Не шифруется, это публичный email
     const authString = Buffer.from(`${apiToken}:${apiSecret}`).toString('base64')
     const baseUrl = 'https://api.moysklad.ru/api/remap/1.2'
+
+    const settings: any = integration.settings || {}
+    const userIdToEmployeeId: Record<string, string> = settings.userIdToEmployeeId || {}
+    const employeeId = userIdToEmployeeId[String(user.id)] || null
 
     let contact = null
     let deal = null
@@ -89,6 +103,9 @@ export async function POST(request: NextRequest) {
         phone: contact.phone || undefined,
         legalTitle: contact.company || undefined,
         inn: contact.inn || undefined,
+      }
+      if (employeeId) {
+        counterpartyData.owner = employeeMeta(baseUrl, employeeId)
       }
 
       const createResponse = await fetch(`${baseUrl}/entity/counterparty`, {
@@ -154,6 +171,9 @@ export async function POST(request: NextRequest) {
               mediaType: 'application/json',
             },
           },
+        }
+        if (employeeId) {
+          orderData.owner = employeeMeta(baseUrl, employeeId)
         }
 
         // Если есть существующий заказ и режим sync — обновляем
