@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       if (mode === 'sync' && orderId) {
         try {
           const positionsResp = await fetch(
-            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment`,
+            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment,assortment.product`,
             {
               headers: {
                 ...authHeaders,
@@ -249,6 +249,7 @@ export async function POST(request: NextRequest) {
 
               const name =
                 row.assortment?.name ||
+                (row.assortment as any)?.product?.name ||
                 row.name ||
                 (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
 
@@ -302,19 +303,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Сохраняем лог
-    await prisma.accountingLog.create({
-      data: {
-        accountingId: integration.id,
-        action: deal ? 'create_order' : 'create_contact',
-        entityType: deal ? 'deal' : 'contact',
-        entityId: deal ? deal.id : contact.id,
-        externalId: deal ? orderId : counterpartyId,
-        payload: { contact, deal },
-        response: { success: true, counterpartyId, orderId },
-        status: 'success',
-      },
-    })
+    // Сохраняем лог (не падаем, если таблица ещё не создана)
+    try {
+      await prisma.accountingLog.create({
+        data: {
+          accountingId: integration.id,
+          action: deal ? 'create_order' : 'create_contact',
+          entityType: deal ? 'deal' : 'contact',
+          entityId: deal ? deal.id : contact.id,
+          externalId: deal ? orderId : counterpartyId,
+          payload: { contact, deal },
+          response: { success: true, counterpartyId, orderId },
+          status: 'success',
+        },
+      })
+    } catch (logErr) {
+      console.warn('[moysklad][export][log]', logErr)
+    }
 
     return NextResponse.json({
       success: true,
@@ -342,16 +347,20 @@ export async function POST(request: NextRequest) {
           where: { companyId, platform: 'MOYSKLAD' },
         })
         if (integration) {
-          await prisma.accountingLog.create({
-            data: {
-              accountingId: integration.id,
-              action: 'export',
-              payload: {},
-              response: { error: message },
-              status: 'error',
-              errorMessage: message,
-            },
-          })
+          try {
+            await prisma.accountingLog.create({
+              data: {
+                accountingId: integration.id,
+                action: 'export',
+                payload: {},
+                response: { error: message },
+                status: 'error',
+                errorMessage: message,
+              },
+            })
+          } catch {
+            // ignore if AccountingLog table missing
+          }
         }
       }
     } catch (logError) {

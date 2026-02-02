@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     // 6. Позиции заказа → DealMoyskladItem
     try {
       const posResp = await fetch(
-        `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment`,
+        `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment,assortment.product`,
         {
           headers: authHeaders,
           cache: 'no-store',
@@ -182,6 +182,7 @@ export async function POST(request: NextRequest) {
               : null
           const name =
             row.assortment?.name ||
+            (row.assortment as any)?.product?.name ||
             row.name ||
             (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
           const quantity = typeof row.quantity === 'number' ? row.quantity : Number(row.quantity || 0)

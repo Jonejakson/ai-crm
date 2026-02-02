@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           // Позиции заказа → сохраняем в DealMoyskladItem
           try {
             const positionsResp = await fetch(
-              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000&expand=assortment`,
+              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000&expand=assortment,assortment.product`,
               {
                 headers: {
                   Authorization: `Basic ${authString}`,
@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
                 row.assortment?.id ? String(row.assortment.id) : (href ? href.split('/').filter(Boolean).pop() : null)
               const name =
                 row.assortment?.name ||
+                (row.assortment as any)?.product?.name ||
                 row.name ||
                 (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
               const quantity = typeof row.quantity === 'number' ? row.quantity : Number(row.quantity || 0)
