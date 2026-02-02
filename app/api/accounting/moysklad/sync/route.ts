@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
           // Позиции заказа → сохраняем в DealMoyskladItem
           try {
             const positionsResp = await fetch(
-              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000`,
+              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000&expand=assortment`,
               {
                 headers: {
                   Authorization: `Basic ${authString}`,

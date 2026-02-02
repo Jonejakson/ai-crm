@@ -713,8 +713,8 @@ export default function DealDetailPage() {
                         className="grid grid-cols-[1fr_auto_auto] gap-3 border-t border-[var(--border)] pt-2 text-sm"
                       >
                         <div className="min-w-0">
-                          <div className="truncate text-[var(--foreground)]">{it.name}</div>
-                          {it.assortmentId && (
+                          <div className="text-[var(--foreground)] break-words">{it.name}</div>
+                          {it.assortmentId && it.name?.startsWith('Номенклатура ') && (
                             <div className="text-xs text-[var(--muted)] truncate">ID: {it.assortmentId}</div>
                           )}
                         </div>

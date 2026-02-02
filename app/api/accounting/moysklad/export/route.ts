@@ -225,7 +225,7 @@ export async function POST(request: NextRequest) {
       if (mode === 'sync' && orderId) {
         try {
           const positionsResp = await fetch(
-            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000`,
+            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment`,
             {
               headers: {
                 ...authHeaders,

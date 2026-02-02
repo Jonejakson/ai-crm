@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     // 6. Позиции заказа → DealMoyskladItem
     try {
       const posResp = await fetch(
-        `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000`,
+        `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment`,
         {
           headers: authHeaders,
           cache: 'no-store',
