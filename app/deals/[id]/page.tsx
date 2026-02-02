@@ -413,28 +413,6 @@ export default function DealDetailPage() {
     }
   }
 
-  const handleExportTo1C = async () => {
-    if (!deal) return
-    try {
-      const response = await fetch('/api/accounting/one-c/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dealId: deal.id }),
-      })
-      if (response.ok) {
-        const data = await response.json()
-        toast.success(data.message || 'Выгружено в 1С')
-        fetchDealData()
-      } else {
-        const error = await response.json()
-        toast.error(error.error || 'Ошибка при выгрузке в 1С')
-      }
-    } catch (error) {
-      console.error('Error exporting to 1C:', error)
-      toast.error('Ошибка при выгрузке в 1С')
-    }
-  }
-
   const fetchEmailTemplates = async () => {
     try {
       const response = await fetch('/api/email-templates')
@@ -626,13 +604,6 @@ export default function DealDetailPage() {
                 title={deal.externalId ? 'Уже выгружено в МойСклад' : 'Выгрузить контакт и заказ в МойСклад'}
               >
                 {deal.externalId ? '✓ Выгружено в МойСклад' : 'Выгрузить в МойСклад'}
-              </button>
-              <button
-                onClick={handleExportTo1C}
-                className="btn-secondary text-sm"
-                title="Выгрузить контакт и заказ в 1С"
-              >
-                Выгрузить в 1С
               </button>
               <button
                 onClick={handleSyncMoysklad}

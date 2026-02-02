@@ -11,7 +11,6 @@ import TelegramBotSection from './TelegramBotSection'
 import WhatsAppSection from './WhatsAppSection'
 import AdvertisingIntegrationsSection from './AdvertisingIntegrationsSection'
 import MoyskladSection from './MoyskladSection'
-import OneCSection from './OneCSection'
 import MigrationSection from './MigrationSection'
 import PaymentPeriodModal from '@/components/PaymentPeriodModal'
 
@@ -1348,7 +1347,6 @@ export default function CompanyPage() {
       <WhatsAppSection />
       <AdvertisingIntegrationsSection />
       <MoyskladSection />
-      <OneCSection />
       <MigrationSection />
 
       {/* Модальное окно выбора периода оплаты */}
