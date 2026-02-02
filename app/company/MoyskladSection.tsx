@@ -32,6 +32,8 @@ export default function MoyskladSection() {
   const [integration, setIntegration] = useState<MoyskladIntegration | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [importOrderId, setImportOrderId] = useState('')
+  const [importing, setImporting] = useState(false)
   const [users, setUsers] = useState<CompanyUser[]>([])
   const [employees, setEmployees] = useState<MoyskladEmployee[]>([])
   const [mapping, setMapping] = useState<Record<string, string>>({})
@@ -130,6 +132,37 @@ export default function MoyskladSection() {
     }
   }
 
+  const handleImportFromMoysklad = async () => {
+    const orderId = importOrderId.trim()
+    if (!orderId) {
+      toast.error('Введите ID заказа из МойСклад')
+      return
+    }
+    setImporting(true)
+    try {
+      const response = await fetch('/api/accounting/moysklad/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      const data = await response.json()
+      if (response.ok) {
+        toast.success(data.message || 'Контакт и сделка созданы')
+        setImportOrderId('')
+        if (data.dealId) {
+          window.location.href = `/deals/${data.dealId}`
+        }
+      } else {
+        toast.error(data.error || 'Ошибка импорта')
+      }
+    } catch (e) {
+      console.error('Import from Moysklad', e)
+      toast.error('Ошибка импорта')
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -181,7 +214,7 @@ export default function MoyskladSection() {
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">МойСклад</h3>
         <p className="text-sm text-[var(--muted)]">
-          Выгружайте контакты и заказы из CRM в МойСклад. После настройки используйте кнопку "Выгрузить в МойСклад" на странице сделки.
+          Двусторонняя синхронизация: импортируйте заказы из МойСклад в CRM (контакт + сделка) или выгружайте сделки из CRM в МойСклад.
         </p>
       </div>
 
@@ -348,16 +381,43 @@ export default function MoyskladSection() {
       </form>
 
       {integration && (
-        <div className="mt-6 p-4 bg-[var(--background-soft)] rounded-lg">
-          <h4 className="text-sm font-semibold mb-2">Как использовать:</h4>
-          <ol className="text-sm text-[var(--muted)] space-y-1 list-decimal list-inside">
-            <li>Настройте интеграцию выше</li>
-            <li>Откройте любую сделку в CRM</li>
-            <li>Нажмите кнопку "Выгрузить в МойСклад"</li>
-            <li>В МойСклад будет создан контрагент (если его еще нет) и заказ</li>
-            <li>В МойСклад добавьте позиции к заказу вручную</li>
-          </ol>
-        </div>
+        <>
+          <div className="mt-6 p-4 bg-[var(--background-soft)] rounded-lg border-t">
+            <h4 className="text-sm font-semibold mb-2">Импорт из МойСклад</h4>
+            <p className="text-sm text-[var(--muted)] mb-3">
+              Есть заказ и клиент в МойСклад? Введите ID заказа — в CRM создадутся контакт и сделка.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <input
+                type="text"
+                value={importOrderId}
+                onChange={(e) => setImportOrderId(e.target.value)}
+                placeholder="ID заказа (например: 7944e4fd-3a81-11ea-8a5b-...)"
+                className="flex-1 min-w-[200px] rounded-lg border border-[var(--border)] px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={handleImportFromMoysklad}
+                disabled={importing}
+                className="btn-primary text-sm disabled:opacity-50"
+              >
+                {importing ? 'Импорт...' : 'Импортировать'}
+              </button>
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-2">
+              ID заказа можно скопировать из URL в МойСклад: app.moysklad.ru/app/#customerorder/edit?id=...
+            </p>
+          </div>
+          <div className="mt-4 p-4 bg-[var(--background-soft)] rounded-lg">
+            <h4 className="text-sm font-semibold mb-2">Как использовать:</h4>
+            <ol className="text-sm text-[var(--muted)] space-y-1 list-decimal list-inside">
+              <li>Настройте интеграцию выше</li>
+              <li>Импорт: введите ID заказа из МойСклад — создастся контакт и сделка</li>
+              <li>Выгрузка: откройте сделку в CRM и нажмите «Выгрузить в МойСклад»</li>
+              <li>В МойСклад добавьте позиции к заказу вручную при необходимости</li>
+            </ol>
+          </div>
+        </>
       )}
     </div>
   )
