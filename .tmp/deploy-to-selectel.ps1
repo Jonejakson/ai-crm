@@ -14,7 +14,7 @@ Set-Location $projectRoot
 Write-Host "=== 1. Коммит и push ===" -ForegroundColor Cyan
 git add -A
 git status
-git commit -m "fix(moysklad): extract prices/sums from positions, salePrices fallback, debug endpoint"
+git commit -m "fix(deals): МойСклад позиции - только номенклатура, кол-во, цена; убрать сумму и итого; выровнять"
 git push origin main
 
 Write-Host "`n=== 2. Деплой на сервер ===" -ForegroundColor Cyan
