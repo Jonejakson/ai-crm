@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { decrypt } from '@/lib/encryption'
 import { getCurrentUser } from '@/lib/get-session'
+import { extractPositionPriceAndSum } from '@/lib/moysklad-utils'
 
 // Простая ручка для фонового/cron синка заказов из МойСклад
 // Защита: либо админ, либо заголовок X-Cron-Secret == CRON_SECRET
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
           // Позиции заказа → сохраняем в DealMoyskladItem
           try {
             const positionsResp = await fetch(
-              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000&expand=assortment,assortment.product`,
+              `${baseUrl}/entity/customerorder/${d.externalId}/positions?limit=1000&expand=assortment,assortment.product,assortment.salePrices,assortment.product.salePrices`,
               {
                 headers: {
                   Authorization: `Basic ${authString}`,
@@ -133,8 +134,7 @@ export async function POST(request: NextRequest) {
                 row.name ||
                 (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
               const quantity = typeof row.quantity === 'number' ? row.quantity : Number(row.quantity || 0)
-              const priceKopecks = typeof row.price === 'number' ? row.price : Number(row.price || 0)
-              const sumKopecks = typeof row.sum === 'number' ? row.sum : Number(row.sum || 0)
+              const { priceKopecks, sumKopecks } = extractPositionPriceAndSum(row as Record<string, unknown>)
 
               await prisma.dealMoyskladItem.upsert({
                 where: { dealId_positionId: { dealId: d.id, positionId } },

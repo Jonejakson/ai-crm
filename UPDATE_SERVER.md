@@ -1,5 +1,7 @@
 # Инструкция по обновлению деплоя на сервере Selectel
 
+**Путь на сервере:** `/opt/flamecrm` (если проект в `/opt/ai-crm/my-app` — подставьте его)
+
 ## Быстрое обновление
 
 ### 1. Подключитесь к серверу
@@ -11,7 +13,7 @@ ssh root@79.143.30.96
 ### 2. Перейдите в директорию проекта
 
 ```bash
-cd /opt/ai-crm/my-app
+cd /opt/flamecrm
 ```
 
 ### 3. Запустите скрипт обновления
@@ -25,7 +27,7 @@ chmod +x scripts/update-deploy.sh
 
 ```bash
 # 1. Обновите код
-cd /opt/ai-crm/my-app
+cd /opt/flamecrm
 git pull origin main
 
 # 2. Пересоберите и перезапустите контейнеры

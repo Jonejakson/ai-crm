@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/get-session"
 import { decrypt } from "@/lib/encryption"
 import { normalizeMoyskladSecret, makeMoyskladHeaders, type MoyskladAuthMode } from "@/lib/moysklad-auth"
+import { extractPositionPriceAndSum } from "@/lib/moysklad-utils"
 
 function extractIdFromHref(href?: string): string | null {
   if (!href) return null
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
       if (mode === 'sync' && orderId) {
         try {
           const positionsResp = await fetch(
-            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment,assortment.product`,
+            `${baseUrl}/entity/customerorder/${orderId}/positions?limit=1000&expand=assortment,assortment.product,assortment.salePrices,assortment.product.salePrices`,
             {
               headers: {
                 ...authHeaders,
@@ -254,8 +255,7 @@ export async function POST(request: NextRequest) {
                 (assortmentId ? `Номенклатура ${assortmentId}` : 'Позиция')
 
               const quantity = typeof row.quantity === 'number' ? row.quantity : Number(row.quantity || 0)
-              const priceKopecks = typeof row.price === 'number' ? row.price : Number(row.price || 0)
-              const sumKopecks = typeof row.sum === 'number' ? row.sum : Number(row.sum || 0)
+              const { priceKopecks, sumKopecks } = extractPositionPriceAndSum(row as Record<string, unknown>)
 
               await prisma.dealMoyskladItem.upsert({
                 where: {

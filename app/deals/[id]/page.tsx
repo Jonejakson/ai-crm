@@ -702,15 +702,16 @@ export default function DealDetailPage() {
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-3 text-xs uppercase tracking-wide text-[var(--muted)]">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 text-xs uppercase tracking-wide text-[var(--muted)]">
                       <div>Номенклатура</div>
                       <div className="text-right">Кол-во</div>
+                      <div className="text-right">Цена</div>
                       <div className="text-right">Сумма</div>
                     </div>
                     {deal.moyskladItems.map((it) => (
                       <div
                         key={it.id}
-                        className="grid grid-cols-[1fr_auto_auto] gap-3 border-t border-[var(--border)] pt-2 text-sm"
+                        className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-t border-[var(--border)] pt-2 text-sm"
                       >
                         <div className="min-w-0">
                           <div className="text-[var(--foreground)] break-words">{it.name}</div>
@@ -719,6 +720,9 @@ export default function DealDetailPage() {
                           )}
                         </div>
                         <div className="text-right tabular-nums">{Number(it.quantity).toLocaleString('ru-RU')}</div>
+                        <div className="text-right tabular-nums">
+                          {Math.round((it.priceKopecks || 0) / 100).toLocaleString('ru-RU')} {deal.currency}
+                        </div>
                         <div className="text-right tabular-nums">
                           {Math.round((it.sumKopecks || 0) / 100).toLocaleString('ru-RU')} {deal.currency}
                         </div>

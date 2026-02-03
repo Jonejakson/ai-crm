@@ -14,10 +14,13 @@ Set-Location $projectRoot
 Write-Host "=== 1. Коммит и push ===" -ForegroundColor Cyan
 git add -A
 git status
-git commit -m "Бета-пометки интеграций, вебформы, лимиты, middleware"
+git commit -m "fix(moysklad): extract prices/sums from positions, salePrices fallback, debug endpoint"
 git push origin main
 
 Write-Host "`n=== 2. Деплой на сервер ===" -ForegroundColor Cyan
-& $sshExe -i $key $server "cd $serverPath && git pull origin main && docker-compose restart app && docker-compose ps"
+# Важно: restart не пересобирает образ! Код вшит в образ при build.
+# Нужны: pull → build --no-cache → down → up -d
+$deployCmd = 'cd ' + $serverPath + ' && git pull origin main && docker-compose down && docker-compose build --no-cache app && docker-compose up -d && sleep 15 && (docker-compose exec -T app npx -y prisma@6.19.0 migrate deploy 2>/dev/null || true) && docker-compose ps'
+& $sshExe -i $key $server $deployCmd
 
 Write-Host "`n=== Готово ===" -ForegroundColor Green
