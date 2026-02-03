@@ -522,7 +522,7 @@ export default function DealDetailPage() {
     <div className="min-h-screen bg-[var(--background)]">
       {/* Шапка */}
       <div className="bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-10">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+        <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="space-y-3">
             {/* Название сделки на всю ширину */}
             <div>
@@ -578,11 +578,11 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      {/* Основной контент - двухколоночный layout */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Основной контент - двухколоночный layout, выровнен по ширине заголовка */}
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
           {/* Левая колонка - Информация о клиенте */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 min-w-0 space-y-6">
             <div className="card">
               <h2 className="text-lg font-semibold mb-4">Клиент</h2>
               <div className="space-y-4">
@@ -724,7 +724,7 @@ export default function DealDetailPage() {
           </div>
 
           {/* Правая колонка - Задачи, файлы, комментарии */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 min-w-0 space-y-6">
             {/* Задачи */}
             <div className="card">
               <h2 className="text-lg font-semibold mb-4">Задачи</h2>
