@@ -366,53 +366,6 @@ export default function DealDetailPage() {
     }
   }
 
-  const handleDownloadInvoice = async () => {
-    if (!deal) return
-    try {
-      const res = await fetch(`/api/deals/${deal.id}/invoice`, {
-        method: 'GET',
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Не удалось сформировать PDF')
-        return
-      }
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `invoice-${deal.id}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
-      toast.success('PDF счет сформирован')
-    } catch (e) {
-      console.error(e)
-      toast.error('Ошибка при формировании счета')
-    }
-  }
-
-  const handleSendInvoice = async () => {
-    if (!deal) return
-    const email = deal.contact?.email
-    if (!email) {
-      toast.error('У контакта нет email')
-      return
-    }
-    try {
-      const res = await fetch(`/api/deals/${deal.id}/invoice?sendEmail=1&email=${encodeURIComponent(email)}`)
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        toast.error(err.error || 'Не удалось отправить счет')
-        return
-      }
-      const data = await res.json()
-      toast.success(data.message || 'Счет отправлен')
-    } catch (e) {
-      console.error(e)
-      toast.error('Ошибка при отправке счета')
-    }
-  }
-
   const fetchEmailTemplates = async () => {
     try {
       const response = await fetch('/api/email-templates')
@@ -592,46 +545,34 @@ export default function DealDetailPage() {
               </button>
             </div>
             
-            {/* Кнопки на десктопе: все в одну строку */}
-            <div className="hidden md:flex items-center gap-3">
+            {/* Кнопки на десктопе: слева Назад, справа остальные */}
+            <div className="hidden md:flex items-center justify-between gap-3">
               <Link href="/deals" className="text-[var(--muted)] hover:text-[var(--foreground)] text-sm">
                 ← Назад к сделкам
               </Link>
-              <button
-                onClick={handleExportToMoysklad}
-                disabled={!!deal.externalId}
-                className="btn-secondary text-sm"
-                title={deal.externalId ? 'Уже выгружено в МойСклад' : 'Выгрузить контакт и заказ в МойСклад'}
-              >
-                {deal.externalId ? '✓ Выгружено в МойСклад' : 'Выгрузить в МойСклад'}
-              </button>
-              <button
-                onClick={handleSyncMoysklad}
-                className="btn-secondary text-sm"
-                title="Обновить/синхронизировать заказ из МойСклад"
-              >
-                Обновить из МойСклад
-              </button>
-              <button
-                onClick={() => setIsEditModalOpen(true)}
-                className="btn-primary text-sm"
-              >
-                Редактировать
-              </button>
-              <button
-                onClick={handleDownloadInvoice}
-                className="btn-secondary text-sm"
-                title="Скачать счет (PDF)"
-              >
-                Счет (PDF)
-              </button>
-              <button
-                onClick={handleSendInvoice}
-                className="btn-secondary text-sm"
-                title="Отправить счет на email контакта"
-              >
-                Отправить счет
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleExportToMoysklad}
+                  disabled={!!deal.externalId}
+                  className="btn-secondary text-sm"
+                  title={deal.externalId ? 'Уже выгружено в МойСклад' : 'Выгрузить контакт и заказ в МойСклад'}
+                >
+                  {deal.externalId ? '✓ Выгружено в МойСклад' : 'Выгрузить в МойСклад'}
+                </button>
+                <button
+                  onClick={handleSyncMoysklad}
+                  className="btn-secondary text-sm"
+                  title="Обновить/синхронизировать заказ из МойСклад"
+                >
+                  Обновить из МойСклад
+                </button>
+                <button
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="btn-primary text-sm"
+                >
+                  Редактировать
+                </button>
+              </div>
             </div>
           </div>
         </div>
