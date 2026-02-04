@@ -17,14 +17,17 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'all'; // contacts, tasks, deals, events
 
-    const whereCondition = await getDirectWhereCondition();
+    const [whereContact, whereDeal] = await Promise.all([
+      getDirectWhereCondition('contact'),
+      getDirectWhereCondition('deal'),
+    ]);
 
     const filters: any = {};
 
     // Фильтры для контактов
     if (type === 'all' || type === 'contacts') {
       const contacts = await prisma.contact.findMany({
-        where: whereCondition,
+        where: whereContact,
         select: {
           company: true,
         },
@@ -39,7 +42,7 @@ export async function GET(req: Request) {
     // Фильтры для задач
     if (type === 'all' || type === 'tasks') {
       const tasks = await prisma.task.findMany({
-        where: whereCondition,
+        where: whereContact,
         select: {
           status: true,
         },
@@ -84,7 +87,7 @@ export async function GET(req: Request) {
     // Фильтры для событий
     if (type === 'all' || type === 'events') {
       const events = await prisma.event.findMany({
-        where: whereCondition,
+        where: whereContact,
         select: {
           type: true,
         },

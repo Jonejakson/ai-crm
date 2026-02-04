@@ -2,23 +2,30 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
-import { createPortal } from 'react-dom'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import WebFormsSection from './WebFormsSection'
-import WebhookIntegrationsSection from './WebhookIntegrationsSection'
-import TelegramBotSection from './TelegramBotSection'
-import WhatsAppSection from './WhatsAppSection'
-import AdvertisingIntegrationsSection from './AdvertisingIntegrationsSection'
-import MoyskladSection from './MoyskladSection'
-import MigrationSection from './MigrationSection'
 import PaymentPeriodModal from '@/components/PaymentPeriodModal'
+
+type EntityType = 'contacts' | 'deals' | 'tasks' | 'events'
+type PermissionAction = 'create' | 'edit' | 'delete'
+
+interface EntityPermissions {
+  create: boolean
+  edit: boolean
+  delete: boolean
+}
+
+type RolePermissions = Record<EntityType, EntityPermissions>
+type RolePermissionsMap = Record<string, RolePermissions>
 
 interface User {
   id: number
   email: string
   name: string
   role: string
+  permissions?: RolePermissions | null
+  visibilityScope?: string | null
+  assignedPipelineIds?: number[] | null
   createdAt: string
   stats: {
     contacts: number
@@ -79,7 +86,7 @@ export default function CompanyPage() {
     email: '',
     password: '',
     name: '',
-    role: 'manager' as 'user' | 'manager' | 'admin'
+    role: 'manager' as 'user' | 'manager' | 'department_head' | 'admin'
   })
 
   // Модальные окна
@@ -94,7 +101,7 @@ export default function CompanyPage() {
   const [editFormData, setEditFormData] = useState({
     name: '',
     email: '',
-    role: 'manager' as 'user' | 'manager' | 'admin'
+    role: 'manager' as 'user' | 'manager' | 'department_head' | 'admin'
   })
 
   // Форма смены пароля
@@ -102,6 +109,17 @@ export default function CompanyPage() {
     password: '',
     confirmPassword: ''
   })
+
+  // Права и роли
+  const [rolePermissions, setRolePermissions] = useState<RolePermissionsMap | null>(null)
+  const [rolePermsLoading, setRolePermsLoading] = useState(false)
+  const [permissionsModalOpen, setPermissionsModalOpen] = useState(false)
+  const [userPermissionsForm, setUserPermissionsForm] = useState<RolePermissions | null>(null)
+
+  // Видимость данных
+  const [visibilityModalOpen, setVisibilityModalOpen] = useState(false)
+  const [visibilityForm, setVisibilityForm] = useState({ visibilityScope: 'own' as string, assignedPipelineIds: [] as number[] })
+  const [pipelines, setPipelines] = useState<Array<{ id: number; name: string }>>([])
 
   const safeJson = useCallback(async <T,>(response: Response): Promise<T | null> => {
     const text = await response.text()
@@ -148,6 +166,33 @@ export default function CompanyPage() {
       setLoading(false)
     }
   }, [router])
+
+  const fetchRolePermissions = useCallback(async () => {
+    setRolePermsLoading(true)
+    try {
+      const response = await fetch('/api/admin/role-permissions')
+      if (response.ok) {
+        const data = await response.json()
+        setRolePermissions(data.rolePermissions)
+      }
+    } catch (err) {
+      console.error('Error fetching role permissions:', err)
+    } finally {
+      setRolePermsLoading(false)
+    }
+  }, [])
+
+  const fetchPipelines = useCallback(async () => {
+    try {
+      const response = await fetch('/api/pipelines')
+      if (response.ok) {
+        const data = await response.json()
+        setPipelines(data || [])
+      }
+    } catch (err) {
+      console.error('Error fetching pipelines:', err)
+    }
+  }, [])
 
   const fetchBilling = useCallback(async () => {
     setBillingLoading(true)
@@ -224,6 +269,8 @@ export default function CompanyPage() {
         didInitRef.current = true
         fetchUsers()
         fetchBilling()
+        fetchRolePermissions()
+        fetchPipelines()
       }
 
       // Периодически проверяем неоплаченные счета (каждые 30 секунд)
@@ -233,7 +280,7 @@ export default function CompanyPage() {
 
       return () => stopPendingInvoicesPolling()
     }
-  }, [fetchBilling, fetchPendingInvoices, fetchUsers, router, session?.user?.role, status, stopPendingInvoicesPolling])
+  }, [fetchBilling, fetchPendingInvoices, fetchPipelines, fetchRolePermissions, fetchUsers, router, session?.user?.role, status, stopPendingInvoicesPolling])
 
   const formatPrice = (plan: Plan) => {
     if (!plan.price || plan.price <= 0) {
@@ -442,7 +489,7 @@ export default function CompanyPage() {
     setEditFormData({
       name: user.name,
       email: user.email,
-      role: user.role as 'user' | 'manager' | 'admin'
+      role: user.role as 'user' | 'manager' | 'department_head' | 'admin'
     })
     setEditModalOpen(true)
     setError('')
@@ -593,10 +640,169 @@ export default function CompanyPage() {
   const getRoleName = (role: string) => {
     const names = {
       admin: 'Администратор',
+      department_head: 'Руководитель отдела',
       manager: 'Менеджер',
       user: 'Пользователь'
     }
     return names[role as keyof typeof names] || role
+  }
+
+  const ENTITIES: { key: EntityType; label: string }[] = [
+    { key: 'contacts', label: 'Контакты' },
+    { key: 'deals', label: 'Сделки' },
+    { key: 'tasks', label: 'Задачи' },
+    { key: 'events', label: 'События' },
+  ]
+  const ROLES: { key: string; label: string }[] = [
+    { key: 'manager', label: 'Менеджер' },
+    { key: 'department_head', label: 'Руководитель отдела' },
+    { key: 'admin', label: 'Администратор' },
+  ]
+  const DEFAULT_ROLE_PERMS: RolePermissionsMap = {
+    manager: { contacts: { create: true, edit: true, delete: false }, deals: { create: true, edit: true, delete: false }, tasks: { create: true, edit: true, delete: false }, events: { create: true, edit: true, delete: false } },
+    department_head: { contacts: { create: true, edit: true, delete: true }, deals: { create: true, edit: true, delete: true }, tasks: { create: true, edit: true, delete: true }, events: { create: true, edit: true, delete: true } },
+    admin: { contacts: { create: true, edit: true, delete: true }, deals: { create: true, edit: true, delete: true }, tasks: { create: true, edit: true, delete: true }, events: { create: true, edit: true, delete: true } },
+  }
+  const rolePerms = rolePermissions ?? DEFAULT_ROLE_PERMS
+
+  const handleRolePermChange = (roleKey: string, entity: EntityType, action: PermissionAction, value: boolean) => {
+    if (roleKey === 'admin') return
+    setRolePermissions((prev) => {
+      const next = { ...(prev ?? DEFAULT_ROLE_PERMS) }
+      if (!next[roleKey]) next[roleKey] = { ...DEFAULT_ROLE_PERMS.manager }
+      next[roleKey] = { ...next[roleKey], [entity]: { ...next[roleKey][entity], [action]: value } }
+      return next
+    })
+  }
+
+  const handleSaveRolePermissions = async () => {
+    setRolePermsLoading(true)
+    try {
+      const response = await fetch('/api/admin/role-permissions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rolePermissions: rolePerms }),
+      })
+      if (response.ok) {
+        setSuccess('Права по ролям сохранены')
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Ошибка сохранения')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка сохранения')
+    } finally {
+      setRolePermsLoading(false)
+    }
+  }
+
+  const handlePermissionsClick = (user: User) => {
+    setSelectedUser(user)
+    const base = user.permissions ?? rolePerms[user.role] ?? DEFAULT_ROLE_PERMS.manager
+    setUserPermissionsForm(JSON.parse(JSON.stringify(base)))
+    setPermissionsModalOpen(true)
+    setError('')
+    setSuccess('')
+  }
+
+  const handleUserPermChange = (entity: EntityType, action: PermissionAction, value: boolean) => {
+    setUserPermissionsForm((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, [entity]: { ...prev[entity], [action]: value } }
+      return next
+    })
+  }
+
+  const handleSaveUserPermissions = async () => {
+    if (!selectedUser || !userPermissionsForm) return
+    setUpdating(true)
+    setError('')
+    setSuccess('')
+    try {
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ permissions: userPermissionsForm }),
+      })
+      if (response.ok) {
+        setSuccess(`Права для ${selectedUser.name} сохранены`)
+        setPermissionsModalOpen(false)
+        setSelectedUser(null)
+        setUserPermissionsForm(null)
+        await fetchUsers()
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Ошибка сохранения')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка сохранения')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleVisibilityClick = (user: User) => {
+    setSelectedUser(user)
+    const scope = user.visibilityScope || (user.role === 'admin' ? 'all' : user.role === 'department_head' ? 'department' : 'own')
+    setVisibilityForm({
+      visibilityScope: scope,
+      assignedPipelineIds: Array.isArray(user.assignedPipelineIds) ? [...user.assignedPipelineIds] : [],
+    })
+    setVisibilityModalOpen(true)
+    setError('')
+    setSuccess('')
+  }
+
+  const handleVisibilityPipelineToggle = (pipelineId: number) => {
+    setVisibilityForm((prev) => {
+      const ids = prev.assignedPipelineIds.includes(pipelineId)
+        ? prev.assignedPipelineIds.filter((id) => id !== pipelineId)
+        : [...prev.assignedPipelineIds, pipelineId]
+      return { ...prev, assignedPipelineIds: ids }
+    })
+  }
+
+  const handleSaveVisibility = async () => {
+    if (!selectedUser) return
+    setUpdating(true)
+    setError('')
+    setSuccess('')
+    try {
+      const body = {
+        visibilityScope: visibilityForm.visibilityScope,
+        assignedPipelineIds: visibilityForm.assignedPipelineIds,
+      }
+      const response = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (response.ok) {
+        setSuccess(`Видимость для ${selectedUser.name} сохранена`)
+        setVisibilityModalOpen(false)
+        setSelectedUser(null)
+        await fetchUsers()
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Ошибка сохранения')
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка сохранения')
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const getVisibilityLabel = (u: User) => {
+    const scope = u.visibilityScope || (u.role === 'admin' ? 'all' : u.role === 'department_head' ? 'department' : 'own')
+    if (scope === 'all') return 'Всё'
+    if (scope === 'department') {
+      const ids = Array.isArray(u.assignedPipelineIds) ? u.assignedPipelineIds : []
+      if (ids.length === 0) return 'Только свои'
+      const names = ids.map((id) => pipelines.find((p) => p.id === id)?.name || `#${id}`).join(', ')
+      return names || 'Отделы'
+    }
+    return 'Только свои'
   }
 
   if (status === 'loading' || loading) {
@@ -940,11 +1146,12 @@ export default function CompanyPage() {
               </label>
               <select
                 value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'user' | 'manager' | 'admin' })}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value as 'user' | 'manager' | 'department_head' | 'admin' })}
                 className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
               >
                 <option value="user">Пользователь</option>
                 <option value="manager">Менеджер</option>
+                <option value="department_head">Руководитель отдела</option>
                 <option value="admin">Администратор</option>
               </select>
               <p className="text-xs text-[var(--muted)] mt-1">
@@ -1020,6 +1227,20 @@ export default function CompanyPage() {
                     </div>
                     <div className="flex gap-2">
                       <button
+                        onClick={() => handleVisibilityClick(user)}
+                        className="px-3 py-2 text-sm rounded-xl bg-[var(--background-soft)] text-[var(--foreground)] hover:bg-[var(--background-soft)]/70 transition-colors"
+                        title="Видимость данных"
+                      >
+                        👁️
+                      </button>
+                      <button
+                        onClick={() => handlePermissionsClick(user)}
+                        className="px-3 py-2 text-sm rounded-xl bg-[var(--background-soft)] text-[var(--foreground)] hover:bg-[var(--background-soft)]/70 transition-colors"
+                        title="Права"
+                      >
+                        🔐
+                      </button>
+                      <button
                         onClick={() => handleEditClick(user)}
                         className="px-3 py-2 text-sm rounded-xl bg-[var(--primary-soft)] text-[var(--primary)] hover:bg-[var(--primary-soft)]/70 transition-colors"
                         title="Редактировать"
@@ -1070,6 +1291,108 @@ export default function CompanyPage() {
           )}
         </div>
       </div>
+
+      {/* Раздел видимости данных */}
+      <section className="space-y-4">
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">Видимость данных</h2>
+            <p className="text-sm text-[var(--muted)] mt-1">
+              Настройте, какие сделки, контакты и задачи видит каждый сотрудник. Менеджеры — только свои, начальник отдела — выбранные воронки/отделы, администратор — всё.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="text-left py-3 px-2 font-semibold text-[var(--foreground)]">Сотрудник</th>
+                  <th className="text-left py-3 px-2 font-semibold text-[var(--foreground)]">Роль</th>
+                  <th className="text-left py-3 px-2 font-semibold text-[var(--foreground)]">Видит</th>
+                  <th className="text-right py-3 px-2 font-semibold text-[var(--foreground)]">Действие</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => (
+                  <tr key={u.id} className="border-b border-[var(--border)]">
+                    <td className="py-3 px-2 font-medium text-[var(--foreground)]">{u.name}</td>
+                    <td className="py-3 px-2 text-[var(--muted)]">{getRoleName(u.role)}</td>
+                    <td className="py-3 px-2 text-[var(--muted)]">{getVisibilityLabel(u)}</td>
+                    <td className="py-3 px-2 text-right">
+                      <button
+                        onClick={() => handleVisibilityClick(u)}
+                        className="px-3 py-1.5 text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] rounded-lg transition-colors"
+                      >
+                        Настроить
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Раздел прав и ролей */}
+      <section className="space-y-4">
+        <div className="glass-panel rounded-3xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">Права и роли</h2>
+              <p className="text-sm text-[var(--muted)]">Настройте права по умолчанию для каждой роли. У администратора все права включены.</p>
+            </div>
+            <button
+              onClick={handleSaveRolePermissions}
+              disabled={rolePermsLoading}
+              className="btn-primary text-sm disabled:opacity-50"
+            >
+              {rolePermsLoading ? 'Сохранение...' : 'Сохранить права'}
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)]">
+                  <th className="text-left py-3 px-2 font-semibold text-[var(--foreground)]">Роль</th>
+                  {ENTITIES.map((e) => (
+                    <th key={e.key} colSpan={3} className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">{(e.key === 'contacts' ? 'К' : e.key === 'deals' ? 'С' : e.key === 'tasks' ? 'З' : 'Сб')}: {e.label}</th>
+                  ))}
+                </tr>
+                <tr className="border-b border-[var(--border)] text-xs text-[var(--muted)]">
+                  <th className="py-2 px-2"></th>
+                  {ENTITIES.flatMap(() => ['Созд.', 'Ред.', 'Удал.']).map((a, i) => (
+                    <th key={i} className="py-2 px-1 text-center">{a}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {ROLES.map((r) => (
+                  <tr key={r.key} className="border-b border-[var(--border)]">
+                    <td className="py-3 px-2 font-medium text-[var(--foreground)]">{r.label}</td>
+                    {ENTITIES.map((e) => (
+                      <td key={e.key} colSpan={3} className="py-2 px-1">
+                        <div className="flex items-center justify-center gap-2">
+                          {(['create', 'edit', 'delete'] as const).map((action) => (
+                            <label key={action} className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={rolePerms[r.key]?.[e.key]?.[action] ?? false}
+                                onChange={(ev) => handleRolePermChange(r.key, e.key, action, ev.target.checked)}
+                                disabled={r.key === 'admin'}
+                                className="rounded border-[var(--border)]"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
       {/* Модальное окно редактирования пользователя */}
       {editModalOpen && selectedUser && (
@@ -1134,11 +1457,12 @@ export default function CompanyPage() {
                   </label>
                   <select
                     value={editFormData.role}
-                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'user' | 'manager' | 'admin' })}
+                    onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as 'user' | 'manager' | 'department_head' | 'admin' })}
                     className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                   >
                     <option value="user">Пользователь</option>
                     <option value="manager">Менеджер</option>
+                    <option value="department_head">Руководитель отдела</option>
                     <option value="admin">Администратор</option>
                   </select>
                 </div>
@@ -1314,40 +1638,123 @@ export default function CompanyPage() {
         </div>
       )}
 
-      {/* Раздел управления источниками сделок */}
-      <section className="space-y-4">
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">Источники сделок</h2>
-              <p className="text-sm text-[var(--muted)]">Настройте источники сделок и привяжите их к воронкам</p>
+      {/* Модальное окно прав пользователя */}
+      {permissionsModalOpen && selectedUser && userPermissionsForm && (
+        <div className="modal-overlay" onClick={() => { setPermissionsModalOpen(false); setSelectedUser(null); setUserPermissionsForm(null); setError(''); setSuccess('') }}>
+          <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Права доступа</p>
+                <h2 className="text-2xl font-bold text-[var(--foreground)]">Права для {selectedUser.name}</h2>
+                <p className="text-sm text-[var(--muted)] mt-1">Роль: {getRoleName(selectedUser.role)}. Переопределите права при необходимости.</p>
+              </div>
+              <button onClick={() => { setPermissionsModalOpen(false); setSelectedUser(null); setUserPermissionsForm(null); setError(''); setSuccess('') }} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg">✕</button>
+            </div>
+            {error && <div className="mx-6 mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">{error}</div>}
+            {success && <div className="mx-6 mb-4 p-3 bg-[var(--success-soft)] border border-[var(--success)]/30 rounded-lg text-[var(--success)] text-sm">{success}</div>}
+            <div className="modal-body">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--border)]">
+                      <th className="text-left py-3 px-2 font-semibold text-[var(--foreground)]">Раздел</th>
+                      <th className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">Создание</th>
+                      <th className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">Редактирование</th>
+                      <th className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">Удаление</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ENTITIES.map((e) => (
+                      <tr key={e.key} className="border-b border-[var(--border)]">
+                        <td className="py-3 px-2 font-medium text-[var(--foreground)]">{e.label}</td>
+                        {(['create', 'edit', 'delete'] as const).map((action) => (
+                          <td key={action} className="py-2 px-2 text-center">
+                            <input
+                              type="checkbox"
+                              checked={userPermissionsForm[e.key]?.[action] ?? false}
+                              onChange={(ev) => handleUserPermChange(e.key, action, ev.target.checked)}
+                              disabled={selectedUser.role === 'admin'}
+                              className="rounded border-[var(--border)]"
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" onClick={() => { setPermissionsModalOpen(false); setSelectedUser(null); setUserPermissionsForm(null); setError(''); setSuccess('') }} className="btn-secondary text-sm">Отмена</button>
+              <button type="button" onClick={handleSaveUserPermissions} disabled={updating} className="btn-primary text-sm disabled:opacity-50">{updating ? 'Сохранение...' : 'Сохранить'}</button>
             </div>
           </div>
-          <DealSourcesManagerWithAddButton />
         </div>
-      </section>
+      )}
 
-      {/* Раздел управления типами сделок */}
-      <section className="space-y-4">
-        <div className="glass-panel rounded-3xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">Типы сделок</h2>
-              <p className="text-sm text-[var(--muted)]">Настройте типы сделок для вашей компании</p>
+      {/* Модальное окно видимости данных */}
+      {visibilityModalOpen && selectedUser && (
+        <div className="modal-overlay" onClick={() => { setVisibilityModalOpen(false); setSelectedUser(null); setError(''); setSuccess('') }}>
+          <div className="modal-content max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">Видимость данных</p>
+                <h2 className="text-2xl font-bold text-[var(--foreground)]">Что видит {selectedUser.name}</h2>
+                <p className="text-sm text-[var(--muted)] mt-1">Роль: {getRoleName(selectedUser.role)}</p>
+              </div>
+              <button onClick={() => { setVisibilityModalOpen(false); setSelectedUser(null); setError(''); setSuccess('') }} className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg">✕</button>
+            </div>
+            {error && <div className="mx-6 mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">{error}</div>}
+            {success && <div className="mx-6 mb-4 p-3 bg-[var(--success-soft)] border border-[var(--success)]/30 rounded-lg text-[var(--success)] text-sm">{success}</div>}
+            <div className="modal-body space-y-4">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">Область видимости</label>
+                <select
+                  value={visibilityForm.visibilityScope}
+                  onChange={(e) => setVisibilityForm({ ...visibilityForm, visibilityScope: e.target.value })}
+                  disabled={selectedUser.role === 'admin'}
+                  className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all disabled:opacity-60"
+                >
+                  <option value="own">Только свои (сделки, контакты, задачи)</option>
+                  <option value="department">Выбранные отделы (воронки)</option>
+                  <option value="all">Всё</option>
+                </select>
+                {selectedUser.role === 'admin' && <p className="text-xs text-[var(--muted)] mt-1">У администратора всегда видно всё</p>}
+              </div>
+              {(visibilityForm.visibilityScope === 'department' || visibilityForm.visibilityScope === 'own') && (
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                    {visibilityForm.visibilityScope === 'department' ? 'Воронки / отделы, которые видит' : 'Отдел сотрудника'}
+                  </label>
+                  <p className="text-sm text-[var(--muted)] mb-2">
+                    {visibilityForm.visibilityScope === 'department'
+                      ? 'Выберите воронки, данные которых видит сотрудник'
+                      : 'К какому отделу относится (нужно для отчётов начальника отдела)'}
+                  </p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {pipelines.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 cursor-pointer p-2 rounded-lg hover:bg-[var(--background-soft)]">
+                        <input
+                          type="checkbox"
+                          checked={visibilityForm.assignedPipelineIds.includes(p.id)}
+                          onChange={() => handleVisibilityPipelineToggle(p.id)}
+                          className="rounded border-[var(--border)]"
+                        />
+                        <span className="text-sm text-[var(--foreground)]">{p.name}</span>
+                      </label>
+                    ))}
+                    {pipelines.length === 0 && <p className="text-sm text-[var(--muted)]">Нет воронок. Создайте воронки в разделе Сделки.</p>}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button type="button" onClick={() => { setVisibilityModalOpen(false); setSelectedUser(null); setError(''); setSuccess('') }} className="btn-secondary text-sm">Отмена</button>
+              <button type="button" onClick={handleSaveVisibility} disabled={updating} className="btn-primary text-sm disabled:opacity-50">{updating ? 'Сохранение...' : 'Сохранить'}</button>
             </div>
           </div>
-          <DealTypesManagerWithAddButton />
         </div>
-      </section>
-
-      <WebFormsSection />
-      {/* Email-интеграции временно скрыты (функционал не удалён) */}
-      <WebhookIntegrationsSection />
-      <TelegramBotSection />
-      <WhatsAppSection />
-      <AdvertisingIntegrationsSection />
-      <MoyskladSection />
-      <MigrationSection />
+      )}
 
       {/* Модальное окно выбора периода оплаты */}
       {selectedPlanId && (
@@ -1366,512 +1773,3 @@ export default function CompanyPage() {
       )}
     </div>
   )
-}
-
-// Обёртка для DealSourcesManager с кнопкой добавления
-function DealSourcesManagerWithAddButton() {
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingSource, setEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
-  const [formData, setFormData] = useState({ name: '', pipelineId: '' })
-
-  return (
-    <>
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => {
-            setEditingSource(null)
-            setFormData({ name: '', pipelineId: '' })
-            setModalOpen(true)
-          }}
-          className="btn-primary text-sm"
-        >
-          + Добавить источник
-        </button>
-      </div>
-      <DealSourcesManager 
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        editingSource={editingSource}
-        setEditingSource={setEditingSource}
-        formData={formData}
-        setFormData={setFormData}
-      />
-    </>
-  )
-}
-
-// Обёртка для DealTypesManager с кнопкой добавления
-function DealTypesManagerWithAddButton() {
-  const [modalOpen, setModalOpen] = useState(false)
-  const [editingType, setEditingType] = useState<{id: number, name: string} | null>(null)
-  const [formData, setFormData] = useState({ name: '' })
-
-  return (
-    <>
-      <div className="flex justify-end mb-4">
-        <button
-          onClick={() => {
-            setEditingType(null)
-            setFormData({ name: '' })
-            setModalOpen(true)
-          }}
-          className="btn-primary text-sm"
-        >
-          + Добавить тип
-        </button>
-      </div>
-      <DealTypesManager 
-        modalOpen={modalOpen}
-        setModalOpen={setModalOpen}
-        editingType={editingType}
-        setEditingType={setEditingType}
-        formData={formData}
-        setFormData={setFormData}
-      />
-    </>
-  )
-}
-
-// Компонент для управления источниками сделок
-function DealSourcesManager({
-  modalOpen: externalModalOpen,
-  setModalOpen: setExternalModalOpen,
-  editingSource: externalEditingSource,
-  setEditingSource: setExternalEditingSource,
-  formData: externalFormData,
-  setFormData: setExternalFormData,
-}: {
-  modalOpen?: boolean
-  setModalOpen?: (open: boolean) => void
-  editingSource?: {id: number, name: string, pipelineId: number | null} | null
-  setEditingSource?: (source: {id: number, name: string, pipelineId: number | null} | null) => void
-  formData?: { name: string, pipelineId: string }
-  setFormData?: (data: { name: string, pipelineId: string }) => void
-}) {
-  const [sources, setSources] = useState<Array<{id: number, name: string, pipelineId: number | null, pipeline: {id: number, name: string} | null}>>([])
-  const [pipelines, setPipelines] = useState<Array<{id: number, name: string}>>([])
-  const [loading, setLoading] = useState(true)
-  const [internalModalOpen, setInternalModalOpen] = useState(false)
-  const [internalEditingSource, setInternalEditingSource] = useState<{id: number, name: string, pipelineId: number | null} | null>(null)
-  const [internalFormData, setInternalFormData] = useState({ name: '', pipelineId: '' })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen
-  const setIsModalOpen = setExternalModalOpen || setInternalModalOpen
-  const currentEditingSource = externalEditingSource !== undefined ? externalEditingSource : internalEditingSource
-  const setCurrentEditingSource = setExternalEditingSource || setInternalEditingSource
-  const currentFormData = externalFormData || internalFormData
-  const setCurrentFormData = setExternalFormData || setInternalFormData
-
-  useEffect(() => {
-    fetchSources()
-    fetchPipelines()
-  }, [])
-
-  const fetchSources = async () => {
-    try {
-      const response = await fetch('/api/deal-sources')
-      if (response.ok) {
-        const data = await response.json()
-        setSources(data || [])
-      }
-    } catch (error) {
-      console.error('Error fetching sources:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchPipelines = async () => {
-    try {
-      const response = await fetch('/api/pipelines')
-      if (response.ok) {
-        const data = await response.json()
-        setPipelines(data || [])
-      }
-    } catch (error) {
-      console.error('Error fetching pipelines:', error)
-    }
-  }
-
-  const handleSave = async () => {
-    if (!currentFormData.name.trim()) {
-      setError('Название обязательно')
-      return
-    }
-
-    setSaving(true)
-    setError('')
-
-    try {
-      const url = '/api/deal-sources'
-      const method = currentEditingSource ? 'PUT' : 'POST'
-      const body = currentEditingSource
-        ? { id: currentEditingSource.id, name: currentFormData.name, pipelineId: currentFormData.pipelineId ? parseInt(currentFormData.pipelineId) : null }
-        : { name: currentFormData.name, pipelineId: currentFormData.pipelineId ? parseInt(currentFormData.pipelineId) : null }
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      if (response.ok) {
-        await fetchSources()
-        setIsModalOpen(false)
-        setCurrentEditingSource(null)
-        setCurrentFormData({ name: '', pipelineId: '' })
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Ошибка сохранения')
-      }
-    } catch (error) {
-      setError('Ошибка при сохранении')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Вы уверены, что хотите удалить этот источник?')) return
-
-    try {
-      const response = await fetch(`/api/deal-sources?id=${id}`, { method: 'DELETE' })
-      if (response.ok) {
-        await fetchSources()
-      }
-    } catch (error) {
-      console.error('Error deleting source:', error)
-    }
-  }
-
-  const handleEdit = (source: {id: number, name: string, pipelineId: number | null}) => {
-    setCurrentEditingSource(source)
-    setCurrentFormData({ name: source.name, pipelineId: source.pipelineId ? source.pipelineId.toString() : '' })
-    setIsModalOpen(true)
-  }
-
-  if (loading) {
-    return <div className="text-center py-4 text-[var(--muted)]">Загрузка...</div>
-  }
-
-  return (
-    <>
-      <div className="space-y-2">
-        {sources.length === 0 ? (
-          <p className="text-sm text-[var(--muted)] text-center py-4">Нет источников. Добавьте первый источник.</p>
-        ) : (
-          sources.map((source) => (
-            <div key={source.id} className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg">
-              <div>
-                <p className="font-medium text-[var(--foreground)]">{source.name}</p>
-                {source.pipeline && (
-                  <p className="text-sm text-[var(--muted)]">Воронка: {source.pipeline.name}</p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(source)}
-                  className="px-3 py-1 text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] rounded-lg transition-colors"
-                >
-                  Изменить
-                </button>
-                <button
-                  onClick={() => handleDelete(source.id)}
-                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  Удалить
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {isModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">
-                {currentEditingSource ? 'Изменить источник' : 'Добавить источник'}
-              </h2>
-              <button
-                onClick={() => {
-                  setIsModalOpen(false)
-                  setCurrentEditingSource(null)
-                  setCurrentFormData({ name: '', pipelineId: '' })
-                  setError('')
-                }}
-                className="text-[var(--muted)] hover:text-[var(--foreground)] text-2xl leading-none"
-              >
-                ✕
-              </button>
-            </div>
-            {error && (
-              <div className="mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">
-                {error}
-              </div>
-            )}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Название *</label>
-                <input
-                  type="text"
-                  value={currentFormData.name}
-                  onChange={(e) => setCurrentFormData({ ...currentFormData, name: e.target.value })}
-                  className="w-full p-2 border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
-                  placeholder="Например: Авито, Сайт, Реклама"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Воронка (опционально)</label>
-                <select
-                  value={currentFormData.pipelineId}
-                  onChange={(e) => setCurrentFormData({ ...currentFormData, pipelineId: e.target.value })}
-                  className="w-full p-2 border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
-                >
-                  <option value="">Не привязывать</option>
-                  {pipelines.map((pipeline) => (
-                    <option key={pipeline.id} value={pipeline.id}>
-                      {pipeline.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-[var(--muted)] mt-1">При выборе источника сделка автоматически попадёт в эту воронку</p>
-              </div>
-            </div>
-            <div className="flex gap-3 mt-6 justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsModalOpen(false)
-                  setCurrentEditingSource(null)
-                  setCurrentFormData({ name: '', pipelineId: '' })
-                  setError('')
-                }}
-                className="btn-secondary text-sm"
-                disabled={saving}
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Сохранение...' : 'Сохранить'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </>
-  )
-}
-
-// Компонент для управления типами сделок
-function DealTypesManager({
-  modalOpen: externalModalOpen,
-  setModalOpen: setExternalModalOpen,
-  editingType: externalEditingType,
-  setEditingType: setExternalEditingType,
-  formData: externalFormData,
-  setFormData: setExternalFormData,
-}: {
-  modalOpen?: boolean
-  setModalOpen?: (open: boolean) => void
-  editingType?: {id: number, name: string} | null
-  setEditingType?: (type: {id: number, name: string} | null) => void
-  formData?: { name: string }
-  setFormData?: (data: { name: string }) => void
-}) {
-  const [types, setTypes] = useState<Array<{id: number, name: string}>>([])
-  const [loading, setLoading] = useState(true)
-  const [internalModalOpen, setInternalModalOpen] = useState(false)
-  const [internalEditingType, setInternalEditingType] = useState<{id: number, name: string} | null>(null)
-  const [internalFormData, setInternalFormData] = useState({ name: '' })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen
-  const setIsModalOpen = setExternalModalOpen || setInternalModalOpen
-  const currentEditingType = externalEditingType !== undefined ? externalEditingType : internalEditingType
-  const setCurrentEditingType = setExternalEditingType || setInternalEditingType
-  const currentFormData = externalFormData || internalFormData
-  const setCurrentFormData = setExternalFormData || setInternalFormData
-
-  useEffect(() => {
-    fetchTypes()
-  }, [])
-
-  const fetchTypes = async () => {
-    try {
-      const response = await fetch('/api/deal-types')
-      if (response.ok) {
-        const data = await response.json()
-        setTypes(data || [])
-      }
-    } catch (error) {
-      console.error('Error fetching types:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSave = async () => {
-    if (!currentFormData.name.trim()) {
-      setError('Название обязательно')
-      return
-    }
-
-    setSaving(true)
-    setError('')
-
-    try {
-      const url = '/api/deal-types'
-      const method = currentEditingType ? 'PUT' : 'POST'
-      const body = currentEditingType
-        ? { id: currentEditingType.id, name: currentFormData.name }
-        : { name: currentFormData.name }
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      if (response.ok) {
-        await fetchTypes()
-        setIsModalOpen(false)
-        setCurrentEditingType(null)
-        setCurrentFormData({ name: '' })
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || 'Ошибка сохранения')
-      }
-    } catch (error) {
-      setError('Ошибка при сохранении')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Вы уверены, что хотите удалить этот тип?')) return
-
-    try {
-      const response = await fetch(`/api/deal-types?id=${id}`, { method: 'DELETE' })
-      if (response.ok) {
-        await fetchTypes()
-      }
-    } catch (error) {
-      console.error('Error deleting type:', error)
-    }
-  }
-
-  const handleEdit = (type: {id: number, name: string}) => {
-    setCurrentEditingType(type)
-    setCurrentFormData({ name: type.name })
-    setIsModalOpen(true)
-  }
-
-  if (loading) {
-    return <div className="text-center py-4 text-[var(--muted)]">Загрузка...</div>
-  }
-
-  return (
-    <>
-      <div className="space-y-2">
-        {types.length === 0 ? (
-          <p className="text-sm text-[var(--muted)] text-center py-4">Нет типов. Добавьте первый тип.</p>
-        ) : (
-          types.map((type) => (
-            <div key={type.id} className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg">
-              <p className="font-medium text-[var(--foreground)]">{type.name}</p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleEdit(type)}
-                  className="px-3 py-1 text-sm text-[var(--primary)] hover:bg-[var(--primary-soft)] rounded-lg transition-colors"
-                >
-                  Изменить
-                </button>
-                <button
-                  onClick={() => handleDelete(type.id)}
-                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  Удалить
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-
-      {isModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={() => setIsModalOpen(false)}>
-          <div className="bg-[var(--surface)] rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">
-                {currentEditingType ? 'Изменить тип' : 'Добавить тип'}
-              </h2>
-              <button
-                onClick={() => {
-                  setIsModalOpen(false)
-                  setCurrentEditingType(null)
-                  setCurrentFormData({ name: '' })
-                  setError('')
-                }}
-                className="text-[var(--muted)] hover:text-[var(--foreground)] text-2xl leading-none"
-              >
-                ✕
-              </button>
-            </div>
-            {error && (
-              <div className="mb-4 p-3 bg-[var(--error-soft)] border border-[var(--error)]/30 rounded-lg text-[var(--error)] text-sm">
-                {error}
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-[var(--foreground)] mb-1">Название *</label>
-              <input
-                type="text"
-                value={currentFormData.name}
-                onChange={(e) => setCurrentFormData({ ...currentFormData, name: e.target.value })}
-                className="w-full p-2 border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] rounded-lg focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]"
-                placeholder="Например: Продажа, Монтаж, Консультация"
-              />
-            </div>
-            <div className="flex gap-3 mt-6 justify-end">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsModalOpen(false)
-                  setCurrentEditingType(null)
-                  setCurrentFormData({ name: '' })
-                  setError('')
-                }}
-                className="btn-secondary text-sm"
-                disabled={saving}
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Сохранение...' : 'Сохранить'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </>
-  )
-}
-

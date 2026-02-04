@@ -98,6 +98,7 @@ model Company {
   name                    String
   inn                     String? // ИНН для юридических лиц
   isLegalEntity           Boolean                  @default(false) // Флаг: физ лицо (false) или юр лицо (true)
+  rolePermissions         Json? // Права по умолчанию для ролей: { manager: { contacts: {create,edit,delete}, ... }, department_head: {...} }
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
   users                   User[]
@@ -128,7 +129,10 @@ model User {
   lastName                        String? // Фамилия
   password                        String
   phone                           String? // Номер телефона менеджера
-  role                            String                   @default("user") // user, manager, admin
+  role                            String                   @default("user") // user, manager, admin, department_head
+  permissions                     Json? // Переопределение прав для пользователя: { contacts: {create,edit,delete}, ... }
+  visibilityScope                  String?                 // own | department | all — что видит пользователь
+  assignedPipelineIds             Json?                   // number[] — воронки/отделы, которые видит (для department)
   company                         Company                  @relation(fields: [companyId], references: [id])
   companyId                       Int
   passwordResetToken              String? // Токен для восстановления пароля

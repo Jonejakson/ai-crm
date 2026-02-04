@@ -45,7 +45,7 @@ export async function GET(req: Request) {
     if (user.role === 'admin' && filterUserId) {
       whereCondition = { userId: parseInt(filterUserId) };
     } else {
-      whereCondition = await getDirectWhereCondition();
+      whereCondition = await getDirectWhereCondition('deal');
     }
 
     if (pipelineId) {

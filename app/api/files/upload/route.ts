@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     switch (entityType) {
       case 'contact': {
-        const whereCondition = await getDirectWhereCondition()
+        const whereCondition = await getDirectWhereCondition('contact')
         const contact = await prisma.contact.findFirst({
           where: { id: entityIdNum, ...whereCondition },
         })
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
         break
       }
       case 'deal': {
-        const whereCondition = await getDirectWhereCondition()
+        const whereCondition = await getDirectWhereCondition('deal')
         const deal = await prisma.deal.findFirst({
           where: { id: entityIdNum, ...whereCondition },
         })
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         break
       }
       case 'event': {
-        const whereCondition = await getDirectWhereCondition()
+        const whereCondition = await getDirectWhereCondition('event')
         const event = await prisma.event.findFirst({
           where: { id: entityIdNum, ...whereCondition },
         })

@@ -4,6 +4,7 @@ import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { createNotification, checkOverdueTasks } from "@/lib/notifications";
 import { validateRequest, createTaskSchema, updateTaskSchema } from "@/lib/validation";
+import { checkPermission } from "@/lib/permissions";
 
 // 🔹 Получить все задачи (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -26,7 +27,7 @@ export async function GET(req: Request) {
       whereCondition = { userId: targetUserId };
     } else {
       // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
-      whereCondition = await getDirectWhereCondition();
+      whereCondition = await getDirectWhereCondition('task');
     }
 
     const tasks = await prisma.task.findMany({
@@ -66,6 +67,11 @@ export async function POST(req: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canCreate = await checkPermission('tasks', 'create');
+    if (!canCreate) {
+      return NextResponse.json({ error: "Нет прав на создание задач" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -211,6 +217,11 @@ export async function DELETE(req: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canDelete = await checkPermission('tasks', 'delete');
+    if (!canDelete) {
+      return NextResponse.json({ error: "Нет прав на удаление задач" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

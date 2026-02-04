@@ -29,6 +29,9 @@ export async function GET(req: Request) {
         email: true,
         name: true,
         role: true,
+        permissions: true,
+        visibilityScope: true,
+        assignedPipelineIds: true,
         createdAt: true,
         _count: {
           select: {
@@ -58,6 +61,9 @@ export async function GET(req: Request) {
         email: u.email,
         name: u.name,
         role: u.role,
+        permissions: u.permissions,
+        visibilityScope: u.visibilityScope,
+        assignedPipelineIds: u.assignedPipelineIds,
         createdAt: u.createdAt,
         stats: {
           contacts: u._count.contacts,

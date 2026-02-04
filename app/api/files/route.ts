@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
     // Проверяем доступ к сущности
     const entityIdNum = parseInt(entityId)
-    const whereCondition = await getDirectWhereCondition()
+    const whereCondition = await getDirectWhereCondition(entityType as 'contact' | 'deal' | 'task' | 'event')
 
     let hasAccess = false
     switch (entityType) {
@@ -132,7 +132,7 @@ export async function DELETE(request: Request) {
     const isUploader = !!file.userId && file.userId === userId
 
     if (!isOwner && !isAdmin && !isUploader) {
-      const whereCondition = await getDirectWhereCondition()
+      const whereCondition = await getDirectWhereCondition(file.entityType as 'contact' | 'deal' | 'task' | 'event')
       let hasAccess = false
       switch (file.entityType) {
         case 'contact':

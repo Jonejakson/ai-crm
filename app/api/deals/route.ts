@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createDealSchema, updateDealSchema } from "@/lib/validation";
+import { checkPermission } from "@/lib/permissions";
 
 // Получить все сделки (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -27,12 +28,21 @@ export async function GET(req: Request) {
       whereCondition = { userId: targetUserId };
     } else {
       // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
-      whereCondition = await getDirectWhereCondition();
+      whereCondition = await getDirectWhereCondition('deal');
     }
 
     // Добавляем дополнительные фильтры
     if (pipelineId) {
-      whereCondition.pipelineId = parseInt(pipelineId);
+      const pid = parseInt(pipelineId);
+      // Если уже фильтр по pipelineId (scope department), сужаем только если запрошенная воронка в списке
+      if (whereCondition.pipelineId && typeof whereCondition.pipelineId === 'object' && 'in' in whereCondition.pipelineId) {
+        if (whereCondition.pipelineId.in.includes(pid)) {
+          whereCondition.pipelineId = pid;
+        }
+        // иначе оставляем как есть (не сужаем до недоступной воронки)
+      } else {
+        whereCondition.pipelineId = pid;
+      }
     }
 
     if (stage) {
@@ -97,6 +107,11 @@ export async function POST(req: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canCreate = await checkPermission('deals', 'create');
+    if (!canCreate) {
+      return NextResponse.json({ error: "Нет прав на создание сделок" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -373,6 +388,11 @@ export async function DELETE(req: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canDelete = await checkPermission('deals', 'delete');
+    if (!canDelete) {
+      return NextResponse.json({ error: "Нет прав на удаление сделок" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

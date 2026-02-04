@@ -4,6 +4,7 @@ import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
 import { checkContactLimit } from "@/lib/subscription-limits";
+import { checkPermission } from "@/lib/permissions";
 
 function normalizePhone(raw: unknown): string | null {
   if (raw === undefined || raw === null) return null
@@ -54,7 +55,7 @@ export async function GET(req: Request) {
       whereCondition = { userId: targetUserId };
     } else {
       // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
-      whereCondition = await getDirectWhereCondition();
+      whereCondition = await getDirectWhereCondition('contact');
     }
 
     try {
@@ -125,6 +126,11 @@ export async function POST(req: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canCreate = await checkPermission('contacts', 'create');
+    if (!canCreate) {
+      return NextResponse.json({ error: "Нет прав на создание контактов" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -228,7 +234,7 @@ export async function PUT(req: Request) {
     }
 
     // Проверяем доступ к контакту (с учетом роли)
-    const whereCondition = await getDirectWhereCondition();
+    const whereCondition = await getDirectWhereCondition('contact');
     const contact = await prisma.contact.findFirst({
       where: {
         id: data.id,
@@ -284,6 +290,11 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const canDelete = await checkPermission('contacts', 'delete');
+    if (!canDelete) {
+      return NextResponse.json({ error: "Нет прав на удаление контактов" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     
@@ -292,7 +303,7 @@ export async function DELETE(req: Request) {
     }
 
     // Проверяем доступ к контакту (с учетом роли)
-    const whereCondition = await getDirectWhereCondition();
+    const whereCondition = await getDirectWhereCondition('contact');
     const contact = await prisma.contact.findFirst({
       where: {
         id: Number(id),

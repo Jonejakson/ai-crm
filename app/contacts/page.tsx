@@ -728,7 +728,7 @@ export default function ContactsPage() {
                     <div key={field}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                         {field === 'name' ? 'Имя *' :
-                         field === 'email' ? 'Email *' :
+                         field === 'email' ? 'Email' :
                          field === 'phone' ? 'Телефон' :
                          'Должность'}
                       </label>
@@ -737,7 +737,7 @@ export default function ContactsPage() {
                         name={field}
                         value={(formData as any)[field]}
                         onChange={handleChange}
-                        required={field === 'name' || field === 'email'}
+                        required={field === 'name'}
                         className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0 focus:outline-none focus-visible:border-[var(--primary)] focus-visible:ring-0 focus-visible:outline-none transition-all"
                       />
                     </div>
@@ -814,7 +814,7 @@ export default function ContactsPage() {
                     <div key={field}>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                         {field === 'name' ? 'Имя *' :
-                         field === 'email' ? 'Email *' :
+                         field === 'email' ? 'Email' :
                          field === 'phone' ? 'Телефон' :
                          'Должность'}
                       </label>
@@ -823,7 +823,7 @@ export default function ContactsPage() {
                         name={field}
                         value={(editFormData as any)[field]}
                         onChange={(e) => setEditFormData({ ...editFormData, [field]: e.target.value })}
-                        required={field === 'name' || field === 'email'}
+                        required={field === 'name'}
                         className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                       />
                     </div>

@@ -1645,13 +1645,12 @@ export default function DealsPage() {
 
               <div>
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                  Email *
+                  Email
                 </label>
                 <input
                   type="email"
                   value={newContactData.email}
                   onChange={(e) => setNewContactData({...newContactData, email: e.target.value})}
-                  required
                   className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>

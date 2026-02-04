@@ -28,7 +28,10 @@ export async function GET(req: Request) {
     }
 
     const searchLower = query.toLowerCase();
-    const whereCondition = await getDirectWhereCondition();
+    const [whereContact, whereDeal] = await Promise.all([
+      getDirectWhereCondition('contact'),
+      getDirectWhereCondition('deal'),
+    ]);
 
     const results: any = {
       contacts: [],
@@ -39,12 +42,12 @@ export async function GET(req: Request) {
 
     // Поиск по контактам
     if (type === 'all' || type === 'contacts') {
-      let contactsWhere: any = whereCondition;
+      let contactsWhere: any = whereContact;
 
       // Фильтр по тегам
       if (tagIds.length > 0) {
         contactsWhere = {
-          ...whereCondition,
+          ...whereContact,
           tags: {
             some: {
               tagId: { in: tagIds }
@@ -108,7 +111,7 @@ export async function GET(req: Request) {
     // Поиск по задачам
     if (type === 'all' || type === 'tasks') {
       const allTasks = await prisma.task.findMany({
-        where: whereCondition,
+        where: whereContact,
         include: {
           contact: {
             select: {
@@ -140,12 +143,12 @@ export async function GET(req: Request) {
 
     // Поиск по сделкам
     if (type === 'all' || type === 'deals') {
-      let dealsWhere: any = whereCondition;
+      let dealsWhere: any = whereDeal;
 
       // Фильтр по тегам
       if (tagIds.length > 0) {
         dealsWhere = {
-          ...whereCondition,
+          ...whereDeal,
           tags: {
             some: {
               tagId: { in: tagIds }
@@ -207,7 +210,7 @@ export async function GET(req: Request) {
     // Поиск по событиям
     if (type === 'all' || type === 'events') {
       const allEvents = await prisma.event.findMany({
-        where: whereCondition,
+        where: whereContact,
         include: {
           contact: {
             select: {

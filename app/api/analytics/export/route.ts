@@ -38,7 +38,10 @@ export async function GET(req: Request) {
         break;
     }
 
-    const whereCondition = await getDirectWhereCondition();
+    const [whereContact, whereDeal] = await Promise.all([
+      getDirectWhereCondition('contact'),
+      getDirectWhereCondition('deal'),
+    ]);
 
     let data: any[] = [];
     let headers: string[] = [];
@@ -97,7 +100,7 @@ export async function GET(req: Request) {
       case 'tasks': {
         const tasks = await prisma.task.findMany({
           where: {
-            ...whereCondition,
+            ...whereContact,
             createdAt: { gte: startDate },
           },
           include: {
@@ -132,7 +135,7 @@ export async function GET(req: Request) {
       case 'contacts': {
         const contacts = await prisma.contact.findMany({
           where: {
-            ...whereCondition,
+            ...whereContact,
             createdAt: { gte: startDate },
           },
           include: {

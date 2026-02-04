@@ -22,7 +22,7 @@ export async function GET(
       return NextResponse.json({ error: "Invalid deal ID" }, { status: 400 });
     }
 
-    const whereCondition = await getDirectWhereCondition();
+    const whereCondition = await getDirectWhereCondition('deal');
 
     const deal = await prisma.deal.findFirst({
       where: {

@@ -57,6 +57,9 @@ export async function PUT(
     
     const { name, email, role } = validationResult
     const password = rawBody.password // Пароль обрабатываем отдельно
+    const permissions = rawBody.permissions // Права пользователя (JSON)
+    const visibilityScope = rawBody.visibilityScope
+    const assignedPipelineIds = rawBody.assignedPipelineIds
 
     // Проверка email на уникальность (если изменяется)
     if (email && email !== existingUser.email) {
@@ -85,6 +88,9 @@ export async function PUT(
     if (name !== undefined) updateData.name = name;
     if (email !== undefined) updateData.email = email;
     if (role !== undefined) updateData.role = role;
+    if (permissions !== undefined) updateData.permissions = permissions;
+    if (visibilityScope !== undefined) updateData.visibilityScope = visibilityScope;
+    if (assignedPipelineIds !== undefined) updateData.assignedPipelineIds = assignedPipelineIds;
     if (password) {
       updateData.password = await bcrypt.hash(password, 10);
     }
@@ -98,6 +104,9 @@ export async function PUT(
         email: true,
         name: true,
         role: true,
+        permissions: true,
+        visibilityScope: true,
+        assignedPipelineIds: true,
         companyId: true,
         createdAt: true,
       }

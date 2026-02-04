@@ -4,6 +4,7 @@ import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createEventSchema, updateEventSchema } from "@/lib/validation";
 import { createNotification } from "@/lib/notifications";
+import { checkPermission } from "@/lib/permissions";
 
 // Получить все события (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -29,7 +30,7 @@ export async function GET(req: Request) {
       whereCondition = { userId: targetUserId };
     } else {
       // Стандартная фильтрация (менеджер видит свои, админ без фильтра - все компании)
-      whereCondition = await getDirectWhereCondition();
+      whereCondition = await getDirectWhereCondition('event');
     }
 
     // Добавляем дополнительные фильтры
@@ -90,6 +91,11 @@ export async function POST(req: Request) {
     const userId = getUserId(user);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canCreate = await checkPermission('events', 'create');
+    if (!canCreate) {
+      return NextResponse.json({ error: "Нет прав на создание событий" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -232,6 +238,11 @@ export async function DELETE(req: Request) {
     const userId = getUserId(user);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const canDelete = await checkPermission('events', 'delete');
+    if (!canDelete) {
+      return NextResponse.json({ error: "Нет прав на удаление событий" }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);

@@ -63,13 +63,17 @@ export async function GET(req: Request) {
 
     const daysInPeriod = Math.max(1, Math.round((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)));
 
-    let whereCondition: any;
+    let whereContact: any;
+    let whereDeal: any;
     
     if (user.role === 'admin' && filterUserId) {
       const targetUserId = parseInt(filterUserId);
-      whereCondition = { userId: targetUserId };
+      whereContact = whereDeal = { userId: targetUserId };
     } else {
-      whereCondition = await getDirectWhereCondition();
+      [whereContact, whereDeal] = await Promise.all([
+        getDirectWhereCondition('contact'),
+        getDirectWhereCondition('deal'),
+      ]);
     }
 
     const companyUsersPromise = prisma.user.findMany({
@@ -85,7 +89,7 @@ export async function GET(req: Request) {
 
     const [contacts, tasks, deals, events, companyUsers] = await Promise.all([
       prisma.contact.findMany({
-        where: whereCondition,
+        where: whereContact,
         select: {
           id: true,
           createdAt: true,
@@ -108,7 +112,7 @@ export async function GET(req: Request) {
         }
       }),
       prisma.deal.findMany({
-        where: whereCondition,
+        where: whereDeal,
         select: {
           id: true,
           amount: true,
@@ -120,7 +124,7 @@ export async function GET(req: Request) {
         }
       }),
       prisma.event.findMany({
-        where: whereCondition,
+        where: whereContact,
         select: {
           id: true,
           type: true,
