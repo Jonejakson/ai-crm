@@ -52,7 +52,7 @@ export async function GET(req: Request) {
       case 'deals': {
         const deals = await prisma.deal.findMany({
           where: {
-            ...whereCondition,
+            ...whereDeal,
             createdAt: { gte: startDate },
           },
           include: {
