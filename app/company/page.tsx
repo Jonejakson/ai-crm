@@ -1354,9 +1354,12 @@ export default function CompanyPage() {
               <thead>
                 <tr className="border-b border-[var(--border)]">
                   <th className="text-left py-3 px-2 font-semibold text-[var(--foreground)]">Роль</th>
-                  {ENTITIES.map((e) => (
-                    <th key={e.key} colSpan={3} className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">{(e.key === 'contacts' ? 'К' : e.key === 'deals' ? 'С' : e.key === 'tasks' ? 'З' : 'Сб')}: {e.label}</th>
-                  ))}
+                  {ENTITIES.map((e) => {
+                    const short = e.key === 'contacts' ? 'К' : e.key === 'deals' ? 'С' : e.key === 'tasks' ? 'З' : 'Сб'
+                    return (
+                      <th key={e.key} colSpan={3} className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">{short}: {e.label}</th>
+                    )
+                  })}
                 </tr>
                 <tr className="border-b border-[var(--border)] text-xs text-[var(--muted)]">
                   <th className="py-2 px-2"></th>
@@ -1773,3 +1776,4 @@ export default function CompanyPage() {
       )}
     </div>
   )
+}

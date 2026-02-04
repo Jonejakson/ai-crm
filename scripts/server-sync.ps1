@@ -44,13 +44,19 @@ function Deploy-ToServer {
     # Пушим изменения
     git push origin main
     
-    # На сервере: пулим и пересобираем
+    # На сервере: пулим, пересобираем, применяем миграции
     ssh $SERVER @"
 cd $SERVER_PATH
 git pull origin main
 docker-compose down
-docker-compose build --no-cache
+docker-compose build --no-cache app
 docker-compose up -d
+echo 'Ожидание готовности PostgreSQL...'
+sleep 15
+echo 'Применение миграций...'
+docker-compose exec -T app npx -y prisma@6.19.0 migrate deploy
+echo 'Деплой завершен!'
+docker-compose ps
 "@
     
     Write-Host "Деплой завершен!" -ForegroundColor Green
