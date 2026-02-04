@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getCurrentUser } from '@/lib/get-session'
 import { isAdmin } from '@/lib/access-control'
 import type { RolePermissionsMap } from '@/lib/permissions'
@@ -39,7 +40,7 @@ export async function PUT(req: Request) {
     const companyId = parseInt(user.companyId)
     await prisma.company.update({
       where: { id: companyId },
-      data: { rolePermissions },
+      data: { rolePermissions: rolePermissions as unknown as Prisma.InputJsonValue },
     })
 
     return NextResponse.json({ success: true })
