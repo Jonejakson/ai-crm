@@ -16,7 +16,7 @@ export async function GET() {
       select: { rolePermissions: true },
     })
 
-    const rolePermissions = (company?.rolePermissions as RolePermissionsMap) ?? null
+    const rolePermissions = (company?.rolePermissions as unknown as RolePermissionsMap) ?? null
     return NextResponse.json({ rolePermissions })
   } catch (error: any) {
     console.error('Error fetching role permissions:', error)
