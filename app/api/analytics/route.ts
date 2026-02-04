@@ -103,7 +103,7 @@ export async function GET(req: Request) {
         }
       }),
       prisma.task.findMany({
-        where: whereCondition,
+        where: whereContact,
         select: {
           id: true,
           status: true,

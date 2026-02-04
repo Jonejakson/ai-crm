@@ -58,7 +58,7 @@ export async function GET(req: Request) {
     if (type === 'all' || type === 'deals') {
       const [deals, pipelines] = await Promise.all([
         prisma.deal.findMany({
-          where: whereCondition,
+          where: whereDeal,
           select: {
             stage: true,
             currency: true,
