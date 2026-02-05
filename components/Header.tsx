@@ -3,21 +3,44 @@
 import { useSession, signOut } from 'next-auth/react'
 import { useTheme } from '@/lib/theme'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import Notifications from './Notifications'
 import SearchBar from './SearchBar'
 import { MoonIcon, SunIcon, DialogsIcon } from './Icons'
+
+const DAYS_BEFORE_EXPIRY = 7
 
 export default function Header() {
   const { data: session } = useSession()
   const { theme, toggleTheme } = useTheme()
   const [unreadSupportCount, setUnreadSupportCount] = useState(0)
   const [signingOut, setSigningOut] = useState(false)
-  const currentDate = new Date().toLocaleDateString('ru-RU', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  })
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null)
+
+  // Загружаем дату окончания подписки для уведомления (включая случаи с ожидающими счетами)
+  useEffect(() => {
+    if (session?.user) {
+      const loadExpiry = async () => {
+        try {
+          const res = await fetch('/api/billing/expiry')
+          if (res.ok) {
+            const data = await res.json()
+            setSubscriptionEndDate(data?.endDate ?? null)
+          } else {
+            setSubscriptionEndDate(null)
+          }
+        } catch {
+          setSubscriptionEndDate(null)
+        }
+      }
+      loadExpiry()
+    }
+  }, [session])
+
+  const endDateObj = subscriptionEndDate ? new Date(subscriptionEndDate) : null
+  const now = new Date()
+  const daysLeft = endDateObj ? Math.ceil((endDateObj.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null
+  const showExpiryNotification = endDateObj && daysLeft !== null && daysLeft <= DAYS_BEFORE_EXPIRY
 
   // Загружаем количество непрочитанных сообщений в тикетах
   useEffect(() => {
@@ -56,6 +79,21 @@ export default function Header() {
               day: 'numeric' 
             })}
           </p>
+          {showExpiryNotification && endDateObj && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                {daysLeft !== null && daysLeft < 0
+                  ? `Подписка истекла ${endDateObj.toLocaleDateString('ru-RU')}`
+                  : `Подписка заканчивается ${endDateObj.toLocaleDateString('ru-RU')}`}
+              </span>
+              <Link
+                href="/company"
+                className="text-xs font-semibold text-[var(--primary)] hover:underline"
+              >
+                Продлить →
+              </Link>
+            </div>
+          )}
         </div>
           <div className="hidden w-full max-w-xl lg:block">
             <SearchBar />
