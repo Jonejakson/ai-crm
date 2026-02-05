@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
 import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } from '@/components/Icons'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -1375,7 +1375,7 @@ export default function CompanyPage() {
                   <tr key={r.key} className="border-b border-[var(--border)]">
                     <td className="py-3 px-2 font-medium text-[var(--foreground)]">{r.label}</td>
                     {ENTITIES.map((e) => (
-                      <React.Fragment key={e.key}>
+                      <Fragment key={e.key}>
                         {(['create', 'edit', 'delete'] as const).map((action) => (
                           <td key={`${e.key}-${action}`} className="py-2 px-2 text-center border-l border-[var(--border)] first:border-l-0">
                             <input
@@ -1387,7 +1387,7 @@ export default function CompanyPage() {
                             />
                           </td>
                         ))}
-                      </React.Fragment>
+                      </Fragment>
                     ))}
                   </tr>
                 ))}
