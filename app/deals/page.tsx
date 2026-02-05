@@ -1326,12 +1326,22 @@ export default function DealsPage() {
                       <input
                         type="text"
                         value={contactSearch}
+                        className={formData.contactId ? 'pr-10' : ''}
                         onChange={(e) => {
-                          setContactSearch(e.target.value)
-                          // Автоматически выбираем клиента если введен точный email или ID
-                          const found = contacts.find(c => 
-                            c.email.toLowerCase() === e.target.value.toLowerCase() ||
-                            c.name.toLowerCase().includes(e.target.value.toLowerCase())
+                          const val = e.target.value
+                          setContactSearch(val)
+                          if (!val.trim()) {
+                            setFormData({...formData, contactId: ''})
+                            return
+                          }
+                          const selected = formData.contactId ? contacts.find(c => c.id.toString() === formData.contactId) : null
+                          const selectedLabel = selected ? formatContactLabel(selected) : ''
+                          if (val !== selectedLabel) {
+                            setFormData({...formData, contactId: ''})
+                          }
+                          const found = contacts.find(c =>
+                            c.email?.toLowerCase() === val.toLowerCase() ||
+                            c.name.toLowerCase().includes(val.toLowerCase())
                           )
                           if (found) {
                             setFormData({...formData, contactId: found.id.toString()})
@@ -1348,6 +1358,19 @@ export default function DealsPage() {
                         }}
                         placeholder="Введите название компании, имя или email для поиска..."
                       />
+                      {formData.contactId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({...formData, contactId: ''})
+                            setContactSearch('')
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
+                          title="Очистить выбор"
+                        >
+                          ×
+                        </button>
+                      )}
                       {contactSearch && (
                         <div className="absolute z-10 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg max-h-60 overflow-y-auto">
                           {contacts
