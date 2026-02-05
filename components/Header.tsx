@@ -25,7 +25,17 @@ export default function Header() {
           const res = await fetch('/api/billing/expiry')
           if (res.ok) {
             const data = await res.json()
-            setSubscriptionEndDate(data?.endDate ?? null)
+            let endDate = data?.endDate ?? null
+            // Fallback: основной API подписки (если expiry вернул null)
+            if (!endDate) {
+              const subRes = await fetch('/api/billing/subscription')
+              if (subRes.ok) {
+                const subData = await subRes.json()
+                const sub = subData?.subscription
+                endDate = sub?.currentPeriodEnd ?? sub?.trialEndsAt ?? null
+              }
+            }
+            setSubscriptionEndDate(endDate)
           } else {
             setSubscriptionEndDate(null)
           }
