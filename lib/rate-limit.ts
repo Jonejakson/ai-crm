@@ -125,16 +125,16 @@ export const rateLimitConfigs = {
     maxRequests: 100,
   },
   
-  // Авторизованные пользователи
+  // Авторизованные пользователи (CRM делает много параллельных запросов при загрузке)
   authenticated: {
     windowMs: 60 * 1000, // 1 минута
-    maxRequests: 1000,
+    maxRequests: 10000,
   },
   
-  // Админы
+  // Админские и тяжёлые endpoints (company, billing, users)
   admin: {
     windowMs: 60 * 1000, // 1 минута
-    maxRequests: 5000,
+    maxRequests: 20000,
   },
   
   // Webhook endpoints (более строгий лимит)
