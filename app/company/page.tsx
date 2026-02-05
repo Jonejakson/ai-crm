@@ -1357,14 +1357,16 @@ export default function CompanyPage() {
                   {ENTITIES.map((e) => {
                     const short = e.key === 'contacts' ? 'К' : e.key === 'deals' ? 'С' : e.key === 'tasks' ? 'З' : 'Сб'
                     return (
-                      <th key={e.key} colSpan={3} className="text-center py-3 px-2 font-semibold text-[var(--foreground)]">{short}: {e.label}</th>
+                      <th key={e.key} colSpan={3} className="text-center py-3 px-2 font-semibold text-[var(--foreground)] border-l border-[var(--border)] first:border-l-0">
+                        {short}: {e.label}
+                      </th>
                     )
                   })}
                 </tr>
                 <tr className="border-b border-[var(--border)] text-xs text-[var(--muted)]">
                   <th className="py-2 px-2"></th>
                   {ENTITIES.flatMap(() => ['Созд.', 'Ред.', 'Удал.']).map((a, i) => (
-                    <th key={i} className="py-2 px-1 text-center">{a}</th>
+                    <th key={i} className="py-2 px-2 text-center">{a}</th>
                   ))}
                 </tr>
               </thead>
@@ -1373,21 +1375,19 @@ export default function CompanyPage() {
                   <tr key={r.key} className="border-b border-[var(--border)]">
                     <td className="py-3 px-2 font-medium text-[var(--foreground)]">{r.label}</td>
                     {ENTITIES.map((e) => (
-                      <td key={e.key} colSpan={3} className="py-2 px-1">
-                        <div className="flex items-center justify-center gap-2">
-                          {(['create', 'edit', 'delete'] as const).map((action) => (
-                            <label key={action} className="flex items-center gap-1 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={rolePerms[r.key]?.[e.key]?.[action] ?? false}
-                                onChange={(ev) => handleRolePermChange(r.key, e.key, action, ev.target.checked)}
-                                disabled={r.key === 'admin'}
-                                className="rounded border-[var(--border)]"
-                              />
-                            </label>
-                          ))}
-                        </div>
-                      </td>
+                      <React.Fragment key={e.key}>
+                        {(['create', 'edit', 'delete'] as const).map((action) => (
+                          <td key={`${e.key}-${action}`} className="py-2 px-2 text-center border-l border-[var(--border)] first:border-l-0">
+                            <input
+                              type="checkbox"
+                              checked={rolePerms[r.key]?.[e.key]?.[action] ?? false}
+                              onChange={(ev) => handleRolePermChange(r.key, e.key, action, ev.target.checked)}
+                              disabled={r.key === 'admin'}
+                              className="h-4 w-4 rounded border-[var(--border)] accent-emerald-500 cursor-pointer disabled:opacity-40 focus:ring-2 focus:ring-emerald-200 focus:ring-offset-0"
+                            />
+                          </td>
+                        ))}
+                      </React.Fragment>
                     ))}
                   </tr>
                 ))}
