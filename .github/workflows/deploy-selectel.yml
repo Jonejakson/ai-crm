@@ -1,0 +1,29 @@
+# Деплой на Selectel при push в main
+# Требуется: Settings → Secrets and variables → Actions → SSH_PRIVATE_KEY
+# (приватный ключ для root@79.143.30.96, содержимое файла ~/.ssh/id_ed25519)
+name: Deploy to Selectel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 79.143.30.96
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/flamecrm
+            git pull origin main
+            docker-compose down 2>/dev/null || true
+            docker-compose build --no-cache app
+            docker-compose up -d
+            sleep 15
+            docker-compose exec -T app npx -y prisma@6.19.0 migrate deploy 2>/dev/null || true
+            docker-compose ps
