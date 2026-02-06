@@ -1326,6 +1326,7 @@ export default function DealsPage() {
                       <input
                         type="text"
                         value={contactSearch}
+                        className={formData.contactId ? 'pr-10' : ''}
                         onChange={(e) => {
                           const val = e.target.value
                           setContactSearch(val)
@@ -1350,7 +1351,6 @@ export default function DealsPage() {
                           }
                         }}
                         placeholder="Введите название компании, имя или email для поиска..."
-                        className="pr-10"
                       />
                       {formData.contactId && (
                         <button
@@ -1359,10 +1359,10 @@ export default function DealsPage() {
                             setFormData({...formData, contactId: ''})
                             setContactSearch('')
                           }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
-                          title="Очистить"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--background-soft)] transition-colors"
+                          title="Очистить выбор"
                         >
-                          ✕
+                          ×
                         </button>
                       )}
                       {contactSearch && (

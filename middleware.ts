@@ -70,8 +70,16 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/webforms/public')) {
       // Публичные веб-формы - строгий лимит
       rateLimitConfig = rateLimitConfigs.public
-    } else if (pathname.startsWith('/api/admin')) {
-      // Админские endpoints могут часто дергаться из UI (таблицы, настройки)
+    } else if (
+      pathname.startsWith('/api/admin') ||
+      pathname.startsWith('/api/billing') ||
+      pathname.startsWith('/api/deals') ||
+      pathname.startsWith('/api/pipelines') ||
+      pathname.startsWith('/api/deal-sources') ||
+      pathname.startsWith('/api/contacts') ||
+      pathname.startsWith('/api/tasks')
+    ) {
+      // Админские и тяжёлые endpoints (company, billing, deals, users)
       rateLimitConfig = rateLimitConfigs.admin
     } else if (pathname.startsWith('/api/ops') || pathname.startsWith('/api/owner')) {
       // Внутренние эндпоинты владельца/операций
@@ -79,9 +87,9 @@ export async function middleware(request: NextRequest) {
     } else if (pathname.startsWith('/api/webhooks') || pathname.includes('/webhook')) {
       // Webhook endpoints - средний лимит
       rateLimitConfig = rateLimitConfigs.webhook
-    } else if (pathname.startsWith('/api/notifications')) {
-      // Уведомления могут опрашиваться часто на клиенте
-      rateLimitConfig = rateLimitConfigs.authenticated
+    } else if (pathname.startsWith('/api/notifications') || pathname.startsWith('/api/profile')) {
+      // Уведомления и профиль опрашиваются часто
+      rateLimitConfig = rateLimitConfigs.admin
     }
 
     if (!skipRateLimit) {
