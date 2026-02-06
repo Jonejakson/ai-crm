@@ -5,7 +5,11 @@
 import { z } from 'zod'
 
 // Базовые схемы
-export const emailSchema = z.string().email('Неверный формат email').optional().nullable()
+// Email опционален: пустая строка, undefined и null допустимы; при наличии значения — проверяем формат
+export const emailSchema = z
+  .union([z.string().email('Неверный формат email'), z.literal('')])
+  .optional()
+  .nullable()
 // Телефон: принимаем "человеческие" форматы (8-xxx-..., +7 ..., пробелы, скобки),
 // нормализация делается в API. Здесь — только базовые ограничения по длине.
 export const phoneSchema = z.string().max(50, 'Телефон слишком длинный').optional().nullable()
