@@ -5,11 +5,19 @@
 import { z } from 'zod'
 
 // Базовые схемы
-// Email опционален: пустая строка, undefined и null допустимы; при наличии значения — проверяем формат
-export const emailSchema = z
-  .union([z.string().email('Неверный формат email'), z.literal('')])
-  .optional()
-  .nullable()
+// Email опционален: пустая строка, пробелы, undefined и null → null; при наличии значения — проверяем формат
+export const emailSchema = z.preprocess(
+  (val) => {
+    if (val === undefined || val === null) return null
+    if (typeof val === 'string') {
+      const trimmed = val.trim()
+      if (trimmed === '') return null
+      return trimmed
+    }
+    return val
+  },
+  z.string().email('Неверный формат email').nullable()
+)
 // Телефон: принимаем "человеческие" форматы (8-xxx-..., +7 ..., пробелы, скобки),
 // нормализация делается в API. Здесь — только базовые ограничения по длине.
 export const phoneSchema = z.string().max(50, 'Телефон слишком длинный').optional().nullable()

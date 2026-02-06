@@ -136,6 +136,11 @@ export async function POST(req: Request) {
     const body = await req.json();
     if (body && typeof body === 'object') {
       body.phone = normalizePhone((body as any).phone)
+      // Пустой email → null, чтобы валидация не требовала формат
+      const rawEmail = (body as any).email
+      if (rawEmail === '' || (typeof rawEmail === 'string' && rawEmail.trim() === '')) {
+        (body as any).email = null
+      }
     }
     
     // Валидация с помощью Zod
@@ -217,6 +222,11 @@ export async function PUT(req: Request) {
     const body = await req.json();
     if (body && typeof body === 'object') {
       body.phone = normalizePhone((body as any).phone)
+      // Пустой email → null
+      const rawEmail = (body as any).email
+      if (rawEmail === '' || (typeof rawEmail === 'string' && rawEmail.trim() === '')) {
+        (body as any).email = null
+      }
     }
     
     // Валидация с помощью Zod
