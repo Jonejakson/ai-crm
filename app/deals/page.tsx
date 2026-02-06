@@ -1327,6 +1327,7 @@ export default function DealsPage() {
                         type="text"
                         value={contactSearch}
                         className={formData.contactId ? 'pr-10' : ''}
+                        autoComplete="off"
                         onChange={(e) => {
                           const val = e.target.value
                           setContactSearch(val)
@@ -1365,7 +1366,7 @@ export default function DealsPage() {
                           ×
                         </button>
                       )}
-                      {contactSearch && (
+                      {contactSearch.trim().length >= 2 && (
                         <div className="absolute z-10 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg max-h-60 overflow-y-auto">
                           {contacts
                             .filter(contact => 
@@ -1377,7 +1378,9 @@ export default function DealsPage() {
                             .map(contact => (
                               <div
                                 key={contact.id}
-                                onClick={() => {
+                                onMouseDown={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
                                   setFormData({...formData, contactId: contact.id.toString()})
                                   setContactSearch(formatContactLabel(contact))
                                 }}
