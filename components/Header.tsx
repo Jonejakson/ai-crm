@@ -81,6 +81,11 @@ export default function Header() {
           <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)] bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
             {session?.user ? session.user.name : 'Flame CRM'}
           </h1>
+          {session?.user?.isLegalEntity && session.user.companyName && (
+            <p className="text-sm font-medium text-[var(--foreground)] mt-0.5">
+              {session.user.companyName}
+            </p>
+          )}
           <p className="text-xs text-[var(--muted)] mt-1">
             {new Date().toLocaleDateString('ru-RU', { 
               weekday: 'long', 

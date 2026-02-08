@@ -65,6 +65,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
+          // Админ при регистрации компании должен подтвердить email (токен есть = ожидает подтверждения)
+          const u = user as { emailVerifiedAt?: Date | null; emailVerificationToken?: string | null }
+          if (u.emailVerifiedAt == null && u.emailVerificationToken != null && !isOwner(user.email)) {
+            throw new Error('Подтвердите email — на него отправлена ссылка для подтверждения. Проверьте почту.')
+          }
+
           const role = isOwner(user.email) ? 'owner' : user.role
 
           if (role !== 'owner' && user.companyId && user.company?.name !== 'Физ лица') {
@@ -81,6 +87,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.name,
             role,
             companyId: user.companyId.toString(),
+            companyName: user.company?.name,
+            isLegalEntity: user.company?.isLegalEntity,
           }
         } catch (error: any) {
           console.error('Ошибка авторизации:', error)
@@ -102,6 +110,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.role = (user as any).role
         token.companyId = (user as any).companyId
         token.email = (user as any).email
+        token.companyName = (user as any).companyName
+        token.isLegalEntity = (user as any).isLegalEntity
       }
       if (token.email && isOwner(String(token.email))) {
         token.role = 'owner'
@@ -113,6 +123,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.companyId = token.companyId as string
+        session.user.companyName = token.companyName as string | undefined
+        session.user.isLegalEntity = token.isLegalEntity as boolean | undefined
         if (session.user.email && isOwner(session.user.email)) {
           session.user.role = 'owner'
         }
