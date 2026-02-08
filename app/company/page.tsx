@@ -74,6 +74,7 @@ export default function CompanyPage() {
   const [selectedPlanName, setSelectedPlanName] = useState<string>('')
   const [isLegalEntity, setIsLegalEntity] = useState(false)
   const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
+  const [syncPaymentLoading, setSyncPaymentLoading] = useState(false)
   const didInitRef = useRef(false)
   const pendingInvoicesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isTrialActive =
@@ -305,6 +306,26 @@ export default function CompanyPage() {
     setBillingError('')
     setBillingMessage('')
     setPaymentPeriodModalOpen(true)
+  }
+
+  const handleSyncPayment = async () => {
+    setSyncPaymentLoading(true)
+    setBillingError('')
+    setBillingMessage('')
+    try {
+      const res = await fetch('/api/billing/sync-payment', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok) {
+        setBillingMessage(data.activated ? 'Подписка активирована!' : data.message || 'Оплата ещё не получена')
+        if (data.activated) fetchBilling()
+      } else {
+        setBillingError(data.error || 'Ошибка при проверке')
+      }
+    } catch (e: any) {
+      setBillingError(e?.message || 'Ошибка при проверке оплаты')
+    } finally {
+      setSyncPaymentLoading(false)
+    }
   }
 
   const handleTrialSwitch = async (planId: number) => {
@@ -973,7 +994,17 @@ export default function CompanyPage() {
                 )}
               </>
             ) : (
-              <p>Нет активной подписки</p>
+              <div className="flex flex-col gap-2 items-end">
+                <p>Нет активной подписки</p>
+                <button
+                  type="button"
+                  onClick={handleSyncPayment}
+                  disabled={syncPaymentLoading}
+                  className="btn-secondary text-sm"
+                >
+                  {syncPaymentLoading ? 'Проверка...' : 'Проверить оплату'}
+                </button>
+              </div>
             )}
           </div>
         </div>
