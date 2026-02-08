@@ -73,10 +73,8 @@ export default function CompanyPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedPlanName, setSelectedPlanName] = useState<string>('')
   const [isLegalEntity, setIsLegalEntity] = useState(false)
-  const [pendingInvoices, setPendingInvoices] = useState<any[]>([])
   const [syncPaymentLoading, setSyncPaymentLoading] = useState(false)
   const didInitRef = useRef(false)
-  const pendingInvoicesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isTrialActive =
     subscription?.status === 'TRIAL' &&
     !!subscription?.currentPeriodEnd &&
@@ -133,20 +131,6 @@ export default function CompanyPage() {
       return null
     }
   }, [])
-
-  const fetchPendingInvoices = useCallback(async () => {
-    try {
-      const response = await fetch('/api/billing/invoices/pending')
-      if (response.ok) {
-        const data = await safeJson<{ invoices?: any[] }>(response)
-        setPendingInvoices(data?.invoices || [])
-      } else {
-        console.error('[CompanyPage] Failed to load pending invoices:', response.status)
-      }
-    } catch (error) {
-      console.error('Error checking pending invoices:', error)
-    }
-  }, [safeJson])
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -227,27 +211,16 @@ export default function CompanyPage() {
         }
       }
 
-      // Обновляем неоплаченные счета (отдельным запросом)
-      await fetchPendingInvoices()
     } catch (error: any) {
       console.error('Error fetching billing data:', error)
       setBillingError(error.message || 'Не удалось загрузить данные по тарифу')
     } finally {
       setBillingLoading(false)
     }
-  }, [fetchPendingInvoices, safeJson])
-
-  const stopPendingInvoicesPolling = useCallback(() => {
-    if (pendingInvoicesIntervalRef.current) {
-      clearInterval(pendingInvoicesIntervalRef.current)
-      pendingInvoicesIntervalRef.current = null
-    }
-  }, [])
+  }, [safeJson])
 
   useEffect(() => {
-    // Всегда останавливаем поллинг если статус/роль меняются
     if (status !== 'authenticated' || session?.user?.role !== 'admin') {
-      stopPendingInvoicesPolling()
       didInitRef.current = false
     }
 
@@ -274,14 +247,8 @@ export default function CompanyPage() {
         fetchPipelines()
       }
 
-      // Периодически проверяем неоплаченные счета (каждые 30 секунд)
-      if (!pendingInvoicesIntervalRef.current) {
-        pendingInvoicesIntervalRef.current = setInterval(fetchPendingInvoices, 30000)
-      }
-
-      return () => stopPendingInvoicesPolling()
     }
-  }, [fetchBilling, fetchPendingInvoices, fetchPipelines, fetchRolePermissions, fetchUsers, router, session?.user?.role, status, stopPendingInvoicesPolling])
+  }, [fetchBilling, fetchPipelines, fetchRolePermissions, fetchUsers, router, session?.user?.role, status])
 
   const formatPrice = (plan: Plan) => {
     if (!plan.price || plan.price <= 0) {
@@ -874,11 +841,7 @@ export default function CompanyPage() {
       value: subscription?.currentPeriodEnd
         ? new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
         : '—',
-      note: subscription?.currentPeriodEnd
-        ? pendingInvoices.length > 0
-          ? 'Оплачено до (есть счета в ожидании)'
-          : 'Оплачено до'
-        : 'Ещё не настроено',
+      note: subscription?.currentPeriodEnd ? 'Оплачено до' : 'Ещё не настроено',
     },
     {
       label: 'Фильтр',
@@ -937,35 +900,6 @@ export default function CompanyPage() {
         {billingMessage && (
           <div className="rounded-2xl border border-[var(--success)]/30 bg-[var(--success-soft)] px-4 py-3 text-[var(--success)]">
             {billingMessage}
-          </div>
-        )}
-        {pendingInvoices.length > 0 && (
-          <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-800">
-            <div className="font-medium mb-2">Ожидаются оплаты (последние 3):</div>
-            {pendingInvoices.slice(0, 3).map((invoice) => (
-              <div key={invoice.id} className="text-sm text-amber-700 mb-1">
-                Счет №{invoice.invoiceNumber || invoice.id} на сумму{' '}
-                <span className="font-semibold">
-                  {invoice.amount
-                    ? Number(invoice.amount).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '0,00'}{' '}
-                  {invoice.currency || '₽'}
-                </span>
-                {' '}- <span className="font-medium">Ожидание оплаты</span>
-                {invoice.pdfUrl && (
-                  <span className="ml-2">
-                    (<a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-amber-800 underline hover:text-amber-900">
-                      Скачать счет
-                    </a>)
-                  </span>
-                )}
-              </div>
-            ))}
-            {isLegalEntity && (
-              <p className="text-sm mt-2 text-amber-700">
-                Для юридических лиц оплата может занять некоторое время. Мы уведомим вас, как только получим подтверждение.
-              </p>
-            )}
           </div>
         )}
       </div>
