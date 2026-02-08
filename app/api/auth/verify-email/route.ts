@@ -17,10 +17,10 @@ const getBaseUrl = (req: Request) => {
  */
 export async function GET(request: Request) {
   const baseUrl = getBaseUrl(request)
+  const { searchParams } = new URL(request.url)
+  const redirect = searchParams.get('redirect') !== '0'
   try {
-    const { searchParams } = new URL(request.url)
     const token = searchParams.get('token')
-    const redirect = searchParams.get('redirect') !== '0'
 
     if (!token || token.length < 32) {
       if (redirect) return NextResponse.redirect(`${baseUrl}/login?error=invalid_token`)
