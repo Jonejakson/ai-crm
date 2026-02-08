@@ -143,7 +143,6 @@ export async function POST(req: Request) {
     }
 
     // Проверка лимита сделок
-    const companyId = parseInt(user.companyId);
     const { checkDealLimit } = await import("@/lib/subscription-limits");
     const dealLimitCheck = await checkDealLimit(companyId);
     if (!dealLimitCheck.allowed) {
