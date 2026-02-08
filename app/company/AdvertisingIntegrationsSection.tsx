@@ -246,6 +246,7 @@ export default function AdvertisingIntegrationsSection() {
             <h2 className="text-xl font-semibold text-[var(--foreground)]">Рекламные интеграции</h2>
             <p className="text-sm text-[var(--muted)]">
               Подключите Яндекс.Директ и Авито для автоматического получения лидов из рекламы.
+              <span className="block mt-1 text-[var(--muted)]">На стадии бета тестирования.</span>
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
