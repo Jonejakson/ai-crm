@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import UserFilter from '@/components/UserFilter'
 import ExportButton from '@/components/ExportButton'
 import { CalendarIcon, EditIcon, EmptyIcon } from '@/components/Icons'
+import { useSubscription } from '@/lib/subscription-context'
 
 interface Event {
   id: number
@@ -34,6 +35,7 @@ interface Contact {
 }
 
 export default function CalendarClient() {
+  const { subscriptionActive } = useSubscription()
   const [events, setEvents] = useState<Event[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
@@ -335,18 +337,20 @@ export default function CalendarClient() {
           <button
             onClick={() => {
               setSelectedEvent(null)
-              setFormData({
-                title: '',
-                description: '',
-                startDate: new Date().toISOString().split('T')[0],
-                startTime: '09:00',
-                endDate: '',
-                endTime: '',
-                location: '',
-                type: 'meeting',
-                contactId: ''
-              })
-              setIsModalOpen(true)
+              if (subscriptionActive !== false) {
+                setFormData({
+                  title: '',
+                  description: '',
+                  startDate: new Date().toISOString().split('T')[0],
+                  startTime: '09:00',
+                  endDate: '',
+                  endTime: '',
+                  location: '',
+                  type: 'meeting',
+                  contactId: ''
+                })
+                setIsModalOpen(true)
+              }
             }}
             className="btn-primary text-sm"
           >

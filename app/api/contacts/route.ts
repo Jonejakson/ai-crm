@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
-import { checkContactLimit } from "@/lib/subscription-limits";
+import { checkContactLimit, hasActiveSubscription } from "@/lib/subscription-limits";
 import { checkPermission } from "@/lib/permissions";
 
 function normalizePhone(raw: unknown): string | null {
@@ -133,6 +133,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Нет прав на создание контактов" }, { status: 403 });
     }
 
+    if (user.role !== 'owner') {
+      const companyId = parseInt(user.companyId);
+      const hasSub = await hasActiveSubscription(companyId);
+      if (!hasSub) {
+        return NextResponse.json(
+          { error: "Подписка истекла. Продлите подписку для создания контактов." },
+          { status: 403 }
+        );
+      }
+    }
+
     const body = await req.json();
     if (body && typeof body === 'object') {
       body.phone = normalizePhone((body as any).phone)
@@ -256,6 +267,17 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Contact not found or access denied" }, { status: 404 });
     }
 
+    if (user.role !== 'owner') {
+      const companyId = parseInt(user.companyId);
+      const hasSub = await hasActiveSubscription(companyId);
+      if (!hasSub) {
+        return NextResponse.json(
+          { error: "Подписка истекла. Продлите подписку для редактирования контактов." },
+          { status: 403 }
+        );
+      }
+    }
+
     const updateData: any = {
       name: data.name,
       email: data.email,
@@ -303,6 +325,17 @@ export async function DELETE(req: Request) {
     const canDelete = await checkPermission('contacts', 'delete');
     if (!canDelete) {
       return NextResponse.json({ error: "Нет прав на удаление контактов" }, { status: 403 });
+    }
+
+    if (user.role !== 'owner') {
+      const companyId = parseInt(user.companyId);
+      const hasSub = await hasActiveSubscription(companyId);
+      if (!hasSub) {
+        return NextResponse.json(
+          { error: "Подписка истекла. Продлите подписку для удаления контактов." },
+          { status: 403 }
+        );
+      }
     }
 
     const { searchParams } = new URL(req.url);

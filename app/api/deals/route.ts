@@ -4,6 +4,7 @@ import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createDealSchema, updateDealSchema } from "@/lib/validation";
 import { checkPermission } from "@/lib/permissions";
+import { hasActiveSubscription } from "@/lib/subscription-limits";
 
 // Получить все сделки (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -112,6 +113,17 @@ export async function POST(req: Request) {
     const canCreate = await checkPermission('deals', 'create');
     if (!canCreate) {
       return NextResponse.json({ error: "Нет прав на создание сделок" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    if (user.role !== 'owner') {
+      const hasSub = await hasActiveSubscription(companyId);
+      if (!hasSub) {
+        return NextResponse.json(
+          { error: "Подписка истекла. Продлите подписку для создания сделок." },
+          { status: 403 }
+        );
+      }
     }
 
     const body = await req.json();
@@ -277,6 +289,17 @@ export async function PUT(req: Request) {
       }
     }
 
+    if (user.role !== 'owner') {
+      const companyId = parseInt(user.companyId);
+      const hasSub = await hasActiveSubscription(companyId);
+      if (!hasSub) {
+        return NextResponse.json(
+          { error: "Подписка истекла. Продлите подписку для редактирования сделок." },
+          { status: 403 }
+        );
+      }
+    }
+
     // Проверяем изменения для автоматизаций
     const oldStage = existingDeal.stage
     const newStage = data.stage
@@ -393,6 +416,17 @@ export async function DELETE(req: Request) {
     const canDelete = await checkPermission('deals', 'delete');
     if (!canDelete) {
       return NextResponse.json({ error: "Нет прав на удаление сделок" }, { status: 403 });
+    }
+
+    if (user.role !== 'owner') {
+      const companyId = parseInt(user.companyId);
+      const hasSub = await hasActiveSubscription(companyId);
+      if (!hasSub) {
+        return NextResponse.json(
+          { error: "Подписка истекла. Продлите подписку для удаления сделок." },
+          { status: 403 }
+        );
+      }
     }
 
     const { searchParams } = new URL(req.url);

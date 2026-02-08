@@ -8,6 +8,7 @@ import FilesManager from '@/components/FilesManager'
 import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import toast from 'react-hot-toast'
+import { useSubscription } from '@/lib/subscription-context'
 
 interface Contact {
   id: number
@@ -90,6 +91,7 @@ export default function ContactDetailPage() {
   const params = useParams()
   const contactId = params.id
   const { data: session } = useSession()
+  const { subscriptionActive } = useSubscription()
 
   const [contact, setContact] = useState<Contact | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -499,12 +501,14 @@ export default function ContactDetailPage() {
           <button onClick={handleExportToMoysklad} className="btn-secondary">
             Выгрузить в МойСклад
           </button>
+          {subscriptionActive !== false && (
           <button
             onClick={() => setIsTaskModalOpen(true)}
             className="btn-primary"
           >
             + Добавить задачу
           </button>
+          )}
         </div>
       </div>
 

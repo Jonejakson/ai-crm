@@ -10,6 +10,7 @@ import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Comments from '@/components/Comments'
 import toast from 'react-hot-toast'
 import { replaceTemplateVariables, type TemplateContext } from '@/lib/email-template-utils'
+import { useSubscription } from '@/lib/subscription-context'
 import { CustomSelect } from '@/components/CustomSelect'
 
 interface Deal {
@@ -109,6 +110,7 @@ export default function DealDetailPage() {
   const router = useRouter()
   const dealId = params.id
   const { data: session } = useSession()
+  const { subscriptionActive } = useSubscription()
 
   const [deal, setDeal] = useState<Deal | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -778,6 +780,7 @@ export default function DealDetailPage() {
                 )}
               </div>
               {/* Кнопка создания задачи внизу по центру на 70% ширины */}
+              {subscriptionActive !== false && (
               <div className="mt-4 flex justify-center">
                 <button
                   onClick={() => setIsTaskModalOpen(true)}
@@ -787,6 +790,7 @@ export default function DealDetailPage() {
                   + Создать задачу
                 </button>
               </div>
+              )}
             </div>
 
             {/* Комментарии */}

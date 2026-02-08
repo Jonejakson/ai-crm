@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
+import { useSubscription } from '@/lib/subscription-context'
 import UserFilter from '@/components/UserFilter'
 import FilesManager from '@/components/FilesManager'
 import Comments from '@/components/Comments'
@@ -149,6 +150,7 @@ function getDateFromCategory(categoryId: string): Date | null {
 }
 
 export default function TasksPage() {
+  const { subscriptionActive } = useSubscription()
   const [tasks, setTasks] = useState<Task[]>([])
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
@@ -299,7 +301,7 @@ export default function TasksPage() {
     {
       key: 'n',
       ctrl: true,
-      action: () => setIsModalOpen(true),
+      action: () => { if (subscriptionActive !== false) setIsModalOpen(true) },
       description: 'Создать новую задачу',
     },
   ])
@@ -612,12 +614,14 @@ export default function TasksPage() {
             label="Экспорт CSV"
             className="text-sm"
           />
+          {subscriptionActive !== false && (
           <button 
             onClick={() => setIsModalOpen(true)}
             className="btn-primary text-sm"
           >
             + Новая задача
           </button>
+          )}
         </div>
       </div>
       

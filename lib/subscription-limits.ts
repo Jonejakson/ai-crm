@@ -8,6 +8,38 @@ const ACTIVE_STATUSES = [
 ]
 
 /**
+ * Проверить, есть ли у компании действующая подписка (активная или пробная не истекшая).
+ * Без подписки: только просмотр, импорт. Создание/редактирование сделок, контактов и т.д. запрещено.
+ */
+export async function hasActiveSubscription(companyId: number): Promise<boolean> {
+  const now = new Date()
+
+  // ACTIVE: currentPeriodEnd null или в будущем
+  const active = await prisma.subscription.findFirst({
+    where: {
+      companyId,
+      status: SubscriptionStatus.ACTIVE,
+      OR: [
+        { currentPeriodEnd: null },
+        { currentPeriodEnd: { gt: now } },
+      ],
+    },
+  })
+  if (active) return true
+
+  // TRIAL: trialEndsAt в будущем и нет PENDING инвойсов
+  const trial = await prisma.subscription.findFirst({
+    where: {
+      companyId,
+      status: SubscriptionStatus.TRIAL,
+      trialEndsAt: { not: null, gt: now },
+      invoices: { none: { status: 'PENDING' } },
+    },
+  })
+  return !!trial
+}
+
+/**
  * Получить активную подписку компании
  */
 export async function getActiveSubscription(companyId: number) {
