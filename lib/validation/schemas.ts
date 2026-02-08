@@ -26,7 +26,7 @@ export const urlSchema = z.string().url('Неверный формат URL').opt
 // Контакты
 export const createContactSchema = z.object({
   name: z.string().min(1, 'Имя обязательно').max(255, 'Имя слишком длинное'),
-  email: emailSchema,
+  email: emailSchema.optional(), // Email опционален — клиент может быть создан без email
   phone: phoneSchema,
   company: z.string().max(255).optional().nullable(),
   position: z.string().max(255).optional().nullable(),
