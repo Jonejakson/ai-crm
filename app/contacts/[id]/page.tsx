@@ -114,8 +114,6 @@ export default function ContactDetailPage() {
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' })
   const [emailSending, setEmailSending] = useState(false)
   const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
-  const [emailTemplates, setEmailTemplates] = useState<Array<{ id: number; name: string; subject: string; body: string }>>([])
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | ''>('')
   const [taskFormData, setTaskFormData] = useState({
     title: '',
     description: '',
@@ -157,61 +155,7 @@ export default function ContactDetailPage() {
     if (contactId) {
       fetchContactData()
     }
-    fetchEmailTemplates()
   }, [contactId])
-
-  const fetchEmailTemplates = async () => {
-    try {
-      const response = await fetch('/api/email-templates')
-      if (response.ok) {
-        const data = await response.json()
-        setEmailTemplates(data)
-      }
-    } catch (error) {
-      console.error('Error fetching email templates:', error)
-    }
-  }
-
-  const replaceTemplateVariables = (text: string, contact: Contact | null, deal?: Deal | null): string => {
-    if (!contact) return text
-    
-    const { replaceTemplateVariables: replaceVars } = require('@/lib/email-template-utils')
-    return replaceVars(text, {
-      contact: {
-        name: contact.name,
-        email: contact.email,
-        phone: contact.phone,
-        company: contact.company,
-        position: contact.position,
-      },
-      deal: deal ? {
-        title: deal.title,
-        amount: deal.amount,
-        currency: deal.currency,
-        stage: deal.stage,
-        probability: deal.probability,
-      } : undefined,
-      manager: contact.user ? {
-        name: contact.user.name,
-        email: contact.user.email,
-      } : undefined,
-    })
-  }
-
-  const handleTemplateSelect = (templateId: number | '') => {
-    setSelectedTemplateId(templateId)
-    if (templateId && contact) {
-      const template = emailTemplates.find(t => t.id === templateId)
-      if (template) {
-        // Используем первую сделку контакта, если есть
-        const firstDeal = deals.length > 0 ? deals[0] : null
-        setEmailForm({
-          subject: replaceTemplateVariables(template.subject, contact, firstDeal),
-          message: replaceTemplateVariables(template.body, contact, firstDeal),
-        })
-      }
-    }
-  }
 
   useEffect(() => {
     if (contact?.inn) {
@@ -365,7 +309,6 @@ export default function ContactDetailPage() {
 
   const openEmailModal = () => {
     setEmailAlert(null)
-    setSelectedTemplateId('')
     setEmailForm({ subject: '', message: '' })
     setIsEmailModalOpen(true)
   }
@@ -978,26 +921,6 @@ export default function ContactDetailPage() {
             )}
 
             <form onSubmit={handleSendEmail} className="space-y-4">
-              {emailTemplates.length > 0 && (
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
-                    Шаблон (опционально)
-                  </label>
-                  <select
-                    value={selectedTemplateId}
-                    onChange={(e) => handleTemplateSelect(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
-                  >
-                    <option value="">Выберите шаблон...</option>
-                    {emailTemplates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
                   Тема
