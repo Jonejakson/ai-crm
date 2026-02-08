@@ -16,6 +16,30 @@ export default function Header() {
   const [unreadSupportCount, setUnreadSupportCount] = useState(0)
   const [signingOut, setSigningOut] = useState(false)
   const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null)
+  const [companyDisplay, setCompanyDisplay] = useState<{ name: string; isLegalEntity: boolean } | null>(null)
+
+  // Название компании для юр. лиц (из сессии или API для старых сессий)
+  useEffect(() => {
+    if (!session?.user) return
+    if (session.user.isLegalEntity && session.user.companyName) {
+      setCompanyDisplay({ name: session.user.companyName, isLegalEntity: true })
+      return
+    }
+    const load = async () => {
+      try {
+        const res = await fetch('/api/me/company')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.isLegalEntity && data.name) {
+            setCompanyDisplay({ name: data.name, isLegalEntity: true })
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+    load()
+  }, [session])
 
   // Загружаем дату окончания подписки для уведомления (включая случаи с ожидающими счетами)
   useEffect(() => {
@@ -81,9 +105,9 @@ export default function Header() {
           <h1 className="text-2xl md:text-3xl font-bold text-[var(--foreground)] bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
             {session?.user ? session.user.name : 'Flame CRM'}
           </h1>
-          {session?.user?.isLegalEntity && session.user.companyName && (
+          {(companyDisplay?.isLegalEntity && companyDisplay.name) && (
             <p className="text-sm font-medium text-[var(--foreground)] mt-0.5">
-              {session.user.companyName}
+              {companyDisplay.name}
             </p>
           )}
           <p className="text-xs text-[var(--muted)] mt-1">
