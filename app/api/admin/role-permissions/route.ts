@@ -11,7 +11,10 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     if (!(await isAdmin())) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-    const companyId = parseInt(user.companyId)
+    const companyId = parseInt(user.companyId ?? '')
+    if (Number.isNaN(companyId) || companyId <= 0) {
+      return NextResponse.json({ rolePermissions: null })
+    }
     const company = await prisma.company.findUnique({
       where: { id: companyId },
       select: { rolePermissions: true },
@@ -37,7 +40,10 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: 'Invalid rolePermissions' }, { status: 400 })
     }
 
-    const companyId = parseInt(user.companyId)
+    const companyId = parseInt(user.companyId ?? '')
+    if (Number.isNaN(companyId) || companyId <= 0) {
+      return NextResponse.json({ error: 'Invalid company' }, { status: 400 })
+    }
     await prisma.company.update({
       where: { id: companyId },
       data: { rolePermissions: rolePermissions as unknown as Prisma.InputJsonValue },
