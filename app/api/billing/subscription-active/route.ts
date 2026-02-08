@@ -12,10 +12,6 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  if (currentUser.role === 'owner') {
-    return NextResponse.json({ active: true })
-  }
-
   const companyId = Number(currentUser.companyId)
   if (!companyId) {
     return NextResponse.json({ active: false })

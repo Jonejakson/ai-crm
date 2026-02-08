@@ -75,15 +75,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Нет прав на создание задач" }, { status: 403 });
     }
 
-    if (user.role !== 'owner') {
-      const companyId = parseInt(user.companyId);
-      const hasSub = await hasActiveSubscription(companyId);
-      if (!hasSub) {
-        return NextResponse.json(
-          { error: "Подписка истекла. Продлите подписку для создания задач." },
-          { status: 403 }
-        );
-      }
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для создания задач." },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -194,15 +192,13 @@ export async function PUT(req: Request) {
       }
     }
 
-    if (user.role !== 'owner') {
-      const companyId = parseInt(user.companyId);
-      const hasSub = await hasActiveSubscription(companyId);
-      if (!hasSub) {
-        return NextResponse.json(
-          { error: "Подписка истекла. Продлите подписку для редактирования задач." },
-          { status: 403 }
-        );
-      }
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для редактирования задач." },
+        { status: 403 }
+      );
     }
 
     const task = await prisma.task.update({
@@ -247,15 +243,13 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Нет прав на удаление задач" }, { status: 403 });
     }
 
-    if (user.role !== 'owner') {
-      const companyId = parseInt(user.companyId);
-      const hasSub = await hasActiveSubscription(companyId);
-      if (!hasSub) {
-        return NextResponse.json(
-          { error: "Подписка истекла. Продлите подписку для удаления задач." },
-          { status: 403 }
-        );
-      }
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для удаления задач." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

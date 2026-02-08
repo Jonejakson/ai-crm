@@ -102,15 +102,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Нет прав на создание событий" }, { status: 403 });
     }
 
-    if (user.role !== 'owner') {
-      const companyId = parseInt(user.companyId);
-      const hasSub = await hasActiveSubscription(companyId);
-      if (!hasSub) {
-        return NextResponse.json(
-          { error: "Подписка истекла. Продлите подписку для создания событий." },
-          { status: 403 }
-        );
-      }
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для создания событий." },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -213,15 +211,13 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Event not found or access denied" }, { status: 404 });
     }
 
-    if (user.role !== 'owner') {
-      const companyId = parseInt(user.companyId);
-      const hasSub = await hasActiveSubscription(companyId);
-      if (!hasSub) {
-        return NextResponse.json(
-          { error: "Подписка истекла. Продлите подписку для редактирования событий." },
-          { status: 403 }
-        );
-      }
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для редактирования событий." },
+        { status: 403 }
+      );
     }
 
     const event = await prisma.event.update({
@@ -277,15 +273,13 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Нет прав на удаление событий" }, { status: 403 });
     }
 
-    if (user.role !== 'owner') {
-      const companyId = parseInt(user.companyId);
-      const hasSub = await hasActiveSubscription(companyId);
-      if (!hasSub) {
-        return NextResponse.json(
-          { error: "Подписка истекла. Продлите подписку для удаления событий." },
-          { status: 403 }
-        );
-      }
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для удаления событий." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
