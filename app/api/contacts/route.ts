@@ -175,7 +175,6 @@ export async function POST(req: Request) {
     }
 
     // Проверка лимита контактов
-    const companyId = parseInt(user.companyId);
     const contactLimitCheck = await checkContactLimit(companyId);
     if (!contactLimitCheck.allowed) {
       return NextResponse.json(
