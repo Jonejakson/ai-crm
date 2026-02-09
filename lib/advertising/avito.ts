@@ -254,6 +254,10 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
   let createdContacts = 0
   let createdDeals = 0
   let skipped = 0
+  let skippedAuthor = 0
+  let skippedDup = 0
+  let totalMessages = 0
+  let errors = 0
 
   for (const chat of chats) {
     // Достаём последние сообщения
@@ -295,9 +299,14 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
     for (const message of messages) {
       // Фильтр входящих: пропускаем только если автор точно совпадает с нашим accountId
       // (API может не возвращать author_id — тогда обрабатываем все сообщения)
+      totalMessages++
       const authorId = message.author_id ?? message.author?.id ?? message.user_id ?? null
-      if (authorId && accountId && String(authorId).trim() === String(accountId).trim()) {
+      const direction = message.direction ?? message.type
+      const isFromUs = authorId && accountId && String(authorId).trim() === String(accountId).trim()
+      const isOutgoing = direction === 'outgoing' || direction === 'out' || direction === 'send'
+      if (isFromUs || isOutgoing) {
         skipped++
+        skippedAuthor++
         continue
       }
 
@@ -310,6 +319,7 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
       })
       if (existing) {
         skipped++
+        skippedDup++
         continue
       }
 
@@ -353,6 +363,7 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
         // Обновляем cursor для отображения lastSyncAt (дедупликация — только по leadId)
         settings.avito = { ...(settings.avito || {}), lastSyncAt: new Date().toISOString() }
       } catch (e) {
+        errors++
         const msg = e instanceof Error ? e.message : String(e)
         await prisma.advertisingLog.create({
           data: {
@@ -380,11 +391,26 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
   }
 
   if (debug || processed === 0) {
+    const reason =
+      totalMessages === 0
+        ? 'Нет сообщений в чатах'
+        : skippedAuthor === totalMessages
+          ? `Все ${totalMessages} сообщений от вас. Нужны входящие от покупателей — тогда появятся сделки.`
+          : skippedDup > 0 && skippedAuthor + skippedDup >= totalMessages
+            ? 'Все сообщения уже обработаны ранее (в логах).'
+            : errors > 0
+              ? `${errors} ошибок при обработке. Проверьте настройки: воронка, источник, ответственный.`
+              : `${skippedAuthor} от вас, ${skippedDup} в логах.`
+
     result.debug = {
       chatsCount: chats.length,
+      totalMessages,
+      skippedAuthor,
+      skippedDup,
+      errors,
       hint: chats.length === 0
         ? 'API вернул 0 чатов. Проверьте User ID (номер профиля из портала Авито) и что есть диалоги.'
-        : `${chats.length} чатов получено, но обработано 0. Возможные причины: все сообщения от вас (author_id=accountId), все уже в логах.`,
+        : `${chats.length} чатов, ${totalMessages} сообщений. Обработано 0. ${reason}`,
     }
   }
 
