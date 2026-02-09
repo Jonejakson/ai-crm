@@ -175,6 +175,34 @@ export async function debugAvito(params: { companyId: number }) {
       : []
   const chatKeys = chats.length > 0 ? Object.keys(chats[0] || {}) : []
   const topLevelKeys = Object.keys(data)
+  let messagesInfo: { url?: string; topKeys?: string[]; hasMessages?: boolean; messageCount?: number; sample?: string } = {}
+
+  if (chats.length > 0) {
+    const chatId = chats[0].id ?? chats[0].chat_id ?? chats[0].chatId ?? chats[0].context_id
+    if (chatId) {
+      const messagesUrl = `https://api.avito.ru/messenger/v2/accounts/${encodeURIComponent(accountId)}/chats/${encodeURIComponent(chatId)}/messages?limit=5`
+      const msgResp = await avitoFetchJson<any>(messagesUrl, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+        timeoutMs: 10000,
+      })
+      const mdat = msgResp.data as any
+      const extracted = Array.isArray(mdat?.messages) ? mdat.messages
+        : Array.isArray(mdat?.result) ? mdat.result
+        : Array.isArray(mdat?.items) ? mdat.items
+        : Array.isArray(mdat?.data) ? mdat.data
+        : (mdat?.result && typeof mdat.result === 'object' && !Array.isArray(mdat.result))
+          ? (mdat.result.messages ?? mdat.result.items ?? [])
+          : []
+      messagesInfo = {
+        url: messagesUrl,
+        topKeys: msgResp.ok ? Object.keys(mdat || {}) : undefined,
+        hasMessages: extracted.length > 0,
+        messageCount: extracted.length,
+        sample: msgResp.ok ? JSON.stringify(msgResp.data).slice(0, 800) : undefined,
+      }
+    }
+  }
 
   return {
     ok: true,
@@ -184,6 +212,7 @@ export async function debugAvito(params: { companyId: number }) {
     topLevelKeys,
     firstChatKeys: chatKeys,
     rawSample: chats[0] ? JSON.stringify(chats[0]).slice(0, 500) : null,
+    messagesInFirstChat: messagesInfo,
   }
 }
 
@@ -258,6 +287,7 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
   let skippedDup = 0
   let totalMessages = 0
   let errors = 0
+  let firstMsgResponseKeys: string[] = []
 
   for (const chat of chats) {
     // Достаём последние сообщения
@@ -292,11 +322,25 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
     const messages: any[] = Array.isArray(md?.messages) ? md.messages
       : Array.isArray(md?.result) ? md.result
       : Array.isArray(md?.items) ? md.items
+      : Array.isArray(md?.data) ? md.data
+      : Array.isArray(md?.resources) ? md.resources
       : (md?.result && typeof md.result === 'object' && !Array.isArray(md.result))
-        ? (md.result.messages ?? md.result.items ?? [])
-        : []
+        ? (md.result.messages ?? md.result.items ?? md.result.resources ?? [])
+        : (md?.data && typeof md.data === 'object' && !Array.isArray(md.data))
+          ? (md.data.messages ?? md.data.items ?? md.data.resources ?? [])
+          : []
+    // Сохраняем встроенные сообщения в чате, если API вернул 0
+    const chatMessages = Array.isArray(chat?.messages) ? chat.messages : Array.isArray(chat?.last_message) ? [chat.last_message] : []
+    const allMessages = messages.length > 0 ? messages : chatMessages
 
-    for (const message of messages) {
+    if (messages.length === 0 && firstMsgResponseKeys.length === 0 && md) {
+      firstMsgResponseKeys = Object.keys(md)
+      if (md.result && typeof md.result === 'object') {
+        firstMsgResponseKeys.push('result.' + Object.keys(md.result).join(','))
+      }
+    }
+
+    for (const message of allMessages) {
       // Фильтр входящих: пропускаем только если автор точно совпадает с нашим accountId
       // (API может не возвращать author_id — тогда обрабатываем все сообщения)
       totalMessages++
@@ -408,6 +452,7 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
       skippedAuthor,
       skippedDup,
       errors,
+      messageResponseKeys: firstMsgResponseKeys.length > 0 ? firstMsgResponseKeys : undefined,
       hint: chats.length === 0
         ? 'API вернул 0 чатов. Проверьте User ID (номер профиля из портала Авито) и что есть диалоги.'
         : `${chats.length} чатов, ${totalMessages} сообщений. Обработано 0. ${reason}`,
