@@ -4,9 +4,12 @@ import { parsePipelineStages } from '@/lib/pipelines'
 import { processAutomations } from '@/lib/automations'
 
 type AvitoTokenResponse = {
-  access_token: string
+  access_token?: string
+  accessToken?: string
   token_type?: string
+  tokenType?: string
   expires_in?: number
+  expiresIn?: number
 }
 
 export type AvitoRoutingSettings = {
@@ -94,21 +97,28 @@ export async function getAvitoAccessToken(params: {
     throw new Error('Avito credentials are missing (clientId/clientSecret)')
   }
 
-  const qs = new URLSearchParams({
+  const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: clientId,
     client_secret: clientSecret,
-  })
+  }).toString()
 
-  const url = `https://api.avito.ru/token/?${qs.toString()}`
-  const resp = await avitoFetchJson<AvitoTokenResponse>(url, { method: 'GET', timeoutMs: 15000 })
+  // Avito API: POST с form-urlencoded (OAuth 2.0). GET /token/ возвращает 404 в новых версиях.
+  const url = 'https://api.avito.ru/token'
+  const resp = await avitoFetchJson<AvitoTokenResponse>(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+    timeoutMs: 15000,
+  })
   if (!resp.ok) {
     throw new Error(`Avito token error: status=${resp.status} body=${resp.text}`)
   }
-  if (!resp.data?.access_token) {
+  const token = resp.data?.access_token ?? resp.data?.accessToken
+  if (!token) {
     throw new Error('Avito token error: no access_token in response')
   }
-  return resp.data.access_token
+  return token
 }
 
 /**
