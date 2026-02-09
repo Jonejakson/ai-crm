@@ -243,7 +243,12 @@ export default function AdvertisingIntegrationsSection() {
       <div className="glass-panel rounded-3xl p-6 space-y-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">Рекламные интеграции</h2>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">
+              Рекламные интеграции
+              <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                На стадии бета тестирования
+              </span>
+            </h2>
             <p className="text-sm text-[var(--muted)]">
               Подключите Яндекс.Директ и Авито для автоматического получения лидов из рекламы.
             </p>

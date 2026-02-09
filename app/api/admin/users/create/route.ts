@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     // Хеширование пароля
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Создание пользователя в компании админа
+    // Создание пользователя в компании админа (подтверждение email не требуется)
     const newUser = await prisma.user.create({
       data: {
         email,
@@ -70,6 +70,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         role,
         companyId,
+        emailVerifiedAt: new Date(), // Создан админом — email сразу подтверждён
       },
       select: {
         id: true,

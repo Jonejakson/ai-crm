@@ -26,6 +26,10 @@ services:
     container_name: crm_app
     ports:
       - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     volumes:
       # Persist uploaded files between container rebuilds/restarts
       - uploads_data:/app/public/uploads
@@ -76,6 +80,8 @@ services:
       
       # Node Environment
       NODE_ENV: ${NODE_ENV:-production}
+      # Ограничение heap Node.js (можно переопределить через NODE_OPTIONS в .env)
+      NODE_OPTIONS: --max-old-space-size=768
     depends_on:
       postgres:
         condition: service_healthy

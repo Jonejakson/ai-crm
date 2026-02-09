@@ -137,6 +137,9 @@ model User {
   companyId                       Int
   passwordResetToken              String? // Токен для восстановления пароля
   passwordResetExpires            DateTime? // Срок действия токена
+  emailVerifiedAt                 DateTime? // Подтверждение email (для админа при регистрации)
+  emailVerificationToken          String? // Токен для подтверждения email
+  emailVerificationExpires       DateTime? // Срок действия токена
   createdAt                       DateTime                 @default(now())
   updatedAt                       DateTime                 @updatedAt
   tasks                           Task[]

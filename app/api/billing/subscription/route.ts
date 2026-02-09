@@ -20,12 +20,17 @@ export async function GET() {
   }
 
   try {
+    const companyId = Number(currentUser.companyId)
+    if (!companyId || Number.isNaN(companyId) || companyId <= 0) {
+      return NextResponse.json({ subscription: null })
+    }
+
     const now = new Date()
 
     // 1) Сначала ищем реально активную подписку
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
-        companyId: Number(currentUser.companyId),
+        companyId,
         status: SubscriptionStatus.ACTIVE,
         OR: [
           { currentPeriodEnd: null },
@@ -43,7 +48,7 @@ export async function GET() {
     // 2) Если активной нет — возвращаем пробную (только настоящую trial) и только без неоплаченных инвойсов
     const trialSubscription = await prisma.subscription.findFirst({
       where: {
-        companyId: Number(currentUser.companyId),
+        companyId,
         status: SubscriptionStatus.TRIAL,
         trialEndsAt: { not: null, gt: now },
         invoices: {

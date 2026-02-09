@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegister, setIsRegister] = useState(false)
   const [name, setName] = useState('')
@@ -29,6 +30,15 @@ export default function LoginPage() {
   useEffect(() => {
     document.documentElement.classList.remove('dark')
   }, [])
+
+  // Сообщения из URL (подтверждение email, ошибки)
+  useEffect(() => {
+    const verified = searchParams.get('verified')
+    const err = searchParams.get('error')
+    if (verified === '1') setSuccess('Email подтверждён. Теперь вы можете войти.')
+    if (err === 'invalid_token' || err === 'expired_or_invalid') setError('Ссылка подтверждения недействительна или истекла.')
+    if (err === 'verify_failed') setError('Ошибка при подтверждении. Попробуйте снова.')
+  }, [searchParams])
 
   // Если пользователь уже авторизован, перенаправляем на главную страницу
   useEffect(() => {
@@ -95,6 +105,7 @@ export default function LoginPage() {
     }
     
     setError('')
+    setSuccess('')
     setIsLoading(true)
 
     if (isRegister) {
@@ -129,9 +140,15 @@ export default function LoginPage() {
           return
         }
 
-        console.log('Registration successful:', data)
+        // Юр лицо: требуется подтверждение email — не входим автоматически
+        if (data.needsEmailVerification) {
+          setSuccess(data.message || 'Проверьте email — на него отправлена ссылка для подтверждения.')
+          setIsRegister(false)
+          setIsLoading(false)
+          return
+        }
 
-        // После регистрации автоматически входим
+        // Физ лицо или сразу подтверждён — входим автоматически
         const result = await nextAuthSignIn('credentials', {
           email,
           password,
@@ -156,7 +173,7 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError('Неверный email или пароль')
+        setError((result.error as any)?.message || 'Неверный email или пароль')
         setIsLoading(false)
         return
       }
@@ -201,6 +218,11 @@ export default function LoginPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               {error}
+            </div>
+          )}
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+              {success}
             </div>
           )}
 

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
+import { useSubscription } from '@/lib/subscription-context'
 import PipelineStagesEditor from '@/components/PipelineStagesEditor'
 import PipelineManager from '@/components/PipelineManager'
 import Comments from '@/components/Comments'
@@ -149,6 +150,7 @@ interface User {
 
 export default function DealsPage() {
   const { data: session } = useSession()
+  const { subscriptionActive } = useSubscription()
   const router = useRouter()
   const [deals, setDeals] = useState<Deal[]>([])
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
@@ -492,7 +494,7 @@ export default function DealsPage() {
     {
       key: 'n',
       ctrl: true,
-      action: () => setIsModalOpen(true),
+      action: () => { if (subscriptionActive !== false) setIsModalOpen(true) },
       description: 'Создать новую сделку',
     },
   ])
@@ -1206,12 +1208,14 @@ export default function DealsPage() {
               </div>
             </div>
           </div>
+          {subscriptionActive !== false && (
           <button
             onClick={() => setIsModalOpen(true)}
             className="btn-primary text-sm flex-shrink-0 w-full md:w-auto"
           >
             + Новая сделка
           </button>
+          )}
         </div>
         <p className="text-sm text-[var(--muted)] mb-4">
           Перетаскивайте карточки между колонками, чтобы изменять этапы и держать воронку в актуальном состоянии.
@@ -1411,6 +1415,7 @@ export default function DealsPage() {
                       value={formData.contactId}
                       required
                     />
+                    {subscriptionActive !== false && (
                     <button
                       type="button"
                       onClick={() => {
@@ -1422,6 +1427,7 @@ export default function DealsPage() {
                     >
                       + Создать нового клиента
                     </button>
+                    )}
                   </div>
                 </div>
               </div>

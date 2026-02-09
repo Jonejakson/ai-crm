@@ -17,7 +17,10 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden: Admin only" }, { status: 403 });
     }
 
-    const companyId = parseInt(user.companyId);
+    const companyId = parseInt(user.companyId ?? '');
+    if (Number.isNaN(companyId) || companyId <= 0) {
+      return NextResponse.json({ error: "Invalid company" }, { status: 400 });
+    }
 
     // Получаем всех пользователей компании
     const users = await prisma.user.findMany({

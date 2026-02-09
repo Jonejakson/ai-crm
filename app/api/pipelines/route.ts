@@ -13,7 +13,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const companyId = parseInt(user.companyId);
+    const companyId = parseInt(user.companyId ?? '');
+    if (Number.isNaN(companyId) || companyId <= 0) {
+      return NextResponse.json([]);
+    }
 
     const pipelines = await prisma.pipeline.findMany({
       where: {

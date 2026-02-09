@@ -5,6 +5,7 @@ import 'reactflow/dist/style.css'
 import { SessionProvider } from 'next-auth/react'
 import { Toaster } from 'react-hot-toast'
 import { ThemeProvider } from '@/lib/theme'
+import { SubscriptionProvider } from '@/lib/subscription-context'
 import { useGlobalShortcuts } from '@/lib/keyboard-shortcuts'
 import KeyboardShortcutsHelp from '@/components/KeyboardShortcutsHelp'
 import Sidebar from '@/components/Sidebar'
@@ -33,6 +34,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <SessionProvider>
+        <SubscriptionProvider>
         <ThemeProvider>
           <Toaster
           position="top-right"
@@ -80,6 +82,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         )}
       </ThemeProvider>
+        </SubscriptionProvider>
     </SessionProvider>
     </ErrorBoundary>
   )

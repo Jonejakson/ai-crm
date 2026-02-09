@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import crypto from "crypto"
 import { validateRequest, createUserSchema } from "@/lib/validation"
-import { SubscriptionStatus, BillingInterval, PlanSlug } from '@prisma/client'
+import { isEmailConfigured, sendEmail } from "@/lib/email"
 
 // В production НЕ загружаем dotenv - используем переменные из Docker/системы
 // Загружаем переменные окружения только в development
@@ -131,6 +132,11 @@ export async function POST(req: Request) {
         lastName
       })
 
+      // Нужно ли подтверждение email: любой админ при регистрации (юр или физ лицо)
+      const needsEmailVerification = userRole === 'admin' // Первый в компании = админ = требуется подтверждение
+      const verificationToken = needsEmailVerification ? crypto.randomBytes(32).toString('hex') : null
+      const verificationExpires = needsEmailVerification ? new Date(Date.now() + 48 * 60 * 60 * 1000) : null // 48 часов
+
       // Создание пользователя
       const user = await tx.user.create({
         data: {
@@ -141,6 +147,9 @@ export async function POST(req: Request) {
           phone: phone || null,
           companyId: companyIdForUser, // Теперь всегда определен как number
           role: userRole,
+          emailVerifiedAt: needsEmailVerification ? null : new Date(), // Сразу подтверждён если не требуется
+          emailVerificationToken: verificationToken,
+          emailVerificationExpires: verificationExpires,
         },
         select: {
           id: true,
@@ -155,11 +164,49 @@ export async function POST(req: Request) {
 
       // Подписку создаем при первом входе пользователя (старт пробного периода с первого входа)
 
-      return user
+      return { user, needsEmailVerification, verificationToken }
     })
 
+    // Отправка письма с подтверждением (только для админа при регистрации компании)
+    if (result.needsEmailVerification && result.verificationToken && isEmailConfigured()) {
+      try {
+        const verifyUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/verify-email?token=${result.verificationToken}`
+        await sendEmail({
+          to: result.user.email,
+          subject: 'Подтвердите email — Flame CRM',
+          html: `
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"></head>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+              <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2>Подтверждение email</h2>
+                <p>Здравствуйте, ${result.user.name}!</p>
+                <p>Вы зарегистрировались в Flame CRM. Для завершения регистрации подтвердите ваш email, нажав на кнопку ниже:</p>
+                <p><a href="${verifyUrl}" style="display: inline-block; padding: 12px 24px; background-color: #3b82f6; color: white; text-decoration: none; border-radius: 6px;">Подтвердить email</a></p>
+                <p>Или скопируйте ссылку в браузер:</p>
+                <p style="word-break: break-all; font-size: 12px; color: #666;">${verifyUrl}</p>
+                <p><strong>Ссылка действительна 48 часов.</strong></p>
+                <p>С уважением,<br>Команда Flame CRM</p>
+              </div>
+            </body>
+            </html>
+          `,
+          text: `Подтвердите email: ${verifyUrl}\n\nСсылка действительна 48 часов.`,
+        })
+      } catch (emailErr: any) {
+        console.error('[register] Failed to send verification email:', emailErr)
+      }
+    }
+
     return NextResponse.json(
-      { message: "Пользователь успешно создан", user: result },
+      { 
+        message: result.needsEmailVerification 
+          ? "Регистрация прошла успешно. Проверьте email — на него отправлена ссылка для подтверждения. После подтверждения вы сможете войти в систему."
+          : "Пользователь успешно создан",
+        user: result.user,
+        needsEmailVerification: result.needsEmailVerification,
+      },
       { status: 201 }
     )
   } catch (error: any) {

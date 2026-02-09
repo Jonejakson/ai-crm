@@ -9,7 +9,7 @@ import TagsManager from '@/components/TagsManager'
 import CustomFieldsEditor from '@/components/CustomFieldsEditor'
 import Comments from '@/components/Comments'
 import toast from 'react-hot-toast'
-import { replaceTemplateVariables, type TemplateContext } from '@/lib/email-template-utils'
+import { useSubscription } from '@/lib/subscription-context'
 import { CustomSelect } from '@/components/CustomSelect'
 
 interface Deal {
@@ -109,6 +109,7 @@ export default function DealDetailPage() {
   const router = useRouter()
   const dealId = params.id
   const { data: session } = useSession()
+  const { subscriptionActive } = useSubscription()
 
   const [deal, setDeal] = useState<Deal | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -117,8 +118,6 @@ export default function DealDetailPage() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
-  const [emailTemplates, setEmailTemplates] = useState<Array<{ id: number; name: string; subject: string; body: string }>>([])
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | ''>('')
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' })
   const [emailSending, setEmailSending] = useState(false)
   const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
@@ -146,7 +145,6 @@ export default function DealDetailPage() {
       fetchDealData()
       fetchDealSources()
       fetchDealTypes()
-      fetchEmailTemplates()
       fetchStages()
     }
   }, [dealId])
@@ -366,54 +364,8 @@ export default function DealDetailPage() {
     }
   }
 
-  const fetchEmailTemplates = async () => {
-    try {
-      const response = await fetch('/api/email-templates')
-      if (response.ok) {
-        const data = await response.json()
-        setEmailTemplates(data)
-      }
-    } catch (error) {
-      console.error('Error fetching email templates:', error)
-    }
-  }
-
-  const handleTemplateSelect = (templateId: number | '') => {
-    setSelectedTemplateId(templateId)
-    if (templateId && deal) {
-      const template = emailTemplates.find(t => t.id === templateId)
-      if (template) {
-        const context: TemplateContext = {
-          contact: {
-            name: deal.contact.name,
-            email: deal.contact.email,
-            phone: deal.contact.phone,
-            company: deal.contact.company,
-            position: deal.contact.position,
-          },
-          deal: {
-            title: deal.title,
-            amount: deal.amount,
-            currency: deal.currency,
-            stage: deal.stage,
-            probability: deal.probability,
-          },
-          manager: deal.user ? {
-            name: deal.user.name,
-            email: deal.user.email,
-          } : undefined,
-        }
-        setEmailForm({
-          subject: replaceTemplateVariables(template.subject, context),
-          message: replaceTemplateVariables(template.body, context),
-        })
-      }
-    }
-  }
-
   const openEmailModal = () => {
     setEmailAlert(null)
-    setSelectedTemplateId('')
     setEmailForm({ subject: '', message: '' })
     setIsEmailModalOpen(true)
   }
@@ -778,6 +730,7 @@ export default function DealDetailPage() {
                 )}
               </div>
               {/* Кнопка создания задачи внизу по центру на 70% ширины */}
+              {subscriptionActive !== false && (
               <div className="mt-4 flex justify-center">
                 <button
                   onClick={() => setIsTaskModalOpen(true)}
@@ -787,6 +740,7 @@ export default function DealDetailPage() {
                   + Создать задачу
                 </button>
               </div>
+              )}
             </div>
 
             {/* Комментарии */}
@@ -1092,26 +1046,6 @@ export default function DealDetailPage() {
             )}
 
             <form onSubmit={handleSendEmail} className="space-y-4">
-              {emailTemplates.length > 0 && (
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
-                    Шаблон (опционально)
-                  </label>
-                  <select
-                    value={selectedTemplateId}
-                    onChange={(e) => handleTemplateSelect(e.target.value ? Number(e.target.value) : '')}
-                    className="w-full rounded-2xl border border-white/50 bg-white/80 px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-0"
-                  >
-                    <option value="">Выберите шаблон...</option>
-                    {emailTemplates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 mb-2">
                   Тема

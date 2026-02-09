@@ -5,6 +5,7 @@ import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createEventSchema, updateEventSchema } from "@/lib/validation";
 import { createNotification } from "@/lib/notifications";
 import { checkPermission } from "@/lib/permissions";
+import { hasActiveSubscription } from "@/lib/subscription-limits";
 
 // Получить все события (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -87,7 +88,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const user = await getCurrentUser();
-    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const userId = getUserId(user);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -96,6 +100,15 @@ export async function POST(req: Request) {
     const canCreate = await checkPermission('events', 'create');
     if (!canCreate) {
       return NextResponse.json({ error: "Нет прав на создание событий" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для создания событий." },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -169,7 +182,10 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   try {
     const user = await getCurrentUser();
-    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const userId = getUserId(user);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -193,6 +209,15 @@ export async function PUT(req: Request) {
 
     if (!existingEvent || existingEvent.userId !== userId) {
       return NextResponse.json({ error: "Event not found or access denied" }, { status: 404 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для редактирования событий." },
+        { status: 403 }
+      );
     }
 
     const event = await prisma.event.update({
@@ -234,7 +259,10 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const user = await getCurrentUser();
-    
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const userId = getUserId(user);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -243,6 +271,15 @@ export async function DELETE(req: Request) {
     const canDelete = await checkPermission('events', 'delete');
     if (!canDelete) {
       return NextResponse.json({ error: "Нет прав на удаление событий" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для удаления событий." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

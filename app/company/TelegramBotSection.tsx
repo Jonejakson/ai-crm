@@ -229,7 +229,12 @@ export default function TelegramBotSection() {
       <div className="glass-panel rounded-3xl p-6 space-y-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-[var(--foreground)]">Telegram Bot (на стадии бета-тестирования)</h2>
+            <h2 className="text-xl font-semibold text-[var(--foreground)]">
+              Telegram Bot
+              <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                На стадии бета тестирования
+              </span>
+            </h2>
             <p className="text-sm text-[var(--muted)]">
               Подключите Telegram бота для автоматического получения заявок от клиентов.
             </p>
@@ -263,7 +268,10 @@ export default function TelegramBotSection() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold text-[var(--foreground)]">
-                      Telegram Bot (на стадии бета-тестирования)
+                      Telegram Bot
+                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        На стадии бета тестирования
+                      </span>
                     </h3>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -334,6 +342,9 @@ export default function TelegramBotSection() {
               <div>
                 <h3 className="text-xl font-semibold text-[var(--foreground)]">
                   Настройка Telegram бота
+                  <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                    На стадии бета тестирования
+                  </span>
                 </h3>
                 <p className="text-sm text-[var(--muted)]">
                   Получите токен бота у @BotFather в Telegram

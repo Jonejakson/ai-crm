@@ -5,6 +5,7 @@ import { getDirectWhereCondition } from "@/lib/access-control";
 import { createNotification, checkOverdueTasks } from "@/lib/notifications";
 import { validateRequest, createTaskSchema, updateTaskSchema } from "@/lib/validation";
 import { checkPermission } from "@/lib/permissions";
+import { hasActiveSubscription } from "@/lib/subscription-limits";
 
 // 🔹 Получить все задачи (с учетом роли и фильтра по пользователю для админа)
 export async function GET(req: Request) {
@@ -72,6 +73,15 @@ export async function POST(req: Request) {
     const canCreate = await checkPermission('tasks', 'create');
     if (!canCreate) {
       return NextResponse.json({ error: "Нет прав на создание задач" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для создания задач." },
+        { status: 403 }
+      );
     }
 
     const body = await req.json();
@@ -182,6 +192,15 @@ export async function PUT(req: Request) {
       }
     }
 
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для редактирования задач." },
+        { status: 403 }
+      );
+    }
+
     const task = await prisma.task.update({
       where: { id: data.id },
       data: {
@@ -222,6 +241,15 @@ export async function DELETE(req: Request) {
     const canDelete = await checkPermission('tasks', 'delete');
     if (!canDelete) {
       return NextResponse.json({ error: "Нет прав на удаление задач" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для удаления задач." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

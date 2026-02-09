@@ -8,6 +8,8 @@ declare module "next-auth" {
       name: string
       role: string
       companyId: string
+      companyName?: string
+      isLegalEntity?: boolean
     }
   }
 
@@ -25,6 +27,8 @@ declare module "next-auth/jwt" {
     id: string
     role: string
     companyId: string
+    companyName?: string
+    isLegalEntity?: boolean
   }
 }
 

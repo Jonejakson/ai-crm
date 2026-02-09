@@ -15,6 +15,9 @@ export async function GET() {
 
   try {
     const companyId = Number(currentUser.companyId)
+    if (!companyId || Number.isNaN(companyId) || companyId <= 0) {
+      return NextResponse.json({ endDate: null })
+    }
 
     // Ищем подписки с датой окончания (ACTIVE, TRIAL, PAST_DUE — включая с PENDING инвойсами)
     const subscriptions = await prisma.subscription.findMany({

@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { getCurrentUser, getUserId } from "@/lib/get-session";
 import { getDirectWhereCondition } from "@/lib/access-control";
 import { validateRequest, createContactSchema, updateContactSchema } from "@/lib/validation";
-import { checkContactLimit } from "@/lib/subscription-limits";
+import { checkContactLimit, hasActiveSubscription } from "@/lib/subscription-limits";
 import { checkPermission } from "@/lib/permissions";
 
 function normalizePhone(raw: unknown): string | null {
@@ -133,9 +133,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Нет прав на создание контактов" }, { status: 403 });
     }
 
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для создания контактов." },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     if (body && typeof body === 'object') {
       body.phone = normalizePhone((body as any).phone)
+      // Пустой/отсутствующий email → null, чтобы валидация не требовала формат
+      const rawEmail = (body as any).email
+      if (rawEmail === undefined || rawEmail === null || rawEmail === '' || (typeof rawEmail === 'string' && rawEmail.trim() === '')) {
+        (body as any).email = null
+      }
     }
     
     // Валидация с помощью Zod
@@ -161,7 +175,6 @@ export async function POST(req: Request) {
     }
 
     // Проверка лимита контактов
-    const companyId = parseInt(user.companyId);
     const contactLimitCheck = await checkContactLimit(companyId);
     if (!contactLimitCheck.allowed) {
       return NextResponse.json(
@@ -217,6 +230,11 @@ export async function PUT(req: Request) {
     const body = await req.json();
     if (body && typeof body === 'object') {
       body.phone = normalizePhone((body as any).phone)
+      // Пустой email → null
+      const rawEmail = (body as any).email
+      if (rawEmail === '' || (typeof rawEmail === 'string' && rawEmail.trim() === '')) {
+        (body as any).email = null
+      }
     }
     
     // Валидация с помощью Zod
@@ -244,6 +262,15 @@ export async function PUT(req: Request) {
 
     if (!contact) {
       return NextResponse.json({ error: "Contact not found or access denied" }, { status: 404 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для редактирования контактов." },
+        { status: 403 }
+      );
     }
 
     const updateData: any = {
@@ -293,6 +320,15 @@ export async function DELETE(req: Request) {
     const canDelete = await checkPermission('contacts', 'delete');
     if (!canDelete) {
       return NextResponse.json({ error: "Нет прав на удаление контактов" }, { status: 403 });
+    }
+
+    const companyId = parseInt(user.companyId);
+    const hasSub = await hasActiveSubscription(companyId);
+    if (!hasSub) {
+      return NextResponse.json(
+        { error: "Подписка истекла. Продлите подписку для удаления контактов." },
+        { status: 403 }
+      );
     }
 
     const { searchParams } = new URL(req.url);

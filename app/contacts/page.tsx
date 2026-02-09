@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts'
+import { useSubscription } from '@/lib/subscription-context'
 import Modal from '@/components/Modal'
 import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
@@ -26,6 +27,7 @@ interface Contact {
 }
 
 export default function ContactsPage() {
+  const { subscriptionActive } = useSubscription()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -63,7 +65,7 @@ export default function ContactsPage() {
     {
       key: 'n',
       ctrl: true,
-      action: () => setIsModalOpen(true),
+      action: () => { if (subscriptionActive !== false) setIsModalOpen(true) },
       description: 'Создать новый контакт',
     },
   ])
@@ -456,12 +458,14 @@ export default function ContactsPage() {
             label="Экспорт CSV"
             className="text-sm"
           />
+          {subscriptionActive !== false && (
           <button 
             onClick={() => setIsModalOpen(true)}
             className="btn-primary text-sm"
           >
             + Добавить клиента
           </button>
+          )}
         </div>
       </div>
 
