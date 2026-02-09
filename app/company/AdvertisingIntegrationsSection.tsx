@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import { SearchIcon, BuildingIcon } from '@/components/Icons'
 
 interface AdvertisingIntegration {
@@ -305,9 +306,15 @@ export default function AdvertisingIntegrationsSection() {
                     const res = await fetch('/api/advertising/avito/sync', { method: 'POST' })
                     const data = await res.json().catch(() => ({}))
                     if (!res.ok) throw new Error(data?.error || 'Sync failed')
+                    const msg = data.processed !== undefined
+                      ? `Обработано: ${data.processed}, контактов: ${data.createdContacts ?? 0}, сделок: ${data.createdDeals ?? 0}`
+                      : 'Синхронизация завершена'
+                    toast.success(msg)
                     await fetchInitialData()
                   } catch (e) {
-                    setError(e instanceof Error ? e.message : 'Sync failed')
+                    const errMsg = e instanceof Error ? e.message : 'Sync failed'
+                    setError(errMsg)
+                    toast.error(errMsg)
                   } finally {
                     setProcessing(false)
                   }
@@ -409,15 +416,18 @@ export default function AdvertisingIntegrationsSection() {
                   </div>
                   <div>
                     <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                      User ID (опционально)
+                      User ID (обязательно для sync)
                     </label>
                     <input
                       type="text"
                       value={formState.accountId}
                       onChange={(e) => setFormState((prev) => ({ ...prev, accountId: e.target.value }))}
                       className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      placeholder="user_id"
+                      placeholder="101490378"
                     />
+                    <p className="text-xs text-[var(--muted)] mt-1">
+                      «Номер профиля» из портала Авито (Мои приложения → слева внизу)
+                    </p>
                   </div>
                 </>
               )}

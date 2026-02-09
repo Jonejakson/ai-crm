@@ -220,9 +220,10 @@ export async function syncAvito(params: { companyId: number; limit?: number }) {
     const messages = (msgResp.data.messages || msgResp.data.result || msgResp.data.items || []) as any[]
 
     for (const message of messages) {
-      // Пропускаем сообщения от нас (продавца) — обрабатываем только входящие от клиента
-      const authorId = message.author_id ?? message.author?.id ?? null
-      if (authorId && accountId && String(authorId) === String(accountId)) {
+      // Фильтр входящих: пропускаем только если автор точно совпадает с нашим accountId
+      // (API может не возвращать author_id — тогда обрабатываем все сообщения)
+      const authorId = message.author_id ?? message.author?.id ?? message.user_id ?? null
+      if (authorId && accountId && String(authorId).trim() === String(accountId).trim()) {
         skipped++
         continue
       }
