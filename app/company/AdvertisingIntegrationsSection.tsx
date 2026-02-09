@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { SearchIcon, BuildingIcon } from '@/components/Icons'
+import { SearchIcon } from '@/components/Icons'
 
 interface AdvertisingIntegration {
   id: number
@@ -37,12 +37,8 @@ interface CompanyUser {
   email: string
 }
 
-type RoutingMode = 'default' | 'avito_manager' | 'ad'
-type RoutingPair = { externalId: string; userId: string }
-
 export default function AdvertisingIntegrationsSection() {
   const [yandexIntegration, setYandexIntegration] = useState<AdvertisingIntegration | null>(null)
-  const [avitoIntegration, setAvitoIntegration] = useState<AdvertisingIntegration | null>(null)
   const [loading, setLoading] = useState(true)
   const [sources, setSources] = useState<DealSource[]>([])
   const [pipelines, setPipelines] = useState<Pipeline[]>([])
@@ -50,7 +46,7 @@ export default function AdvertisingIntegrationsSection() {
   const [modalOpen, setModalOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedPlatform, setSelectedPlatform] = useState<'YANDEX_DIRECT' | 'AVITO' | null>(null)
+  const [selectedPlatform, setSelectedPlatform] = useState<'YANDEX_DIRECT' | null>(null)
   const [origin, setOrigin] = useState('')
 
   const [formState, setFormState] = useState({
@@ -59,8 +55,6 @@ export default function AdvertisingIntegrationsSection() {
     accountId: '',
     clientSecret: '',
     webhookSecret: '',
-    routingMode: 'default' as RoutingMode,
-    routingPairs: [] as RoutingPair[],
     isActive: true,
     autoCreateContact: true,
     autoCreateDeal: false,
@@ -77,9 +71,8 @@ export default function AdvertisingIntegrationsSection() {
   async function fetchInitialData() {
     try {
       setLoading(true)
-      const [yandexRes, avitoRes, sourcesRes, pipelinesRes, usersRes] = await Promise.all([
+      const [yandexRes, sourcesRes, pipelinesRes, usersRes] = await Promise.all([
         fetch('/api/advertising/yandex-direct'),
-        fetch('/api/advertising/avito'),
         fetch('/api/deal-sources'),
         fetch('/api/pipelines'),
         fetch('/api/admin/users'),
@@ -88,10 +81,6 @@ export default function AdvertisingIntegrationsSection() {
       if (yandexRes.ok) {
         const data = (await yandexRes.json()) as AdvertisingIntegration | null
         setYandexIntegration(data)
-      }
-      if (avitoRes.ok) {
-        const data = (await avitoRes.json()) as AdvertisingIntegration | null
-        setAvitoIntegration(data)
       }
       if (sourcesRes.ok) {
         const data = (await sourcesRes.json()) as DealSource[]
@@ -113,25 +102,9 @@ export default function AdvertisingIntegrationsSection() {
     }
   }
 
-  function openCreateModal(platform: 'YANDEX_DIRECT' | 'AVITO') {
+  function openCreateModal(platform: 'YANDEX_DIRECT') {
     setSelectedPlatform(platform)
-    const existing = platform === 'YANDEX_DIRECT' ? yandexIntegration : avitoIntegration
-
-    const existingRoutingMode: RoutingMode =
-      (existing?.settings?.routing?.mode as RoutingMode) || 'default'
-
-    const existingPairs: RoutingPair[] =
-      existingRoutingMode === 'avito_manager'
-        ? Object.entries(existing?.settings?.routing?.managerToUserId || {}).map(([k, v]: any) => ({
-            externalId: String(k),
-            userId: String(v),
-          }))
-        : existingRoutingMode === 'ad'
-          ? Object.entries(existing?.settings?.routing?.adToUserId || {}).map(([k, v]: any) => ({
-              externalId: String(k),
-              userId: String(v),
-            }))
-          : []
+    const existing = yandexIntegration
 
     setFormState({
       name: existing?.name || '',
@@ -139,8 +112,6 @@ export default function AdvertisingIntegrationsSection() {
       accountId: existing?.accountId || '',
       clientSecret: '',
       webhookSecret: '',
-      routingMode: existingRoutingMode,
-      routingPairs: existingPairs,
       isActive: existing?.isActive ?? true,
       autoCreateContact: existing?.autoCreateContact ?? true,
       autoCreateDeal: existing?.autoCreateDeal ?? false,
@@ -156,23 +127,14 @@ export default function AdvertisingIntegrationsSection() {
     if (!selectedPlatform) return
 
     if (!formState.apiToken.trim()) {
-      setError(selectedPlatform === 'YANDEX_DIRECT' ? 'OAuth токен обязателен' : 'Client ID обязателен')
-      return
-    }
-
-    if (selectedPlatform === 'AVITO' && !formState.clientSecret.trim()) {
-      setError('Client Secret обязателен')
+      setError('OAuth токен обязателен')
       return
     }
 
     setProcessing(true)
     setError(null)
 
-    const endpoint = selectedPlatform === 'YANDEX_DIRECT' 
-      ? '/api/advertising/yandex-direct'
-      : '/api/advertising/avito'
-
-    const payload: any = {
+    const payload = {
       name: formState.name.trim() || null,
       isActive: formState.isActive,
       autoCreateContact: formState.autoCreateContact,
@@ -181,35 +143,12 @@ export default function AdvertisingIntegrationsSection() {
       defaultPipelineId: formState.defaultPipelineId ? Number(formState.defaultPipelineId) : null,
       defaultAssigneeId: formState.defaultAssigneeId ? Number(formState.defaultAssigneeId) : null,
       webhookSecret: formState.webhookSecret.trim() || null,
-    }
-
-    if (selectedPlatform === 'YANDEX_DIRECT') {
-      payload.apiToken = formState.apiToken.trim()
-      payload.accountId = formState.accountId.trim() || null
-    } else {
-      payload.clientId = formState.apiToken.trim()
-      payload.clientSecret = formState.clientSecret.trim()
-      payload.userId = formState.accountId.trim() || null
-
-      const routing: any = { mode: formState.routingMode }
-      if (formState.routingMode === 'avito_manager') {
-        routing.managerToUserId = Object.fromEntries(
-          (formState.routingPairs || [])
-            .filter((p) => p.externalId.trim() && p.userId)
-            .map((p) => [p.externalId.trim(), Number(p.userId)])
-        )
-      } else if (formState.routingMode === 'ad') {
-        routing.adToUserId = Object.fromEntries(
-          (formState.routingPairs || [])
-            .filter((p) => p.externalId.trim() && p.userId)
-            .map((p) => [p.externalId.trim(), Number(p.userId)])
-        )
-      }
-      payload.settings = { routing }
+      apiToken: formState.apiToken.trim(),
+      accountId: formState.accountId.trim() || null,
     }
 
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/advertising/yandex-direct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -232,11 +171,11 @@ export default function AdvertisingIntegrationsSection() {
   }
 
   function getPlatformName(platform: string) {
-    return platform === 'YANDEX_DIRECT' ? 'Яндекс.Директ' : 'Авито'
+    return 'Яндекс.Директ'
   }
 
   function getPlatformIcon(platform: string) {
-    return platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
+    return <SearchIcon className="w-4 h-4" />
   }
 
   return (
@@ -251,15 +190,12 @@ export default function AdvertisingIntegrationsSection() {
               </span>
             </h2>
             <p className="text-sm text-[var(--muted)]">
-              Подключите Яндекс.Директ и Авито для автоматического получения лидов из рекламы.
+              Подключите Яндекс.Директ для автоматического получения лидов: формы на Турбо-страницах или Call Tracking.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => openCreateModal('YANDEX_DIRECT')} className="btn-secondary text-sm">
               + Яндекс.Директ
-            </button>
-            <button onClick={() => openCreateModal('AVITO')} className="btn-secondary text-sm">
-              + Авито
             </button>
           </div>
         </div>
@@ -287,79 +223,9 @@ export default function AdvertisingIntegrationsSection() {
                 }}
               />
             ) : (
-              <EmptyCard
-                platform="YANDEX_DIRECT"
-                onConnect={() => openCreateModal('YANDEX_DIRECT')}
-              />
+              <EmptyCard onConnect={() => openCreateModal('YANDEX_DIRECT')} />
             )}
 
-            {/* Авито */}
-            {avitoIntegration ? (
-              <IntegrationCard
-                integration={avitoIntegration}
-                origin={origin}
-                onEdit={() => openCreateModal('AVITO')}
-                onSync={async () => {
-                  try {
-                    setProcessing(true)
-                    setError(null)
-                    const res = await fetch('/api/advertising/avito/sync', { method: 'POST' })
-                    const data = await res.json().catch(() => ({}))
-                    if (!res.ok) throw new Error(data?.error || 'Sync failed')
-                    const msg = data.processed !== undefined
-                      ? `Обработано: ${data.processed}, контактов: ${data.createdContacts ?? 0}, сделок: ${data.createdDeals ?? 0}`
-                      : 'Синхронизация завершена'
-                    toast.success(msg)
-                    if (data.processed === 0 && data.debug?.hint) {
-                      toast(data.debug.hint, { icon: '💡', duration: 8000 })
-                    }
-                    await fetchInitialData()
-                  } catch (e) {
-                    const errMsg = e instanceof Error ? e.message : 'Sync failed'
-                    setError(errMsg)
-                    toast.error(errMsg)
-                  } finally {
-                    setProcessing(false)
-                  }
-                }}
-                onDebug={async () => {
-                  try {
-                    setProcessing(true)
-                    setError(null)
-                    const res = await fetch('/api/advertising/avito/debug')
-                    const data = await res.json().catch(() => ({}))
-                    if (data.error) {
-                      setError(`${data.error}${data.hint ? ` — ${data.hint}` : ''}${data.details ? ` (${data.details})` : ''}`)
-                      toast.error(data.error)
-                    } else {
-                      const info = [
-                        data.chatsCount !== undefined && `Чатов: ${data.chatsCount}`,
-                        data.status && `Статус: ${data.status}`,
-                        data.body && `Ответ: ${data.body.slice(0, 150)}...`,
-                        data.hint,
-                      ].filter(Boolean).join('. ')
-                      toast.success(info || 'Подключение OK')
-                    }
-                  } catch (e) {
-                    const errMsg = e instanceof Error ? e.message : 'Ошибка проверки'
-                    setError(errMsg)
-                    toast.error(errMsg)
-                  } finally {
-                    setProcessing(false)
-                  }
-                }}
-                onToggle={async () => {
-                  await openCreateModal('AVITO')
-                  setFormState(prev => ({ ...prev, isActive: !avitoIntegration.isActive }))
-                  await handleSubmit(new Event('submit') as any)
-                }}
-              />
-            ) : (
-              <EmptyCard
-                platform="AVITO"
-                onConnect={() => openCreateModal('AVITO')}
-              />
-            )}
           </div>
         )}
       </div>
@@ -373,9 +239,7 @@ export default function AdvertisingIntegrationsSection() {
                   Настройка {getPlatformName(selectedPlatform)}
                 </h3>
                 <p className="text-sm text-[var(--muted)]">
-                  {selectedPlatform === 'YANDEX_DIRECT' 
-                    ? 'Подключите Яндекс.Директ для получения лидов из рекламы'
-                    : 'Подключите Авито для получения заявок с объявлений'}
+                  Подключите Яндекс.Директ для получения лидов: формы на Турбо-страницах или Call Tracking
                 </p>
               </div>
               <button onClick={() => setModalOpen(false)} className="text-2xl text-[var(--muted)]">
@@ -384,9 +248,7 @@ export default function AdvertisingIntegrationsSection() {
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
-              {selectedPlatform === 'YANDEX_DIRECT' ? (
-                <>
-                  <div>
+              <div>
                     <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                       OAuth токен *
                     </label>
@@ -414,163 +276,7 @@ export default function AdvertisingIntegrationsSection() {
                       placeholder="12345678"
                     />
                   </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                      Client ID *
-                    </label>
-                    <input
-                      type="text"
-                      value={formState.apiToken}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, apiToken: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      placeholder="client_id"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                      Client Secret *
-                    </label>
-                    <input
-                      type="password"
-                      value={formState.clientSecret}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, clientSecret: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      placeholder="client_secret"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                      User ID (обязательно для sync)
-                    </label>
-                    <input
-                      type="text"
-                      value={formState.accountId}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, accountId: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      placeholder="101490378"
-                    />
-                    <p className="text-xs text-[var(--muted)] mt-1">
-                      «Номер профиля» из портала Авито (Мои приложения → слева внизу)
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {selectedPlatform === 'AVITO' && (
-                <div className="rounded-2xl border border-[var(--border)] p-4">
-                  <div className="mb-3">
-                    <p className="text-sm font-semibold text-[var(--foreground)]">Распределение заявок</p>
-                    <p className="text-xs text-[var(--muted)] mt-1">
-                      Авито не всегда умеет отправлять webhook. Мы забираем обращения из Avito API и распределяем их
-                      либо по менеджеру Авито, либо по объявлению (itemId/adId).
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                        Режим
-                      </label>
-                      <select
-                        value={formState.routingMode}
-                        onChange={(e) =>
-                          setFormState((prev) => ({
-                            ...prev,
-                            routingMode: e.target.value as RoutingMode,
-                            routingPairs: [],
-                          }))
-                        }
-                        className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      >
-                        <option value="default">По умолчанию (ответственный из настроек)</option>
-                        <option value="avito_manager">По менеджеру Авито (managerId → user)</option>
-                        <option value="ad">По объявлению (itemId/adId → user)</option>
-                      </select>
-                    </div>
-                    <div className="flex items-end">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFormState((prev) => ({
-                            ...prev,
-                            routingPairs: [...(prev.routingPairs || []), { externalId: '', userId: '' }],
-                          }))
-                        }
-                        className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                        disabled={formState.routingMode === 'default'}
-                      >
-                        + Добавить правило
-                      </button>
-                    </div>
-                  </div>
-
-                  {formState.routingMode !== 'default' && (
-                    <div className="mt-4 space-y-2">
-                      {(formState.routingPairs || []).length === 0 ? (
-                        <p className="text-xs text-[var(--muted)]">
-                          Добавь хотя бы одно правило (например, managerId или itemId → пользователь CRM).
-                        </p>
-                      ) : (
-                        (formState.routingPairs || []).map((pair, idx) => (
-                          <div key={idx} className="grid gap-2 md:grid-cols-[1fr_1fr_auto] items-center">
-                            <input
-                              type="text"
-                              value={pair.externalId}
-                              onChange={(e) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  routingPairs: (prev.routingPairs || []).map((p, i) =>
-                                    i === idx ? { ...p, externalId: e.target.value } : p
-                                  ),
-                                }))
-                              }
-                              className="w-full rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                              placeholder={formState.routingMode === 'ad' ? 'itemId/adId (например 123456)' : 'managerId'}
-                            />
-                            <select
-                              value={pair.userId}
-                              onChange={(e) =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  routingPairs: (prev.routingPairs || []).map((p, i) =>
-                                    i === idx ? { ...p, userId: e.target.value } : p
-                                  ),
-                                }))
-                              }
-                              className="w-full rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                            >
-                              <option value="">Выбрать пользователя</option>
-                              {users.map((u) => (
-                                <option key={u.id} value={String(u.id)}>
-                                  {u.name} ({u.email})
-                                </option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  routingPairs: (prev.routingPairs || []).filter((_, i) => i !== idx),
-                                }))
-                              }
-                              className="rounded-2xl border border-[var(--border)] px-3 py-2 text-sm"
-                              aria-label="Удалить правило"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
 
               <div>
                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
@@ -656,14 +362,7 @@ export default function AdvertisingIntegrationsSection() {
                   checked={formState.autoCreateDeal}
                   onChange={(e) => setFormState((prev) => ({ ...prev, autoCreateDeal: e.target.checked }))}
                 />
-                <div>
-                  <span className="text-sm text-[var(--muted)]">Автоматически создавать сделки</span>
-                  {selectedPlatform === 'AVITO' && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                      Для создания сделок из сообщений Авито включите этот пункт и выберите воронку выше.
-                    </p>
-                  )}
-                </div>
+                <span className="text-sm text-[var(--muted)]">Автоматически создавать сделки</span>
               </div>
               <div className="flex items-center gap-3">
                 <input
@@ -675,16 +374,12 @@ export default function AdvertisingIntegrationsSection() {
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm">
-                <p className="font-semibold text-blue-900 mb-2">
-                  {selectedPlatform === 'AVITO' ? '📚 URL (устаревший webhook, если доступен):' : '📚 Webhook URL:'}
-                </p>
+                <p className="font-semibold text-blue-900 mb-2">📚 Webhook URL</p>
                 <code className="bg-gray-100 px-2 py-1 rounded text-xs block mb-2">
-                  {origin}/api/advertising/{selectedPlatform.toLowerCase().replace('_', '-')}/webhook
+                  {origin}/api/advertising/yandex-direct/webhook
                 </code>
                 <p className="text-blue-800">
-                  {selectedPlatform === 'YANDEX_DIRECT' 
-                    ? 'Используйте этот URL при настройке Call Tracking в Яндекс.Директ'
-                    : 'Если в вашем Avito API нет исходящих webhook — используйте кнопку “Синхронизировать сейчас” (polling).'}
+                  Используйте этот URL при настройке Call Tracking в Яндекс.Директ или при настройке входящих лидов (формы на Турбо-страницах).
                 </p>
               </div>
 
@@ -714,30 +409,20 @@ function IntegrationCard({
   origin, 
   onEdit, 
   onToggle,
-  onSync,
-  onDebug
 }: { 
   integration: AdvertisingIntegration
   origin: string
   onEdit: () => void
   onToggle: () => void
-  onSync?: () => void
-  onDebug?: () => void
 }) {
-  const platformName = integration.platform === 'YANDEX_DIRECT' ? 'Яндекс.Директ' : 'Авито'
-  const platformIcon = integration.platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
-  const webhookPath = integration.platform === 'YANDEX_DIRECT' 
-    ? '/api/advertising/yandex-direct/webhook'
-    : '/api/advertising/avito/webhook'
-
   return (
     <div className="rounded-2xl border border-[var(--border)] p-5 shadow-sm bg-white/80">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{platformIcon}</span>
+            <span className="text-2xl"><SearchIcon className="w-4 h-4" /></span>
             <h3 className="text-lg font-semibold text-[var(--foreground)]">
-              {platformName}
+              Яндекс.Директ
             </h3>
             <span
               className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -751,18 +436,10 @@ function IntegrationCard({
           </div>
           <div className="space-y-2 text-sm text-[var(--muted)]">
             <div>
-              {integration.platform === 'AVITO' ? (
-                <>
-                  Sync (polling): <code className="bg-gray-100 px-2 py-1 rounded text-xs">/api/advertising/avito/sync</code>
-                </>
-              ) : (
-                <>
-                  Webhook URL:{' '}
-                  <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                    {origin}{webhookPath}
-                  </code>
-                </>
-              )}
+              Webhook URL:{' '}
+              <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                {origin}/api/advertising/yandex-direct/webhook
+              </code>
             </div>
             <div>
               Автосоздание контактов: {integration.autoCreateContact ? '✓' : '✗'} • 
@@ -777,25 +454,6 @@ function IntegrationCard({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {integration.platform === 'AVITO' && (
-            <>
-              <button
-                onClick={onDebug}
-                className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                disabled={!onDebug}
-                title="Проверить подключение к API"
-              >
-                Проверить
-              </button>
-              <button
-                onClick={onSync}
-                className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-                disabled={!onSync}
-              >
-                Синхронизировать
-              </button>
-            </>
-          )}
           <button
             onClick={onToggle}
             className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
@@ -814,23 +472,14 @@ function IntegrationCard({
   )
 }
 
-function EmptyCard({ 
-  platform, 
-  onConnect 
-}: { 
-  platform: 'YANDEX_DIRECT' | 'AVITO'
-  onConnect: () => void
-}) {
-  const platformName = platform === 'YANDEX_DIRECT' ? 'Яндекс.Директ' : 'Авито'
-  const platformIcon = platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
-
+function EmptyCard({ onConnect }: { onConnect: () => void }) {
   return (
     <div className="rounded-2xl border border-[var(--border)] p-5 shadow-sm bg-white/80">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{platformIcon}</span>
+          <span className="text-2xl"><SearchIcon className="w-4 h-4" /></span>
           <div>
-            <h3 className="text-lg font-semibold text-[var(--foreground)]">{platformName}</h3>
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">Яндекс.Директ</h3>
             <p className="text-sm text-[var(--muted)]">Не подключено</p>
           </div>
         </div>

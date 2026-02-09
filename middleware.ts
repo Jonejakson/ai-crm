@@ -21,7 +21,6 @@ export async function middleware(request: NextRequest) {
     '/api/billing/webhook',
     '/api/messaging/telegram-bot/webhook',
     '/api/messaging/whatsapp/webhook',
-    '/api/advertising/avito/webhook',
     '/api/advertising/yandex-direct/webhook',
   ]
   const isPublicPath = publicPaths.some(path => request.nextUrl.pathname.startsWith(path))
