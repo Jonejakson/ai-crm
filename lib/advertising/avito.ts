@@ -123,11 +123,67 @@ export async function getAvitoAccessToken(params: {
 
 /**
  * ВАЖНО: Avito не всегда предоставляет исходящие webhook'и.
- * Поэтому sync делает polling через API. Эндпоинты Messenger API могут отличаться по версиям;
- * мы поддерживаем несколько вариантов форматов и максимально логируем ошибки в AdvertisingLog.
+ * Поэтому sync делает polling через API.
  */
-export async function syncAvito(params: { companyId: number; limit?: number }) {
-  const { companyId, limit = 30 } = params
+/** Диагностика подключения к Avito API — для отладки при 0 обработанных */
+export async function debugAvito(params: { companyId: number }) {
+  const integration = await prisma.advertisingIntegration.findFirst({
+    where: { companyId: params.companyId, platform: 'AVITO' },
+  })
+  if (!integration || !integration.isActive) {
+    return { error: 'Avito integration not found or disabled' }
+  }
+
+  const accountId = integration.accountId ? decrypt(integration.accountId)?.trim() : null
+  if (!accountId) {
+    return { error: 'User ID не указан', hint: 'Укажите «Номер профиля» из портала Авито' }
+  }
+
+  let token: string
+  try {
+    token = await getAvitoAccessToken({
+      clientIdEncrypted: integration.apiToken!,
+      clientSecretEncrypted: integration.apiSecret!,
+    })
+  } catch (e) {
+    return { error: 'Ошибка токена', details: e instanceof Error ? e.message : String(e) }
+  }
+
+  const chatsUrl = `https://api.avito.ru/messenger/v2/accounts/${encodeURIComponent(accountId)}/chats?limit=5`
+  const chatsResp = await avitoFetchJson<any>(chatsUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    timeoutMs: 15000,
+  })
+
+  if (!chatsResp.ok) {
+    return {
+      error: 'Ошибка при запросе чатов',
+      status: chatsResp.status,
+      body: chatsResp.text,
+      url: chatsUrl,
+      hint: 'Проверьте User ID (номер профиля из портала Авито). Неверный ID даёт 404.',
+    }
+  }
+
+  const data = chatsResp.data
+  const chats = (data.chats ?? data.result?.chats ?? data.result?.items ?? (Array.isArray(data.result) ? data.result : data.items) ?? []) as any[]
+  const chatKeys = chats.length > 0 ? Object.keys(chats[0] || {}) : []
+  const topLevelKeys = Object.keys(data)
+
+  return {
+    ok: true,
+    tokenReceived: !!token,
+    accountIdPreview: accountId.length > 6 ? `${accountId.slice(0, 3)}...${accountId.slice(-3)}` : '***',
+    chatsCount: Array.isArray(chats) ? chats.length : 0,
+    topLevelKeys,
+    firstChatKeys: chatKeys,
+    rawSample: chats[0] ? JSON.stringify(chats[0]).slice(0, 500) : null,
+  }
+}
+
+export async function syncAvito(params: { companyId: number; limit?: number; debug?: boolean }) {
+  const { companyId, limit = 30, debug = false } = params
 
   const integration = await prisma.advertisingIntegration.findFirst({
     where: {
@@ -182,15 +238,15 @@ export async function syncAvito(params: { companyId: number; limit?: number }) {
     throw new Error(`Avito chats error: status=${chatsResp.status} body=${chatsResp.text}`)
   }
 
-  const chats = (chatsResp.data.chats || chatsResp.data.result || chatsResp.data.items || []) as any[]
+  const chats = (chatsResp.data.chats ?? chatsResp.data.result?.chats ?? chatsResp.data.result?.items ?? (Array.isArray(chatsResp.data.result) ? chatsResp.data.result : chatsResp.data.items) ?? []) as any[]
   let processed = 0
   let createdContacts = 0
   let createdDeals = 0
   let skipped = 0
 
   for (const chat of chats) {
-    // Достаём последние сообщения (вариант B: /chats/{chatId}/messages)
-    const chatId = chat.id || chat.chat_id || chat.chatId
+    // Достаём последние сообщения
+    const chatId = chat.id ?? chat.chat_id ?? chat.chatId ?? chat.context_id ?? chat.contextId
     if (!chatId) continue
 
     const messagesUrl = `https://api.avito.ru/messenger/v2/accounts/${encodeURIComponent(
@@ -217,7 +273,7 @@ export async function syncAvito(params: { companyId: number; limit?: number }) {
       continue
     }
 
-    const messages = (msgResp.data.messages || msgResp.data.result || msgResp.data.items || []) as any[]
+    const messages = (msgResp.data.messages ?? msgResp.data.result?.messages ?? msgResp.data.result?.items ?? (Array.isArray(msgResp.data.result) ? msgResp.data.result : msgResp.data.items) ?? []) as any[]
 
     for (const message of messages) {
       // Фильтр входящих: пропускаем только если автор точно совпадает с нашим accountId
@@ -299,7 +355,23 @@ export async function syncAvito(params: { companyId: number; limit?: number }) {
   // persist settings
   await withSettings(integration, settings)
 
-  return { processed, createdContacts, createdDeals, skipped }
+  const result: { processed: number; createdContacts: number; createdDeals: number; skipped: number; debug?: any } = {
+    processed,
+    createdContacts,
+    createdDeals,
+    skipped,
+  }
+
+  if (debug || processed === 0) {
+    result.debug = {
+      chatsCount: chats.length,
+      hint: chats.length === 0
+        ? 'API вернул 0 чатов. Проверьте User ID (номер профиля из портала Авито) и что есть диалоги.'
+        : `${chats.length} чатов получено, но обработано 0. Возможные причины: все сообщения от вас (author_id=accountId), все уже в логах.`,
+    }
+  }
+
+  return result
 }
 
 export async function processAvitoApplication(

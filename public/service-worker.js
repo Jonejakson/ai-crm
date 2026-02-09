@@ -12,8 +12,6 @@ const STATIC_ASSETS = [
   '/login',
   '/manifest.webmanifest',
   '/icon.svg',
-  '/icon-192x192.png',
-  '/icon-512x512.png',
 ];
 
 // Логирование для отладки
@@ -385,8 +383,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Flame CRM';
   const options = {
     body: data.body || 'У вас новое уведомление',
-    icon: '/icon-192x192.png',
-    badge: '/icon-72x72.png',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
     tag: data.tag || 'default',
     data: data.data || {},
   };

@@ -17,6 +17,7 @@ export default function Header() {
   const [signingOut, setSigningOut] = useState(false)
   const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null)
   const [companyDisplay, setCompanyDisplay] = useState<{ name: string; isLegalEntity: boolean } | null>(null)
+  const [dateStr, setDateStr] = useState<string | null>(null)
 
   // Название компании для юр. лиц (из сессии или API для старых сессий)
   useEffect(() => {
@@ -97,6 +98,18 @@ export default function Header() {
     }
   }, [session])
 
+  // Дата только на клиенте — избегаем hydration mismatch (разный timezone сервер/клиент)
+  useEffect(() => {
+    setDateStr(
+      new Date().toLocaleDateString('ru-RU', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    )
+  }, [])
+
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--surface)] backdrop-blur-xl bg-opacity-95 shadow-sm">
       <div className="flex flex-col gap-4 px-4 py-5 md:px-6 md:py-5">
@@ -110,13 +123,8 @@ export default function Header() {
               {companyDisplay.name}
             </p>
           )}
-          <p className="text-xs text-[var(--muted)] mt-1">
-            {new Date().toLocaleDateString('ru-RU', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+          <p className="text-xs text-[var(--muted)] mt-1" suppressHydrationWarning>
+            {dateStr ?? '\u00A0'}
           </p>
           {showExpiryNotification && endDateObj && (
             <div className="mt-2 flex flex-wrap items-center gap-2">

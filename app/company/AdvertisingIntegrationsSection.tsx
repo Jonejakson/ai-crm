@@ -310,9 +310,38 @@ export default function AdvertisingIntegrationsSection() {
                       ? `Обработано: ${data.processed}, контактов: ${data.createdContacts ?? 0}, сделок: ${data.createdDeals ?? 0}`
                       : 'Синхронизация завершена'
                     toast.success(msg)
+                    if (data.processed === 0 && data.debug?.hint) {
+                      toast(data.debug.hint, { icon: '💡', duration: 8000 })
+                    }
                     await fetchInitialData()
                   } catch (e) {
                     const errMsg = e instanceof Error ? e.message : 'Sync failed'
+                    setError(errMsg)
+                    toast.error(errMsg)
+                  } finally {
+                    setProcessing(false)
+                  }
+                }}
+                onDebug={async () => {
+                  try {
+                    setProcessing(true)
+                    setError(null)
+                    const res = await fetch('/api/advertising/avito/debug')
+                    const data = await res.json().catch(() => ({}))
+                    if (data.error) {
+                      setError(`${data.error}${data.hint ? ` — ${data.hint}` : ''}${data.details ? ` (${data.details})` : ''}`)
+                      toast.error(data.error)
+                    } else {
+                      const info = [
+                        data.chatsCount !== undefined && `Чатов: ${data.chatsCount}`,
+                        data.status && `Статус: ${data.status}`,
+                        data.body && `Ответ: ${data.body.slice(0, 150)}...`,
+                        data.hint,
+                      ].filter(Boolean).join('. ')
+                      toast.success(info || 'Подключение OK')
+                    }
+                  } catch (e) {
+                    const errMsg = e instanceof Error ? e.message : 'Ошибка проверки'
                     setError(errMsg)
                     toast.error(errMsg)
                   } finally {
@@ -685,13 +714,15 @@ function IntegrationCard({
   origin, 
   onEdit, 
   onToggle,
-  onSync
+  onSync,
+  onDebug
 }: { 
   integration: AdvertisingIntegration
   origin: string
   onEdit: () => void
   onToggle: () => void
   onSync?: () => void
+  onDebug?: () => void
 }) {
   const platformName = integration.platform === 'YANDEX_DIRECT' ? 'Яндекс.Директ' : 'Авито'
   const platformIcon = integration.platform === 'YANDEX_DIRECT' ? <SearchIcon className="w-4 h-4" /> : <BuildingIcon className="w-4 h-4" />
@@ -747,13 +778,23 @@ function IntegrationCard({
         </div>
         <div className="flex flex-wrap gap-2">
           {integration.platform === 'AVITO' && (
-            <button
-              onClick={onSync}
-              className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
-              disabled={!onSync}
-            >
-              Синхронизировать
-            </button>
+            <>
+              <button
+                onClick={onDebug}
+                className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
+                disabled={!onDebug}
+                title="Проверить подключение к API"
+              >
+                Проверить
+              </button>
+              <button
+                onClick={onSync}
+                className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
+                disabled={!onSync}
+              >
+                Синхронизировать
+              </button>
+            </>
           )}
           <button
             onClick={onToggle}
