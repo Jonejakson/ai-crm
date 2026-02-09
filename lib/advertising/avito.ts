@@ -186,7 +186,7 @@ export async function debugAvito(params: { companyId: number }) {
         headers: { Authorization: `Bearer ${token}` },
         timeoutMs: 10000,
       })
-      const mdat = msgResp.data as any
+      const mdat = msgResp.ok ? (msgResp.data as any) : null
       const extracted = Array.isArray(mdat?.messages) ? mdat.messages
         : Array.isArray(mdat?.result) ? mdat.result
         : Array.isArray(mdat?.items) ? mdat.items
