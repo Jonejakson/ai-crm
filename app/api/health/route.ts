@@ -133,14 +133,27 @@ export async function GET() {
   }
 
   const responseTime = Date.now() - startTime;
-  
-  // Добавить время ответа в заголовки
   const headers = new Headers();
   headers.set("X-Response-Time", `${responseTime}ms`);
   headers.set("X-Health-Status", health.status);
 
-  // Возвращаем соответствующий статус код
-  const statusCode = health.status === "unhealthy" ? 503 : health.status === "degraded" ? 200 : 200;
+  const statusCode = health.status === "unhealthy" ? 503 : 200;
 
-  return NextResponse.json(health, { status: statusCode, headers });
+  // В production не раскрываем детали: encryption error, environment, metrics
+  const isProd = process.env.NODE_ENV === "production";
+  const safeHealth = isProd
+    ? {
+        status: health.status,
+        timestamp: health.timestamp,
+        uptime: health.uptime,
+        checks: {
+          database: { status: health.checks.database.status, responseTime: health.checks.database.responseTime },
+          encryption: { status: health.checks.encryption.status },
+          s3: health.checks.s3,
+          memory: { status: health.checks.memory.status },
+        },
+      }
+    : health;
+
+  return NextResponse.json(safeHealth, { status: statusCode, headers });
 }

@@ -183,7 +183,7 @@ export const updateCommentSchema = createCommentSchema.partial().extend({
 // Пользователи
 export const createUserSchema = z.object({
   email: z.string().email('Неверный формат email'),
-  password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
+  password: z.string().min(8, 'Пароль должен быть не менее 8 символов'),
   name: z.string().min(1, 'Имя обязательно').max(255),
   lastName: z.string().max(255).optional().nullable(),
   // Телефон: принимаем любой формат, очистка будет в API
@@ -211,7 +211,7 @@ export const createUserSchema = z.object({
 // Создание пользователя админом внутри компании (без полей регистрации)
 export const createCompanyUserSchema = z.object({
   email: z.string().email('Неверный формат email'),
-  password: z.string().min(6, 'Пароль должен быть не менее 6 символов'),
+  password: z.string().min(8, 'Пароль должен быть не менее 8 символов'),
   name: z.string().min(1, 'Имя обязательно').max(255),
   role: z.enum(['admin', 'manager', 'department_head', 'user']).optional().default('manager'),
 })

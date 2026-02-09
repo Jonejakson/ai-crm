@@ -10,9 +10,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Модель SupportTicketMessage не существует, возвращаем 0
-    // TODO: Реализовать подсчет непрочитанных сообщений, когда будет модель сообщений тикетов
-    return NextResponse.json({ success: true, count: 0 })
+    const count = await prisma.supportTicketMessage.count({
+      where: {
+        ticket: { userId: Number(user.id) },
+        isRead: false,
+        isFromAdmin: true,
+      },
+    })
+    return NextResponse.json({ success: true, count })
   } catch (error) {
     console.error('[support][unread-count]', error)
     return NextResponse.json({ error: 'Не удалось получить количество' }, { status: 500 })
