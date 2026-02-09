@@ -249,35 +249,33 @@ export default function AdvertisingIntegrationsSection() {
 
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                      OAuth токен *
-                    </label>
-                    <input
-                      type="text"
-                      value={formState.apiToken}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, apiToken: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      placeholder="y0_AgAxxxxx"
-                      required
-                    />
-                    <p className="text-xs text-[var(--muted)] mt-1">
-                      Получите в Яндекс.Директ → Настройки → API
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                      Client ID (опционально)
-                    </label>
-                    <input
-                      type="text"
-                      value={formState.accountId}
-                      onChange={(e) => setFormState((prev) => ({ ...prev, accountId: e.target.value }))}
-                      className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-                      placeholder="12345678"
-                    />
-                  </div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  OAuth токен *
+                </label>
+                <input
+                  type="text"
+                  value={formState.apiToken}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, apiToken: e.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                  placeholder="y0_AgAxxxxx"
+                  required
+                />
+                <p className="text-xs text-[var(--muted)] mt-1">
+                  Получите в Яндекс.Директ → Настройки → API
+                </p>
               </div>
-
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  Client ID (опционально)
+                </label>
+                <input
+                  type="text"
+                  value={formState.accountId}
+                  onChange={(e) => setFormState((prev) => ({ ...prev, accountId: e.target.value }))}
+                  className="mt-2 w-full rounded-2xl border border-[var(--border)] px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                  placeholder="12345678"
+                />
+              </div>
               <div>
                 <label className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
                   Webhook Secret (для безопасности)
