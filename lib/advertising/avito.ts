@@ -166,8 +166,13 @@ export async function debugAvito(params: { companyId: number }) {
     }
   }
 
-  const data = chatsResp.data
-  const chats = (data.chats ?? data.result?.chats ?? data.result?.items ?? (Array.isArray(data.result) ? data.result : data.items) ?? []) as any[]
+  const data = chatsResp.data as any
+  const chats: any[] = Array.isArray(data?.chats) ? data.chats
+    : Array.isArray(data?.result) ? data.result
+    : Array.isArray(data?.items) ? data.items
+    : (data?.result && typeof data.result === 'object' && !Array.isArray(data.result))
+      ? (data.result.chats ?? data.result.items ?? [])
+      : []
   const chatKeys = chats.length > 0 ? Object.keys(chats[0] || {}) : []
   const topLevelKeys = Object.keys(data)
 
@@ -238,7 +243,13 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
     throw new Error(`Avito chats error: status=${chatsResp.status} body=${chatsResp.text}`)
   }
 
-  const chats = (chatsResp.data.chats ?? chatsResp.data.result?.chats ?? chatsResp.data.result?.items ?? (Array.isArray(chatsResp.data.result) ? chatsResp.data.result : chatsResp.data.items) ?? []) as any[]
+  const d = chatsResp.data as any
+  const chats: any[] = Array.isArray(d?.chats) ? d.chats
+    : Array.isArray(d?.result) ? d.result
+    : Array.isArray(d?.items) ? d.items
+    : (d?.result && typeof d.result === 'object' && !Array.isArray(d.result))
+      ? (d.result.chats ?? d.result.items ?? [])
+      : []
   let processed = 0
   let createdContacts = 0
   let createdDeals = 0
@@ -273,7 +284,13 @@ export async function syncAvito(params: { companyId: number; limit?: number; deb
       continue
     }
 
-    const messages = (msgResp.data.messages ?? msgResp.data.result?.messages ?? msgResp.data.result?.items ?? (Array.isArray(msgResp.data.result) ? msgResp.data.result : msgResp.data.items) ?? []) as any[]
+    const md = msgResp.data as any
+    const messages: any[] = Array.isArray(md?.messages) ? md.messages
+      : Array.isArray(md?.result) ? md.result
+      : Array.isArray(md?.items) ? md.items
+      : (md?.result && typeof md.result === 'object' && !Array.isArray(md.result))
+        ? (md.result.messages ?? md.result.items ?? [])
+        : []
 
     for (const message of messages) {
       // Фильтр входящих: пропускаем только если автор точно совпадает с нашим accountId
