@@ -617,7 +617,14 @@ export default function AdvertisingIntegrationsSection() {
                   checked={formState.autoCreateDeal}
                   onChange={(e) => setFormState((prev) => ({ ...prev, autoCreateDeal: e.target.checked }))}
                 />
-                <span className="text-sm text-[var(--muted)]">Автоматически создавать сделки</span>
+                <div>
+                  <span className="text-sm text-[var(--muted)]">Автоматически создавать сделки</span>
+                  {selectedPlatform === 'AVITO' && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                      Для создания сделок из сообщений Авито включите этот пункт и выберите воронку выше.
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-3">
                 <input

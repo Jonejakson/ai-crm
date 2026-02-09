@@ -220,12 +220,14 @@ export async function syncAvito(params: { companyId: number; limit?: number }) {
     const messages = (msgResp.data.messages || msgResp.data.result || msgResp.data.items || []) as any[]
 
     for (const message of messages) {
-      // Cursor-based filtering: если есть cursor, и у сообщения есть id/created, пропускаем уже обработанное
-      const messageId = String(message.id || message.message_id || `${chatId}:${message.created || message.created_at || ''}`)
-      if (settings.avito?.cursor && messageId <= String(settings.avito.cursor)) {
+      // Пропускаем сообщения от нас (продавца) — обрабатываем только входящие от клиента
+      const authorId = message.author_id ?? message.author?.id ?? null
+      if (authorId && accountId && String(authorId) === String(accountId)) {
         skipped++
         continue
       }
+
+      const messageId = String(message.id || message.message_id || `${chatId}:${message.created || message.created_at || ''}`)
 
       // Дедупликация по AdvertisingLog.leadId
       const existing = await prisma.advertisingLog.findFirst({
@@ -274,10 +276,8 @@ export async function syncAvito(params: { companyId: number; limit?: number }) {
           },
         })
 
-        // Обновляем cursor как максимум обработанного messageId
-        const prevCursor = settings.avito?.cursor ? String(settings.avito.cursor) : ''
-        const nextCursor = !prevCursor || messageId > prevCursor ? messageId : prevCursor
-        settings.avito = { ...(settings.avito || {}), cursor: nextCursor, lastSyncAt: new Date().toISOString() }
+        // Обновляем cursor для отображения lastSyncAt (дедупликация — только по leadId)
+        settings.avito = { ...(settings.avito || {}), lastSyncAt: new Date().toISOString() }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e)
         await prisma.advertisingLog.create({
