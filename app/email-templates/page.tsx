@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import DOMPurify from 'isomorphic-dompurify'
 import toast from 'react-hot-toast'
 import Modal from '@/components/Modal'
 import { EmailTemplateIcon, EditIcon, TrashIcon, PlusIcon, SearchIcon } from '@/components/Icons'
@@ -484,7 +485,10 @@ export default function EmailTemplatesPage() {
               <div 
                 className="p-4 bg-[var(--background-soft)] rounded-lg border border-[var(--border)] text-[var(--foreground)] whitespace-pre-wrap"
                 dangerouslySetInnerHTML={{ 
-                  __html: replaceTemplateVariables(previewTemplate.body, previewContext).replace(/\n/g, '<br/>') 
+                  __html: DOMPurify.sanitize(
+                    replaceTemplateVariables(previewTemplate.body, previewContext).replace(/\n/g, '<br/>'),
+                    { ALLOWED_TAGS: ['b', 'i', 'u', 'em', 'strong', 'a', 'br', 'p', 'ul', 'ol', 'li'] }
+                  ) 
                 }}
               />
             </div>

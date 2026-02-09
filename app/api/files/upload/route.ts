@@ -9,6 +9,29 @@ import { uploadFileToS3, isS3Configured } from '@/lib/storage'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads')
 
+const ALLOWED_EXTENSIONS = new Set([
+  'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'ico', // svg исключён (XSS)
+  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+  'txt', 'csv', 'rtf', 'odt', 'ods', 'odp',
+  'zip', 'rar', '7z',
+  'mp3', 'mp4', 'wav', 'webm', 'ogg', 'm4a',
+])
+
+const ALLOWED_MIME_PREFIXES = [
+  'image/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats',
+  'application/vnd.ms-excel', 'application/vnd.ms-powerpoint',
+  'text/plain', 'text/csv', 'text/rtf',
+  'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed',
+  'audio/', 'video/',
+]
+
+function isAllowedFile(fileName: string, mimeType: string): boolean {
+  const ext = fileName.split('.').pop()?.toLowerCase()
+  if (!ext || !ALLOWED_EXTENSIONS.has(ext)) return false
+  if (!mimeType) return true
+  return ALLOWED_MIME_PREFIXES.some((p) => mimeType.toLowerCase().startsWith(p))
+}
+
 /**
  * Загрузить файл
  */
@@ -39,6 +62,14 @@ export async function POST(request: Request) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit` },
+        { status: 400 }
+      )
+    }
+
+    // Проверка типа файла (whitelist)
+    if (!isAllowedFile(file.name, file.type || '')) {
+      return NextResponse.json(
+        { error: 'Тип файла не разрешён. Разрешены: изображения, PDF, документы Office, текстовые файлы, архивы, аудио/видео' },
         { status: 400 }
       )
     }

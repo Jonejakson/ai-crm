@@ -2,15 +2,24 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 
+const WEAK_DEFAULT = 'emergency-reset-2024'
+const MIN_KEY_LENGTH = 32
+
 /**
  * ЭКСТРЕННЫЙ сброс пароля БЕЗ авторизации
  * ВНИМАНИЕ: Используйте только в экстренных случаях! Удалите после использования!
+ * Требуется EMERGENCY_PASSWORD_RESET_KEY (минимум 32 символа) в .env
  */
 export async function POST(request: Request) {
   try {
-    // Простая защита через секретный ключ из переменных окружения
-    const emergencyKey = process.env.EMERGENCY_PASSWORD_RESET_KEY || 'emergency-reset-2024'
-    
+    const emergencyKey = process.env.EMERGENCY_PASSWORD_RESET_KEY || ''
+    if (!emergencyKey || emergencyKey === WEAK_DEFAULT || emergencyKey.length < MIN_KEY_LENGTH) {
+      return NextResponse.json(
+        { error: 'Экстренный сброс пароля отключен. Задайте EMERGENCY_PASSWORD_RESET_KEY (≥32 символов) в .env' },
+        { status: 503 }
+      )
+    }
+
     const body = await request.json()
     const { email, newPassword, key } = body
 
