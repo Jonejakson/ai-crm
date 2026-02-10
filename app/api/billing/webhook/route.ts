@@ -20,10 +20,10 @@ export async function POST(request: Request) {
       request.headers.get('content-signature') ||
       ''
 
-    // Проверяем подпись (в production обязательно!)
-    // В development тоже проверяем, если YOOKASSA_SECRET_KEY установлен
-    const shouldVerify = process.env.NODE_ENV === 'production' || !!process.env.YOOKASSA_SECRET_KEY
-    if (shouldVerify) {
+    // ЮKassa по доке не присылает заголовок подписи для HTTP-уведомлений (проверка по статусу или IP).
+    // Если подпись есть — проверяем; если пусто — ниже проверим платёж через API.
+    const shouldVerifySignature = !!signature.trim()
+    if (shouldVerifySignature) {
       const isValid = verifyYooKassaWebhook(body, signature)
       if (!isValid) {
         console.error('[webhook] Invalid YooKassa signature')
@@ -36,7 +36,20 @@ export async function POST(request: Request) {
     // YooKassa отправляет события в формате:
     // { type: 'notification', event: 'payment.succeeded', object: { ... } }
     if (event.type === 'notification' && event.event === 'payment.succeeded') {
-      const payment = event.object
+      let payment = event.object as { id: string; metadata?: Record<string, string> }
+      // Подписи не было — подтверждаем через API (рекомендация ЮKassa: Object status authentication)
+      if (!shouldVerifySignature) {
+        try {
+          const verified = await getYooKassaPayment(payment.id)
+          if (verified.status !== 'succeeded') {
+            return NextResponse.json({ success: true, message: 'Payment not succeeded yet' })
+          }
+          payment = verified as typeof payment
+        } catch (err) {
+          console.error('[webhook] Failed to verify payment via API', payment.id, err)
+          return NextResponse.json({ error: 'Payment verification failed' }, { status: 500 })
+        }
+      }
 
       // ВАЖНО: "Invoice" создается только для способа оплаты "Счёт".
       // Для YooKassa/СБП мы можем не иметь Invoice (см. /api/billing/payment).
