@@ -100,17 +100,37 @@ export async function POST(request: Request) {
     // Инвойсы должны генерироваться/сохраняться ТОЛЬКО при выборе способа оплаты "Счёт"
     // через /api/billing/invoice/generate.
     //
-    // Для YooKassa/СБП создаём временную подписку и платёж; при отмене платежа подписка будет удалена в webhook.
+    // Если у компании уже есть активная подписка — продлеваем её (не создаём новую).
+    // Иначе создаём временную подписку; при отмене платежа она будет удалена в webhook.
 
-    const subscription = await prisma.subscription.create({
-      data: {
+    const now = new Date()
+    const existingActive = await prisma.subscription.findFirst({
+      where: {
         companyId: Number(currentUser.companyId),
+        status: SubscriptionStatus.ACTIVE,
         planId: plan.id,
-        status: SubscriptionStatus.TRIAL,
-        billingInterval: BillingInterval.MONTHLY, // Используем MONTHLY для всех периодов
-        currentPeriodEnd: null,
+        OR: [
+          { currentPeriodEnd: null },
+          { currentPeriodEnd: { gt: now } },
+        ],
       },
+      orderBy: { currentPeriodEnd: 'desc' },
     })
+
+    let subscription: { id: number; companyId: number; planId: number; status: string; billingInterval: string; currentPeriodEnd: Date | null }
+    if (existingActive) {
+      subscription = existingActive
+    } else {
+      subscription = await prisma.subscription.create({
+        data: {
+          companyId: Number(currentUser.companyId),
+          planId: plan.id,
+          status: SubscriptionStatus.TRIAL,
+          billingInterval: BillingInterval.MONTHLY,
+          currentPeriodEnd: null,
+        },
+      })
+    }
 
     // Создаем платеж в YooKassa
     const baseUrl = process.env.NEXTAUTH_URL || 'https://flamecrm.ru'

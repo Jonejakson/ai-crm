@@ -137,15 +137,15 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true })
       }
 
-      // Если оплаты нет (YooKassa/СБП), удаляем временную подписку,
-      // чтобы не копить "попытки оплаты" и не показывать их в UI.
+      // Если оплаты нет (YooKassa/СБП), удаляем только временную (TRIAL) подписку.
+      // ACTIVE не удаляем — это была попытка продления, отменили — подписка остаётся как есть.
       const subscriptionIdRaw = payment?.metadata?.subscriptionId
       const subscriptionId = subscriptionIdRaw ? Number(subscriptionIdRaw) : null
       const subscription = subscriptionId
         ? await prisma.subscription.findUnique({ where: { id: subscriptionId } })
         : await prisma.subscription.findFirst({ where: { externalSubscriptionId: payment.id } })
 
-      if (subscription) {
+      if (subscription && subscription.status === SubscriptionStatus.TRIAL) {
         await prisma.subscription.delete({ where: { id: subscription.id } })
       }
 

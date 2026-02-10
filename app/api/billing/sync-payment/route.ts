@@ -52,6 +52,7 @@ export async function POST() {
       })
     }
 
+    const now = new Date()
     let activated = false
     for (const sub of pendingSubscriptions) {
       const paymentId = sub.externalSubscriptionId
@@ -67,21 +68,46 @@ export async function POST() {
           ? (paymentPeriodMonths as 1 | 3 | 6 | 12)
           : 1
 
-        const now = new Date()
-        const baseDate =
-          sub.currentPeriodEnd && sub.currentPeriodEnd > now
-            ? sub.currentPeriodEnd
-            : now
-        const periodEnd = calculatePeriodEnd(baseDate, safePeriod)
-
-        await prisma.subscription.update({
-          where: { id: sub.id },
-          data: {
+        // Если есть активная подписка (продление) — продлеваем её и удаляем временную TRIAL
+        const activeSubscription = await prisma.subscription.findFirst({
+          where: {
+            companyId,
+            id: { not: sub.id },
             status: SubscriptionStatus.ACTIVE,
-            currentPeriodEnd: periodEnd,
-            trialEndsAt: null,
+            OR: [
+              { currentPeriodEnd: null },
+              { currentPeriodEnd: { gt: now } },
+            ],
           },
+          orderBy: { currentPeriodEnd: 'desc' },
         })
+
+        if (activeSubscription) {
+          const baseDate =
+            activeSubscription.currentPeriodEnd && activeSubscription.currentPeriodEnd > now
+              ? activeSubscription.currentPeriodEnd
+              : now
+          const periodEnd = calculatePeriodEnd(baseDate, safePeriod)
+          await prisma.subscription.update({
+            where: { id: activeSubscription.id },
+            data: { currentPeriodEnd: periodEnd },
+          })
+          await prisma.subscription.delete({ where: { id: sub.id } })
+        } else {
+          const baseDate =
+            sub.currentPeriodEnd && sub.currentPeriodEnd > now
+              ? sub.currentPeriodEnd
+              : now
+          const periodEnd = calculatePeriodEnd(baseDate, safePeriod)
+          await prisma.subscription.update({
+            where: { id: sub.id },
+            data: {
+              status: SubscriptionStatus.ACTIVE,
+              currentPeriodEnd: periodEnd,
+              trialEndsAt: null,
+            },
+          })
+        }
 
         activated = true
         break
