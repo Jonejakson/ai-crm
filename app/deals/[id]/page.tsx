@@ -139,6 +139,8 @@ export default function DealDetailPage() {
     sourceId: '',
     dealTypeId: '',
   })
+  const [moyskladOrderIdInput, setMoyskladOrderIdInput] = useState('')
+  const [linkOrderLoading, setLinkOrderLoading] = useState(false)
 
   useEffect(() => {
     if (dealId) {
@@ -364,6 +366,36 @@ export default function DealDetailPage() {
     }
   }
 
+  const handleLinkOrderFromMoysklad = async () => {
+    const orderId = moyskladOrderIdInput.trim()
+    if (!deal || !orderId) {
+      toast.error('Введите ID заказа МойСклад')
+      return
+    }
+    setLinkOrderLoading(true)
+    try {
+      const response = await fetch('/api/accounting/moysklad/link-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dealId: deal.id, orderId }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        toast.success(data.message || 'Заказ привязан к сделке')
+        setMoyskladOrderIdInput('')
+        fetchDealData()
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Ошибка при привязке заказа')
+      }
+    } catch (error) {
+      console.error('Error linking order from Moysklad:', error)
+      toast.error('Ошибка при привязке заказа')
+    } finally {
+      setLinkOrderLoading(false)
+    }
+  }
+
   const openEmailModal = () => {
     setEmailAlert(null)
     setEmailForm({ subject: '', message: '' })
@@ -527,6 +559,29 @@ export default function DealDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Подтянуть заказ из МойСклад по ID — блок в контенте */}
+      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <label className="text-sm font-medium text-[var(--muted)]">Подтянуть заказ из МойСклад по ID:</label>
+          <input
+            type="text"
+            value={moyskladOrderIdInput}
+            onChange={(e) => setMoyskladOrderIdInput(e.target.value)}
+            placeholder="ID заказа из МойСклад"
+            className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm w-48 focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+          />
+          <button
+            type="button"
+            onClick={handleLinkOrderFromMoysklad}
+            disabled={linkOrderLoading || !moyskladOrderIdInput.trim()}
+            className="btn-secondary text-sm disabled:opacity-50"
+          >
+            {linkOrderLoading ? 'Загрузка…' : 'Подтянуть заказ'}
+          </button>
+          <span className="text-xs text-[var(--muted)]">ID можно скопировать из URL заказа в МойСклад</span>
         </div>
       </div>
 
