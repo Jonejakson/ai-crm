@@ -297,7 +297,7 @@ export async function PUT(req: Request) {
 
     // Проверяем изменения для автоматизаций
     const oldStage = existingDeal.stage
-    const newStage = data.stage
+    const newStageValue = data.stage !== undefined ? data.stage : existingDeal.stage
     const oldAmount = existingDeal.amount
     const newAmount = data.amount !== undefined ? data.amount : undefined
 
@@ -307,8 +307,8 @@ export async function PUT(req: Request) {
         title: data.title,
         amount: newAmount !== undefined ? newAmount : undefined,
         currency: data.currency,
-        stage: newStage,
-        pipelineId: data.pipelineId ? Number(data.pipelineId) : null,
+        stage: data.stage !== undefined ? data.stage : undefined,
+        pipelineId: data.pipelineId !== undefined ? (data.pipelineId ? Number(data.pipelineId) : null) : undefined,
         sourceId: data.sourceId !== undefined ? (data.sourceId ? Number(data.sourceId) : null) : undefined,
         dealTypeId: data.dealTypeId !== undefined ? (data.dealTypeId ? Number(data.dealTypeId) : null) : undefined,
       },
@@ -336,13 +336,13 @@ export async function PUT(req: Request) {
         data: {
           entityType: 'deal',
           entityId: deal.id,
-          action: oldStage !== newStage ? 'stage_changed' : 'updated',
-          description: oldStage !== newStage 
-            ? `Этап изменён: ${oldStage} → ${newStage}`
+          action: oldStage !== newStageValue ? 'stage_changed' : 'updated',
+          description: oldStage !== newStageValue 
+            ? `Этап изменён: ${oldStage} → ${newStageValue}`
             : 'Сделка обновлена',
           metadata: {
             oldStage,
-            newStage,
+            newStage: newStageValue,
             oldAmount,
             newAmount,
           },
@@ -355,7 +355,7 @@ export async function PUT(req: Request) {
     }
 
     // Обрабатываем автоматизации
-    if (oldStage !== newStage) {
+    if (oldStage !== newStageValue) {
       try {
         const { processAutomations } = await import('@/lib/automations')
         await processAutomations('DEAL_STAGE_CHANGED', {

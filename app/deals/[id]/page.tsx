@@ -104,6 +104,11 @@ interface Stage {
   name: string
 }
 
+interface PipelineOption {
+  id: number
+  name: string
+}
+
 export default function DealDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -123,6 +128,7 @@ export default function DealDetailPage() {
   const [emailAlert, setEmailAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [dealSources, setDealSources] = useState<DealSource[]>([])
   const [dealTypes, setDealTypes] = useState<DealType[]>([])
+  const [pipelines, setPipelines] = useState<PipelineOption[]>([])
   const [stages, setStages] = useState<Stage[]>([])
   const [taskFormData, setTaskFormData] = useState({
     title: '',
@@ -136,6 +142,7 @@ export default function DealDetailPage() {
     amount: '',
     currency: 'RUB',
     stage: '',
+    pipelineId: '' as string,
     sourceId: '',
     dealTypeId: '',
   })
@@ -179,9 +186,10 @@ export default function DealDetailPage() {
     try {
       const response = await fetch('/api/pipelines')
       if (response.ok) {
-        const pipelines = await response.json()
-        if (Array.isArray(pipelines) && pipelines.length > 0) {
-          const defaultPipeline = pipelines.find((p: any) => p.isDefault) || pipelines[0]
+        const pipelinesData = await response.json()
+        if (Array.isArray(pipelinesData) && pipelinesData.length > 0) {
+          setPipelines(pipelinesData.map((p: any) => ({ id: p.id, name: p.name })))
+          const defaultPipeline = pipelinesData.find((p: any) => p.isDefault) || pipelinesData[0]
           if (defaultPipeline?.stages) {
             try {
               const parsed = JSON.parse(defaultPipeline.stages)
@@ -212,6 +220,7 @@ export default function DealDetailPage() {
           amount: data.amount.toString(),
           currency: data.currency,
           stage: data.stage,
+          pipelineId: data.pipeline?.id?.toString() || '',
           sourceId: data.source?.id?.toString() || '',
           dealTypeId: data.dealType?.id?.toString() || '',
         })
@@ -459,6 +468,7 @@ export default function DealDetailPage() {
           amount: parseFloat(editFormData.amount) || 0,
           currency: editFormData.currency,
           stage: editFormData.stage,
+          pipelineId: editFormData.pipelineId ? parseInt(editFormData.pipelineId) : null,
           sourceId: editFormData.sourceId ? parseInt(editFormData.sourceId) : null,
           dealTypeId: editFormData.dealTypeId ? parseInt(editFormData.dealTypeId) : null,
         }),
@@ -918,6 +928,29 @@ export default function DealDetailPage() {
                         placeholder="Выберите валюту"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                      Воронка
+                    </label>
+                    <CustomSelect
+                      value={editFormData.pipelineId}
+                      onChange={(value) => setEditFormData({...editFormData, pipelineId: value})}
+                      options={[
+                        { value: '', label: 'Выберите воронку' },
+                        ...pipelines.map(p => ({
+                          value: p.id.toString(),
+                          label: p.name
+                        }))
+                      ]}
+                      placeholder="Выберите воронку"
+                    />
+                    {!editFormData.pipelineId && (
+                      <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+                        Если сделка не отображается на канбане — выберите воронку (например, «Основная воронка»).
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
