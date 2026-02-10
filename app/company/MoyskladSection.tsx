@@ -301,15 +301,6 @@ export default function MoyskladSection() {
             <span className="text-sm">Синхронизировать сделки (заказы)</span>
           </label>
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.syncProducts}
-              onChange={(e) => setFormData({ ...formData, syncProducts: e.target.checked })}
-              className="w-4 h-4"
-            />
-            <span className="text-sm">Синхронизировать товары (в разработке)</span>
-          </label>
         </div>
 
         <div className="border-t pt-4 space-y-3">
