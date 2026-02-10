@@ -364,7 +364,7 @@ export async function PUT(req: Request) {
           userId: deal.userId,
           companyId: deal.user.companyId,
           oldStage,
-          newStage,
+          newStage: newStageValue,
         })
       } catch (autoError) {
         console.error('[deals] Automation error:', autoError)
