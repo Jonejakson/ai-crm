@@ -915,7 +915,7 @@ export default function CompanyPage() {
               {subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
             </p>
           </div>
-          <div className="text-sm text-[var(--muted)] text-left md:text-right">
+          <div className="text-sm text-[var(--muted)] text-left md:text-right flex flex-col gap-2 items-start md:items-end">
             {subscription?.plan ? (
               <>
                 <p className="text-lg font-semibold text-[var(--foreground)]">{formatPrice(subscription.plan)}</p>
@@ -926,9 +926,18 @@ export default function CompanyPage() {
                       : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`}
                   </span>
                 )}
+                <button
+                  type="button"
+                  onClick={handleSyncPayment}
+                  disabled={syncPaymentLoading}
+                  className="btn-secondary text-sm mt-1"
+                  title="Подтянуть оплату из ЮKassa, если платёж прошёл, а дата не обновилась"
+                >
+                  {syncPaymentLoading ? 'Проверка...' : 'Проверить оплату'}
+                </button>
               </>
             ) : (
-              <div className="flex flex-col gap-2 items-end">
+              <>
                 <p>Нет активной подписки</p>
                 <button
                   type="button"
@@ -938,7 +947,7 @@ export default function CompanyPage() {
                 >
                   {syncPaymentLoading ? 'Проверка...' : 'Проверить оплату'}
                 </button>
-              </div>
+              </>
             )}
           </div>
         </div>
