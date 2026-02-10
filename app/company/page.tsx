@@ -73,9 +73,9 @@ export default function CompanyPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
   const [selectedPlanName, setSelectedPlanName] = useState<string>('')
   const [isLegalEntity, setIsLegalEntity] = useState(false)
-  const [syncPaymentLoading, setSyncPaymentLoading] = useState(false)
   const didInitRef = useRef(false)
   const didAutoRefetchRef = useRef(false)
+  const didAutoSyncRef = useRef(false)
   const isTrialActive =
     subscription?.status === 'TRIAL' &&
     !!subscription?.currentPeriodEnd &&
@@ -250,6 +250,22 @@ export default function CompanyPage() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [refetchSubscription])
 
+  // Автоматическая проверка оплаты в фоне после загрузки (без кнопки): если webhook ещё не пришёл — подтягиваем из ЮKassa
+  useEffect(() => {
+    if (status !== 'authenticated' || session?.user?.role !== 'admin' || didAutoSyncRef.current) return
+    didAutoSyncRef.current = true
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/billing/sync-payment', { method: 'POST' })
+        const data = await res.json().catch(() => ({}))
+        if (res.ok && data.activated) refetchSubscription()
+      } catch {
+        // игнорируем
+      }
+    }, 3500)
+    return () => clearTimeout(t)
+  }, [status, session?.user?.role, refetchSubscription])
+
   useEffect(() => {
     if (status !== 'authenticated' || session?.user?.role !== 'admin') {
       didInitRef.current = false
@@ -304,26 +320,6 @@ export default function CompanyPage() {
     setBillingError('')
     setBillingMessage('')
     setPaymentPeriodModalOpen(true)
-  }
-
-  const handleSyncPayment = async () => {
-    setSyncPaymentLoading(true)
-    setBillingError('')
-    setBillingMessage('')
-    try {
-      const res = await fetch('/api/billing/sync-payment', { method: 'POST' })
-      const data = await res.json()
-      if (res.ok) {
-        setBillingMessage(data.activated ? 'Подписка активирована!' : data.message || 'Оплата ещё не получена')
-        if (data.activated) fetchBilling()
-      } else {
-        setBillingError(data.error || 'Ошибка при проверке')
-      }
-    } catch (e: any) {
-      setBillingError(e?.message || 'Ошибка при проверке оплаты')
-    } finally {
-      setSyncPaymentLoading(false)
-    }
   }
 
   const handleTrialSwitch = async (planId: number) => {
@@ -957,28 +953,9 @@ export default function CompanyPage() {
                       : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`}
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={handleSyncPayment}
-                  disabled={syncPaymentLoading}
-                  className="btn-secondary text-sm mt-1"
-                  title="Подтянуть оплату из ЮKassa, если платёж прошёл, а дата не обновилась"
-                >
-                  {syncPaymentLoading ? 'Проверка...' : 'Проверить оплату'}
-                </button>
               </>
             ) : (
-              <>
-                <p>Нет активной подписки</p>
-                <button
-                  type="button"
-                  onClick={handleSyncPayment}
-                  disabled={syncPaymentLoading}
-                  className="btn-secondary text-sm"
-                >
-                  {syncPaymentLoading ? 'Проверка...' : 'Проверить оплату'}
-                </button>
-              </>
+              <p>Нет активной подписки</p>
             )}
           </div>
         </div>
