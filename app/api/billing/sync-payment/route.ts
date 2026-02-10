@@ -34,8 +34,11 @@ export async function POST() {
   }
 
   try {
-    // Ищем подписки, ожидающие оплаты (TRIAL с externalSubscriptionId)
-    const pendingSubscriptions = await prisma.subscription.findMany({
+    const now = new Date()
+    let activated = false
+
+    // 1) Подписки, ожидающие первой оплаты (TRIAL с externalSubscriptionId)
+    const pendingTrial = await prisma.subscription.findMany({
       where: {
         companyId,
         status: SubscriptionStatus.TRIAL,
@@ -45,16 +48,7 @@ export async function POST() {
       orderBy: { createdAt: 'desc' },
     })
 
-    if (pendingSubscriptions.length === 0) {
-      return NextResponse.json({
-        activated: false,
-        message: 'Нет ожидающих оплат',
-      })
-    }
-
-    const now = new Date()
-    let activated = false
-    for (const sub of pendingSubscriptions) {
+    for (const sub of pendingTrial) {
       const paymentId = sub.externalSubscriptionId
       if (!paymentId) continue
 
@@ -113,6 +107,45 @@ export async function POST() {
         break
       } catch (err) {
         console.error('[sync-payment] Error checking payment', paymentId, err)
+      }
+    }
+
+    // 2) Продление: активная подписка с недавним externalSubscriptionId (оплата могла пройти, webhook ещё не пришёл)
+    if (!activated) {
+      const activeWithPayment = await prisma.subscription.findFirst({
+        where: {
+          companyId,
+          status: SubscriptionStatus.ACTIVE,
+          externalSubscriptionId: { not: null },
+          OR: [{ currentPeriodEnd: null }, { currentPeriodEnd: { gte: now } }],
+        },
+        include: { plan: true },
+        orderBy: { currentPeriodEnd: 'desc' },
+      })
+
+      if (activeWithPayment?.externalSubscriptionId) {
+        try {
+          const payment = await getYooKassaPayment(activeWithPayment.externalSubscriptionId)
+          if (payment.status === 'succeeded') {
+            const periodRaw = payment.metadata?.paymentPeriodMonths
+            const paymentPeriodMonths = periodRaw ? Number(periodRaw) : 1
+            const safePeriod = [1, 3, 6, 12].includes(paymentPeriodMonths)
+              ? (paymentPeriodMonths as 1 | 3 | 6 | 12)
+              : 1
+            const baseDate =
+              activeWithPayment.currentPeriodEnd && activeWithPayment.currentPeriodEnd > now
+                ? activeWithPayment.currentPeriodEnd
+                : now
+            const periodEnd = calculatePeriodEnd(baseDate, safePeriod)
+            await prisma.subscription.update({
+              where: { id: activeWithPayment.id },
+              data: { currentPeriodEnd: periodEnd, externalSubscriptionId: null },
+            })
+            activated = true
+          }
+        } catch (err) {
+          console.error('[sync-payment] Error checking extension payment', activeWithPayment.externalSubscriptionId, err)
+        }
       }
     }
 

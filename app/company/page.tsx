@@ -75,6 +75,7 @@ export default function CompanyPage() {
   const [isLegalEntity, setIsLegalEntity] = useState(false)
   const [syncPaymentLoading, setSyncPaymentLoading] = useState(false)
   const didInitRef = useRef(false)
+  const didAutoRefetchRef = useRef(false)
   const isTrialActive =
     subscription?.status === 'TRIAL' &&
     !!subscription?.currentPeriodEnd &&
@@ -218,6 +219,36 @@ export default function CompanyPage() {
       setBillingLoading(false)
     }
   }, [safeJson])
+
+  // Обновление подписки без кнопки: после возврата с оплаты (webhook может прийти с задержкой)
+  const refetchSubscription = useCallback(async () => {
+    try {
+      const res = await fetch('/api/billing/subscription')
+      if (res.ok) {
+        const data = await safeJson<{ subscription?: SubscriptionInfo | null }>(res)
+        setSubscription(data?.subscription ?? null)
+      }
+    } catch {
+      // игнорируем ошибки фонового обновления
+    }
+  }, [safeJson])
+
+  // Разовое обновление подписки через 2.5 с после загрузки страницы (подхватить webhook после возврата с оплаты)
+  useEffect(() => {
+    if (status !== 'authenticated' || session?.user?.role !== 'admin' || didAutoRefetchRef.current) return
+    didAutoRefetchRef.current = true
+    const t = setTimeout(() => refetchSubscription(), 2500)
+    return () => clearTimeout(t)
+  }, [status, session?.user?.role, refetchSubscription])
+
+  // При возврате на вкладку — обновить подписку (оплата могла пройти в другой вкладке)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refetchSubscription()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [refetchSubscription])
 
   useEffect(() => {
     if (status !== 'authenticated' || session?.user?.role !== 'admin') {
