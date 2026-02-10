@@ -7,8 +7,10 @@
 ## 1. Деплой (основная команда)
 
 ```bash
-ssh selectel "cd /opt/flamecrm && git pull && ./scripts/safe-deploy.sh"
+ssh selectel "cd /opt/flamecrm && git pull origin main && bash scripts/safe-deploy.sh"
 ```
+
+(Если на сервере `Permission denied` для `./scripts/safe-deploy.sh` — использовать `bash scripts/safe-deploy.sh`.)
 
 - **Таймаут:** 10+ минут (сборка Docker ~8–12 мин)
 - **Запуск:** только в foreground, НИКОГДА в фоне

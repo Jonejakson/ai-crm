@@ -148,6 +148,7 @@ export default function DealDetailPage() {
   })
   const [moyskladOrderIdInput, setMoyskladOrderIdInput] = useState('')
   const [linkOrderLoading, setLinkOrderLoading] = useState(false)
+  const [isMoyskladLoadModalOpen, setIsMoyskladLoadModalOpen] = useState(false)
 
   useEffect(() => {
     if (dealId) {
@@ -392,6 +393,7 @@ export default function DealDetailPage() {
         const data = await response.json()
         toast.success(data.message || 'Заказ привязан к сделке')
         setMoyskladOrderIdInput('')
+        setIsMoyskladLoadModalOpen(false)
         fetchDealData()
       } else {
         const error = await response.json()
@@ -561,6 +563,13 @@ export default function DealDetailPage() {
                   Обновить из МойСклад
                 </button>
                 <button
+                  onClick={() => setIsMoyskladLoadModalOpen(true)}
+                  className="btn-secondary text-sm"
+                  title="Подтянуть заказ по ID из МойСклад"
+                >
+                  Загрузить из МойСклад
+                </button>
+                <button
                   onClick={() => setIsEditModalOpen(true)}
                   className="btn-primary text-sm"
                 >
@@ -572,28 +581,55 @@ export default function DealDetailPage() {
         </div>
       </div>
 
-      {/* Подтянуть заказ из МойСклад по ID — блок в контенте */}
-      <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium text-[var(--muted)]">Подтянуть заказ из МойСклад по ID:</label>
-          <input
-            type="text"
-            value={moyskladOrderIdInput}
-            onChange={(e) => setMoyskladOrderIdInput(e.target.value)}
-            placeholder="ID заказа из МойСклад"
-            className="rounded-xl border border-[var(--border)] px-4 py-2 text-sm w-48 focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
-          />
-          <button
-            type="button"
-            onClick={handleLinkOrderFromMoysklad}
-            disabled={linkOrderLoading || !moyskladOrderIdInput.trim()}
-            className="btn-secondary text-sm disabled:opacity-50"
-          >
-            {linkOrderLoading ? 'Загрузка…' : 'Подтянуть заказ'}
-          </button>
-          <span className="text-xs text-[var(--muted)]">ID можно скопировать из URL заказа в МойСклад</span>
+      {/* Попап: Подтянуть заказ из МойСклад по ID */}
+      {isMoyskladLoadModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsMoyskladLoadModalOpen(false)}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header flex-shrink-0">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-[var(--muted)] font-semibold mb-1">МойСклад</p>
+                <h3 className="text-xl font-bold text-[var(--foreground)]">Подтянуть заказ из МойСклад по ID</h3>
+              </div>
+              <button
+                onClick={() => setIsMoyskladLoadModalOpen(false)}
+                className="text-[var(--muted)] hover:text-[var(--foreground)] transition-colors p-2 hover:bg-[var(--background-soft)] rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--muted)]">ID заказа из МойСклад</label>
+                <input
+                  type="text"
+                  value={moyskladOrderIdInput}
+                  onChange={(e) => setMoyskladOrderIdInput(e.target.value)}
+                  placeholder="ID заказа из МойСклад"
+                  className="w-full rounded-xl border border-[var(--border)] px-4 py-2 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)]"
+                />
+              </div>
+              <p className="text-xs text-[var(--muted)]">ID можно скопировать из URL заказа в МойСклад</p>
+            </div>
+            <div className="modal-footer flex-shrink-0 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsMoyskladLoadModalOpen(false)}
+                className="btn-secondary text-sm"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleLinkOrderFromMoysklad}
+                disabled={linkOrderLoading || !moyskladOrderIdInput.trim()}
+                className="btn-primary text-sm disabled:opacity-50"
+              >
+                {linkOrderLoading ? 'Загрузка…' : 'Подтянуть заказ'}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Основной контент - двухколоночный layout, выровнен по ширине заголовка */}
       <div className="w-full max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
