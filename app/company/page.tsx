@@ -375,17 +375,25 @@ export default function CompanyPage() {
         body: JSON.stringify({ planId }),
       })
       const data = await safeJson<{
-        subscription?: { currentPeriodEnd?: string; plan?: { name?: string } }
+        subscription?: { id: number; planId: number; plan: Plan; currentPeriodEnd: string | null }
         error?: string
       }>(response)
       if (!response.ok) {
         throw new Error(data?.error || 'Не удалось сменить тариф')
       }
-      const endDate = data?.subscription?.currentPeriodEnd
-        ? new Date(data.subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
+      const sub = data?.subscription
+      if (sub) {
+        setSubscription((prev) =>
+          prev
+            ? { ...prev, id: sub.id, planId: sub.planId, plan: sub.plan, currentPeriodEnd: sub.currentPeriodEnd }
+            : { id: sub.id, status: 'ACTIVE', planId: sub.planId, plan: sub.plan, currentPeriodEnd: sub.currentPeriodEnd }
+        )
+      }
+      const endDate = sub?.currentPeriodEnd
+        ? new Date(sub.currentPeriodEnd).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
         : ''
       setBillingMessage(
-        `Тариф изменён на «${data?.subscription?.plan?.name ?? ''}». Подписка пересчитана до ${endDate}.`
+        `Тариф изменён на «${sub?.plan?.name ?? ''}». Подписка пересчитана до ${endDate}.`
       )
       await fetchBilling()
       await fetchUsers()
@@ -905,7 +913,7 @@ export default function CompanyPage() {
     {
       label: 'Следующее продление',
       value: subscription?.currentPeriodEnd
-        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
+        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
         : '—',
       note: subscription?.currentPeriodEnd ? 'Оплачено до' : 'Ещё не настроено',
     },
@@ -988,8 +996,8 @@ export default function CompanyPage() {
                 {subscription?.currentPeriodEnd && (
                   <span className="text-xs text-[var(--muted)]">
                     {isTrialActive
-                      ? `Пробный период до: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`
-                      : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU')}`}
+                      ? `Пробный период до: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+                      : `Продление: ${new Date(subscription.currentPeriodEnd).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}`}
                   </span>
                 )}
               </>
