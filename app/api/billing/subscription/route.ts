@@ -29,7 +29,8 @@ export async function GET() {
 
     const now = new Date()
 
-    // 1) Сначала ищем реально активную подписку
+    // 1) Сначала ищем реально активную подписку (та же логика, что в change-plan:
+    //    по currentPeriodEnd desc, чтобы при двух подписках возвращать ту же запись, которую обновляет смена тарифа)
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
         companyId,
@@ -40,7 +41,7 @@ export async function GET() {
         ],
       },
       include: { plan: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ currentPeriodEnd: 'desc' }, { createdAt: 'desc' }],
     })
 
     if (activeSubscription) {
