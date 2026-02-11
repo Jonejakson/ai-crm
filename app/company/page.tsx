@@ -382,13 +382,14 @@ export default function CompanyPage() {
         throw new Error(data?.error || 'Не удалось сменить тариф')
       }
       const sub = data?.subscription
-      if (sub?.plan != null) {
+      const newPlan = sub?.plan
+      if (sub && newPlan) {
         setSubscription((prev) => ({
-          ...(prev ?? { id: 0, status: 'ACTIVE', planId: 0, plan: sub.plan!, currentPeriodEnd: null }),
+          ...(prev ?? { id: 0, status: 'ACTIVE', planId: 0, plan: newPlan, currentPeriodEnd: null }),
           id: sub.id,
           status: sub.status ?? 'ACTIVE',
           planId: sub.planId,
-          plan: sub.plan,
+          plan: newPlan,
           currentPeriodEnd: sub.currentPeriodEnd,
         }))
       }
