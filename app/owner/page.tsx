@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Modal from '@/components/Modal'
+import ExtendSubscriptionModal from '@/components/ExtendSubscriptionModal'
 
 type OwnerMetrics = {
   ok: boolean
@@ -130,6 +131,9 @@ export default function OwnerPage() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsLoading, setDetailsLoading] = useState(false)
   const [details, setDetails] = useState<CompanyDetails | null>(null)
+
+  const [extendModalOpen, setExtendModalOpen] = useState(false)
+  const [selectedCompany, setSelectedCompany] = useState<{ id: number; name: string } | null>(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -301,12 +305,21 @@ export default function OwnerPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[var(--foreground)]">
                       {company.usersCount}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap flex flex-wrap gap-2">
                       <button
                         onClick={() => openDetails(company.id)}
                         className="btn-secondary text-xs px-3 py-1.5"
                       >
-                        Регданные и клиенты
+                        Данные и клиенты
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedCompany({ id: company.id, name: company.name })
+                          setExtendModalOpen(true)
+                        }}
+                        className="btn-primary text-xs px-3 py-1.5"
+                      >
+                        Продлить подписку
                       </button>
                     </td>
                   </tr>
@@ -544,6 +557,19 @@ export default function OwnerPage() {
           <div className="text-[var(--muted)]">Нет данных</div>
         )}
       </Modal>
+
+      {selectedCompany && (
+        <ExtendSubscriptionModal
+          isOpen={extendModalOpen}
+          onClose={() => {
+            setExtendModalOpen(false)
+            setSelectedCompany(null)
+          }}
+          companyId={selectedCompany.id}
+          companyName={selectedCompany.name}
+          onSuccess={() => loadCompanies()}
+        />
+      )}
     </div>
   )
 }

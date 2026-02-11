@@ -26,6 +26,7 @@ export default function ExtendSubscriptionModal({
   onSuccess,
 }: ExtendSubscriptionModalProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<1 | 3 | 6 | 12>(1)
+  const [confirmPaid, setConfirmPaid] = useState(true) // по умолчанию: оплата получена, просто продлить
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,6 +43,7 @@ export default function ExtendSubscriptionModal({
         body: JSON.stringify({
           companyId,
           paymentPeriodMonths: selectedPeriod,
+          confirmPaid,
         }),
       })
 
@@ -49,6 +51,15 @@ export default function ExtendSubscriptionModal({
 
       if (!response.ok) {
         throw new Error(data.error || 'Не удалось продлить подписку')
+      }
+
+      // Режим «оплата получена» — только продление срока
+      if (data.success && data.subscription?.currentPeriodEnd && !data.paymentUrl && !data.pdfUrl) {
+        const endDate = new Date(data.subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
+        alert(`Подписка продлена до ${endDate}.`)
+        onSuccess?.()
+        onClose()
+        return
       }
 
       // Если есть paymentUrl (для физ лиц), перенаправляем на оплату
@@ -85,6 +96,18 @@ export default function ExtendSubscriptionModal({
           <div className="text-lg font-semibold text-[var(--foreground)]">{companyName}</div>
           <div className="text-xs text-[var(--muted)] mt-1">ID: {companyId}</div>
         </div>
+
+        {/* Оплата получена — только продлить срок */}
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={confirmPaid}
+            onChange={(e) => setConfirmPaid(e.target.checked)}
+            disabled={loading}
+            className="w-4 h-4"
+          />
+          <span className="text-sm text-[var(--foreground)]">Оплата получена (продлить без счёта)</span>
+        </label>
 
         {/* Выбор периода */}
         <div>

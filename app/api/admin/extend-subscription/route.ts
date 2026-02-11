@@ -22,9 +22,10 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { companyId, paymentPeriodMonths = 1 } = body as {
+    const { companyId, paymentPeriodMonths = 1, confirmPaid } = body as {
       companyId?: number
       paymentPeriodMonths?: 1 | 3 | 6 | 12
+      confirmPaid?: boolean
     }
 
     if (!companyId) {
@@ -49,25 +50,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    // Находим активную подписку компании (только ACTIVE)
+    // Находим подписку: для confirmPaid — любая (ACTIVE или TRIAL), иначе только ACTIVE
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
         companyId: company.id,
-        status: SubscriptionStatus.ACTIVE,
+        ...(confirmPaid ? {} : { status: SubscriptionStatus.ACTIVE }),
       },
       include: {
         plan: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     })
 
     if (!activeSubscription) {
       return NextResponse.json(
-        { error: 'Active subscription not found for this company' },
+        { error: 'Subscription not found for this company' },
         { status: 404 }
       )
+    }
+
+    // Режим «оплата получена»: только продлить срок без счёта и ЮKassa
+    if (confirmPaid) {
+      const now = new Date()
+      const baseDate =
+        activeSubscription.currentPeriodEnd && activeSubscription.currentPeriodEnd > now
+          ? activeSubscription.currentPeriodEnd
+          : now
+      const periodEnd = calculatePeriodEnd(baseDate, paymentPeriodMonths)
+
+      await prisma.subscription.update({
+        where: { id: activeSubscription.id },
+        data: {
+          status: SubscriptionStatus.ACTIVE,
+          currentPeriodEnd: periodEnd,
+          trialEndsAt: null,
+        },
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: 'Подписка продлена',
+        subscription: {
+          id: activeSubscription.id,
+          currentPeriodEnd: periodEnd.toISOString(),
+          plan: activeSubscription.plan.name,
+        },
+      })
     }
 
     const plan = activeSubscription.plan
