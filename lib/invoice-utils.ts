@@ -59,3 +59,46 @@ export function calculatePeriodEnd(
   endDate.setMonth(endDate.getMonth() + paymentPeriodMonths)
   return endDate
 }
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000
+const DEFAULT_DAYS_IN_MONTH = 30
+
+export interface ProrationResult {
+  /** Остаток дней до конца текущего периода (дробное) */
+  remainingDays: number
+  /** Денежный остаток (неиспользованная часть подписки по старому тарифу) */
+  credit: number
+  /** Сколько дней по новому тарифу покрывает остаток */
+  daysAtNewRate: number
+  /** Новая дата окончания подписки после пересчёта */
+  newPeriodEnd: Date
+}
+
+/**
+ * Перерасчёт подписки при смене тарифа: месяц = 30 дней.
+ * Остаток по старому тарифу (цена/30 * остаток_дней) переводится в дни по новому тарифу (цена/30 за день).
+ */
+export function calculateProratedPeriodEnd(
+  now: Date,
+  currentPeriodEnd: Date,
+  oldPricePerMonth: number,
+  newPricePerMonth: number,
+  daysInMonth: number = DEFAULT_DAYS_IN_MONTH
+): ProrationResult {
+  const endMs = currentPeriodEnd.getTime()
+  const nowMs = now.getTime()
+  const remainingMs = Math.max(0, endMs - nowMs)
+  const remainingDays = remainingMs / MS_PER_DAY
+
+  const credit = (oldPricePerMonth / daysInMonth) * remainingDays
+  const newPricePerDay = newPricePerMonth / daysInMonth
+  const daysAtNewRate = newPricePerDay > 0 ? credit / newPricePerDay : 0
+  const newPeriodEnd = new Date(nowMs + daysAtNewRate * MS_PER_DAY)
+
+  return {
+    remainingDays,
+    credit,
+    daysAtNewRate,
+    newPeriodEnd,
+  }
+}

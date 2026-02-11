@@ -1,7 +1,7 @@
 // Service Worker для PWA
-// Версия кэша - обновляйте при изменении ресурсов
-const CACHE_NAME = 'pocket-crm-v3';
-const RUNTIME_CACHE = 'pocket-crm-runtime-v3';
+// Версия кэша - обновляйте при изменении ресурсов (v4 после пересборки на сервере)
+const CACHE_NAME = 'pocket-crm-v4';
+const RUNTIME_CACHE = 'pocket-crm-runtime-v4';
 
 // Ресурсы для кэширования при установке
 const STATIC_ASSETS = [

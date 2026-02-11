@@ -221,7 +221,10 @@ async function generateInvoicePdf(invoice: any, subscription: any, company: any,
     doc.font(fontBold)
     doc.fontSize(11).text('Назначение платежа:', left, doc.y)
     doc.font(fontRegular)
-    doc.fontSize(10).text(`Оплата услуг CRM системы Flame CRM. ID клиента: ${clientId}.`, left, doc.y + 2, { width: contentWidth })
+    const purposeText = invoice.invoiceNumber
+      ? `Оплата по счёту ${invoice.invoiceNumber}. Flame CRM. ID клиента: ${clientId}.`
+      : `Оплата услуг CRM системы Flame CRM. ID клиента: ${clientId}.`
+    doc.fontSize(10).text(purposeText, left, doc.y + 2, { width: contentWidth })
     doc.moveDown(0.8)
 
     // Примечание

@@ -50,17 +50,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 })
     }
 
-    // Находим подписку: для confirmPaid — любая (ACTIVE или TRIAL), иначе только ACTIVE
-    const activeSubscription = await prisma.subscription.findFirst({
+    // Находим подписку: для confirmPaid — любая (ACTIVE или TRIAL), иначе только ACTIVE.
+    // Важно: берём подписку с максимальной датой окончания (currentPeriodEnd), чтобы не затереть
+    // продления, сделанные через СБП/ЮKassa — и добавлять новый период к этой дате.
+    const candidates = await prisma.subscription.findMany({
       where: {
         companyId: company.id,
-        ...(confirmPaid ? {} : { status: SubscriptionStatus.ACTIVE }),
+        ...(confirmPaid
+          ? { status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } }
+          : { status: SubscriptionStatus.ACTIVE }),
       },
-      include: {
-        plan: true,
-      },
+      include: { plan: true },
       orderBy: { createdAt: 'desc' },
     })
+
+    const activeSubscription = candidates.length === 0
+      ? null
+      : candidates.reduce((best, sub) => {
+          const bestEnd = best.currentPeriodEnd?.getTime() ?? 0
+          const subEnd = sub.currentPeriodEnd?.getTime() ?? 0
+          return subEnd >= bestEnd ? sub : best
+        })
 
     if (!activeSubscription) {
       return NextResponse.json(
@@ -69,7 +79,8 @@ export async function POST(request: Request) {
       )
     }
 
-    // Режим «оплата получена»: только продлить срок без счёта и ЮKassa
+    // Режим «оплата получена»: только продлить срок без счёта и ЮKassa.
+    // baseDate = текущая дата окончания подписки (если в будущем), иначе сегодня — чтобы не списывать продления по СБП.
     if (confirmPaid) {
       const now = new Date()
       const baseDate =

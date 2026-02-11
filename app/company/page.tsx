@@ -80,6 +80,12 @@ export default function CompanyPage() {
     subscription?.status === 'TRIAL' &&
     !!subscription?.currentPeriodEnd &&
     new Date(subscription.currentPeriodEnd) > new Date()
+  /** Можно сменить тариф с перерасчётом: активная платная подписка с периодом. */
+  const canProrateChange =
+    subscription?.status === 'ACTIVE' &&
+    !!subscription?.currentPeriodEnd &&
+    new Date(subscription.currentPeriodEnd) > new Date() &&
+    (subscription?.plan?.price ?? 0) > 0
 
   // Форма создания пользователя
   const [formData, setFormData] = useState({
@@ -352,6 +358,39 @@ export default function CompanyPage() {
     } catch (error: any) {
       console.error('Error switching trial plan:', error)
       setBillingError(error.message || 'Не удалось переключить тариф')
+    } finally {
+      setBillingLoading(false)
+    }
+  }
+
+  /** Смена тарифа с перерасчётом по остатку (месяц = 30 дней, без доплаты). */
+  const handleChangePlanWithProration = async (planId: number) => {
+    setBillingError('')
+    setBillingMessage('')
+    setBillingLoading(true)
+    try {
+      const response = await fetch('/api/billing/change-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId }),
+      })
+      const data = await safeJson<{
+        subscription?: { currentPeriodEnd?: string; plan?: { name?: string } }
+        error?: string
+      }>(response)
+      if (!response.ok) {
+        throw new Error(data?.error || 'Не удалось сменить тариф')
+      }
+      const endDate = data?.subscription?.currentPeriodEnd
+        ? new Date(data.subscription.currentPeriodEnd).toLocaleDateString('ru-RU')
+        : ''
+      setBillingMessage(
+        `Тариф изменён на «${data?.subscription?.plan?.name ?? ''}». Подписка пересчитана до ${endDate}.`
+      )
+      await fetchBilling()
+      await fetchUsers()
+    } catch (error: any) {
+      setBillingError(error.message || 'Не удалось сменить тариф')
     } finally {
       setBillingLoading(false)
     }
@@ -1051,17 +1090,29 @@ export default function CompanyPage() {
                       </button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => handlePlanChange(plan.id)}
-                      disabled={billingLoading}
-                      className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                        isCurrent
-                          ? 'bg-green-50 text-green-700 border border-green-200'
-                          : 'bg-[var(--primary)] text-white hover:opacity-90'
-                      }`}
-                    >
-                      {isCurrent ? 'Продлить' : 'Перейти'}
-                    </button>
+                    <>
+                      {canProrateChange && !isCurrent && (plan.price ?? 0) > 0 ? (
+                        <button
+                          onClick={() => handleChangePlanWithProration(plan.id)}
+                          disabled={billingLoading}
+                          className="w-full rounded-2xl px-4 py-2 text-sm font-medium transition bg-[var(--primary)] text-white hover:opacity-90"
+                        >
+                          Перейти с пересчётом
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handlePlanChange(plan.id)}
+                          disabled={billingLoading}
+                          className={`w-full rounded-2xl px-4 py-2 text-sm font-medium transition ${
+                            isCurrent
+                              ? 'bg-green-50 text-green-700 border border-green-200'
+                              : 'bg-[var(--primary)] text-white hover:opacity-90'
+                          }`}
+                        >
+                          {isCurrent ? 'Продлить' : 'Перейти'}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               )

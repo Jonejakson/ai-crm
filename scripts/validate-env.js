@@ -1,7 +1,16 @@
 /**
  * Скрипт для проверки переменных окружения
  * Запуск: node scripts/validate-env.js
+ * Загружает .env и .env.local из корня проекта перед проверкой.
  */
+
+const path = require('path');
+const { config } = require('dotenv');
+
+// Загружаем .env из корня проекта (где package.json)
+const projectRoot = path.resolve(__dirname, '..');
+config({ path: path.join(projectRoot, '.env') });
+config({ path: path.join(projectRoot, '.env.local') });
 
 const requiredVars = {
   development: [

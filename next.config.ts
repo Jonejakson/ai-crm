@@ -28,24 +28,40 @@ const nextConfig: NextConfig = {
     },
   },
 
-  // Turbopack config: mirror aliases to avoid pdfkit/fontkit ESM helpers issues
+  // Turbopack config: mirror aliases to avoid pdfkit/fontkit ESM helpers issues (only if modules exist)
   turbopack: {
-    resolveAlias: {
-      // Point to package entry (CJS)
-      pdfkit: require.resolve('pdfkit'),
-      fontkit: require.resolve('fontkit'),
-    },
+    resolveAlias: (() => {
+      const alias: Record<string, string> = {};
+      try {
+        alias.pdfkit = require.resolve('pdfkit');
+      } catch {
+        // pdfkit not installed or not resolvable at config load time
+      }
+      try {
+        alias.fontkit = require.resolve('fontkit');
+      } catch {
+        // fontkit not installed or not resolvable at config load time
+      }
+      return alias;
+    })(),
   },
 
   webpack: (config) => {
-    config.resolve = config.resolve || {}
+    config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      // Point to package entry (CJS)
-      pdfkit: require.resolve('pdfkit'),
-      fontkit: require.resolve('fontkit'),
+    };
+    try {
+      config.resolve.alias!.pdfkit = require.resolve('pdfkit');
+    } catch {
+      // pdfkit not resolvable at config load time
     }
-    return config
+    try {
+      config.resolve.alias!.fontkit = require.resolve('fontkit');
+    } catch {
+      // fontkit not resolvable at config load time
+    }
+    return config;
   },
 };
 
