@@ -192,7 +192,7 @@ export default function CompanyPage() {
     try {
       const [plansRes, subscriptionRes, companyStatsRes] = await Promise.all([
         fetch('/api/billing/plans'),
-        fetch('/api/billing/subscription'),
+        fetch('/api/billing/subscription', { cache: 'no-store' }),
         fetch('/api/admin/company-stats'),
       ])
 
@@ -229,7 +229,7 @@ export default function CompanyPage() {
   // Обновление подписки без кнопки: после возврата с оплаты (webhook может прийти с задержкой)
   const refetchSubscription = useCallback(async () => {
     try {
-      const res = await fetch('/api/billing/subscription')
+      const res = await fetch('/api/billing/subscription', { cache: 'no-store' })
       if (res.ok) {
         const data = await safeJson<{ subscription?: SubscriptionInfo | null }>(res)
         setSubscription(data?.subscription ?? null)
@@ -375,19 +375,22 @@ export default function CompanyPage() {
         body: JSON.stringify({ planId }),
       })
       const data = await safeJson<{
-        subscription?: { id: number; planId: number; plan: Plan; currentPeriodEnd: string | null }
+        subscription?: { id: number; status?: string; planId: number; plan?: Plan; currentPeriodEnd: string | null }
         error?: string
       }>(response)
       if (!response.ok) {
         throw new Error(data?.error || 'Не удалось сменить тариф')
       }
       const sub = data?.subscription
-      if (sub) {
-        setSubscription((prev) =>
-          prev
-            ? { ...prev, id: sub.id, planId: sub.planId, plan: sub.plan, currentPeriodEnd: sub.currentPeriodEnd }
-            : { id: sub.id, status: 'ACTIVE', planId: sub.planId, plan: sub.plan, currentPeriodEnd: sub.currentPeriodEnd }
-        )
+      if (sub?.plan != null) {
+        setSubscription((prev) => ({
+          ...(prev ?? { id: 0, status: 'ACTIVE', planId: 0, plan: sub.plan!, currentPeriodEnd: null }),
+          id: sub.id,
+          status: sub.status ?? 'ACTIVE',
+          planId: sub.planId,
+          plan: sub.plan,
+          currentPeriodEnd: sub.currentPeriodEnd,
+        }))
       }
       const endDate = sub?.currentPeriodEnd
         ? new Date(sub.currentPeriodEnd).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })

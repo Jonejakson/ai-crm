@@ -3,6 +3,8 @@ import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
 import { BillingInterval, SubscriptionStatus } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * ВАЖНО:
  * - TRIAL в системе используется для реального 14-дневного пробного периода (имеет trialEndsAt),

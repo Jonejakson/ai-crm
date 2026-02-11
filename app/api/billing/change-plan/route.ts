@@ -193,6 +193,7 @@ export async function POST(request: Request) {
       message: 'Тариф изменён. Подписка пересчитана по остатку.',
       subscription: {
         id: updated.id,
+        status: updated.status,
         planId: updated.planId,
         plan: updated.plan,
         currentPeriodEnd: updated.currentPeriodEnd?.toISOString() ?? null,
