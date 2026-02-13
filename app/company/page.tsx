@@ -71,6 +71,7 @@ export default function CompanyPage() {
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
   const [billingMessage, setBillingMessage] = useState('')
+  const [syncPlansLoading, setSyncPlansLoading] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [paymentPeriodModalOpen, setPaymentPeriodModalOpen] = useState(false)
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null)
@@ -194,7 +195,7 @@ export default function CompanyPage() {
     setBillingError('')
     try {
       const [plansRes, subscriptionRes, companyStatsRes] = await Promise.all([
-        fetch('/api/billing/plans'),
+        fetch('/api/billing/plans', { cache: 'no-store' }),
         fetch('/api/billing/subscription', { cache: 'no-store' }),
         fetch('/api/admin/company-stats'),
       ])
@@ -228,6 +229,23 @@ export default function CompanyPage() {
       setBillingLoading(false)
     }
   }, [safeJson])
+
+  /** Принудительно перезаписать описания тарифов из кода (исправление кракозябр в БД). */
+  const syncPlanDescriptions = useCallback(async () => {
+    setSyncPlansLoading(true)
+    try {
+      const res = await fetch('/api/billing/plans/sync', { method: 'POST' })
+      if (res.ok) {
+        await fetchBilling()
+        setBillingMessage('Описания тарифов обновлены')
+        setTimeout(() => setBillingMessage(''), 4000)
+      }
+    } catch {
+      setBillingError('Не удалось обновить описания')
+    } finally {
+      setSyncPlansLoading(false)
+    }
+  }, [fetchBilling])
 
   // Обновление подписки без кнопки: после возврата с оплаты (webhook может прийти с задержкой)
   const refetchSubscription = useCallback(async () => {
@@ -1010,6 +1028,16 @@ export default function CompanyPage() {
               </>
             ) : (
               <p>Нет активной подписки</p>
+            )}
+            {(session?.user?.role === 'admin' || session?.user?.role === 'owner') && (
+              <button
+                type="button"
+                onClick={syncPlanDescriptions}
+                disabled={syncPlansLoading}
+                className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] underline mt-2"
+              >
+                {syncPlansLoading ? 'Обновление…' : 'Обновить описания тарифов'}
+              </button>
             )}
           </div>
         </div>

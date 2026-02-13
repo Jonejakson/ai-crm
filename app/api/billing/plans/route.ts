@@ -8,7 +8,9 @@ export async function GET() {
     const plans = await prisma.plan.findMany({
       orderBy: { price: 'asc' },
     })
-    return json({ plans })
+    const res = json({ plans })
+    res.headers.set('Cache-Control', 'no-store, max-age=0')
+    return res
   } catch (error) {
     console.error('[billing][plans]', error)
     return json({ error: 'Failed to load plans' }, { status: 500 })
