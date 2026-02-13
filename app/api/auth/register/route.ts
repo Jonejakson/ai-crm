@@ -81,27 +81,17 @@ export async function POST(req: Request) {
         isNewCompany = true;
       }
       
-      // Для физ лиц используем общую компанию "Физ лица" (или создаем если нет)
+      // Для физ лиц создаём отдельную компанию на пользователя (как для юр лиц), чтобы был админ и видны Компания/Настройки
       if (!finalCompanyId && userType === 'individual') {
-        const defaultCompany = await tx.company.findFirst({
-          where: { 
-            name: 'Физ лица',
-            isLegalEntity: false 
-          }
+        const companyDisplayName = [name.trim(), lastName?.trim()].filter(Boolean).join(' ') || email
+        const company = await tx.company.create({
+          data: {
+            name: companyDisplayName,
+            isLegalEntity: false,
+          },
         });
-        
-        if (defaultCompany) {
-          finalCompanyId = defaultCompany.id;
-        } else {
-          // Создаем общую компанию для физ лиц
-          const company = await tx.company.create({
-            data: {
-              name: 'Физ лица',
-              isLegalEntity: false,
-            },
-          });
-          finalCompanyId = company.id;
-        }
+        finalCompanyId = company.id;
+        isNewCompany = true;
       }
 
       // Убеждаемся, что finalCompanyId определен (обязательное поле в схеме)
@@ -132,8 +122,8 @@ export async function POST(req: Request) {
         lastName
       })
 
-      // Нужно ли подтверждение email: любой админ при регистрации (юр или физ лицо)
-      const needsEmailVerification = userRole === 'admin' // Первый в компании = админ = требуется подтверждение
+      // Подтверждение email обязательно для всех новых пользователей (и физ, и юр лицо)
+      const needsEmailVerification = true
       const verificationToken = needsEmailVerification ? crypto.randomBytes(32).toString('hex') : null
       const verificationExpires = needsEmailVerification ? new Date(Date.now() + 48 * 60 * 60 * 1000) : null // 48 часов
 
