@@ -2,8 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import * as XLSX from 'xlsx'
 
 type MigrationSource = 'amocrm' | 'bitrix24' | null
+
+const EXCEL_FIELD_OPTIONS = [
+  { value: 'skip', label: '—' },
+  { value: 'name', label: 'Имя' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Телефон' },
+  { value: 'company', label: 'Компания' },
+  { value: 'position', label: 'Должность' },
+  { value: 'inn', label: 'ИНН' },
+] as const
 
 export default function MigrationSection() {
   const [source, setSource] = useState<MigrationSource>(null)
@@ -11,10 +22,10 @@ export default function MigrationSection() {
   const [importing, setImporting] = useState(false)
   const [results, setResults] = useState<any>(null)
 
-  // AmoCRM
-  const [amoSubdomain, setAmoSubdomain] = useState('')
-  const [amoAccessToken, setAmoAccessToken] = useState('')
-  const [amoData, setAmoData] = useState<any>(null)
+  // AmoCRM — только Excel, без API
+  const [amoExcelFile, setAmoExcelFile] = useState<File | null>(null)
+  const [amoExcelHeaders, setAmoExcelHeaders] = useState<string[]>([])
+  const [amoColumnMapping, setAmoColumnMapping] = useState<Record<string, string>>({})
 
   // Bitrix24
   const [bitrixDomain, setBitrixDomain] = useState('')
@@ -88,24 +99,32 @@ export default function MigrationSection() {
     }
   }
 
-  const handleLoadAmoCRMData = async () => {
-    if (!amoSubdomain || !amoAccessToken) {
-      toast.error('Заполните subdomain и access token')
-      return
+  const handleAmoExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result as ArrayBuffer
+        const workbook = XLSX.read(new Uint8Array(data), { type: 'array', cellDates: true })
+        const sheetName = workbook.SheetNames[0]
+        if (!sheetName) {
+          toast.error('В файле нет листов')
+          return
+        }
+        const sheet = workbook.Sheets[sheetName]
+        const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 }) as string[][]
+        const headers = (rows[0] || []).map((h, i) => (h != null ? String(h).trim() : `Колонка ${i + 1}`))
+        setAmoExcelFile(file)
+        setAmoExcelHeaders(headers)
+        setAmoColumnMapping({})
+        toast.success('Файл загружен. Сопоставьте колонки.')
+      } catch (err) {
+        console.error(err)
+        toast.error('Ошибка чтения Excel. Поддерживаются .xlsx и .xls.')
+      }
     }
-
-    setLoading(true)
-    try {
-      // В реальности здесь должен быть запрос к AmoCRM API
-      // Для примера показываем, что данные нужно загрузить вручную
-      toast.success('Для импорта загрузите экспортированные данные из AmoCRM')
-      // В продакшене здесь будет запрос к AmoCRM API для получения данных
-    } catch (error) {
-      console.error('Error loading AmoCRM data:', error)
-      toast.error('Ошибка загрузки данных из AmoCRM')
-    } finally {
-      setLoading(false)
-    }
+    reader.readAsArrayBuffer(file)
   }
 
   const handleLoadBitrix24Data = async () => {
@@ -128,18 +147,14 @@ export default function MigrationSection() {
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, sourceType: MigrationSource) => {
+    if (sourceType !== 'bitrix24') return
     const file = e.target.files?.[0]
     if (!file) return
-
     const reader = new FileReader()
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target?.result as string)
-        if (sourceType === 'amocrm') {
-          setAmoData(data)
-        } else if (sourceType === 'bitrix24') {
-          setBitrixData(data)
-        }
+        setBitrixData(data)
         toast.success('Данные загружены')
       } catch (error) {
         toast.error('Ошибка чтения файла. Убедитесь, что это валидный JSON.')
@@ -163,25 +178,18 @@ export default function MigrationSection() {
     try {
       let response
       if (source === 'amocrm') {
-        if (!amoData && (!amoSubdomain || !amoAccessToken)) {
-          toast.error('Загрузите данные или укажите учетные данные')
+        if (!amoExcelFile) {
+          toast.error('Загрузите Excel-файл')
+          setImporting(false)
           return
         }
-
-        response = await fetch('/api/migrations/amocrm', {
+        const formData = new FormData()
+        formData.append('file', amoExcelFile)
+        formData.append('columnMapping', JSON.stringify(amoColumnMapping))
+        formData.append('defaultUserId', defaultUserId)
+        response = await fetch('/api/migrations/amocrm/import-excel', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subdomain: amoSubdomain,
-            accessToken: amoAccessToken,
-            contacts: amoData?.contacts || [],
-            deals: amoData?.deals || [],
-            pipelines: amoData?.pipelines || [],
-            defaultUserId,
-            defaultPipelineId: defaultPipelineId || null,
-            defaultSourceId: defaultSourceId || null,
-            defaultDealTypeId: defaultDealTypeId || null,
-          }),
+          body: formData,
         })
       } else if (source === 'bitrix24') {
         if (!bitrixData && (!bitrixDomain || !bitrixAccessToken)) {
@@ -227,7 +235,7 @@ export default function MigrationSection() {
       <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Миграция данных</h3>
         <p className="text-sm text-[var(--muted)]">
-          Импортируйте данные из AmoCRM или Bitrix24 в вашу CRM. Вы можете загрузить экспортированные данные или подключиться через API.
+          Импортируйте данные в вашу CRM: из AmoCRM — загрузите Excel и сопоставьте колонки; из Bitrix24 — JSON или API.
         </p>
       </div>
 
@@ -263,54 +271,61 @@ export default function MigrationSection() {
           </div>
         </div>
 
-        {/* Настройки AmoCRM */}
+        {/* AmoCRM — загрузка Excel и сопоставление колонок */}
         {source === 'amocrm' && (
           <div className="space-y-4 p-4 bg-[var(--background-soft)] rounded-lg">
-            <h4 className="text-sm font-semibold">Настройки AmoCRM</h4>
-            
-            <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                Subdomain
-              </label>
-              <input
-                type="text"
-                value={amoSubdomain}
-                onChange={(e) => setAmoSubdomain(e.target.value)}
-                placeholder="yourcompany"
-                className="w-full"
-              />
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                Поддомен вашего AmoCRM (например: yourcompany.amocrm.ru → yourcompany)
-              </p>
-            </div>
+            <h4 className="text-sm font-semibold">Импорт из Excel (AmoCRM)</h4>
+            <p className="text-xs text-[var(--muted)]">
+              Выгрузите контакты из AmoCRM в Excel, загрузите файл сюда и сопоставьте колонки с полями CRM.
+            </p>
 
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                Access Token
-              </label>
-              <input
-                type="password"
-                value={amoAccessToken}
-                onChange={(e) => setAmoAccessToken(e.target.value)}
-                placeholder="Введите access token"
-                className="w-full"
-              />
-              <p className="mt-1 text-xs text-[var(--muted)]">
-                Получите токен в настройках AmoCRM → Интеграции → API
-              </p>
-            </div>
-
-            <div className="border-t pt-4">
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
-                Или загрузите экспортированные данные (JSON)
+                Excel-файл
               </label>
               <input
                 type="file"
-                accept=".json"
-                onChange={(e) => handleFileUpload(e, 'amocrm')}
+                accept=".xlsx,.xls"
+                onChange={handleAmoExcelUpload}
                 className="w-full text-sm"
               />
+              {amoExcelFile && (
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Файл: {amoExcelFile.name}
+                </p>
+              )}
             </div>
+
+            {amoExcelHeaders.length > 0 && (
+              <div className="border-t pt-4">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted)]">
+                  Сопоставление колонок
+                </label>
+                <p className="mb-3 text-xs text-[var(--muted)]">
+                  Укажите, какое поле CRM соответствует каждой колонке вашего файла.
+                </p>
+                <div className="space-y-2">
+                  {amoExcelHeaders.map((header, index) => (
+                    <div key={index} className="flex items-center gap-3 flex-wrap">
+                      <span className="text-sm font-medium min-w-[120px]">
+                        Колонка {index + 1}: {header || '(пусто)'}
+                      </span>
+                      <select
+                        value={amoColumnMapping[String(index)] ?? 'skip'}
+                        onChange={(e) => setAmoColumnMapping((prev) => ({ ...prev, [String(index)]: e.target.value }))}
+                        className="rounded-lg border border-[var(--border)] px-3 py-1.5 text-sm min-w-[140px]"
+                      >
+                        {EXCEL_FIELD_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -454,24 +469,26 @@ export default function MigrationSection() {
             <h4 className="text-sm font-semibold mb-3">Результаты импорта</h4>
             <div className="space-y-2 text-sm">
               <div>
-                <strong>Контакты:</strong> создано {results.contacts.created}, пропущено {results.contacts.skipped}
+                <strong>Контакты:</strong> создано {results.contacts?.created ?? 0}, пропущено {results.contacts?.skipped ?? 0}
               </div>
-              <div>
-                <strong>Сделки:</strong> создано {results.deals.created}, пропущено {results.deals.skipped}
-              </div>
+              {results.deals != null && (
+                <div>
+                  <strong>Сделки:</strong> создано {results.deals.created}, пропущено {results.deals.skipped}
+                </div>
+              )}
               {results.pipelines && (
                 <div>
                   <strong>Воронки:</strong> создано {results.pipelines.created}, пропущено {results.pipelines.skipped}
                 </div>
               )}
-              {(results.contacts.errors.length > 0 || results.deals.errors.length > 0) && (
+              {((results.contacts?.errors?.length ?? 0) > 0 || (results.deals?.errors?.length ?? 0) > 0) && (
                 <div className="mt-3 text-xs text-red-600">
                   <strong>Ошибки:</strong>
                   <ul className="list-disc list-inside mt-1">
-                    {results.contacts.errors.map((err: string, i: number) => (
+                    {(results.contacts?.errors ?? []).map((err: string, i: number) => (
                       <li key={i}>{err}</li>
                     ))}
-                    {results.deals.errors.map((err: string, i: number) => (
+                    {(results.deals?.errors ?? []).map((err: string, i: number) => (
                       <li key={i}>{err}</li>
                     ))}
                   </ul>
@@ -486,7 +503,7 @@ export default function MigrationSection() {
           <div className="flex justify-end pt-4 border-t">
             <button
               onClick={handleImport}
-              disabled={importing || !defaultUserId}
+              disabled={importing || !defaultUserId || (source === 'amocrm' && !amoExcelFile)}
               className="btn-primary"
             >
               {importing ? 'Импорт...' : 'Начать импорт'}
@@ -498,11 +515,9 @@ export default function MigrationSection() {
       <div className="mt-6 p-4 bg-[var(--background-soft)] rounded-lg">
         <h4 className="text-sm font-semibold mb-2">Инструкция:</h4>
         <ol className="text-sm text-[var(--muted)] space-y-1 list-decimal list-inside">
-          <li>Выберите источник данных (AmoCRM или Bitrix24)</li>
-          <li>Укажите учетные данные или загрузите экспортированный JSON файл</li>
-          <li>Настройте параметры импорта (пользователь, воронка, источник)</li>
-          <li>Нажмите "Начать импорт"</li>
-          <li>Дождитесь завершения и проверьте результаты</li>
+          <li><strong>AmoCRM:</strong> выгрузите контакты в Excel → загрузите файл → сопоставьте колонки (Имя, Email, Телефон и т.д.) → выберите пользователя → «Начать импорт»</li>
+          <li><strong>Bitrix24:</strong> укажите учётные данные или загрузите JSON → настройте импорт → «Начать импорт»</li>
+          <li>Дубликаты контактов (по email или телефону) пропускаются автоматически</li>
         </ol>
         <p className="mt-3 text-xs text-[var(--muted)]">
           <strong>Примечание:</strong> Дубликаты контактов (по email или телефону) будут пропущены автоматически.
