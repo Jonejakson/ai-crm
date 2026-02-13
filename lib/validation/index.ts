@@ -54,7 +54,7 @@ export function validateRequest<T>(
   if (!validation.success) {
     return NextResponse.json(
       {
-        error: 'Validation Error',
+        error: validation.error,
         message: validation.error,
         details: process.env.NODE_ENV === 'development' 
           ? validation.errors.issues 
