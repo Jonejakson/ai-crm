@@ -104,22 +104,6 @@ export const automationTemplates: AutomationTemplate[] = [
     complexity: 'basic',
   },
   {
-    id: 'task-completed-update-stage',
-    title: 'Перевод сделки после завершения задачи',
-    description: 'Когда задача завершена — перевести сделку на следующий этап.',
-    triggerType: 'TASK_COMPLETED',
-    actions: [
-      {
-        type: 'UPDATE_DEAL_STAGE',
-        params: {
-          newStage: 'proposal',
-        },
-      },
-    ],
-    category: 'Задачи',
-    complexity: 'basic',
-  },
-  {
     id: 'deal-created-quick-touch',
     title: 'Быстрый фоллоу-ап после создания сделки',
     description: 'Сразу после создания сделки — создать задачу на контакт и отправить приветственное письмо.',
@@ -186,71 +170,6 @@ export const automationTemplates: AutomationTemplate[] = [
     ],
     category: 'Сделки',
     complexity: 'basic',
-  },
-  {
-    id: 'task-created-notify-and-assign',
-    title: 'Уведомление и назначение при создании задачи',
-    description: 'При создании задачи — уведомить и назначить ответственного.',
-    triggerType: 'TASK_CREATED',
-    actions: [
-      {
-        type: 'ASSIGN_USER',
-        params: {
-          userId: null, // выберите ответственного перед сохранением
-        },
-      },
-      {
-        type: 'CREATE_NOTIFICATION',
-        params: {
-          title: 'Новая задача',
-          message: 'Появилась новая задача, проверьте детали.',
-          type: 'info',
-        },
-      },
-    ],
-    category: 'Задачи',
-    complexity: 'basic',
-  },
-  {
-    id: 'event-created-send-email',
-    title: 'Письмо после создания события',
-    description: 'После создания события отправить подтверждение/напоминание.',
-    triggerType: 'EVENT_CREATED',
-    actions: [
-      {
-        type: 'SEND_EMAIL',
-        params: {
-          subject: 'Подтверждение встречи',
-          body: 'Напоминание о запланированной встрече. Если нужно перенести — дайте знать.',
-        },
-      },
-    ],
-    category: 'События',
-    complexity: 'basic',
-  },
-  {
-    id: 'task-completed-notify-won',
-    title: 'Закрыть сделку в выигрыш при завершении ключевой задачи',
-    description: 'Когда ключевая задача завершена — перевести сделку в этап won и уведомить.',
-    triggerType: 'TASK_COMPLETED',
-    actions: [
-      {
-        type: 'UPDATE_DEAL_STAGE',
-        params: {
-          newStage: 'won',
-        },
-      },
-      {
-        type: 'CREATE_NOTIFICATION',
-        params: {
-          title: 'Сделка выиграна',
-          message: 'Ключевая задача выполнена, сделка переведена в выигрыш.',
-          type: 'success',
-        },
-      },
-    ],
-    category: 'Задачи',
-    complexity: 'advanced',
   },
   {
     id: 'deal-amount-range-assign-and-probability',

@@ -102,31 +102,37 @@ async function executeAction(action: any, context: AutomationContext) {
 
       case 'SEND_EMAIL':
         if (context.contactId && params.subject && (params.body || params.text || params.html)) {
+          const { isEmailConfigured } = await import('./email')
+          if (!isEmailConfigured()) {
+            console.warn('[automations] SEND_EMAIL skipped: SMTP не настроен')
+            break
+          }
           const contact = await prisma.contact.findUnique({
             where: { id: context.contactId },
           })
 
           if (contact?.email) {
-            // Импортируем функцию отправки email
-            const { sendEmail } = await import('./email')
-            await sendEmail({
-              to: contact.email,
-              subject: params.subject,
-              text: params.text || params.body,
-              html: params.html,
-            })
-
-            // Сохраняем в лог отправки email
-            await prisma.emailMessage.create({
-              data: {
-                toEmail: contact.email,
+            try {
+              const { sendEmail } = await import('./email')
+              await sendEmail({
+                to: contact.email,
                 subject: params.subject,
-                body: params.html || params.text || params.body || '',
-                status: 'sent',
-                contactId: context.contactId,
-                userId: context.userId || undefined,
-              },
-            })
+                text: params.text || params.body,
+                html: params.html,
+              })
+              await prisma.emailMessage.create({
+                data: {
+                  toEmail: contact.email,
+                  subject: params.subject,
+                  body: params.html || params.text || params.body || '',
+                  status: 'sent',
+                  contactId: context.contactId,
+                  userId: context.userId || undefined,
+                },
+              })
+            } catch (err) {
+              console.error('[automations] SEND_EMAIL failed:', err)
+            }
           }
         }
         break
@@ -166,14 +172,16 @@ async function executeAction(action: any, context: AutomationContext) {
         }
         break
 
-      case 'UPDATE_DEAL_STAGE':
-        if (context.dealId && params.stage) {
+      case 'UPDATE_DEAL_STAGE': {
+        const stage = params?.newStage ?? params?.stage
+        if (context.dealId && stage) {
           await prisma.deal.update({
             where: { id: context.dealId },
-            data: { stage: params.stage },
+            data: { stage: String(stage) },
           })
         }
         break
+      }
 
       default:
         console.warn('[automations] Unknown action type:', type)
