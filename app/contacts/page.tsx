@@ -9,6 +9,7 @@ import UserFilter from '@/components/UserFilter'
 import Skeleton, { SkeletonTable } from '@/components/Skeleton'
 import ExportButton from '@/components/ExportButton'
 import { EmailIcon, PhoneIcon, BuildingIcon, CalendarIcon, SearchIcon, UsersGroupIcon } from '@/components/Icons'
+import { parsePhoneRuInput } from '@/lib/utils'
 
 interface Contact {
   id: number
@@ -192,10 +193,9 @@ export default function ContactsPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+    const name = e.target.name
+    const value = name === 'phone' ? parsePhoneRuInput(e.target.value) : e.target.value
+    setFormData({ ...formData, [name]: value })
   }
 
   // Функция поиска компании по ИНН
@@ -826,7 +826,7 @@ export default function ContactsPage() {
                         type={field === 'email' ? 'email' : field === 'phone' ? 'tel' : 'text'}
                         name={field}
                         value={(editFormData as any)[field]}
-                        onChange={(e) => setEditFormData({ ...editFormData, [field]: e.target.value })}
+                        onChange={(e) => setEditFormData({ ...editFormData, [field]: field === 'phone' ? parsePhoneRuInput(e.target.value) : e.target.value })}
                         required={field === 'name'}
                         className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                       />

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { signIn as nextAuthSignIn, useSession } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { parsePhoneRuInput } from '@/lib/utils'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -314,7 +315,7 @@ export default function LoginPage() {
                   type="tel"
                   required={isRegister}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(parsePhoneRuInput(e.target.value))}
                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-all duration-200"
                   placeholder="+7 (999) 123-45-67"
                 />

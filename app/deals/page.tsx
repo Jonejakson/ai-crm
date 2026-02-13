@@ -16,6 +16,7 @@ import FilesManager from '@/components/FilesManager'
 import Skeleton, { SkeletonKanban } from '@/components/Skeleton'
 import type { CollisionDetection } from '@dnd-kit/core'
 import ExportButton from '@/components/ExportButton'
+import { parsePhoneRuInput } from '@/lib/utils'
 import { CustomSelect } from '@/components/CustomSelect'
 import {
   DndContext,
@@ -1688,7 +1689,8 @@ export default function DealsPage() {
                 <input
                   type="tel"
                   value={newContactData.phone}
-                  onChange={(e) => setNewContactData({...newContactData, phone: e.target.value})}
+                  onChange={(e) => setNewContactData({...newContactData, phone: parsePhoneRuInput(e.target.value)})}
+                  placeholder="+7 (999) 123-45-67"
                   className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-sm focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary-soft)] transition-all"
                 />
               </div>
