@@ -1,11 +1,12 @@
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
-import { syncPlanDescriptions } from '@/lib/billing-setup'
+import { ensureDefaultPlans } from '@/lib/billing-setup'
 import { json } from '@/lib/json-response'
 
 /**
  * Принудительно перезаписать описания и features планов из кода (UTF-8).
- * Исправляет кракозябры в БД. Доступ: авторизованный пользователь (любой).
+ * ensureDefaultPlans при наличии планов вызывает syncPlanDescriptions — исправляет кракозябры в БД.
+ * Доступ: авторизованный пользователь (любой).
  */
 export async function POST() {
   const user = await getCurrentUser()
@@ -14,7 +15,7 @@ export async function POST() {
   }
 
   try {
-    await syncPlanDescriptions(prisma)
+    await ensureDefaultPlans(prisma)
     return json({ ok: true, message: 'Описания тарифов обновлены' })
   } catch (error) {
     console.error('[billing][plans][sync]', error)
