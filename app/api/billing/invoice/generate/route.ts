@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
+import { json } from '@/lib/json-response'
 import { SubscriptionStatus, BillingInterval, PayerType } from '@prisma/client'
 import { generateInvoiceNumber, calculatePaymentAmount } from '@/lib/invoice-utils'
 
@@ -10,11 +10,11 @@ import { generateInvoiceNumber, calculatePaymentAmount } from '@/lib/invoice-uti
 export async function POST(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return json({ error: 'Forbidden' }, { status: 403 })
   }
 
   try {
@@ -25,12 +25,12 @@ export async function POST(request: Request) {
     }
 
     if (!planId) {
-      return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
+      return json({ error: 'Plan ID is required' }, { status: 400 })
     }
 
     // Валидация периода оплаты
     if (![1, 3, 6, 12].includes(paymentPeriodMonths)) {
-      return NextResponse.json(
+      return json(
         { error: 'Payment period must be 1, 3, 6, or 12 months' },
         { status: 400 }
       )
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     })
 
     if (!plan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      return json({ error: 'Plan not found' }, { status: 404 })
     }
 
     // Получаем информацию о компании
@@ -51,12 +51,12 @@ export async function POST(request: Request) {
     })
 
     if (!company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+      return json({ error: 'Company not found' }, { status: 404 })
     }
 
     // Проверяем, что компания - юридическое лицо
     if (!company.isLegalEntity) {
-      return NextResponse.json(
+      return json(
         { error: 'This endpoint is only for legal entities. Use /api/billing/payment for individuals' },
         { status: 400 }
       )
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://flamecrm.ru'
     const pdfUrl = `${baseUrl}/api/billing/invoice/${invoice.id}/pdf`
 
-    return NextResponse.json({
+    return json({
       invoice: {
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('[billing][invoice][generate][POST]', error)
-    return NextResponse.json(
+    return json(
       { error: error.message || 'Failed to generate invoice' },
       { status: 500 }
     )

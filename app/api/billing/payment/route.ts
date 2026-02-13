@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
 import { createYooKassaPayment, isYooKassaConfigured } from '@/lib/payment'
+import { json } from '@/lib/json-response'
 import { SubscriptionStatus, BillingInterval, PayerType } from '@prisma/client'
 import { calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
 
@@ -11,11 +11,11 @@ import { calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
 export async function POST(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return json({ error: 'Forbidden' }, { status: 403 })
   }
 
   // В режиме разработки пропускаем проверку конфигурации YooKassa
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
   
   if (!isDevMode && !isYooKassaConfigured()) {
-    return NextResponse.json(
+    return json(
       { error: 'Payment system not configured' },
       { status: 500 }
     )
@@ -39,12 +39,12 @@ export async function POST(request: Request) {
     }
 
     if (!planId) {
-      return NextResponse.json({ error: 'Plan ID is required' }, { status: 400 })
+      return json({ error: 'Plan ID is required' }, { status: 400 })
     }
 
     // Валидация периода оплаты
     if (![1, 3, 6, 12].includes(paymentPeriodMonths)) {
-      return NextResponse.json(
+      return json(
         { error: 'Payment period must be 1, 3, 6, or 12 months' },
         { status: 400 }
       )
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     })
 
     if (!plan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      return json({ error: 'Plan not found' }, { status: 404 })
     }
 
     // Получаем информацию о компании
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     })
 
     if (!company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+      return json({ error: 'Company not found' }, { status: 404 })
     }
 
     // Определяем тип плательщика
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
         },
       })
 
-      return NextResponse.json({ subscription, paymentUrl: null })
+      return json({ subscription, paymentUrl: null })
     }
 
     // ВАЖНО: "Счёт" (Invoice) НЕ создаём тут никогда.
@@ -167,7 +167,7 @@ export async function POST(request: Request) {
       data: { externalSubscriptionId: payment.id },
     })
 
-    return NextResponse.json({
+    return json({
       paymentUrl: payment.confirmation?.confirmation_url || null,
       paymentId: payment.id,
       amount: paymentAmount,
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('[billing][payment][POST]', error)
-    return NextResponse.json(
+    return json(
       { error: error.message || 'Failed to create payment' },
       { status: 500 }
     )

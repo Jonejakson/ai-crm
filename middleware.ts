@@ -125,6 +125,7 @@ export async function middleware(request: NextRequest) {
         {
           status: 429,
           headers: {
+            'Content-Type': 'application/json; charset=utf-8',
             'X-RateLimit-Limit': String(rateLimitResult.limit),
             'X-RateLimit-Remaining': String(rateLimitResult.remaining),
             'X-RateLimit-Reset': String(rateLimitResult.reset),

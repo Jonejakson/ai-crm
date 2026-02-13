@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
+import { json } from '@/lib/json-response'
 import { SubscriptionStatus } from '@prisma/client'
 import { calculateProratedPeriodEnd } from '@/lib/invoice-utils'
 
@@ -27,25 +27,25 @@ async function getActiveSubscription(companyId: number) {
 export async function GET(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const companyId = Number(currentUser.companyId)
   if (!companyId || Number.isNaN(companyId)) {
-    return NextResponse.json({ error: 'Company not found' }, { status: 400 })
+    return json({ error: 'Company not found' }, { status: 400 })
   }
 
   const { searchParams } = new URL(request.url)
   const planIdParam = searchParams.get('planId')
   const planId = planIdParam ? parseInt(planIdParam, 10) : NaN
   if (!planId || Number.isNaN(planId)) {
-    return NextResponse.json({ error: 'planId is required' }, { status: 400 })
+    return json({ error: 'planId is required' }, { status: 400 })
   }
 
   try {
     const subscription = await getActiveSubscription(companyId)
     if (!subscription?.currentPeriodEnd) {
-      return NextResponse.json({
+      return json({
         canProrate: false,
         reason: 'no_active_period',
         message: 'Перерасчёт возможен только при активной платной подписке с периодом.',
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
 
     const oldPrice = subscription.plan.price ?? 0
     if (oldPrice <= 0) {
-      return NextResponse.json({
+      return json({
         canProrate: false,
         reason: 'current_plan_free',
         message: 'Перерасчёт возможен только при смене с платного тарифа.',
@@ -63,11 +63,11 @@ export async function GET(request: Request) {
 
     const newPlan = await prisma.plan.findUnique({ where: { id: planId } })
     if (!newPlan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      return json({ error: 'Plan not found' }, { status: 404 })
     }
 
     if (subscription.planId === planId) {
-      return NextResponse.json({
+      return json({
         canProrate: false,
         reason: 'same_plan',
         message: 'Уже подключен этот тариф.',
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
 
     const newPrice = newPlan.price ?? 0
     if (newPrice <= 0) {
-      return NextResponse.json({
+      return json({
         canProrate: false,
         reason: 'new_plan_free',
         message: 'Переход на бесплатный тариф без перерасчёта.',
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
       30
     )
 
-    return NextResponse.json({
+    return json({
       canProrate: true,
       newPeriodEnd: proration.newPeriodEnd.toISOString(),
       remainingDays: Math.round(proration.remainingDays * 10) / 10,
@@ -102,41 +102,41 @@ export async function GET(request: Request) {
     })
   } catch (error) {
     console.error('[billing][change-plan][GET]', error)
-    return NextResponse.json({ error: 'Failed to get preview' }, { status: 500 })
+    return json({ error: 'Failed to get preview' }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden: only company admin can change plan' }, { status: 403 })
+    return json({ error: 'Forbidden: only company admin can change plan' }, { status: 403 })
   }
 
   const companyId = Number(currentUser.companyId)
   if (!companyId || Number.isNaN(companyId)) {
-    return NextResponse.json({ error: 'Company not found' }, { status: 400 })
+    return json({ error: 'Company not found' }, { status: 400 })
   }
 
   let body: { planId?: number }
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+    return json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
   const { planId } = body
   if (!planId || typeof planId !== 'number') {
-    return NextResponse.json({ error: 'planId is required' }, { status: 400 })
+    return json({ error: 'planId is required' }, { status: 400 })
   }
 
   try {
     const subscription = await getActiveSubscription(companyId)
     if (!subscription?.currentPeriodEnd) {
-      return NextResponse.json(
+      return json(
         { error: 'Перерасчёт возможен только при активной платной подписке с периодом.' },
         { status: 400 }
       )
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
 
     const oldPrice = subscription.plan.price ?? 0
     if (oldPrice <= 0) {
-      return NextResponse.json(
+      return json(
         { error: 'Перерасчёт возможен только при смене с платного тарифа.' },
         { status: 400 }
       )
@@ -152,11 +152,11 @@ export async function POST(request: Request) {
 
     const newPlan = await prisma.plan.findUnique({ where: { id: planId } })
     if (!newPlan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      return json({ error: 'Plan not found' }, { status: 404 })
     }
 
     if (subscription.planId === planId) {
-      return NextResponse.json(
+      return json(
         { error: 'Уже подключен этот тариф.' },
         { status: 400 }
       )
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
 
     const newPrice = newPlan.price ?? 0
     if (newPrice <= 0) {
-      return NextResponse.json(
+      return json(
         { error: 'Переход на бесплатный тариф оформите через выбор тарифа и оплату.' },
         { status: 400 }
       )
@@ -188,7 +188,7 @@ export async function POST(request: Request) {
       include: { plan: true },
     })
 
-    return NextResponse.json({
+    return json({
       success: true,
       message: 'Тариф изменён. Подписка пересчитана по остатку.',
       subscription: {
@@ -201,7 +201,7 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('[billing][change-plan][POST]', error)
-    return NextResponse.json(
+    return json(
       { error: (error as Error).message || 'Failed to change plan' },
       { status: 500 }
     )

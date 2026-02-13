@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { ensureDefaultPlans } from '@/lib/billing-setup'
+import { json } from '@/lib/json-response'
 
 export async function GET() {
   try {
@@ -8,11 +8,10 @@ export async function GET() {
     const plans = await prisma.plan.findMany({
       orderBy: { price: 'asc' },
     })
-
-    return NextResponse.json({ plans })
+    return json({ plans })
   } catch (error) {
     console.error('[billing][plans]', error)
-    return NextResponse.json({ error: 'Failed to load plans' }, { status: 500 })
+    return json({ error: 'Failed to load plans' }, { status: 500 })
   }
 }
 

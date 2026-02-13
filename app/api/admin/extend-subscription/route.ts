@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/get-session'
 import prisma from '@/lib/prisma'
+import { json } from '@/lib/json-response'
 import { SubscriptionStatus, BillingInterval, PayerType } from '@prisma/client'
 import { generateInvoiceNumber, calculatePaymentAmount, calculatePeriodEnd } from '@/lib/invoice-utils'
 import { createYooKassaPayment, isYooKassaConfigured } from '@/lib/payment'
@@ -12,12 +12,12 @@ import { createYooKassaPayment, isYooKassaConfigured } from '@/lib/payment'
 export async function POST(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   // Только owner может продлевать подписки
   if (currentUser.role !== 'owner') {
-    return NextResponse.json({ error: 'Forbidden: Owner only' }, { status: 403 })
+    return json({ error: 'Forbidden: Owner only' }, { status: 403 })
   }
 
   try {
@@ -29,12 +29,12 @@ export async function POST(request: Request) {
     }
 
     if (!companyId) {
-      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 })
+      return json({ error: 'Company ID is required' }, { status: 400 })
     }
 
     // Валидация периода оплаты
     if (![1, 3, 6, 12].includes(paymentPeriodMonths)) {
-      return NextResponse.json(
+      return json(
         { error: 'Payment period must be 1, 3, 6, or 12 months' },
         { status: 400 }
       )
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     })
 
     if (!company) {
-      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+      return json({ error: 'Company not found' }, { status: 404 })
     }
 
     // Находим подписку: для confirmPaid — любая (ACTIVE или TRIAL), иначе только ACTIVE.
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
         })
 
     if (!activeSubscription) {
-      return NextResponse.json(
+      return json(
         { error: 'Subscription not found for this company' },
         { status: 404 }
       )
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         },
       })
 
-      return NextResponse.json({
+      return json({
         success: true,
         message: 'Подписка продлена',
         subscription: {
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       const isDevMode = process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
       
       if (!isDevMode && !isYooKassaConfigured()) {
-        return NextResponse.json(
+        return json(
           { error: 'Payment system not configured' },
           { status: 500 }
         )
@@ -181,7 +181,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    return json({
       invoice: {
         id: invoice.id,
         invoiceNumber: invoice.invoiceNumber,
@@ -204,7 +204,7 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('[admin][extend-subscription][POST]', error)
-    return NextResponse.json(
+    return json(
       { error: error.message || 'Failed to extend subscription' },
       { status: 500 }
     )

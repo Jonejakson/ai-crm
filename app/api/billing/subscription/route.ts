@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/get-session'
+import { json } from '@/lib/json-response'
 import { BillingInterval, SubscriptionStatus } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
@@ -18,13 +18,13 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
     const companyId = Number(currentUser.companyId)
     if (!companyId || Number.isNaN(companyId) || companyId <= 0) {
-      return NextResponse.json({ subscription: null })
+      return json({ subscription: null })
     }
 
     const now = new Date()
@@ -45,7 +45,7 @@ export async function GET() {
     })
 
     if (activeSubscription) {
-      return NextResponse.json({ subscription: activeSubscription })
+      return json({ subscription: activeSubscription })
     }
 
     // 2) Если активной нет — возвращаем пробную (только настоящую trial) и только без неоплаченных инвойсов
@@ -62,28 +62,28 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ subscription: trialSubscription || null })
+    return json({ subscription: trialSubscription || null })
   } catch (error) {
     console.error('[billing][subscription][GET]', error)
-    return NextResponse.json({ error: 'Failed to load subscription' }, { status: 500 })
+    return json({ error: 'Failed to load subscription' }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const body = await request.json()
   const { planId } = body as { planId?: number }
 
   if (!planId) {
-    return NextResponse.json({ error: 'Plan is required' }, { status: 400 })
+    return json({ error: 'Plan is required' }, { status: 400 })
   }
 
   try {
@@ -92,13 +92,13 @@ export async function POST(request: Request) {
     })
 
     if (!plan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      return json({ error: 'Plan not found' }, { status: 404 })
     }
 
     // Защита от "самопереключения" платных тарифов без оплаты.
     // Платные планы должны активироваться через /api/billing/payment или /api/billing/invoice/generate.
     if (plan.price > 0) {
-      return NextResponse.json(
+      return json(
         { error: 'Paid plans must be activated via payment. Use /api/billing/payment or /api/billing/invoice/generate' },
         { status: 400 }
       )
@@ -116,28 +116,28 @@ export async function POST(request: Request) {
       include: { plan: true },
     })
 
-    return NextResponse.json({ subscription })
+    return json({ subscription })
   } catch (error) {
     console.error('[billing][subscription][POST]', error)
-    return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
+    return json({ error: 'Failed to update subscription' }, { status: 500 })
   }
 }
 
 export async function PATCH(request: Request) {
   const currentUser = await getCurrentUser()
   if (!currentUser) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   if (currentUser.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    return json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const body = await request.json()
   const { planId } = body as { planId?: number }
 
   if (!planId) {
-    return NextResponse.json({ error: 'Plan is required' }, { status: 400 })
+    return json({ error: 'Plan is required' }, { status: 400 })
   }
 
   try {
@@ -157,11 +157,11 @@ export async function PATCH(request: Request) {
     })
 
     if (!trialSubscription) {
-      return NextResponse.json({ error: 'No active trial found' }, { status: 409 })
+      return json({ error: 'No active trial found' }, { status: 409 })
     }
 
     if (trialSubscription.planId === planId) {
-      return NextResponse.json({ subscription: trialSubscription })
+      return json({ subscription: trialSubscription })
     }
 
     const plan = await prisma.plan.findUnique({
@@ -169,7 +169,7 @@ export async function PATCH(request: Request) {
     })
 
     if (!plan) {
-      return NextResponse.json({ error: 'Plan not found' }, { status: 404 })
+      return json({ error: 'Plan not found' }, { status: 404 })
     }
 
     const updatedSubscription = await prisma.subscription.update({
@@ -178,9 +178,9 @@ export async function PATCH(request: Request) {
       include: { plan: true },
     })
 
-    return NextResponse.json({ subscription: updatedSubscription })
+    return json({ subscription: updatedSubscription })
   } catch (error) {
     console.error('[billing][subscription][PATCH]', error)
-    return NextResponse.json({ error: 'Failed to update trial subscription' }, { status: 500 })
+    return json({ error: 'Failed to update trial subscription' }, { status: 500 })
   }
 }
