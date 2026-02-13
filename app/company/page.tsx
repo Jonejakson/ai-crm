@@ -1029,17 +1029,19 @@ export default function CompanyPage() {
             ) : (
               <p>Нет активной подписки</p>
             )}
-            {(session?.user?.role === 'admin' || session?.user?.role === 'owner') && (
-              <button
-                type="button"
-                onClick={syncPlanDescriptions}
-                disabled={syncPlansLoading}
-                className="text-xs text-[var(--muted)] hover:text-[var(--foreground)] underline mt-2"
-              >
-                {syncPlansLoading ? 'Обновление…' : 'Обновить описания тарифов'}
-              </button>
-            )}
           </div>
+        </div>
+
+        {/* Кнопка исправления кракозябр в описаниях тарифов — видна всем авторизованным */}
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={syncPlanDescriptions}
+            disabled={syncPlansLoading}
+            className="rounded-xl border border-[var(--border)] bg-[var(--background-soft)] px-4 py-2 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--background)] transition disabled:opacity-50"
+          >
+            {syncPlansLoading ? 'Обновление…' : 'Исправить отображение тарифов (обновить описания)'}
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
