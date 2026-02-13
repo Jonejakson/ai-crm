@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Modal from '@/components/Modal'
 import ExtendSubscriptionModal from '@/components/ExtendSubscriptionModal'
+import { getPlanDisplayText } from '@/lib/plan-display-text'
 
 type OwnerMetrics = {
   ok: boolean
@@ -292,7 +293,7 @@ export default function OwnerPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-[var(--foreground)]">
-                        {sub?.planName || 'Без плана'}
+                        {getPlanDisplayText(sub?.planSlug)?.planName ?? sub?.planName ?? 'Без плана'}
                       </div>
                       <div className="text-xs text-[var(--muted)]">{statusLabel(sub?.status)}</div>
                     </td>
@@ -479,7 +480,7 @@ export default function OwnerPage() {
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 space-y-2">
               <div className="text-sm text-[var(--muted)]">Подписка</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div><span className="text-[var(--muted)]">План:</span> {details.subscription?.planName || 'Без плана'}</div>
+                <div><span className="text-[var(--muted)]">План:</span> {getPlanDisplayText(details.subscription?.planSlug)?.planName ?? details.subscription?.planName ?? 'Без плана'}</div>
                 <div><span className="text-[var(--muted)]">Статус:</span> {statusLabel(details.subscription?.status)}</div>
                 <div><span className="text-[var(--muted)]">Биллинг:</span> {details.subscription?.billingInterval || '—'}</div>
                 <div><span className="text-[var(--muted)]">Окончание:</span> {formatDate(details.subscription?.currentPeriodEnd || details.subscription?.trialEndsAt)}</div>

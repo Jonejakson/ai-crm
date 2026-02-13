@@ -371,7 +371,7 @@ export default function CompanyPage() {
 
       if (data?.subscription) {
         setSubscription(data.subscription)
-        const planName = data.subscription?.plan?.name ?? ''
+        const planName = getPlanDisplayText(data.subscription?.plan?.slug)?.planName ?? data.subscription?.plan?.name ?? ''
         setBillingMessage(`Пробный тариф переключен на «${planName}».`)
       }
 
@@ -507,7 +507,7 @@ export default function CompanyPage() {
       // Если план бесплатный или в режиме разработки, подписка уже активирована
       if (paymentData.subscription) {
         setSubscription(paymentData.subscription)
-        const planName = paymentData.subscription?.plan?.name ?? ''
+        const planName = getPlanDisplayText(paymentData.subscription?.plan?.slug)?.planName ?? paymentData.subscription?.plan?.name ?? ''
         setBillingMessage(`План «${planName}» успешно активирован! Лимиты обновлены.`)
         await fetchBilling()
         await fetchUsers()
@@ -1098,7 +1098,7 @@ export default function CompanyPage() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-2xl font-semibold text-[var(--foreground)]">{plan.name}</h3>
+                    <h3 className="text-2xl font-semibold text-[var(--foreground)]">{displayText?.planName ?? plan.name}</h3>
                     <p className="text-sm text-[var(--muted)]">
                       {displayText?.description ?? plan.description ?? 'Полный функционал CRM без ограничений по модулям и доплат.'}
                     </p>

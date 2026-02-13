@@ -81,7 +81,10 @@ function getDatabaseUrl(): string {
     )
   }
 
-  return url
+  // Принудительно UTF-8 для всех подключений (исправление кракозябр после слияния БД)
+  const separator = url.includes('?') ? '&' : '?'
+  const hasClientEncoding = /[?&]client_encoding=/i.test(url)
+  return hasClientEncoding ? url : `${url}${separator}client_encoding=UTF8`
 }
 
 // Создаем Prisma Client лениво

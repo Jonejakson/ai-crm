@@ -1,9 +1,10 @@
 /**
- * Тексты тарифов для отображения на странице «Компания».
+ * Тексты тарифов для отображения (Компания, админка, owner).
  * Всегда UTF-8 из кода — не зависят от кодировки в БД.
  */
-export const PLAN_DISPLAY_TEXT: Record<string, { description: string; highlights: string[] }> = {
+export const PLAN_DISPLAY_TEXT: Record<string, { planName: string; description: string; highlights: string[] }> = {
   LITE: {
+    planName: 'Lite',
     description: 'План S: до 5 пользователей, полный функционал без доплат.',
     highlights: [
       'Полный функционал CRM без ограничений по модулям и скрытых доплат',
@@ -15,6 +16,7 @@ export const PLAN_DISPLAY_TEXT: Record<string, { description: string; highlights
     ],
   },
   TEAM: {
+    planName: 'Team',
     description: 'План M: до 15 пользователей, полный функционал без доплат.',
     highlights: [
       'Полный функционал CRM без ограничений по модулям и скрытых доплат',
@@ -26,6 +28,7 @@ export const PLAN_DISPLAY_TEXT: Record<string, { description: string; highlights
     ],
   },
   PRO: {
+    planName: 'Pro',
     description: 'План L: без ограничений по пользователям и функционалу, премиум поддержка.',
     highlights: [
       'Полный функционал CRM без ограничений и доплат',
