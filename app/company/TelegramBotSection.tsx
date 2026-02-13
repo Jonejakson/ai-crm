@@ -203,6 +203,7 @@ export default function TelegramBotSection() {
     if (!integration) return
 
     try {
+      setError(null)
       const response = await fetch('/api/messaging/telegram-bot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -221,6 +222,34 @@ export default function TelegramBotSection() {
     } catch (toggleError) {
       console.error('[telegram-bot][toggle]', toggleError)
       setError('Не удалось изменить статус')
+    }
+  }
+
+  async function handleDelete() {
+    if (!integration) return
+    if (!confirm('Удалить интеграцию Telegram Bot? Бот будет отключён, данные настроек удалены.')) return
+
+    try {
+      setError(null)
+      setProcessing(true)
+      const response = await fetch('/api/messaging/telegram-bot', { method: 'DELETE' })
+      if (!response.ok) throw new Error('Не удалось удалить интеграцию')
+      setIntegration(null)
+      setFormState({
+        botToken: '',
+        isActive: true,
+        autoCreateContact: true,
+        autoCreateDeal: false,
+        defaultSourceId: '',
+        defaultPipelineId: '',
+        defaultAssigneeId: '',
+      })
+      await fetchInitialData()
+    } catch (deleteError) {
+      console.error('[telegram-bot][delete]', deleteError)
+      setError('Не удалось удалить интеграцию')
+    } finally {
+      setProcessing(false)
     }
   }
 
@@ -327,6 +356,14 @@ export default function TelegramBotSection() {
                     className="rounded-2xl border border-[var(--border)] px-4 py-2 text-sm"
                   >
                     Редактировать
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={processing}
+                    className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {processing ? 'Удаление…' : 'Удалить интеграцию'}
                   </button>
                 </div>
               </div>

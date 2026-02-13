@@ -62,25 +62,47 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    if (!body.botToken || !body.botToken.trim()) {
-      return NextResponse.json({ error: "Bot token is required" }, { status: 400 })
-    }
-    if (!body.defaultAssigneeId) {
-      return NextResponse.json({ error: "Выберите ответственного" }, { status: 400 })
+    const existing = await prisma.messagingIntegration.findUnique({
+      where: {
+        companyId_platform: { companyId, platform: 'TELEGRAM' },
+      },
+    })
+
+    const isUpdateOnly = existing && (!body.botToken || !String(body.botToken).trim())
+    let botTokenToUse: string
+
+    if (isUpdateOnly) {
+      if (!existing.botToken) {
+        return NextResponse.json({ error: "Интеграция без токена. Укажите токен бота." }, { status: 400 })
+      }
+      botTokenToUse = decrypt(existing.botToken)
+    } else {
+      if (!body.botToken || !body.botToken.trim()) {
+        return NextResponse.json({ error: "Bot token is required" }, { status: 400 })
+      }
+      botTokenToUse = body.botToken.trim()
+      if (!/^\d+:[A-Za-z0-9_-]+$/.test(botTokenToUse)) {
+        return NextResponse.json({ error: "Invalid bot token format" }, { status: 400 })
+      }
+      try {
+        const botInfoResponse = await fetch(`https://api.telegram.org/bot${botTokenToUse}/getMe`)
+        if (!botInfoResponse.ok) {
+          return NextResponse.json({ error: "Invalid bot token" }, { status: 400 })
+        }
+        const botInfo = await botInfoResponse.json()
+        if (!botInfo.ok) {
+          return NextResponse.json({ error: "Invalid bot token" }, { status: 400 })
+        }
+      } catch (tokenError) {
+        return NextResponse.json({ error: "Failed to validate bot token" }, { status: 400 })
+      }
     }
 
-    // Проверяем валидность токена через Telegram API
-    try {
-      const botInfoResponse = await fetch(`https://api.telegram.org/bot${body.botToken}/getMe`)
-      if (!botInfoResponse.ok) {
-        return NextResponse.json({ error: "Invalid bot token" }, { status: 400 })
-      }
-      const botInfo = await botInfoResponse.json()
-      if (!botInfo.ok) {
-        return NextResponse.json({ error: "Invalid bot token" }, { status: 400 })
-      }
-    } catch (tokenError) {
-      return NextResponse.json({ error: "Failed to validate bot token" }, { status: 400 })
+    const defaultAssigneeId = body.defaultAssigneeId != null && body.defaultAssigneeId !== ''
+      ? Number(body.defaultAssigneeId)
+      : (existing?.defaultAssigneeId ?? null)
+    if (defaultAssigneeId == null || Number.isNaN(defaultAssigneeId)) {
+      return NextResponse.json({ error: "Выберите ответственного" }, { status: 400 })
     }
 
     // Upsert интеграцию
@@ -92,24 +114,24 @@ export async function POST(request: Request) {
         }
       },
       update: {
-        botToken: encrypt(body.botToken.trim()),
+        botToken: encrypt(botTokenToUse),
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
-        defaultAssigneeId: Number(body.defaultAssigneeId),
-        settings: body.settings || null,
+        defaultAssigneeId: defaultAssigneeId,
+        settings: body.settings ?? undefined,
       },
       create: {
         platform: 'TELEGRAM',
-        botToken: encrypt(body.botToken.trim()),
+        botToken: encrypt(botTokenToUse),
         isActive: body.isActive !== false,
         autoCreateContact: body.autoCreateContact !== false,
         autoCreateDeal: body.autoCreateDeal === true,
         defaultSourceId: body.defaultSourceId ? Number(body.defaultSourceId) : null,
         defaultPipelineId: body.defaultPipelineId ? Number(body.defaultPipelineId) : null,
-        defaultAssigneeId: Number(body.defaultAssigneeId),
+        defaultAssigneeId: defaultAssigneeId,
         settings: body.settings || null,
         companyId,
       },
@@ -128,3 +150,30 @@ export async function POST(request: Request) {
   }
 }
 
+// Удалить Telegram Bot интеграцию компании
+export async function DELETE() {
+  try {
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (user.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const companyId = parseInt(user.companyId)
+
+    await prisma.messagingIntegration.deleteMany({
+      where: {
+        companyId,
+        platform: 'TELEGRAM',
+      },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("[telegram-bot][DELETE]", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+  }
+}
