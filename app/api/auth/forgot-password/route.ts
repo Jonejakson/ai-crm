@@ -36,14 +36,30 @@ export async function POST(request: Request) {
     const resetToken = crypto.randomBytes(32).toString('hex')
     const resetExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 часа
 
-    // Сохраняем токен в базе данных
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordResetToken: resetToken,
-        passwordResetExpires: resetExpires,
-      },
-    })
+    // Сохраняем токен в базе данных (колонки могут отсутствовать после восстановления из старого дампа)
+    try {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordResetToken: resetToken,
+          passwordResetExpires: resetExpires,
+        },
+      })
+    } catch (updateErr: any) {
+      console.error('[forgot-password] Update token failed:', updateErr)
+      // Если в БД нет колонок passwordResetToken/passwordResetExpires — применить миграции на сервере
+      const msg = (updateErr?.message || '').toLowerCase()
+      if (msg.includes('passwordresettoken') || msg.includes('column') || msg.includes('does not exist')) {
+        return NextResponse.json(
+          {
+            error:
+              'Сервис восстановления пароля временно недоступен. Обратитесь в поддержку: info@flamecrm.ru или используйте экстренный сброс пароля (см. документацию на сервере).',
+          },
+          { status: 503 }
+        )
+      }
+      throw updateErr
+    }
 
     // Отправляем email с токеном (если настроен SMTP)
     if (isEmailConfigured()) {
