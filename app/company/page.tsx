@@ -8,6 +8,7 @@ import PaymentPeriodModal from '@/components/PaymentPeriodModal'
 import TelegramBotSection from '@/app/company/TelegramBotSection'
 import MoyskladSection from '@/app/company/MoyskladSection'
 import MigrationSection from '@/app/company/MigrationSection'
+import { getPlanDisplayText } from '@/lib/plan-display-text'
 
 type EntityType = 'contacts' | 'deals' | 'tasks' | 'events'
 type PermissionAction = 'create' | 'edit' | 'delete'
@@ -1011,7 +1012,7 @@ export default function CompanyPage() {
               {subscription?.plan?.name ?? 'План не выбран'}
             </h2>
             <p className="text-sm text-[var(--muted)]">
-              {subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
+              {getPlanDisplayText(subscription?.plan?.slug)?.description ?? subscription?.plan?.description ?? 'Тариф определяет лимиты по пользователям и расширенным функциям CRM.'}
             </p>
           </div>
           <div className="text-sm text-[var(--muted)] text-left md:text-right flex flex-col gap-2 items-start md:items-end">
@@ -1050,7 +1051,8 @@ export default function CompanyPage() {
           ) : (
             plans.map((plan) => {
               const isCurrent = subscription?.plan?.id === plan.id
-              const highlights = Array.isArray(plan.features?.highlights) ? (plan.features?.highlights as string[]) : []
+              const displayText = getPlanDisplayText(plan.slug)
+              const highlights = displayText?.highlights ?? (Array.isArray(plan.features?.highlights) ? (plan.features?.highlights as string[]) : [])
               const limits: string[] = []
               if (typeof plan.userLimit === 'number') {
                 limits.push(`До ${plan.userLimit} пользователей`)
@@ -1098,7 +1100,7 @@ export default function CompanyPage() {
                     </div>
                     <h3 className="text-2xl font-semibold text-[var(--foreground)]">{plan.name}</h3>
                     <p className="text-sm text-[var(--muted)]">
-                      {plan.description || 'Полный функционал CRM без ограничений по модулям и доплат.'}
+                      {displayText?.description ?? plan.description ?? 'Полный функционал CRM без ограничений по модулям и доплат.'}
                     </p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-3xl font-semibold text-[var(--foreground)]">{formatPrice(plan)}</p>
