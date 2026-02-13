@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-const getBaseUrl = (req: Request) => {
+/** Base URL для редиректов: не используем 0.0.0.0/localhost, иначе из письма откроется недоступный адрес */
+function getBaseUrl(req: Request): string {
+  const fromEnv = process.env.NEXTAUTH_URL || ''
   try {
     const url = new URL(req.url)
-    return `${url.protocol}//${url.host}`
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || url.host
+    const protocol = req.headers.get('x-forwarded-proto') || url.protocol.replace(':', '')
+    const base = `${protocol}://${host}`
+    if (host === '0.0.0.0' || host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
+      return fromEnv || 'https://flamecrm.ru'
+    }
+    return base
   } catch {
-    return process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    return fromEnv || 'https://flamecrm.ru'
   }
 }
 

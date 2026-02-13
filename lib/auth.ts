@@ -91,6 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             isLegalEntity: user.company?.isLegalEntity,
           }
         } catch (error: any) {
+          if (error?.message?.includes('Подтвердите email')) throw error
           console.error('Ошибка авторизации:', error)
           return null
         }

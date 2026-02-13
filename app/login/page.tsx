@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [errorIsWarning, setErrorIsWarning] = useState(false) // жёлтое предупреждение (например, подтвердите email)
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegister, setIsRegister] = useState(false)
@@ -105,6 +106,7 @@ export default function LoginPage() {
     }
     
     setError('')
+    setErrorIsWarning(false)
     setSuccess('')
     setIsLoading(true)
 
@@ -173,7 +175,10 @@ export default function LoginPage() {
       })
 
       if (result?.error) {
-        setError((result.error as any)?.message || 'Неверный email или пароль')
+        const msg = (result.error as any)?.message || ''
+        const isEmailNotVerified = msg.includes('Подтвердите email') || msg.includes('подтвердите')
+        setErrorIsWarning(!!isEmailNotVerified)
+        setError(isEmailNotVerified ? 'Подтвердите ваш e-mail для входа в систему.' : (msg || 'Неверный email или пароль'))
         setIsLoading(false)
         return
       }
@@ -216,7 +221,10 @@ export default function LoginPage() {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className={errorIsWarning
+              ? 'bg-amber-50 border border-amber-300 text-amber-800 px-4 py-3 rounded'
+              : 'bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded'
+            }>
               {error}
             </div>
           )}
@@ -235,6 +243,7 @@ export default function LoginPage() {
                   onClick={() => {
                     setUserType('individual')
                     setError('')
+                    setErrorIsWarning(false)
                   }}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                     userType === 'individual'
@@ -249,6 +258,7 @@ export default function LoginPage() {
                   onClick={() => {
                     setUserType('legal')
                     setError('')
+                    setErrorIsWarning(false)
                   }}
                   className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
                     userType === 'legal'
