@@ -5,6 +5,9 @@ import { PuzzleIcon, SearchIcon, UsersGroupIcon, EditIcon, TrashIcon, KeyIcon } 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import PaymentPeriodModal from '@/components/PaymentPeriodModal'
+import TelegramBotSection from '@/app/company/TelegramBotSection'
+import MoyskladSection from '@/app/company/MoyskladSection'
+import MigrationSection from '@/app/company/MigrationSection'
 
 type EntityType = 'contacts' | 'deals' | 'tasks' | 'events'
 type PermissionAction = 'create' | 'edit' | 'delete'
@@ -1440,6 +1443,13 @@ export default function CompanyPage() {
             </table>
           </div>
         </div>
+      </section>
+
+      {/* Интеграции: Telegram, МойСклад, миграция AmoCRM */}
+      <section className="space-y-6">
+        <TelegramBotSection />
+        <MoyskladSection />
+        <MigrationSection />
       </section>
 
       {/* Модальное окно редактирования пользователя */}

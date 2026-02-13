@@ -45,21 +45,25 @@ log() {
 
 log "=== Начало резервного копирования ==="
 
-# Проверяем, что docker-compose доступен
-if ! command -v docker-compose &> /dev/null; then
-    log "ОШИБКА: docker-compose не найден!"
+# Используем docker compose (v2) или docker-compose (v1)
+if docker compose version &>/dev/null; then
+    DOCKER_COMPOSE="docker compose"
+elif command -v docker-compose &>/dev/null; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    log "ОШИБКА: docker compose или docker-compose не найден!"
     exit 1
 fi
 
 # Проверяем, что контейнер PostgreSQL запущен
-if ! docker-compose -f "$COMPOSE_FILE" ps postgres | grep -q "Up"; then
+if ! $DOCKER_COMPOSE -f "$COMPOSE_FILE" ps postgres 2>/dev/null | grep -q "Up"; then
     log "ОШИБКА: Контейнер PostgreSQL не запущен!"
     exit 1
 fi
 
 # Создаем бэкап
 log "Создание бэкапа базы данных..."
-if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB_NAME" > "$BACKUP_FILE" 2>>"$LOG_FILE"; then
+if $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T postgres pg_dump -U "$DB_USER" "$DB_NAME" > "$BACKUP_FILE" 2>>"$LOG_FILE"; then
     # Сжимаем бэкап
     log "Сжатие бэкапа..."
     gzip -f "$BACKUP_FILE"
