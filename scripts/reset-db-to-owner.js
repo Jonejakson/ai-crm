@@ -3,7 +3,7 @@
  * Запуск на сервере: cd /opt/flamecrm && docker compose exec -T app node scripts/reset-db-to-owner.js
  * Локально: node scripts/reset-db-to-owner.js (нужен .env с DATABASE_URL)
  */
-require('dotenv').config()
+try { require('dotenv').config() } catch (_) {}
 const { PrismaClient } = require('@prisma/client')
 const bcrypt = require('bcryptjs')
 
@@ -21,7 +21,7 @@ const plans = [
 
 async function main() {
   console.log('1. Очистка БД (TRUNCATE Company, Plan CASCADE)...')
-  await prisma.$executeRawUnsafe('TRUNCATE "Company", "Plan" CASCADE RESTART IDENTITY')
+  await prisma.$executeRawUnsafe('TRUNCATE "Company", "Plan" RESTART IDENTITY CASCADE')
   console.log('2. Установка sequence Company.id = 221324 (следующий id = 221325)...')
   await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('"Company"', 'id'), ${COMPANY_ID_START - 1})`)
 
