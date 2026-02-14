@@ -163,6 +163,8 @@ export default function DealsPage() {
   const [isNewContactModalOpen, setIsNewContactModalOpen] = useState(false)
   const [isPipelineManagerOpen, setIsPipelineManagerOpen] = useState(false)
   const [contactSearch, setContactSearch] = useState('')
+  const [contactDropdownOpen, setContactDropdownOpen] = useState(false)
+  const contactDropdownRef = useRef<HTMLDivElement>(null)
   const formatContactLabel = (contact: Contact) => {
     const main = (contact.company && contact.company.trim()) ? contact.company : contact.name
     const email = contact.email ? ` (${contact.email})` : ''
@@ -500,6 +502,18 @@ export default function DealsPage() {
     },
   ])
 
+  // Закрывать выпадающий список клиентов при клике вне области
+  useEffect(() => {
+    if (!isModalOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (contactDropdownRef.current && !contactDropdownRef.current.contains(e.target as Node)) {
+        setContactDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isModalOpen])
+
   const fetchData = async (pipelineIdOverride?: number | null) => {
     try {
       // Используем переданный pipelineId или текущий selectedPipeline
@@ -716,6 +730,7 @@ export default function DealsPage() {
       pipelineId: ''
     })
     setContactSearch('')
+    setContactDropdownOpen(false)
     setEditingDeal(null)
   }
 
@@ -1327,7 +1342,7 @@ export default function DealsPage() {
                     Клиент *
                   </label>
                   <div className="space-y-2">
-                    <div className="relative">
+                    <div className="relative" ref={contactDropdownRef}>
                       <input
                         type="text"
                         value={contactSearch}
@@ -1336,6 +1351,7 @@ export default function DealsPage() {
                         onChange={(e) => {
                           const val = e.target.value
                           setContactSearch(val)
+                          setContactDropdownOpen(val.trim().length >= 2)
                           // При очистке поля — сбрасываем выбор
                           if (!val.trim()) {
                             setFormData({...formData, contactId: ''})
@@ -1348,6 +1364,9 @@ export default function DealsPage() {
                             if (selected) {
                               setContactSearch(formatContactLabel(selected))
                             }
+                            setContactDropdownOpen(false)
+                          } else if (contactSearch.trim().length >= 2) {
+                            setContactDropdownOpen(true)
                           }
                         }}
                         onKeyDown={(e) => {
@@ -1371,7 +1390,7 @@ export default function DealsPage() {
                           ×
                         </button>
                       )}
-                      {contactSearch.trim().length >= 2 && (
+                      {contactSearch.trim().length >= 2 && contactDropdownOpen && (
                         <div className="absolute z-10 w-full mt-1 bg-[var(--surface)] border border-[var(--border)] rounded-xl shadow-lg max-h-60 overflow-y-auto">
                           {contacts
                             .filter(contact => 
@@ -1388,6 +1407,7 @@ export default function DealsPage() {
                                   e.stopPropagation()
                                   setFormData({...formData, contactId: contact.id.toString()})
                                   setContactSearch(formatContactLabel(contact))
+                                  setContactDropdownOpen(false)
                                 }}
                                 className="p-3 hover:bg-[var(--background-soft)] cursor-pointer border-b border-[var(--border)] last:border-b-0 transition-colors"
                               >
